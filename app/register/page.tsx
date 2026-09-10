@@ -20,8 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
-  const supabase = createClient();
-
+  
   const [darkMode, setDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,46 +35,53 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setError("");
-    setSuccess("");
+  setError("");
+  setSuccess("");
 
-    const cleanName = name.trim();
-    const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+  const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanName) {
-      setError("Please enter your full name.");
-      return;
-    }
+  if (!cleanName) {
+    setError("Please enter your full name.");
+    return;
+  }
 
-    if (!cleanEmail) {
-      setError("Please enter your email address.");
-      return;
-    }
+  if (!cleanEmail) {
+    setError("Please enter your email address.");
+    return;
+  }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
+  // Email validation
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/;
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
+  if (!emailRegex.test(cleanEmail)) {
+    setError("Please enter a valid email address, for example: name@gmail.com");
+    return;
+  }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+  if (password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    return;
+  }
 
-    try {
-      setLoading(true);
+  if (password !== confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
 
-      const { data, error: signUpError } = await supabase.auth.signUp({
+  try {
+    setLoading(true);
+
+    // Supabase client
+    const supabase = createClient();
+
+    const { data, error: signUpError } =
+      await supabase.auth.signUp({
         email: cleanEmail,
-        password,
+        password: password,
         options: {
           data: {
             full_name: cleanName,
@@ -84,40 +90,41 @@ export default function RegisterPage() {
         },
       });
 
-      if (signUpError) {
-        if (
-          signUpError.message.toLowerCase().includes("already registered") ||
-          signUpError.message.toLowerCase().includes("already exists")
-        ) {
-          setError(
-            "An account with this email already exists. Please login instead."
-          );
-        } else {
-          setError(signUpError.message);
-        }
-        return;
-      }
+    if (signUpError) {
+      console.error("SUPABASE REGISTER ERROR:", signUpError);
 
-      if (data.user) {
-        if (data.session) {
-          setSuccess("Account created successfully! Redirecting...");
-
-          setTimeout(() => {
-            window.location.href = "/dashboard";
-          }, 800);
-        } else {
-          setSuccess(
-            "Account created! Please check your email to verify your account."
-          );
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+      setError(signUpError.message);
+      return;
     }
-  };
+
+    if (!data.user) {
+      setError("Registration failed. Please try again.");
+      return;
+    }
+
+    // Email confirmation OFF
+    if (data.session) {
+      setSuccess("Account created successfully! Redirecting...");
+
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 800);
+
+      return;
+    }
+
+    // Email confirmation ON
+    setSuccess(
+      "Account created successfully! Please check your email and verify your account."
+    );
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+
+    setError("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGoogleRegister = async () => {
     try {
