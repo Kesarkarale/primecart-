@@ -3,136 +3,213 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  Bell,
-  Box,
+  Search,
+  ShoppingCart,
+  User,
+  Heart,
   ChevronDown,
   ChevronRight,
-  CircleUserRound,
-  CreditCard,
-  Heart,
-  Home,
-  LayoutDashboard,
-  LogOut,
   Menu,
-  Moon,
-  Package,
-  Search,
-  Settings,
-  ShoppingBag,
-  ShoppingCart,
-  Sparkles,
-  Sun,
-  Tag,
-  TrendingUp,
-  Truck,
-  User,
-  Users,
   X,
-  ArrowUpRight,
+  MapPin,
+  Package,
+  Moon,
+  Sun,
   Star,
-  MoreHorizontal,
-  Clock3,
-  CheckCircle2,
-  XCircle,
-  Headphones,
+  ArrowRight,
+  Truck,
+  RotateCcw,
   ShieldCheck,
+  Headphones,
+  LogOut,
+  UserCircle,
+  ShoppingBag,
+  Zap,
+  Percent,
+  Sparkles,
+  Smartphone,
+  Shirt,
+  Sparkle,
+  Home,
+  Dumbbell,
+  BookOpen,
+  Watch,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-type Order = {
-  id: string;
-  product: string;
-  category: string;
-  amount: string;
-  status: "Delivered" | "Processing" | "Cancelled";
-  date: string;
-};
-
-const orders: Order[] = [
+const categories = [
   {
-    id: "#PC-10482",
-    product: "Samsung Smartphone Pro Max",
-    category: "Electronics",
-    amount: "₹54,999",
-    status: "Delivered",
-    date: "Sep 08, 2026",
+    name: "Electronics",
+    icon: Smartphone,
+    image:
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=600&q=80",
   },
   {
-    id: "#PC-10479",
-    product: "Sony WH Headphones",
-    category: "Electronics",
-    amount: "₹12,499",
-    status: "Processing",
-    date: "Sep 07, 2026",
+    name: "Fashion",
+    icon: Shirt,
+    image:
+      "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80",
   },
   {
-    id: "#PC-10473",
-    product: "Levis Premium Denim Jacket",
-    category: "Fashion",
-    amount: "₹3,499",
-    status: "Delivered",
-    date: "Sep 05, 2026",
+    name: "Beauty",
+    icon: Sparkle,
+    image:
+      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=600&q=80",
   },
   {
-    id: "#PC-10468",
-    product: "GlowCare Vitamin C Serum",
-    category: "Beauty",
-    amount: "₹899",
-    status: "Processing",
-    date: "Sep 03, 2026",
+    name: "Home & Kitchen",
+    icon: Home,
+    image:
+      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Sports",
+    icon: Dumbbell,
+    image:
+      "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Books",
+    icon: BookOpen,
+    image:
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Watches",
+    icon: Watch,
+    image:
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
   },
 ];
 
 const products = [
   {
-    name: "Samsung Smartphone Pro Max",
+    id: 1,
+    name: "Samsung Galaxy Smartphone Pro Max",
     category: "Electronics",
-    price: "₹54,999",
-    rating: "4.8",
-    sold: "248 sold",
+    price: 54999,
+    oldPrice: 64999,
+    discount: "15% off",
+    rating: 4.8,
+    reviews: 1248,
     image:
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=500&q=80",
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=80",
+    badge: "Best Seller",
   },
   {
-    name: "Sony WH Headphones",
+    id: 2,
+    name: "Sony Wireless Noise Cancelling Headphones",
     category: "Electronics",
-    price: "₹12,499",
-    rating: "4.7",
-    sold: "184 sold",
+    price: 12499,
+    oldPrice: 15999,
+    discount: "22% off",
+    rating: 4.7,
+    reviews: 856,
     image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80",
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80",
+    badge: "Top Rated",
   },
   {
-    name: "Levis Denim Jacket",
+    id: 3,
+    name: "Levis Premium Denim Jacket",
     category: "Fashion",
-    price: "₹3,499",
-    rating: "4.6",
-    sold: "156 sold",
+    price: 3499,
+    oldPrice: 4999,
+    discount: "30% off",
+    rating: 4.6,
+    reviews: 524,
     image:
-      "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=500&q=80",
+      "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=700&q=80",
+    badge: "Trending",
+  },
+  {
+    id: 4,
+    name: "GlowCare Vitamin C Face Serum",
+    category: "Beauty",
+    price: 899,
+    oldPrice: 1299,
+    discount: "31% off",
+    rating: 4.5,
+    reviews: 2134,
+    image:
+      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=700&q=80",
+    badge: "Popular",
+  },
+  {
+    id: 5,
+    name: "Premium Smart Watch Series 9",
+    category: "Watches",
+    price: 5999,
+    oldPrice: 7999,
+    discount: "25% off",
+    rating: 4.6,
+    reviews: 734,
+    image:
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80",
+    badge: "Deal",
+  },
+  {
+    id: 6,
+    name: "Modern Home Ceramic Table Set",
+    category: "Home & Kitchen",
+    price: 2199,
+    oldPrice: 2999,
+    discount: "27% off",
+    rating: 4.4,
+    reviews: 318,
+    image:
+      "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=700&q=80",
+    badge: "New",
+  },
+  {
+    id: 7,
+    name: "Premium Running Sports Shoes",
+    category: "Sports",
+    price: 2899,
+    oldPrice: 3999,
+    discount: "28% off",
+    rating: 4.5,
+    reviews: 642,
+    image:
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80",
+    badge: "Trending",
+  },
+  {
+    id: 8,
+    name: "Classic Leather Analog Watch",
+    category: "Watches",
+    price: 4299,
+    oldPrice: 5999,
+    discount: "28% off",
+    rating: 4.7,
+    reviews: 451,
+    image:
+      "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=700&q=80",
+    badge: "Top Rated",
   },
 ];
 
-const categories = [
+const deals = [
   {
-    name: "Electronics",
-    count: "1,248 products",
-    icon: "💻",
+    title: "Electronics Mega Sale",
+    subtitle: "Up to 60% OFF",
+    text: "Smartphones, laptops & accessories",
+    image:
+      "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?auto=format&fit=crop&w=1200&q=80",
   },
   {
-    name: "Fashion",
-    count: "892 products",
-    icon: "👕",
+    title: "Fashion Fest",
+    subtitle: "Starting ₹499",
+    text: "Latest styles for every occasion",
+    image:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
   },
   {
-    name: "Beauty",
-    count: "624 products",
-    icon: "✨",
-  },
-  {
-    name: "Home & Kitchen",
-    count: "736 products",
-    icon: "🏠",
+    title: "Home Essentials",
+    subtitle: "Up to 50% OFF",
+    text: "Upgrade your home today",
+    image:
+      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80",
   },
 ];
 
@@ -140,10 +217,14 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [userName, setUserName] = useState("PrimeCart User");
   const [userEmail, setUserEmail] = useState("");
-  const [search, setSearch] = useState("");
+  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [cartCount, setCartCount] = useState(2);
+  const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("primecart-theme");
@@ -175,13 +256,25 @@ export default function DashboardPage() {
   }, [supabase]);
 
   const toggleTheme = () => {
-    const nextMode = !darkMode;
+    const next = !darkMode;
+    setDarkMode(next);
 
-    setDarkMode(nextMode);
     localStorage.setItem(
       "primecart-theme",
-      nextMode ? "dark" : "light"
+      next ? "dark" : "light"
     );
+  };
+
+  const toggleWishlist = (id: number) => {
+    setWishlist((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  };
+
+  const addToCart = () => {
+    setCartCount((count) => count + 1);
   };
 
   const handleLogout = async () => {
@@ -189,1236 +282,1081 @@ export default function DashboardPage() {
     window.location.href = "/login";
   };
 
-  const initials = userName
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const filteredProducts =
+    activeCategory === "All"
+      ? products
+      : products.filter(
+          (product) => product.category === activeCategory
+        );
+
+  const searchedProducts = filteredProducts.filter((product) =>
+    product.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <main
       className={`min-h-screen transition-colors duration-300 ${
         darkMode
-          ? "bg-[#11100e] text-white"
-          : "bg-[#f8f6f1] text-[#29251f]"
+          ? "bg-[#0d0d0c] text-white"
+          : "bg-[#f6f5f2] text-[#222]"
       }`}
     >
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close sidebar"
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-        />
-      )}
+      {/* ================= TOP OFFER BAR ================= */}
+      <div className="bg-[#b88728] px-4 py-2 text-center text-xs font-medium text-white sm:text-sm">
+        Free shipping on orders above ₹999
+        <span className="mx-2 opacity-50">•</span>
+        Easy returns within 7 days
+      </div>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[270px] flex-col border-r transition-transform duration-300 ${
-          sidebarOpen
-            ? "translate-x-0"
-            : "-translate-x-full lg:translate-x-0"
-        } ${
+      {/* ================= NAVBAR ================= */}
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
           darkMode
-            ? "border-[#302a23] bg-[#171512]"
-            : "border-[#e9e3d8] bg-white"
+            ? "border-[#292722] bg-[#11110f]/95"
+            : "border-[#e8e3da] bg-white/95"
         }`}
       >
-        {/* Logo */}
-        <div className="flex h-20 items-center justify-between border-b px-6">
-          <Link href="/" className="flex items-center">
+        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+          {/* Mobile menu */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-lg p-2 lg:hidden"
+          >
+            <Menu size={22} />
+          </button>
+
+          {/* Logo */}
+          <Link href="/" className="shrink-0">
             <img
               src="/logo.png"
               alt="PrimeCart"
-              className="h-11 w-auto object-contain"
+              className="h-10 w-auto object-contain sm:h-11"
             />
           </Link>
 
+          {/* Location */}
           <button
             type="button"
-            onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-2 lg:hidden"
+            className={`hidden items-center gap-2 rounded-xl px-3 py-2 text-left xl:flex ${
+              darkMode
+                ? "hover:bg-[#1b1a17]"
+                : "hover:bg-[#faf8f3]"
+            }`}
           >
-            <X size={20} />
+            <MapPin
+              size={18}
+              className="text-[#c49635]"
+            />
+
+            <div>
+              <p
+                className={`text-[10px] ${
+                  darkMode
+                    ? "text-gray-500"
+                    : "text-gray-500"
+                }`}
+              >
+                Deliver to
+              </p>
+
+              <p className="text-xs font-semibold">
+                Maharashtra, India
+              </p>
+            </div>
+          </button>
+
+          {/* Search */}
+          <div className="relative mx-auto hidden max-w-2xl flex-1 md:block">
+            <Search
+              size={19}
+              className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                darkMode
+                  ? "text-gray-500"
+                  : "text-gray-400"
+              }`}
+            />
+
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search for products, brands and more..."
+              className={`h-12 w-full rounded-xl border pl-11 pr-14 text-sm outline-none transition ${
+                darkMode
+                  ? "border-[#39362f] bg-[#1a1917] text-white placeholder:text-gray-600 focus:border-[#c49635]"
+                  : "border-[#ded9d0] bg-[#f8f7f4] text-[#222] placeholder:text-gray-400 focus:border-[#c49635]"
+              }`}
+            />
+
+            <button
+              type="button"
+              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-[#c49635] text-white"
+            >
+              <Search size={16} />
+            </button>
+          </div>
+
+          {/* Right actions */}
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            {/* Theme */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                darkMode
+                  ? "text-[#d9ad55] hover:bg-[#1d1b18]"
+                  : "text-[#92701f] hover:bg-[#faf8f3]"
+              }`}
+            >
+              {darkMode ? (
+                <Sun size={19} />
+              ) : (
+                <Moon size={19} />
+              )}
+            </button>
+
+            {/* Account */}
+            <div className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() =>
+                  setAccountOpen(!accountOpen)
+                }
+                className={`flex items-center gap-2 rounded-xl px-2 py-2 ${
+                  darkMode
+                    ? "hover:bg-[#1d1b18]"
+                    : "hover:bg-[#faf8f3]"
+                }`}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c49635] text-xs font-bold text-white">
+                  {userName
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+
+                <div className="hidden text-left lg:block">
+                  <p className="max-w-[100px] truncate text-xs font-semibold">
+                    {userName}
+                  </p>
+                  <p
+                    className={`text-[10px] ${
+                      darkMode
+                        ? "text-gray-500"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    Account
+                  </p>
+                </div>
+
+                <ChevronDown size={14} />
+              </button>
+
+              {accountOpen && (
+                <div
+                  className={`absolute right-0 top-12 w-60 overflow-hidden rounded-2xl border p-2 shadow-2xl ${
+                    darkMode
+                      ? "border-[#35322c] bg-[#181714]"
+                      : "border-[#e6e0d7] bg-white"
+                  }`}
+                >
+                  <div className="border-b px-3 pb-3 pt-2">
+                    <p className="truncate text-sm font-semibold">
+                      {userName}
+                    </p>
+                    <p
+                      className={`truncate text-xs ${
+                        darkMode
+                          ? "text-gray-500"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {userEmail}
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/profile"
+                    className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+                  >
+                    <UserCircle size={17} />
+                    My Profile
+                  </Link>
+
+                  <Link
+                    href="/orders"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+                  >
+                    <Package size={17} />
+                    My Orders
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  >
+                    <LogOut size={17} />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Wishlist */}
+            <Link
+              href="/wishlist"
+              className={`relative flex h-10 w-10 items-center justify-center rounded-xl ${
+                darkMode
+                  ? "hover:bg-[#1d1b18]"
+                  : "hover:bg-[#faf8f3]"
+              }`}
+            >
+              <Heart size={20} />
+
+              {wishlist.length > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c49635] px-1 text-[9px] font-bold text-white">
+                  {wishlist.length}
+                </span>
+              )}
+            </Link>
+
+            {/* Cart */}
+            <Link
+              href="/cart"
+              className={`relative flex h-10 items-center gap-2 rounded-xl px-2 sm:px-3 ${
+                darkMode
+                  ? "hover:bg-[#1d1b18]"
+                  : "hover:bg-[#faf8f3]"
+              }`}
+            >
+              <ShoppingCart size={21} />
+
+              <span className="hidden text-xs font-semibold lg:block">
+                Cart
+              </span>
+
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c49635] px-1 text-[9px] font-bold text-white">
+                {cartCount}
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Mobile search */}
+        <div className="border-t px-4 py-3 md:hidden">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products and brands..."
+              className={`h-11 w-full rounded-xl border pl-11 pr-4 text-sm outline-none ${
+                darkMode
+                  ? "border-[#39362f] bg-[#1a1917]"
+                  : "border-[#ded9d0] bg-[#f8f7f4]"
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Category nav */}
+        <div
+          className={`hidden border-t lg:block ${
+            darkMode
+              ? "border-[#292722]"
+              : "border-[#eee9e1]"
+          }`}
+        >
+          <div className="mx-auto flex h-11 max-w-[1500px] items-center justify-between overflow-x-auto px-4 sm:px-6 lg:px-8">
+            {[
+              "All",
+              "Electronics",
+              "Fashion",
+              "Beauty",
+              "Home & Kitchen",
+              "Sports",
+              "Books",
+              "Watches",
+              "Deals",
+            ].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() =>
+                  setActiveCategory(
+                    item === "Deals" ? "All" : item
+                  )
+                }
+                className={`whitespace-nowrap px-3 text-xs font-medium transition ${
+                  activeCategory === item
+                    ? "font-bold text-[#b27f1d]"
+                    : darkMode
+                    ? "text-gray-400 hover:text-white"
+                    : "text-gray-600 hover:text-[#b27f1d]"
+                }`}
+              >
+                {item === "Deals" && (
+                  <Zap
+                    size={13}
+                    className="mr-1 inline"
+                  />
+                )}
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* ================= MOBILE SIDEBAR ================= */}
+      {menuOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setMenuOpen(false)}
+          className="fixed inset-0 z-[60] bg-black/50 lg:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-[70] w-[290px] transform transition-transform duration-300 lg:hidden ${
+          menuOpen
+            ? "translate-x-0"
+            : "-translate-x-full"
+        } ${
+          darkMode
+            ? "bg-[#151411]"
+            : "bg-white"
+        }`}
+      >
+        <div className="flex h-20 items-center justify-between border-b px-5">
+          <img
+            src="/logo.png"
+            alt="PrimeCart"
+            className="h-10 w-auto"
+          />
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen(false)}
+          >
+            <X size={21} />
           </button>
         </div>
 
-        {/* User mini profile */}
-        <div className="mx-4 mt-5 rounded-2xl border p-3 ${
-          darkMode
-            ? 'border-[#393128] bg-[#211d18]'
-            : 'border-[#eee8dc] bg-[#faf8f3]'
-        }">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c49635] text-sm font-bold text-white">
-              {initials}
-            </div>
-
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {userName}
-              </p>
-              <p
-                className={`truncate text-xs ${
-                  darkMode ? "text-gray-500" : "text-gray-500"
-                }`}
-              >
-                {userEmail || "Welcome back"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="mt-7 flex-1 px-4">
-          <p
-            className={`mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.18em] ${
-              darkMode ? "text-gray-600" : "text-gray-400"
+        <div className="p-4">
+          <div
+            className={`rounded-2xl p-4 ${
+              darkMode
+                ? "bg-[#211f1a]"
+                : "bg-[#faf7ef]"
             }`}
           >
-            Main Menu
-          </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#c49635] text-sm font-bold text-white">
+                {userName
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </div>
 
-          <div className="space-y-1.5">
-            <NavItem
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">
+                  Hello, {userName}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Welcome to PrimeCart
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-1">
+            <MobileNav
               href="/dashboard"
-              icon={<LayoutDashboard size={18} />}
-              label="Dashboard"
-              active
-              darkMode={darkMode}
-            />
-
-            <NavItem
-              href="/products"
               icon={<ShoppingBag size={18} />}
-              label="Products"
-              darkMode={darkMode}
+              label="Shop Home"
+              onClick={() => setMenuOpen(false)}
             />
 
-            <NavItem
-              href="/categories"
-              icon={<Tag size={18} />}
-              label="Categories"
-              darkMode={darkMode}
+            <MobileNav
+              href="/products"
+              icon={<Package size={18} />}
+              label="All Products"
+              onClick={() => setMenuOpen(false)}
             />
 
-            <NavItem
+            <MobileNav
               href="/orders"
               icon={<Package size={18} />}
               label="My Orders"
-              darkMode={darkMode}
-              badge="4"
+              onClick={() => setMenuOpen(false)}
             />
 
-            <NavItem
+            <MobileNav
               href="/wishlist"
               icon={<Heart size={18} />}
               label="Wishlist"
-              darkMode={darkMode}
+              onClick={() => setMenuOpen(false)}
             />
 
-            <NavItem
+            <MobileNav
               href="/cart"
               icon={<ShoppingCart size={18} />}
               label="Shopping Cart"
-              darkMode={darkMode}
-              badge="2"
+              onClick={() => setMenuOpen(false)}
             />
-          </div>
 
-          <p
-            className={`mb-3 mt-8 px-3 text-[11px] font-bold uppercase tracking-[0.18em] ${
-              darkMode ? "text-gray-600" : "text-gray-400"
-            }`}
-          >
-            Account
-          </p>
-
-          <div className="space-y-1.5">
-            <NavItem
+            <MobileNav
               href="/profile"
               icon={<User size={18} />}
               label="My Profile"
-              darkMode={darkMode}
+              onClick={() => setMenuOpen(false)}
             />
 
-            <NavItem
-              href="/settings"
-              icon={<Settings size={18} />}
-              label="Settings"
-              darkMode={darkMode}
-            />
-
-            <NavItem
-              href="/help"
-              icon={<Headphones size={18} />}
-              label="Help & Support"
-              darkMode={darkMode}
-            />
-          </div>
-        </nav>
-
-        {/* Bottom offer */}
-        <div className="p-4">
-          <div
-            className={`overflow-hidden rounded-2xl p-4 ${
-              darkMode
-                ? "border border-[#493d2b] bg-[#292219]"
-                : "bg-[#fbf1dc]"
-            }`}
-          >
-            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-[#c49635] text-white">
-              <Sparkles size={17} />
-            </div>
-
-            <p className="text-sm font-bold">
-              PrimeCart Premium
-            </p>
-
-            <p
-              className={`mt-1 text-xs leading-5 ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-red-500"
             >
-              Get exclusive deals and faster delivery.
-            </p>
-
-            <button className="mt-3 text-xs font-bold text-[#b27f1d]">
-              Explore benefits →
+              <LogOut size={18} />
+              Logout
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="lg:pl-[270px]">
-        {/* Topbar */}
-        <header
-          className={`sticky top-0 z-30 border-b backdrop-blur-xl ${
-            darkMode
-              ? "border-[#302a23] bg-[#11100e]/90"
-              : "border-[#e9e3d8] bg-[#f8f6f1]/90"
-          }`}
-        >
-          <div className="flex h-20 items-center gap-4 px-5 sm:px-7 lg:px-9">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="rounded-xl border p-2.5 lg:hidden"
-            >
-              <Menu size={20} />
-            </button>
-
-            {/* Search */}
-            <div className="relative hidden max-w-md flex-1 sm:block">
-              <Search
-                size={18}
-                className={`absolute left-4 top-1/2 -translate-y-1/2 ${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                }`}
-              />
-
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products, orders..."
-                className={`h-11 w-full rounded-xl border pl-11 pr-4 text-sm outline-none transition ${
-                  darkMode
-                    ? "border-[#393128] bg-[#1a1815] text-white placeholder:text-gray-600 focus:border-[#c49635]"
-                    : "border-[#e6e0d5] bg-white text-[#29251f] placeholder:text-gray-400 focus:border-[#c49635]"
-                }`}
-              />
-            </div>
-
-            <div className="ml-auto flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
-                  darkMode
-                    ? "border-[#40362a] bg-[#211d18] text-[#dfb34e] hover:bg-[#2b251d]"
-                    : "border-[#e8dfcf] bg-white text-[#9b701d] hover:bg-[#fffaf0]"
-                }`}
-              >
-                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-
-              <button
-                type="button"
-                className={`relative flex h-10 w-10 items-center justify-center rounded-xl border ${
-                  darkMode
-                    ? "border-[#40362a] bg-[#211d18]"
-                    : "border-[#e8dfcf] bg-white"
-                }`}
-              >
-                <Bell size={18} />
-
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#c49635]" />
-              </button>
-
-              <div
-                className={`hidden h-9 w-px sm:block ${
-                  darkMode ? "bg-[#393128]" : "bg-[#e5dfd4]"
-                }`}
-              />
-
-              <Link
-                href="/profile"
-                className="flex items-center gap-3"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c49635] text-xs font-bold text-white">
-                  {initials}
-                </div>
-
-                <div className="hidden text-left md:block">
-                  <p className="max-w-[130px] truncate text-sm font-semibold">
-                    {userName}
-                  </p>
-
-                  <p
-                    className={`text-[11px] ${
-                      darkMode ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    Customer
-                  </p>
-                </div>
-
-                <ChevronDown
-                  size={16}
-                  className="hidden md:block"
-                />
-              </Link>
-            </div>
-          </div>
-
-          {/* Mobile search */}
-          <div className="px-5 pb-4 sm:hidden">
-            <div className="relative">
-              <Search
-                size={17}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
-                className={`h-11 w-full rounded-xl border pl-11 pr-4 text-sm outline-none ${
-                  darkMode
-                    ? "border-[#393128] bg-[#1a1815]"
-                    : "border-[#e6e0d5] bg-white"
-                }`}
-              />
-            </div>
-          </div>
-        </header>
-
-        {/* Dashboard body */}
-        <div className="px-5 py-7 sm:px-7 lg:px-9">
-          {/* Welcome */}
-          <section className="mb-7">
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-              <div>
-                <div
-                  className={`mb-2 flex items-center gap-2 text-sm ${
-                    darkMode ? "text-[#d5a94b]" : "text-[#b17d1d]"
-                  }`}
-                >
-                  <Sparkles size={15} />
-                  Welcome back
-                </div>
-
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                  Hello, {userName.split(" ")[0]} 👋
-                </h1>
-
-                <p
-                  className={`mt-2 text-sm ${
-                    darkMode ? "text-gray-500" : "text-gray-500"
-                  }`}
-                >
-                  Here&apos;s what&apos;s happening with your PrimeCart
-                  account today.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <Link
-                  href="/products"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c49635] px-5 text-sm font-semibold text-white shadow-lg shadow-[#c49635]/20 transition hover:bg-[#ae8128]"
-                >
-                  <ShoppingBag size={17} />
-                  Shop Now
-                </Link>
-
-                <Link
-                  href="/orders"
-                  className={`hidden h-11 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-semibold sm:flex ${
-                    darkMode
-                      ? "border-[#40362a] bg-[#211d18] hover:bg-[#2b251d]"
-                      : "border-[#e6e0d5] bg-white hover:bg-[#faf8f3]"
-                  }`}
-                >
-                  View Orders
-                  <ArrowUpRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          {/* Stats */}
-          <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-            <StatCard
-              icon={<ShoppingBag size={20} />}
-              label="Total Orders"
-              value="24"
-              change="+12.5%"
-              description="vs last month"
-              darkMode={darkMode}
-            />
-
-            <StatCard
-              icon={<CreditCard size={20} />}
-              label="Total Spent"
-              value="₹86,420"
-              change="+8.2%"
-              description="vs last month"
-              darkMode={darkMode}
-            />
-
-            <StatCard
-              icon={<Heart size={20} />}
-              label="Wishlist"
-              value="18"
-              change="+4"
-              description="items saved"
-              darkMode={darkMode}
-            />
-
-            <StatCard
-              icon={<Package size={20} />}
-              label="In Delivery"
-              value="3"
-              change="Active"
-              description="orders on the way"
-              darkMode={darkMode}
-            />
-          </section>
-
-          {/* Main grid */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
-            {/* Sales overview */}
-            <div
-              className={`rounded-3xl border p-5 sm:p-6 ${
-                darkMode
-                  ? "border-[#302a23] bg-[#171512]"
-                  : "border-[#e9e3d8] bg-white"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
-                    Shopping overview
-                  </p>
-
-                  <div className="mt-1 flex items-end gap-3">
-                    <h2 className="text-2xl font-bold">
-                      ₹86,420
-                    </h2>
-
-                    <span className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-green-600">
-                      <TrendingUp size={13} />
-                      8.2%
-                    </span>
-                  </div>
-                </div>
-
-                <select
-                  className={`rounded-xl border px-3 py-2 text-xs outline-none ${
-                    darkMode
-                      ? "border-[#393128] bg-[#211d18] text-gray-300"
-                      : "border-[#e6e0d5] bg-[#faf8f3] text-gray-600"
-                  }`}
-                  defaultValue="6"
-                >
-                  <option value="6">Last 6 months</option>
-                  <option value="12">Last 12 months</option>
-                  <option value="1">This month</option>
-                </select>
-              </div>
-
-              {/* Chart */}
-              <div className="mt-8 h-[250px]">
-                <div className="relative h-full">
-                  <div className="absolute inset-0 flex flex-col justify-between">
-                    {[100, 75, 50, 25, 0].map((item) => (
-                      <div
-                        key={item}
-                        className={`border-t ${
-                          darkMode
-                            ? "border-[#29251f]"
-                            : "border-[#f0ece4]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="absolute inset-x-0 bottom-0 top-2 flex items-end justify-between gap-3 px-2">
-                    {[
-                      { month: "Apr", value: 48 },
-                      { month: "May", value: 62 },
-                      { month: "Jun", value: 55 },
-                      { month: "Jul", value: 74 },
-                      { month: "Aug", value: 68 },
-                      { month: "Sep", value: 88 },
-                    ].map((item) => (
-                      <div
-                        key={item.month}
-                        className="flex h-full flex-1 flex-col items-center justify-end gap-3"
-                      >
-                        <div className="relative flex h-full w-full items-end justify-center">
-                          <div
-                            className="w-full max-w-[42px] rounded-t-lg bg-[#c49635] transition-all duration-500 hover:bg-[#b1842b]"
-                            style={{
-                              height: `${item.value}%`,
-                            }}
-                          />
-                        </div>
-
-                        <span
-                          className={`text-[11px] ${
-                            darkMode
-                              ? "text-gray-600"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {item.month}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div
-              className={`rounded-3xl border p-5 sm:p-6 ${
-                darkMode
-                  ? "border-[#302a23] bg-[#171512]"
-                  : "border-[#e9e3d8] bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-bold">
-                    Quick actions
-                  </p>
-
-                  <p
-                    className={`mt-1 text-xs ${
-                      darkMode ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    Manage your shopping easily
-                  </p>
-                </div>
-
-                <Sparkles
-                  size={19}
-                  className="text-[#c49635]"
-                />
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <QuickAction
-                  href="/products"
-                  icon={<ShoppingBag size={19} />}
-                  title="Shop"
-                  text="Explore products"
-                  darkMode={darkMode}
-                />
-
-                <QuickAction
-                  href="/orders"
-                  icon={<Package size={19} />}
-                  title="Orders"
-                  text="Track purchases"
-                  darkMode={darkMode}
-                />
-
-                <QuickAction
-                  href="/wishlist"
-                  icon={<Heart size={19} />}
-                  title="Wishlist"
-                  text="Saved items"
-                  darkMode={darkMode}
-                />
-
-                <QuickAction
-                  href="/profile"
-                  icon={<CircleUserRound size={19} />}
-                  title="Profile"
-                  text="Account details"
-                  darkMode={darkMode}
-                />
-              </div>
-
-              {/* Delivery banner */}
-              <div
-                className={`mt-4 rounded-2xl p-4 ${
-                  darkMode
-                    ? "bg-[#241f18]"
-                    : "bg-[#fbf1dc]"
-                }`}
-              >
-                <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c49635] text-white">
-                    <Truck size={19} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-bold">
-                      3 orders on the way
-                    </p>
-
-                    <p
-                      className={`mt-1 text-xs leading-5 ${
-                        darkMode
-                          ? "text-gray-500"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      Your purchases are being delivered safely.
-                    </p>
-
-                    <Link
-                      href="/orders"
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#ad7d20]"
-                    >
-                      Track orders
-                      <ChevronRight size={13} />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Recent orders + categories */}
-          <section className="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
-            {/* Orders */}
-            <div
-              className={`rounded-3xl border ${
-                darkMode
-                  ? "border-[#302a23] bg-[#171512]"
-                  : "border-[#e9e3d8] bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between border-b px-5 py-5 sm:px-6">
-                <div>
-                  <h2 className="font-bold">
-                    Recent orders
-                  </h2>
-
-                  <p
-                    className={`mt-1 text-xs ${
-                      darkMode
-                        ? "text-gray-500"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Your latest purchases
-                  </p>
-                </div>
-
-                <Link
-                  href="/orders"
-                  className="text-xs font-bold text-[#ad7d20]"
-                >
-                  View all
-                </Link>
-              </div>
-
-              <div className="divide-y">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className={`flex items-center gap-4 px-5 py-4 sm:px-6 ${
-                      darkMode
-                        ? "divide-[#302a23]"
-                        : "divide-[#eee8dc]"
-                    }`}
-                  >
-                    <div
-                      className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:flex ${
-                        darkMode
-                          ? "bg-[#241f18]"
-                          : "bg-[#fbf1dc]"
-                      }`}
-                    >
-                      <Package
-                        size={18}
-                        className="text-[#b88925]"
-                      />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {order.product}
-                      </p>
-
-                      <div
-                        className={`mt-1 flex flex-wrap items-center gap-2 text-[11px] ${
-                          darkMode
-                            ? "text-gray-600"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        <span>{order.id}</span>
-                        <span>•</span>
-                        <span>{order.date}</span>
-                      </div>
-                    </div>
-
-                    <div className="hidden text-right sm:block">
-                      <p className="text-sm font-bold">
-                        {order.amount}
-                      </p>
-
-                      <p
-                        className={`mt-1 text-[11px] ${
-                          darkMode
-                            ? "text-gray-600"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {order.category}
-                      </p>
-                    </div>
-
-                    <StatusBadge
-                      status={order.status}
-                      darkMode={darkMode}
-                    />
-
-                    <button
-                      type="button"
-                      className={`hidden rounded-lg p-2 sm:block ${
-                        darkMode
-                          ? "hover:bg-[#241f18]"
-                          : "hover:bg-[#faf8f3]"
-                      }`}
-                    >
-                      <MoreHorizontal size={17} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div
-              className={`rounded-3xl border p-5 sm:p-6 ${
-                darkMode
-                  ? "border-[#302a23] bg-[#171512]"
-                  : "border-[#e9e3d8] bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-bold">
-                    Shop by category
-                  </h2>
-
-                  <p
-                    className={`mt-1 text-xs ${
-                      darkMode
-                        ? "text-gray-500"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Find what you need faster
-                  </p>
-                </div>
-
-                <Link
-                  href="/categories"
-                  className="text-xs font-bold text-[#ad7d20]"
-                >
-                  View all
-                </Link>
-              </div>
-
-              <div className="mt-5 space-y-2.5">
-                {categories.map((category) => (
-                  <Link
-                    href={`/categories/${category.name
-                      .toLowerCase()
-                      .replaceAll(" ", "-")}`}
-                    key={category.name}
-                    className={`flex items-center gap-3 rounded-2xl border p-3 transition ${
-                      darkMode
-                        ? "border-[#302a23] hover:border-[#59492f] hover:bg-[#211d18]"
-                        : "border-[#eee8dc] hover:border-[#dfc68e] hover:bg-[#fffaf0]"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl ${
-                        darkMode
-                          ? "bg-[#241f18]"
-                          : "bg-[#fbf1dc]"
-                      }`}
-                    >
-                      {category.icon}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">
-                        {category.name}
-                      </p>
-
-                      <p
-                        className={`mt-0.5 text-[11px] ${
-                          darkMode
-                            ? "text-gray-600"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {category.count}
-                      </p>
-                    </div>
-
-                    <ChevronRight
-                      size={17}
-                      className={
-                        darkMode
-                          ? "text-gray-600"
-                          : "text-gray-400"
-                      }
-                    />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Popular products */}
-          <section
-            className={`mt-6 rounded-3xl border ${
+      {/* ================= MAIN ================= */}
+      <div className="mx-auto max-w-[1500px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
+        {/* Welcome */}
+        <div className="mb-5">
+          <p
+            className={`text-xs font-medium ${
               darkMode
-                ? "border-[#302a23] bg-[#171512]"
-                : "border-[#e9e3d8] bg-white"
+                ? "text-[#d5a94b]"
+                : "text-[#ad7d20]"
             }`}
           >
-            <div className="flex items-center justify-between border-b px-5 py-5 sm:px-6">
-              <div>
-                <h2 className="font-bold">
-                  Popular products
-                </h2>
+            PrimeCart Shopping
+          </p>
 
-                <p
-                  className={`mt-1 text-xs ${
+          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+            Welcome back, {userName.split(" ")[0]} 👋
+          </h1>
+        </div>
+
+        {/* ================= HERO ================= */}
+        <section className="relative overflow-hidden rounded-3xl bg-[#171512]">
+          <img
+            src={deals[0].image}
+            alt="Electronics sale"
+            className="absolute inset-0 h-full w-full object-cover opacity-45"
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-transparent" />
+
+          <div className="relative min-h-[310px] px-6 py-10 sm:min-h-[360px] sm:px-10 sm:py-14 lg:px-16">
+            <div className="max-w-xl text-white">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs backdrop-blur">
+                <Sparkles size={13} />
+                PrimeCart Exclusive
+              </div>
+
+              <h2 className="text-3xl font-bold leading-tight sm:text-5xl">
+                Upgrade your tech.
+                <br />
+                <span className="text-[#e1b85a]">
+                  Save more today.
+                </span>
+              </h2>
+
+              <p className="mt-4 max-w-md text-sm leading-6 text-white/70 sm:text-base">
+                Discover smartphones, headphones, laptops and
+                more from your favourite brands at incredible
+                prices.
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveCategory("Electronics")
+                  }
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#c49635] px-5 text-sm font-bold text-white transition hover:bg-[#ae8128]"
+                >
+                  Shop Electronics
+                  <ArrowRight size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  View Deals
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= SERVICES ================= */}
+        <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Service
+            icon={<Truck size={20} />}
+            title="Free Delivery"
+            text="On orders above ₹999"
+            darkMode={darkMode}
+          />
+
+          <Service
+            icon={<RotateCcw size={20} />}
+            title="Easy Returns"
+            text="7 day return policy"
+            darkMode={darkMode}
+          />
+
+          <Service
+            icon={<ShieldCheck size={20} />}
+            title="Secure Payment"
+            text="100% protected checkout"
+            darkMode={darkMode}
+          />
+
+          <Service
+            icon={<Headphones size={20} />}
+            title="24/7 Support"
+            text="We're here to help"
+            darkMode={darkMode}
+          />
+        </section>
+
+        {/* ================= CATEGORIES ================= */}
+        <section className="mt-9">
+          <SectionHeading
+            title="Shop by Category"
+            subtitle="Explore our most popular categories"
+            link="/categories"
+            darkMode={darkMode}
+          />
+
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+            {categories.map((category) => {
+              const Icon = category.icon;
+
+              return (
+                <button
+                  key={category.name}
+                  type="button"
+                  onClick={() =>
+                    setActiveCategory(category.name)
+                  }
+                  className={`group overflow-hidden rounded-2xl border text-left transition ${
                     darkMode
-                      ? "text-gray-500"
-                      : "text-gray-500"
+                      ? "border-[#2e2b25] bg-[#151411] hover:border-[#66522e]"
+                      : "border-[#e7e1d8] bg-white hover:border-[#d9bd78]"
                   }`}
                 >
-                  Trending products customers love
-                </p>
+                  <div className="relative h-28 overflow-hidden sm:h-32">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                    />
+
+                    <div className="absolute inset-0 bg-black/25" />
+
+                    <div className="absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-[#a97920]">
+                      <Icon size={16} />
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    <p className="text-xs font-bold">
+                      {category.name}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ================= DEALS ================= */}
+        <section className="mt-10">
+          <SectionHeading
+            title="Deals of the Day"
+            subtitle="Limited-time offers you don't want to miss"
+            link="/products"
+            darkMode={darkMode}
+            deal
+          />
+
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {deals.map((deal) => (
+              <div
+                key={deal.title}
+                className="group relative min-h-[210px] overflow-hidden rounded-2xl"
+              >
+                <img
+                  src={deal.image}
+                  alt={deal.title}
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent" />
+
+                <div className="relative flex min-h-[210px] flex-col justify-center p-6 text-white">
+                  <p className="text-xs font-medium text-[#e4c56f]">
+                    {deal.subtitle}
+                  </p>
+
+                  <h3 className="mt-1 text-xl font-bold">
+                    {deal.title}
+                  </h3>
+
+                  <p className="mt-2 max-w-[220px] text-xs text-white/65">
+                    {deal.text}
+                  </p>
+
+                  <button
+                    type="button"
+                    className="mt-4 flex w-fit items-center gap-1 text-xs font-bold"
+                  >
+                    Shop now
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ================= PRODUCTS ================= */}
+        <section className="mt-10">
+          <SectionHeading
+            title={
+              activeCategory === "All"
+                ? "Featured Products"
+                : activeCategory
+            }
+            subtitle="Handpicked products at great prices"
+            link="/products"
+            darkMode={darkMode}
+          />
+
+          {/* Category filters */}
+          <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+            {[
+              "All",
+              "Electronics",
+              "Fashion",
+              "Beauty",
+              "Home & Kitchen",
+              "Sports",
+              "Watches",
+            ].map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() =>
+                  setActiveCategory(category)
+                }
+                className={`whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                  activeCategory === category
+                    ? "border-[#c49635] bg-[#c49635] text-white"
+                    : darkMode
+                    ? "border-[#38342d] text-gray-400 hover:border-[#c49635]"
+                    : "border-[#ddd7cd] bg-white text-gray-600 hover:border-[#c49635]"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {searchedProducts.length === 0 ? (
+            <div
+              className={`mt-5 rounded-2xl border py-16 text-center ${
+                darkMode
+                  ? "border-[#2e2b25] bg-[#151411]"
+                  : "border-[#e7e1d8] bg-white"
+              }`}
+            >
+              <Search
+                size={35}
+                className="mx-auto text-gray-400"
+              />
+
+              <h3 className="mt-3 font-bold">
+                No products found
+              </h3>
+
+              <p className="mt-1 text-xs text-gray-500">
+                Try searching for another product.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {searchedProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  darkMode={darkMode}
+                  isWishlisted={wishlist.includes(
+                    product.id
+                  )}
+                  onWishlist={() =>
+                    toggleWishlist(product.id)
+                  }
+                  onAddToCart={addToCart}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ================= BIG PROMOTION ================= */}
+        <section
+          className={`mt-10 overflow-hidden rounded-3xl ${
+            darkMode
+              ? "bg-[#201c16]"
+              : "bg-[#f1e4c5]"
+          }`}
+        >
+          <div className="grid items-center lg:grid-cols-2">
+            <div className="p-7 sm:p-10 lg:p-14">
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#c49635] px-3 py-1.5 text-xs font-bold text-white">
+                <Percent size={13} />
+                PRIME DEAL
+              </div>
+
+              <h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+                Big savings.
+                <br />
+                Better shopping.
+              </h2>
+
+              <p
+                className={`mt-3 max-w-lg text-sm leading-6 ${
+                  darkMode
+                    ? "text-gray-400"
+                    : "text-gray-600"
+                }`}
+              >
+                Get amazing deals across electronics, fashion,
+                beauty, home essentials and more. Your favourite
+                products are just a click away.
+              </p>
 
               <Link
                 href="/products"
-                className="inline-flex items-center gap-1 text-xs font-bold text-[#ad7d20]"
+                className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#c49635] px-5 text-sm font-bold text-white transition hover:bg-[#ae8128]"
               >
-                Browse all
-                <ArrowUpRight size={13} />
+                Explore all deals
+                <ArrowRight size={16} />
               </Link>
             </div>
 
-            <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
-              {products.map((product) => (
-                <Link
-                  href="/products"
-                  key={product.name}
-                  className={`group overflow-hidden rounded-2xl border ${
-                    darkMode
-                      ? "border-[#302a23] hover:border-[#59492f]"
-                      : "border-[#eee8dc] hover:border-[#dfc68e]"
-                  }`}
-                >
-                  <div
-                    className={`relative h-48 overflow-hidden ${
-                      darkMode
-                        ? "bg-[#211d18]"
-                        : "bg-[#faf8f3]"
-                    }`}
-                  >
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
+            <div className="relative hidden h-[300px] lg:block">
+              <img
+                src="https://images.unsplash.com/photo-1607082349566-187342175e2f?auto=format&fit=crop&w=1000&q=80"
+                alt="PrimeCart shopping"
+                className="h-full w-full object-cover"
+              />
 
-                    <button
-                      type="button"
-                      onClick={(e) => e.preventDefault()}
-                      className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md ${
-                        darkMode
-                          ? "bg-black/50 text-white"
-                          : "bg-white/85 text-gray-600"
-                      }`}
-                    >
-                      <Heart size={16} />
-                    </button>
-                  </div>
-
-                  <div className="p-4">
-                    <p
-                      className={`text-[11px] font-medium ${
-                        darkMode
-                          ? "text-[#c49635]"
-                          : "text-[#ad7d20]"
-                      }`}
-                    >
-                      {product.category}
-                    </p>
-
-                    <h3 className="mt-1 line-clamp-1 text-sm font-semibold">
-                      {product.name}
-                    </h3>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="font-bold">
-                        {product.price}
-                      </p>
-
-                      <div className="flex items-center gap-1 text-xs">
-                        <Star
-                          size={13}
-                          fill="currentColor"
-                          className="text-[#c49635]"
-                        />
-                        {product.rating}
-                      </div>
-                    </div>
-
-                    <p
-                      className={`mt-2 text-[11px] ${
-                        darkMode
-                          ? "text-gray-600"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {product.sold}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#f1e4c5] to-transparent dark:from-[#201c16]" />
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Bottom trust section */}
-          <section
-            className={`mt-6 grid gap-4 sm:grid-cols-3`}
+        {/* ================= FOOTER ================= */}
+        <footer className="mt-12">
+          <div
+            className={`grid gap-8 border-t py-10 sm:grid-cols-2 lg:grid-cols-4 ${
+              darkMode
+                ? "border-[#2b2822]"
+                : "border-[#e4ded4]"
+            }`}
           >
-            <TrustCard
-              icon={<Truck size={20} />}
-              title="Fast delivery"
-              text="Quick and reliable delivery"
-              darkMode={darkMode}
-            />
+            <div>
+              <img
+                src="/logo.png"
+                alt="PrimeCart"
+                className={`h-10 w-auto ${
+                  darkMode ? "brightness-0 invert" : ""
+                }`}
+              />
 
-            <TrustCard
-              icon={<ShieldCheck size={20} />}
-              title="Secure shopping"
-              text="Your information stays protected"
-              darkMode={darkMode}
-            />
-
-            <TrustCard
-              icon={<Headphones size={20} />}
-              title="24/7 support"
-              text="We're here whenever you need us"
-              darkMode={darkMode}
-            />
-          </section>
-
-          {/* Footer */}
-          <footer className="pb-4 pt-10">
-            <div
-              className={`flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs sm:flex-row ${
-                darkMode
-                  ? "border-[#302a23] text-gray-600"
-                  : "border-[#e9e3d8] text-gray-400"
-              }`}
-            >
-              <p>
-                © 2026 PrimeCart. All rights reserved.
+              <p
+                className={`mt-4 max-w-xs text-xs leading-6 ${
+                  darkMode
+                    ? "text-gray-500"
+                    : "text-gray-500"
+                }`}
+              >
+                Your trusted destination for quality products,
+                great deals and a smooth shopping experience.
               </p>
-
-              <div className="flex gap-5">
-                <Link
-                  href="/privacy"
-                  className="hover:text-[#b88925]"
-                >
-                  Privacy
-                </Link>
-
-                <Link
-                  href="/terms"
-                  className="hover:text-[#b88925]"
-                >
-                  Terms
-                </Link>
-
-                <Link
-                  href="/help"
-                  className="hover:text-[#b88925]"
-                >
-                  Help
-                </Link>
-              </div>
             </div>
-          </footer>
-        </div>
+
+            <FooterColumn
+              title="Shop"
+              links={[
+                "All Products",
+                "Electronics",
+                "Fashion",
+                "Beauty",
+              ]}
+              darkMode={darkMode}
+            />
+
+            <FooterColumn
+              title="Customer Care"
+              links={[
+                "My Orders",
+                "Returns",
+                "Help Center",
+                "Contact Us",
+              ]}
+              darkMode={darkMode}
+            />
+
+            <FooterColumn
+              title="Account"
+              links={[
+                "My Profile",
+                "Wishlist",
+                "Shopping Cart",
+                "Settings",
+              ]}
+              darkMode={darkMode}
+            />
+          </div>
+
+          <div
+            className={`flex flex-col justify-between gap-3 border-t py-5 text-xs sm:flex-row ${
+              darkMode
+                ? "border-[#2b2822] text-gray-600"
+                : "border-[#e4ded4] text-gray-400"
+            }`}
+          >
+            <p>
+              © 2026 PrimeCart. All rights reserved.
+            </p>
+
+            <div className="flex gap-5">
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
+              <Link href="/help">Help</Link>
+            </div>
+          </div>
+        </footer>
       </div>
     </main>
   );
 }
 
-/* ---------------- Components ---------------- */
+/* ================= COMPONENTS ================= */
 
-function NavItem({
-  href,
-  icon,
-  label,
-  active = false,
-  badge,
+function ProductCard({
+  product,
   darkMode,
+  isWishlisted,
+  onWishlist,
+  onAddToCart,
 }: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  badge?: string;
+  product: (typeof products)[number];
   darkMode: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
-        active
-          ? "bg-[#c49635] text-white shadow-md shadow-[#c49635]/15"
-          : darkMode
-          ? "text-gray-400 hover:bg-[#211d18] hover:text-white"
-          : "text-gray-600 hover:bg-[#faf8f3] hover:text-[#29251f]"
-      }`}
-    >
-      <span
-        className={
-          active
-            ? "text-white"
-            : darkMode
-            ? "text-gray-500 group-hover:text-[#d5a94b]"
-            : "text-gray-400 group-hover:text-[#b88925]"
-        }
-      >
-        {icon}
-      </span>
-
-      <span className="flex-1">{label}</span>
-
-      {badge && (
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-            active
-              ? "bg-white/20 text-white"
-              : darkMode
-              ? "bg-[#2b251d] text-gray-500"
-              : "bg-[#f4eee2] text-gray-500"
-          }`}
-        >
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  change,
-  description,
-  darkMode,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  change: string;
-  description: string;
-  darkMode: boolean;
+  isWishlisted: boolean;
+  onWishlist: () => void;
+  onAddToCart: () => void;
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-5 ${
+      className={`group overflow-hidden rounded-2xl border transition ${
         darkMode
-          ? "border-[#302a23] bg-[#171512]"
-          : "border-[#e9e3d8] bg-white"
+          ? "border-[#2e2b25] bg-[#151411] hover:border-[#5c4b2d]"
+          : "border-[#e5dfd6] bg-white hover:border-[#d6bb7a] hover:shadow-lg"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-            darkMode
-              ? "bg-[#292219] text-[#d5a94b]"
-              : "bg-[#fbf1dc] text-[#ad7d20]"
-          }`}
-        >
-          {icon}
-        </div>
+      {/* Image */}
+      <div
+        className={`relative aspect-square overflow-hidden ${
+          darkMode
+            ? "bg-[#211f1a]"
+            : "bg-[#f8f6f1]"
+        }`}
+      >
+        <Link href={`/products/${product.id}`}>
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        </Link>
 
-        <span
-          className={`text-[11px] font-semibold ${
-            change === "Active"
-              ? "text-[#ad7d20]"
-              : "text-green-600"
+        {/* Badge */}
+        <span className="absolute left-2 top-2 rounded-md bg-[#c49635] px-2 py-1 text-[9px] font-bold text-white sm:left-3 sm:top-3">
+          {product.badge}
+        </span>
+
+        {/* Wishlist */}
+        <button
+          type="button"
+          onClick={onWishlist}
+          className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full shadow-sm backdrop-blur sm:right-3 sm:top-3 ${
+            darkMode
+              ? "bg-black/50 text-white"
+              : "bg-white/90 text-gray-600"
           }`}
         >
-          {change}
-        </span>
+          <Heart
+            size={16}
+            fill={
+              isWishlisted
+                ? "currentColor"
+                : "none"
+            }
+            className={
+              isWishlisted
+                ? "text-[#c49635]"
+                : ""
+            }
+          />
+        </button>
       </div>
 
-      <p
-        className={`mt-5 text-xs font-medium ${
-          darkMode ? "text-gray-500" : "text-gray-500"
-        }`}
-      >
-        {label}
-      </p>
+      {/* Details */}
+      <div className="p-3 sm:p-4">
+        <p
+          className={`text-[10px] font-semibold uppercase tracking-wide ${
+            darkMode
+              ? "text-[#d5a94b]"
+              : "text-[#ad7d20]"
+          }`}
+        >
+          {product.category}
+        </p>
 
-      <p className="mt-1 text-2xl font-bold tracking-tight">
-        {value}
-      </p>
+        <Link href={`/products/${product.id}`}>
+          <h3 className="mt-1 line-clamp-2 min-h-[38px] text-xs font-semibold leading-5 sm:text-sm">
+            {product.name}
+          </h3>
+        </Link>
 
-      <p
-        className={`mt-1 text-[11px] ${
-          darkMode ? "text-gray-600" : "text-gray-400"
-        }`}
-      >
-        {description}
-      </p>
+        {/* Rating */}
+        <div className="mt-2 flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 rounded bg-green-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {product.rating}
+            <Star
+              size={9}
+              fill="currentColor"
+            />
+          </span>
+
+          <span
+            className={`text-[10px] ${
+              darkMode
+                ? "text-gray-600"
+                : "text-gray-400"
+            }`}
+          >
+            ({product.reviews.toLocaleString()})
+          </span>
+        </div>
+
+        {/* Price */}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-base font-bold sm:text-lg">
+            ₹{product.price.toLocaleString("en-IN")}
+          </span>
+
+          <span
+            className={`text-[10px] line-through ${
+              darkMode
+                ? "text-gray-600"
+                : "text-gray-400"
+            }`}
+          >
+            ₹{product.oldPrice.toLocaleString("en-IN")}
+          </span>
+
+          <span className="text-[10px] font-bold text-green-600">
+            {product.discount}
+          </span>
+        </div>
+
+        {/* Cart */}
+        <button
+          type="button"
+          onClick={onAddToCart}
+          className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#c49635] text-xs font-bold text-white transition hover:bg-[#ae8128]"
+        >
+          <ShoppingCart size={14} />
+          Add to Cart
+        </button>
+      </div>
     </div>
   );
 }
 
-function QuickAction({
-  href,
-  icon,
+function SectionHeading({
   title,
-  text,
+  subtitle,
+  link,
   darkMode,
+  deal = false,
 }: {
-  href: string;
-  icon: React.ReactNode;
   title: string;
-  text: string;
+  subtitle: string;
+  link: string;
   darkMode: boolean;
+  deal?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className={`rounded-2xl border p-4 transition ${
-        darkMode
-          ? "border-[#302a23] hover:border-[#59492f] hover:bg-[#211d18]"
-          : "border-[#eee8dc] hover:border-[#dfc68e] hover:bg-[#fffaf0]"
-      }`}
-    >
-      <div
-        className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
-          darkMode
-            ? "bg-[#292219] text-[#d5a94b]"
-            : "bg-[#fbf1dc] text-[#ad7d20]"
-        }`}
-      >
-        {icon}
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2">
+          {deal && (
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#c49635] text-white">
+              <Zap size={14} />
+            </div>
+          )}
+
+          <h2 className="text-xl font-bold sm:text-2xl">
+            {title}
+          </h2>
+        </div>
+
+        <p
+          className={`mt-1 text-xs ${
+            darkMode
+              ? "text-gray-500"
+              : "text-gray-500"
+          }`}
+        >
+          {subtitle}
+        </p>
       </div>
 
-      <p className="text-sm font-semibold">{title}</p>
-
-      <p
-        className={`mt-1 text-[10px] ${
-          darkMode ? "text-gray-600" : "text-gray-400"
-        }`}
+      <Link
+        href={link}
+        className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#ad7d20]"
       >
-        {text}
-      </p>
-    </Link>
+        View all
+        <ChevronRight size={14} />
+      </Link>
+    </div>
   );
 }
 
-function StatusBadge({
-  status,
-  darkMode,
-}: {
-  status: Order["status"];
-  darkMode: boolean;
-}) {
-  if (status === "Delivered") {
-    return (
-      <span
-        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-          darkMode
-            ? "bg-green-950/30 text-green-400"
-            : "bg-green-50 text-green-600"
-        }`}
-      >
-        <CheckCircle2 size={11} />
-        Delivered
-      </span>
-    );
-  }
-
-  if (status === "Cancelled") {
-    return (
-      <span
-        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-          darkMode
-            ? "bg-red-950/30 text-red-400"
-            : "bg-red-50 text-red-600"
-        }`}
-      >
-        <XCircle size={11} />
-        Cancelled
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
-        darkMode
-          ? "bg-[#292219] text-[#d5a94b]"
-          : "bg-[#fbf1dc] text-[#ad7d20]"
-      }`}
-    >
-      <Clock3 size={11} />
-      Processing
-    </span>
-  );
-}
-
-function TrustCard({
+function Service({
   icon,
   title,
   text,
@@ -1431,32 +1369,93 @@ function TrustCard({
 }) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-2xl border p-4 ${
+      className={`flex items-center gap-3 rounded-xl border p-3 sm:p-4 ${
         darkMode
-          ? "border-[#302a23] bg-[#171512]"
-          : "border-[#e9e3d8] bg-white"
+          ? "border-[#2e2b25] bg-[#151411]"
+          : "border-[#e6e0d7] bg-white"
       }`}
     >
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
           darkMode
-            ? "bg-[#292219] text-[#d5a94b]"
+            ? "bg-[#292319] text-[#d5a94b]"
             : "bg-[#fbf1dc] text-[#ad7d20]"
         }`}
       >
         {icon}
       </div>
 
-      <div>
-        <p className="text-sm font-semibold">{title}</p>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold">
+          {title}
+        </p>
 
         <p
-          className={`mt-0.5 text-[11px] ${
-            darkMode ? "text-gray-600" : "text-gray-400"
+          className={`mt-0.5 truncate text-[10px] ${
+            darkMode
+              ? "text-gray-600"
+              : "text-gray-400"
           }`}
         >
           {text}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function MobileNav({
+  href,
+  icon,
+  label,
+  onClick,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5"
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+  darkMode,
+}: {
+  title: string;
+  links: string[];
+  darkMode: boolean;
+}) {
+  return (
+    <div>
+      <h3 className="text-sm font-bold">{title}</h3>
+
+      <div
+        className={`mt-4 space-y-3 text-xs ${
+          darkMode
+            ? "text-gray-500"
+            : "text-gray-500"
+        }`}
+      >
+        {links.map((link) => (
+          <Link
+            key={link}
+            href="/products"
+            className="block transition hover:text-[#b27f1d]"
+          >
+            {link}
+          </Link>
+        ))}
       </div>
     </div>
   );
