@@ -12,7 +12,7 @@ import {
   Mail,
   Lock,
   UserPlus,
-  Chrome,
+
   CheckCircle2,
   ShieldCheck,
 } from "lucide-react";
