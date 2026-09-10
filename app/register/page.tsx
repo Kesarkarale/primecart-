@@ -20,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
+  const supabase = createClient();
   
   const [darkMode, setDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
