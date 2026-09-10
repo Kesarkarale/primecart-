@@ -10,6 +10,7 @@ import {
   Sun,
   User,
   Mail,
+  Chrome,
   Lock,
   UserPlus,
 
