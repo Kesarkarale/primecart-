@@ -57,6 +57,10 @@ type CartItem = {
   stock: number;
 };
 
+/* =========================================================
+   PRODUCTS
+========================================================= */
+
 const products: Product[] = [
   {
     id: "1",
@@ -371,7 +375,167 @@ const products: Product[] = [
       ["Warranty", "2 Years"],
     ],
   },
+
+  {
+    id: "9",
+    name: "Apple Style Wireless Earbuds Pro",
+    brand: "PrimeAudio",
+    category: "Electronics",
+    rating: 4.5,
+    reviews: 764,
+    price: 2999,
+    originalPrice: 4999,
+    stock: 35,
+    delivery: "2 - 4 Days",
+    description:
+      "Premium true wireless earbuds with a compact charging case, immersive audio and comfortable everyday fit.",
+    images: [
+      "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1608156639585-b3a032ef9689?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1629367494173-c78a56567877?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "True wireless stereo sound",
+      "Clear calling microphone",
+      "Compact charging case",
+      "Touch controls",
+      "Comfortable in-ear fit",
+      "Long-lasting battery",
+    ],
+    specifications: [
+      ["Brand", "PrimeAudio"],
+      ["Type", "True Wireless Earbuds"],
+      ["Connectivity", "Bluetooth 5.3"],
+      ["Battery", "Up to 24 Hours"],
+      ["Charging", "USB Type-C"],
+      ["Microphone", "Dual Mic"],
+      ["Controls", "Touch"],
+      ["Warranty", "1 Year"],
+    ],
+  },
+
+  {
+    id: "10",
+    name: "Minimal Premium Women's Handbag",
+    brand: "UrbanStyle",
+    category: "Fashion",
+    rating: 4.6,
+    reviews: 328,
+    price: 2499,
+    originalPrice: 3999,
+    stock: 22,
+    delivery: "3 - 6 Days",
+    description:
+      "A stylish everyday handbag with a clean minimal design, spacious interior and premium finish.",
+    images: [
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1585488433538-6b9b9c1e0f4d?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Premium finish",
+      "Spacious main compartment",
+      "Multiple storage pockets",
+      "Comfortable handles",
+      "Elegant minimal design",
+      "Suitable for daily use",
+    ],
+    specifications: [
+      ["Brand", "UrbanStyle"],
+      ["Material", "Premium Synthetic Leather"],
+      ["Type", "Handbag"],
+      ["Closure", "Zip"],
+      ["Compartments", "3"],
+      ["Strap", "Adjustable"],
+      ["Occasion", "Casual / Office"],
+      ["Warranty", "6 Months"],
+    ],
+  },
+
+  {
+    id: "11",
+    name: "Modern Home Table Lamp",
+    brand: "HomeGlow",
+    category: "Home & Kitchen",
+    rating: 4.4,
+    reviews: 256,
+    price: 1499,
+    originalPrice: 2499,
+    stock: 28,
+    delivery: "3 - 5 Days",
+    description:
+      "Modern decorative table lamp designed to add a warm and elegant touch to bedrooms, study areas and living spaces.",
+    images: [
+      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Modern decorative design",
+      "Warm ambient lighting",
+      "Compact table-friendly size",
+      "Easy to operate",
+      "Suitable for bedroom and study",
+      "Premium finish",
+    ],
+    specifications: [
+      ["Brand", "HomeGlow"],
+      ["Type", "Table Lamp"],
+      ["Material", "Metal + Fabric"],
+      ["Light Type", "LED"],
+      ["Light Colour", "Warm White"],
+      ["Power", "10W"],
+      ["Switch", "On/Off"],
+      ["Warranty", "1 Year"],
+    ],
+  },
+
+  {
+    id: "12",
+    name: "Premium Fitness Training Bag",
+    brand: "FitPro",
+    category: "Sports",
+    rating: 4.5,
+    reviews: 441,
+    price: 1899,
+    originalPrice: 2999,
+    stock: 32,
+    delivery: "3 - 5 Days",
+    description:
+      "A durable and spacious training bag designed for gym sessions, travel and everyday active lifestyles.",
+    images: [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1580082816697-2f4a8a7b7a8f?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1553744373-4c9f3e2c8b7b?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Large storage capacity",
+      "Durable construction",
+      "Separate shoe compartment",
+      "Comfortable shoulder strap",
+      "Water-resistant outer material",
+      "Suitable for gym and travel",
+    ],
+    specifications: [
+      ["Brand", "FitPro"],
+      ["Type", "Training / Gym Bag"],
+      ["Material", "Polyester"],
+      ["Capacity", "35 Litres"],
+      ["Compartments", "5"],
+      ["Shoulder Strap", "Adjustable"],
+      ["Water Resistance", "Yes"],
+      ["Warranty", "1 Year"],
+    ],
+  },
 ];
+
+/* =========================================================
+   REVIEWS
+========================================================= */
 
 const reviews = [
   {
@@ -397,6 +561,10 @@ const reviews = [
   },
 ];
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
 function formatPrice(price: number) {
   return new Intl.NumberFormat("en-IN").format(price);
 }
@@ -404,6 +572,10 @@ function formatPrice(price: number) {
 function getDiscount(price: number, originalPrice: number) {
   return Math.round(((originalPrice - price) / originalPrice) * 100);
 }
+
+/* =========================================================
+   PAGE
+========================================================= */
 
 export default function ProductPage() {
   const params = useParams();
@@ -436,6 +608,10 @@ export default function ProductPage() {
     ? getDiscount(product.price, product.originalPrice)
     : 0;
 
+  /* =========================================================
+     LOAD USER / THEME / CART
+  ========================================================= */
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("primecart-theme");
 
@@ -463,7 +639,9 @@ export default function ProductPage() {
     loadUser();
     loadCartCount();
 
-    const handleCartUpdate = () => loadCartCount();
+    const handleCartUpdate = () => {
+      loadCartCount();
+    };
 
     window.addEventListener(
       "primecart-cart-updated",
@@ -476,7 +654,7 @@ export default function ProductPage() {
         handleCartUpdate
       );
     };
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     localStorage.setItem("primecart-theme", theme);
@@ -488,6 +666,10 @@ export default function ProductPage() {
     setDeliveryMessage("");
     setAddedMessage("");
   }, [productId]);
+
+  /* =========================================================
+     CART COUNT
+  ========================================================= */
 
   const loadCartCount = () => {
     try {
@@ -505,6 +687,10 @@ export default function ProductPage() {
       setCartCount(0);
     }
   };
+
+  /* =========================================================
+     ADD TO CART
+  ========================================================= */
 
   const addToCart = () => {
     if (!product) return;
@@ -556,6 +742,10 @@ export default function ProductPage() {
     }
   };
 
+  /* =========================================================
+     BUY NOW
+  ========================================================= */
+
   const buyNow = () => {
     if (!product) return;
 
@@ -590,11 +780,19 @@ export default function ProductPage() {
         JSON.stringify(oldCart)
       );
 
+      window.dispatchEvent(
+        new Event("primecart-cart-updated")
+      );
+
       router.push("/cart");
     } catch {
       alert("Unable to continue.");
     }
   };
+
+  /* =========================================================
+     DELIVERY
+  ========================================================= */
 
   const checkDelivery = () => {
     if (!/^\d{6}$/.test(pincode)) {
@@ -611,11 +809,19 @@ export default function ProductPage() {
     );
   };
 
+  /* =========================================================
+     THEME
+  ========================================================= */
+
   const toggleTheme = () => {
     setTheme((current) =>
       current === "light" ? "dark" : "light"
     );
   };
+
+  /* =========================================================
+     SHARE
+  ========================================================= */
 
   const shareProduct = async () => {
     if (!product) return;
@@ -638,6 +844,10 @@ export default function ProductPage() {
     }
   };
 
+  /* =========================================================
+     PRODUCT NOT FOUND
+  ========================================================= */
+
   if (!product) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#faf8f3] px-6">
@@ -655,15 +865,19 @@ export default function ProductPage() {
           </p>
 
           <Link
-            href="/dashboard"
+            href="/products"
             className="mt-7 inline-flex rounded-xl bg-[#b88a2a] px-6 py-3 text-sm font-bold text-white"
           >
-            Back to Shopping
+            Back to Products
           </Link>
         </div>
       </main>
     );
   }
+
+  /* =========================================================
+     MAIN UI
+  ========================================================= */
 
   return (
     <main
@@ -674,6 +888,7 @@ export default function ProductPage() {
       }
     >
       {/* TOP ANNOUNCEMENT */}
+
       <div className="bg-[#171614] px-4 py-2.5 text-center text-xs font-medium text-white">
         Free shipping on orders above ₹999
         <span className="mx-2 opacity-40">•</span>
@@ -683,6 +898,7 @@ export default function ProductPage() {
       </div>
 
       {/* NAVBAR */}
+
       <nav
         className={
           isDark
@@ -692,6 +908,7 @@ export default function ProductPage() {
       >
         <div className="mx-auto flex h-[76px] max-w-7xl items-center gap-3 px-4 lg:gap-5 lg:px-8">
           {/* MOBILE MENU */}
+
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
             className="rounded-xl p-2 lg:hidden"
@@ -705,6 +922,7 @@ export default function ProductPage() {
           </button>
 
           {/* LOGO */}
+
           <Link href="/dashboard" className="shrink-0">
             <div className="text-[24px] font-black tracking-tight">
               Prime
@@ -713,6 +931,7 @@ export default function ProductPage() {
           </Link>
 
           {/* LOCATION */}
+
           <div className="hidden items-center gap-2 xl:flex">
             <MapPin
               size={18}
@@ -731,6 +950,7 @@ export default function ProductPage() {
           </div>
 
           {/* SEARCH */}
+
           <div className="hidden flex-1 md:block">
             <div
               className={
@@ -752,7 +972,7 @@ export default function ProductPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     router.push(
-                      `/dashboard?search=${encodeURIComponent(
+                      `/products?search=${encodeURIComponent(
                         search
                       )}`
                     );
@@ -765,7 +985,7 @@ export default function ProductPage() {
               <button
                 onClick={() =>
                   router.push(
-                    `/dashboard?search=${encodeURIComponent(
+                    `/products?search=${encodeURIComponent(
                       search
                     )}`
                   )
@@ -778,6 +998,7 @@ export default function ProductPage() {
           </div>
 
           {/* ACCOUNT */}
+
           <Link
             href="/profile"
             className="hidden items-center gap-2 rounded-xl px-2 py-2 md:flex"
@@ -796,17 +1017,20 @@ export default function ProductPage() {
           </Link>
 
           {/* ORDERS */}
+
           <Link
             href="/orders"
             className="hidden items-center gap-2 rounded-xl px-2 py-2 lg:flex"
           >
             <Package size={20} />
+
             <span className="text-sm font-bold">
               Orders
             </span>
           </Link>
 
           {/* WISHLIST */}
+
           <button
             onClick={() => setWishlist(!wishlist)}
             className="relative rounded-xl p-2"
@@ -818,14 +1042,13 @@ export default function ProductPage() {
                 wishlist ? "currentColor" : "none"
               }
               className={
-                wishlist
-                  ? "text-[#b88a2a]"
-                  : ""
+                wishlist ? "text-[#b88a2a]" : ""
               }
             />
           </button>
 
           {/* CART */}
+
           <Link
             href="/cart"
             className="relative rounded-xl p-2"
@@ -840,6 +1063,7 @@ export default function ProductPage() {
           </Link>
 
           {/* THEME */}
+
           <button
             onClick={toggleTheme}
             className={
@@ -854,6 +1078,7 @@ export default function ProductPage() {
         </div>
 
         {/* MOBILE MENU */}
+
         {mobileMenu && (
           <div
             className={
@@ -879,23 +1104,70 @@ export default function ProductPage() {
                 onChange={(e) =>
                   setSearch(e.target.value)
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    router.push(
+                      `/products?search=${encodeURIComponent(
+                        search
+                      )}`
+                    );
+                    setMobileMenu(false);
+                  }
+                }}
                 placeholder="Search products..."
                 className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm outline-none"
               />
             </div>
 
             <div className="grid gap-4 text-sm font-semibold">
-              <Link href="/dashboard">Home</Link>
-              <Link href="/orders">Orders</Link>
-              <Link href="/wishlist">Wishlist</Link>
-              <Link href="/profile">My Account</Link>
-              <Link href="/cart">Cart</Link>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenu(false)}
+              >
+                Home
+              </Link>
+
+              <Link
+                href="/products"
+                onClick={() => setMobileMenu(false)}
+              >
+                Products
+              </Link>
+
+              <Link
+                href="/orders"
+                onClick={() => setMobileMenu(false)}
+              >
+                Orders
+              </Link>
+
+              <Link
+                href="/wishlist"
+                onClick={() => setMobileMenu(false)}
+              >
+                Wishlist
+              </Link>
+
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenu(false)}
+              >
+                My Account
+              </Link>
+
+              <Link
+                href="/cart"
+                onClick={() => setMobileMenu(false)}
+              >
+                Cart
+              </Link>
             </div>
           </div>
         )}
       </nav>
 
       {/* CATEGORY NAV */}
+
       <div
         className={
           isDark
@@ -916,7 +1188,7 @@ export default function ProductPage() {
           ].map((category) => (
             <Link
               key={category}
-              href={`/dashboard?category=${encodeURIComponent(
+              href={`/products?category=${encodeURIComponent(
                 category
               )}`}
               className="whitespace-nowrap transition hover:text-[#b88a2a]"
@@ -928,8 +1200,10 @@ export default function ProductPage() {
       </div>
 
       {/* MAIN */}
+
       <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-9">
         {/* BREADCRUMB */}
+
         <div className="mb-7 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
           <Link
             href="/dashboard"
@@ -944,7 +1218,19 @@ export default function ProductPage() {
           />
 
           <Link
-            href={`/dashboard?category=${encodeURIComponent(
+            href="/products"
+            className="opacity-50 hover:text-[#b88a2a] hover:opacity-100"
+          >
+            Products
+          </Link>
+
+          <ChevronRight
+            size={13}
+            className="opacity-30"
+          />
+
+          <Link
+            href={`/products?category=${encodeURIComponent(
               product.category
             )}`}
             className="opacity-50 hover:text-[#b88a2a] hover:opacity-100"
@@ -963,8 +1249,10 @@ export default function ProductPage() {
         </div>
 
         {/* PRODUCT AREA */}
+
         <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           {/* IMAGE AREA */}
+
           <div>
             <div
               className={
@@ -974,6 +1262,7 @@ export default function ProductPage() {
               }
             >
               {/* SALE BADGE */}
+
               {discount > 0 && (
                 <div className="absolute left-5 top-5 z-10 rounded-full bg-[#b88a2a] px-4 py-2 text-xs font-black text-white">
                   {discount}% OFF
@@ -981,6 +1270,7 @@ export default function ProductPage() {
               )}
 
               {/* SHARE */}
+
               <button
                 onClick={shareProduct}
                 className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white shadow-sm transition hover:scale-105"
@@ -999,6 +1289,7 @@ export default function ProductPage() {
               />
 
               {/* PREVIOUS */}
+
               <button
                 onClick={() =>
                   setSelectedImage(
@@ -1017,6 +1308,7 @@ export default function ProductPage() {
               </button>
 
               {/* NEXT */}
+
               <button
                 onClick={() =>
                   setSelectedImage(
@@ -1037,6 +1329,7 @@ export default function ProductPage() {
             </div>
 
             {/* THUMBNAILS */}
+
             <div className="mt-4 grid grid-cols-4 gap-3">
               {product.images.map(
                 (image, index) => (
@@ -1064,6 +1357,7 @@ export default function ProductPage() {
             </div>
 
             {/* IMAGE BENEFITS */}
+
             <div className="mt-5 grid grid-cols-3 gap-2">
               {[
                 {
@@ -1105,21 +1399,26 @@ export default function ProductPage() {
           </div>
 
           {/* DETAILS */}
+
           <div>
             {/* BRAND */}
+
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[#b88a2a]">
               {product.brand}
             </p>
 
             {/* NAME */}
+
             <h1 className="mt-3 text-3xl font-black leading-[1.12] tracking-tight sm:text-4xl lg:text-[42px]">
               {product.name}
             </h1>
 
             {/* RATING */}
+
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1.5 rounded-lg bg-[#b88a2a] px-3 py-1.5 text-sm font-black text-white">
                 {product.rating}
+
                 <Star
                   size={14}
                   fill="currentColor"
@@ -1145,6 +1444,7 @@ export default function ProductPage() {
             <div className="my-6 h-px bg-current opacity-10" />
 
             {/* PRICE */}
+
             <div>
               <div className="flex flex-wrap items-end gap-3">
                 <span className="text-4xl font-black tracking-tight">
@@ -1169,6 +1469,7 @@ export default function ProductPage() {
             </div>
 
             {/* OFFERS */}
+
             <div
               className={
                 isDark
@@ -1211,6 +1512,7 @@ export default function ProductPage() {
             </div>
 
             {/* DELIVERY */}
+
             <div className="mt-7">
               <div className="mb-3 flex items-center gap-2">
                 <Truck
@@ -1278,6 +1580,7 @@ export default function ProductPage() {
             </div>
 
             {/* QUANTITY */}
+
             <div className="mt-7">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-black">
@@ -1330,6 +1633,7 @@ export default function ProductPage() {
             </div>
 
             {/* ACTION BUTTONS */}
+
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               <button
                 onClick={addToCart}
@@ -1351,7 +1655,32 @@ export default function ProductPage() {
               </button>
             </div>
 
+            {/* WISHLIST */}
+
+            <button
+              onClick={() => setWishlist(!wishlist)}
+              className={
+                wishlist
+                  ? "mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#b88a2a] bg-[#b88a2a]/10 text-sm font-bold text-[#b88a2a]"
+                  : "mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-black/10 text-sm font-bold transition hover:border-[#b88a2a] hover:text-[#b88a2a]"
+              }
+            >
+              <Heart
+                size={18}
+                fill={
+                  wishlist
+                    ? "currentColor"
+                    : "none"
+                }
+              />
+
+              {wishlist
+                ? "Added to Wishlist"
+                : "Add to Wishlist"}
+            </button>
+
             {/* STOCK INFO */}
+
             <div className="mt-5 flex items-center gap-2 text-xs">
               <div className="h-2 w-2 rounded-full bg-green-500" />
 
@@ -1361,6 +1690,7 @@ export default function ProductPage() {
             </div>
 
             {/* QUICK INFO */}
+
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
               <div
                 className={
@@ -1429,6 +1759,7 @@ export default function ProductPage() {
         </div>
 
         {/* HIGHLIGHTS */}
+
         <section
           className={
             isDark
@@ -1471,6 +1802,7 @@ export default function ProductPage() {
         </section>
 
         {/* SPECIFICATIONS + DESCRIPTION */}
+
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <section
             className={
@@ -1544,6 +1876,7 @@ export default function ProductPage() {
         </div>
 
         {/* REVIEWS */}
+
         <section
           className={
             isDark
@@ -1650,19 +1983,28 @@ export default function ProductPage() {
           )}
         </section>
 
-        {/* BACK TO SHOPPING */}
-        <div className="mt-8 flex justify-center">
+        {/* BACK TO PRODUCTS */}
+
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
-            href="/dashboard"
+            href="/products"
             className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-5 py-3 text-sm font-bold transition hover:border-[#b88a2a] hover:text-[#b88a2a]"
           >
             <ArrowLeft size={16} />
+            Back to Products
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#b88a2a] px-5 py-3 text-sm font-bold text-white"
+          >
             Continue Shopping
           </Link>
         </div>
       </div>
 
       {/* FOOTER */}
+
       <footer
         className={
           isDark
@@ -1692,15 +2034,15 @@ export default function ProductPage() {
             </h3>
 
             <div className="mt-4 grid gap-3 text-sm text-white/50">
-              <Link href="/dashboard">
+              <Link href="/products">
                 All Products
               </Link>
 
-              <Link href="/dashboard">
+              <Link href="/products">
                 Deals
               </Link>
 
-              <Link href="/dashboard">
+              <Link href="/products">
                 New Arrivals
               </Link>
 
