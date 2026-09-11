@@ -20,10 +20,14 @@ import {
   User,
   X,
   Zap,
+  RotateCcw,
+  Clock3,
+  Share2,
 } from "lucide-react";
+
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Product = {
@@ -43,6 +47,16 @@ type Product = {
   specifications: [string, string][];
 };
 
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice: number;
+  image: string;
+  quantity: number;
+  stock: number;
+};
+
 const products: Product[] = [
   {
     id: "1",
@@ -58,10 +72,10 @@ const products: Product[] = [
     description:
       "Experience powerful performance, stunning photography and an immersive display with the Samsung Galaxy Smartphone Pro Max. Designed for everyday productivity, entertainment and gaming with premium hardware and modern design.",
     images: [
-      "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=1000&q=85",
+      "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=1200&q=90",
     ],
     highlights: [
       "Premium AMOLED display with vivid colours",
@@ -97,29 +111,29 @@ const products: Product[] = [
     stock: 18,
     delivery: "2 - 4 Days",
     description:
-      "Enjoy immersive music with premium wireless headphones featuring powerful noise cancellation, rich bass and long-lasting battery life. Perfect for travel, work and entertainment.",
+      "Enjoy immersive sound with powerful bass, advanced noise cancellation and long-lasting battery life. Perfect for travel, work, music and entertainment.",
     images: [
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=1000&q=85",
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1200&q=90",
     ],
     highlights: [
       "Advanced active noise cancellation",
-      "Premium deep bass sound",
+      "Premium wireless audio",
       "Up to 30 hours battery life",
       "Fast charging support",
       "Comfortable over-ear design",
-      "Bluetooth wireless connectivity",
+      "Built-in microphone",
     ],
     specifications: [
       ["Brand", "Sony"],
-      ["Type", "Wireless Over-Ear"],
+      ["Type", "Wireless Headphones"],
       ["Connectivity", "Bluetooth"],
-      ["Noise Cancellation", "Active Noise Cancellation"],
       ["Battery", "Up to 30 Hours"],
+      ["Noise Cancellation", "Active ANC"],
       ["Microphone", "Built-in"],
-      ["Charging", "USB-C"],
+      ["Charging", "USB Type-C"],
       ["Warranty", "1 Year"],
     ],
   },
@@ -136,20 +150,20 @@ const products: Product[] = [
     stock: 25,
     delivery: "3 - 6 Days",
     description:
-      "Upgrade your everyday wardrobe with this premium Levis denim jacket. Designed with a timeless fit, durable denim fabric and versatile style that works across seasons.",
+      "A premium denim jacket designed for everyday styling. Comfortable fabric, timeless design and a versatile fit make it perfect for casual outfits.",
     images: [
-      "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1543076447-215ad9ba6923?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1000&q=85",
+      "https://images.unsplash.com/photo-1551537482-f2075a1d41f2?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1543076447-215ad9ba6923?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1495105787522-5334e3ffa0ef?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=1200&q=90",
     ],
     highlights: [
       "Premium denim fabric",
-      "Classic regular fit",
+      "Classic jacket design",
+      "Comfortable regular fit",
       "Durable stitching",
       "Suitable for everyday wear",
-      "Timeless denim design",
-      "Easy to style with casual outfits",
+      "Easy to style",
     ],
     specifications: [
       ["Brand", "Levis"],
@@ -157,6 +171,7 @@ const products: Product[] = [
       ["Fit", "Regular Fit"],
       ["Pattern", "Solid"],
       ["Sleeves", "Full Sleeves"],
+      ["Closure", "Button"],
       ["Wash Care", "Machine Wash"],
       ["Occasion", "Casual"],
     ],
@@ -174,29 +189,186 @@ const products: Product[] = [
     stock: 40,
     delivery: "2 - 5 Days",
     description:
-      "GlowCare Vitamin C Face Serum is designed to support brighter-looking skin and a fresh, healthy appearance. Its lightweight formula is easy to apply and suitable for everyday skincare routines.",
+      "GlowCare Vitamin C Face Serum is designed for a fresh and radiant-looking complexion. Its lightweight formula is easy to apply and suitable for everyday skincare routines.",
     images: [
-      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=85",
-      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1000&q=85",
+      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?auto=format&fit=crop&w=1200&q=90",
     ],
     highlights: [
       "Vitamin C enriched formula",
       "Lightweight texture",
       "Suitable for daily skincare",
-      "Helps support brighter-looking skin",
-      "Easy pump bottle",
-      "Travel-friendly packaging",
+      "Helps improve skin radiance",
+      "Easy-to-use pump bottle",
+      "Suitable for all skin types",
     ],
     specifications: [
       ["Brand", "GlowCare"],
       ["Product Type", "Face Serum"],
       ["Volume", "30 ml"],
       ["Key Ingredient", "Vitamin C"],
-      ["Skin Type", "Normal / Combination"],
-      ["Application", "Face and Neck"],
+      ["Skin Type", "All Skin Types"],
+      ["Texture", "Lightweight"],
+      ["Usage", "Daily"],
       ["Shelf Life", "24 Months"],
+    ],
+  },
+
+  {
+    id: "5",
+    name: "Premium Smart Watch Series 9",
+    brand: "PrimeTech",
+    category: "Electronics",
+    rating: 4.6,
+    reviews: 628,
+    price: 3999,
+    originalPrice: 5999,
+    stock: 20,
+    delivery: "2 - 4 Days",
+    description:
+      "A stylish smart watch with a bright display, fitness tracking, notifications and a modern premium design.",
+    images: [
+      "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1551816230-ef5deaed4a26?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Bright HD display",
+      "Fitness and activity tracking",
+      "Multiple sports modes",
+      "Smart notifications",
+      "Long battery life",
+      "Premium lightweight design",
+    ],
+    specifications: [
+      ["Brand", "PrimeTech"],
+      ["Display", "1.9 inch HD"],
+      ["Connectivity", "Bluetooth"],
+      ["Battery", "Up to 7 Days"],
+      ["Water Resistance", "IP68"],
+      ["Sports Modes", "100+"],
+      ["Strap", "Silicone"],
+      ["Warranty", "1 Year"],
+    ],
+  },
+
+  {
+    id: "6",
+    name: "Premium Ceramic Home Dinner Set",
+    brand: "HomeCraft",
+    category: "Home & Kitchen",
+    rating: 4.7,
+    reviews: 389,
+    price: 2199,
+    originalPrice: 3299,
+    stock: 15,
+    delivery: "4 - 7 Days",
+    description:
+      "Elegant ceramic dinner set designed for modern homes. Durable finish and stylish appearance make it suitable for everyday dining and special occasions.",
+    images: [
+      "https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1578775887804-699de7086ff9?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Premium ceramic material",
+      "Elegant modern design",
+      "Easy to clean",
+      "Durable finish",
+      "Suitable for everyday dining",
+      "Gift-ready design",
+    ],
+    specifications: [
+      ["Brand", "HomeCraft"],
+      ["Material", "Ceramic"],
+      ["Pieces", "18 Pieces"],
+      ["Microwave Safe", "Yes"],
+      ["Dishwasher Safe", "Yes"],
+      ["Colour", "White"],
+      ["Usage", "Dining"],
+      ["Warranty", "6 Months"],
+    ],
+  },
+
+  {
+    id: "7",
+    name: "Premium Running Sports Shoes",
+    brand: "Nike",
+    category: "Sports",
+    rating: 4.7,
+    reviews: 875,
+    price: 4499,
+    originalPrice: 6999,
+    stock: 30,
+    delivery: "3 - 5 Days",
+    description:
+      "Lightweight running shoes designed for comfort, support and everyday active use. Built with breathable materials and cushioned sole technology.",
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Lightweight construction",
+      "Breathable upper material",
+      "Cushioned sole",
+      "Excellent everyday comfort",
+      "Flexible outsole",
+      "Suitable for running and walking",
+    ],
+    specifications: [
+      ["Brand", "Nike"],
+      ["Type", "Running Shoes"],
+      ["Upper", "Mesh"],
+      ["Sole", "Rubber"],
+      ["Closure", "Lace-Up"],
+      ["Use", "Running / Walking"],
+      ["Fit", "Regular"],
+      ["Warranty", "6 Months"],
+    ],
+  },
+
+  {
+    id: "8",
+    name: "Premium Classic Leather Watch",
+    brand: "Fossil",
+    category: "Fashion",
+    rating: 4.6,
+    reviews: 412,
+    price: 6999,
+    originalPrice: 8999,
+    stock: 14,
+    delivery: "3 - 5 Days",
+    description:
+      "A classic leather watch combining elegant styling with a timeless design. Perfect for formal occasions, office wear and everyday outfits.",
+    images: [
+      "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1533139502658-0198f920d8e8?auto=format&fit=crop&w=1200&q=90",
+      "https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=1200&q=90",
+    ],
+    highlights: [
+      "Premium leather strap",
+      "Classic analogue dial",
+      "Scratch-resistant glass",
+      "Elegant formal styling",
+      "Comfortable fit",
+      "Long-lasting design",
+    ],
+    specifications: [
+      ["Brand", "Fossil"],
+      ["Movement", "Quartz"],
+      ["Display", "Analogue"],
+      ["Strap", "Leather"],
+      ["Dial Shape", "Round"],
+      ["Water Resistance", "5 ATM"],
+      ["Glass", "Mineral"],
+      ["Warranty", "2 Years"],
     ],
   },
 ];
@@ -206,19 +378,22 @@ const reviews = [
     name: "Rahul Patil",
     rating: 5,
     date: "2 days ago",
-    text: "Excellent product. Quality is amazing and delivery was very fast.",
+    verified: true,
+    text: "Excellent product. Quality is amazing and the delivery was very fast. Packaging was also really good.",
   },
   {
     name: "Sneha Sharma",
     rating: 5,
     date: "1 week ago",
-    text: "Very premium product. I am happy with the purchase and overall experience.",
+    verified: true,
+    text: "Very premium product. Performance is smooth and the product looks exactly like the pictures.",
   },
   {
     name: "Amit Joshi",
     rating: 4,
     date: "2 weeks ago",
-    text: "Good product for the price. Build quality feels premium.",
+    verified: true,
+    text: "Good product for the price. Build quality feels premium and delivery was on time.",
   },
 ];
 
@@ -226,16 +401,20 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat("en-IN").format(price);
 }
 
-export default function ProductDetailPage() {
+function getDiscount(price: number, originalPrice: number) {
+  return Math.round(((originalPrice - price) / originalPrice) * 100);
+}
+
+export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
 
-  const id = String(params.id);
+  const productId = String(params.id || "");
 
-  const currentProduct = useMemo(
-    () => products.find((item) => item.id === id),
-    [id]
+  const product = useMemo(
+    () => products.find((item) => item.id === productId),
+    [productId]
   );
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -248,6 +427,14 @@ export default function ProductDetailPage() {
   const [cartCount, setCartCount] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showReviews, setShowReviews] = useState(true);
+  const [search, setSearch] = useState("");
+  const [addedMessage, setAddedMessage] = useState("");
+
+  const isDark = theme === "dark";
+
+  const discount = product
+    ? getDiscount(product.price, product.originalPrice)
+    : 0;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("primecart-theme");
@@ -275,6 +462,20 @@ export default function ProductDetailPage() {
 
     loadUser();
     loadCartCount();
+
+    const handleCartUpdate = () => loadCartCount();
+
+    window.addEventListener(
+      "primecart-cart-updated",
+      handleCartUpdate
+    );
+
+    return () => {
+      window.removeEventListener(
+        "primecart-cart-updated",
+        handleCartUpdate
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -285,17 +486,17 @@ export default function ProductDetailPage() {
     setSelectedImage(0);
     setQuantity(1);
     setDeliveryMessage("");
-  }, [id]);
+    setAddedMessage("");
+  }, [productId]);
 
   const loadCartCount = () => {
     try {
-      const cart = JSON.parse(
+      const cart: CartItem[] = JSON.parse(
         localStorage.getItem("primecart-cart") || "[]"
       );
 
       const count = cart.reduce(
-        (total: number, item: { quantity?: number }) =>
-          total + (item.quantity || 1),
+        (total, item) => total + (item.quantity || 1),
         0
       );
 
@@ -305,47 +506,23 @@ export default function ProductDetailPage() {
     }
   };
 
-  if (!currentProduct) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#faf8f3] px-5">
-        <div className="text-center">
-          <h1 className="text-3xl font-black">Product Not Found</h1>
-
-          <p className="mt-3 text-sm text-black/50">
-            The product you are looking for does not exist.
-          </p>
-
-          <Link
-            href="/dashboard"
-            className="mt-6 inline-flex rounded-xl bg-[#b88a2a] px-6 py-3 font-bold text-white"
-          >
-            Back to Shopping
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  const product = currentProduct;
-
-  const discount = Math.round(
-    ((product.originalPrice - product.price) /
-      product.originalPrice) *
-      100
-  );
-
   const addToCart = () => {
+    if (!product) return;
+
     try {
-      const oldCart = JSON.parse(
+      const oldCart: CartItem[] = JSON.parse(
         localStorage.getItem("primecart-cart") || "[]"
       );
 
       const existingIndex = oldCart.findIndex(
-        (item: { id: string }) => item.id === product.id
+        (item) => item.id === product.id
       );
 
       if (existingIndex >= 0) {
-        oldCart[existingIndex].quantity += quantity;
+        oldCart[existingIndex].quantity = Math.min(
+          product.stock,
+          oldCart[existingIndex].quantity + quantity
+        );
       } else {
         oldCart.push({
           id: product.id,
@@ -369,24 +546,33 @@ export default function ProductDetailPage() {
         new Event("primecart-cart-updated")
       );
 
-      alert("Product added to cart!");
+      setAddedMessage("Added to cart");
+
+      setTimeout(() => {
+        setAddedMessage("");
+      }, 2500);
     } catch {
       alert("Unable to add product to cart.");
     }
   };
 
   const buyNow = () => {
+    if (!product) return;
+
     try {
-      const oldCart = JSON.parse(
+      const oldCart: CartItem[] = JSON.parse(
         localStorage.getItem("primecart-cart") || "[]"
       );
 
       const existingIndex = oldCart.findIndex(
-        (item: { id: string }) => item.id === product.id
+        (item) => item.id === product.id
       );
 
       if (existingIndex >= 0) {
-        oldCart[existingIndex].quantity = quantity;
+        oldCart[existingIndex].quantity = Math.min(
+          product.stock,
+          quantity
+        );
       } else {
         oldCart.push({
           id: product.id,
@@ -418,8 +604,10 @@ export default function ProductDetailPage() {
       return;
     }
 
+    if (!product) return;
+
     setDeliveryMessage(
-      `Great! Delivery available to ${pincode}. Estimated delivery in ${product.delivery}.`
+      `Delivery available to ${pincode}. Estimated delivery in ${product.delivery}.`
     );
   };
 
@@ -429,7 +617,53 @@ export default function ProductDetailPage() {
     );
   };
 
-  const isDark = theme === "dark";
+  const shareProduct = async () => {
+    if (!product) return;
+
+    const url = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on PrimeCart`,
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert("Product link copied!");
+      }
+    } catch {
+      // User cancelled share.
+    }
+  };
+
+  if (!product) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#faf8f3] px-6">
+        <div className="text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#b88a2a]/10 text-3xl">
+            🛍️
+          </div>
+
+          <h1 className="text-3xl font-black text-[#171614]">
+            Product Not Found
+          </h1>
+
+          <p className="mt-3 text-sm text-black/50">
+            The product you are looking for is unavailable.
+          </p>
+
+          <Link
+            href="/dashboard"
+            className="mt-7 inline-flex rounded-xl bg-[#b88a2a] px-6 py-3 text-sm font-bold text-white"
+          >
+            Back to Shopping
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -439,18 +673,16 @@ export default function ProductDetailPage() {
           : "min-h-screen bg-[#faf8f3] text-[#171614]"
       }
     >
-      {/* Announcement */}
-      <div
-        className={
-          isDark
-            ? "border-b border-white/10 bg-[#191816] px-4 py-2 text-center text-xs text-white/70"
-            : "bg-[#171614] px-4 py-2 text-center text-xs text-white"
-        }
-      >
-        Free shipping on orders above ₹999 • Easy returns within 7 days
+      {/* TOP ANNOUNCEMENT */}
+      <div className="bg-[#171614] px-4 py-2.5 text-center text-xs font-medium text-white">
+        Free shipping on orders above ₹999
+        <span className="mx-2 opacity-40">•</span>
+        Easy returns within 7 days
+        <span className="mx-2 opacity-40">•</span>
+        Secure payments
       </div>
 
-      {/* Navbar */}
+      {/* NAVBAR */}
       <nav
         className={
           isDark
@@ -458,114 +690,197 @@ export default function ProductDetailPage() {
             : "sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur-xl"
         }
       >
-        <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 lg:gap-6 lg:px-8">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center gap-3 px-4 lg:gap-5 lg:px-8">
+          {/* MOBILE MENU */}
           <button
             onClick={() => setMobileMenu(!mobileMenu)}
             className="rounded-xl p-2 lg:hidden"
+            aria-label="Menu"
           >
-            {mobileMenu ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenu ? (
+              <X size={22} />
+            ) : (
+              <Menu size={22} />
+            )}
           </button>
 
-          <Link
-            href="/dashboard"
-            className="shrink-0 text-2xl font-black"
-          >
-            Prime<span className="text-[#b88a2a]">Cart</span>
+          {/* LOGO */}
+          <Link href="/dashboard" className="shrink-0">
+            <div className="text-[24px] font-black tracking-tight">
+              Prime
+              <span className="text-[#b88a2a]">Cart</span>
+            </div>
           </Link>
 
+          {/* LOCATION */}
+          <div className="hidden items-center gap-2 xl:flex">
+            <MapPin
+              size={18}
+              className="text-[#b88a2a]"
+            />
+
+            <div>
+              <p className="text-[9px] uppercase tracking-wider opacity-45">
+                Deliver to
+              </p>
+
+              <p className="text-xs font-bold">
+                India
+              </p>
+            </div>
+          </div>
+
+          {/* SEARCH */}
           <div className="hidden flex-1 md:block">
             <div
               className={
                 isDark
-                  ? "flex h-11 items-center rounded-xl border border-white/10 bg-white/5"
-                  : "flex h-11 items-center rounded-xl border border-black/10 bg-[#f7f5ef]"
+                  ? "flex h-11 items-center overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                  : "flex h-11 items-center overflow-hidden rounded-xl border border-black/10 bg-[#f7f5ef]"
               }
             >
               <Search
+                size={18}
                 className="ml-4 opacity-40"
-                size={19}
               />
 
               <input
-                placeholder="Search for products, brands and more"
-                className="h-full flex-1 bg-transparent px-3 text-sm outline-none"
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    router.push(
+                      `/dashboard?search=${encodeURIComponent(
+                        search
+                      )}`
+                    );
+                  }
+                }}
+                placeholder="Search products, brands and more"
+                className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
               />
 
-              <button className="mr-1 rounded-lg bg-[#b88a2a] px-5 py-2 text-sm font-semibold text-white">
+              <button
+                onClick={() =>
+                  router.push(
+                    `/dashboard?search=${encodeURIComponent(
+                      search
+                    )}`
+                  )
+                }
+                className="mr-1 rounded-lg bg-[#b88a2a] px-5 py-2 text-sm font-bold text-white"
+              >
                 Search
               </button>
             </div>
           </div>
 
+          {/* ACCOUNT */}
           <Link
             href="/profile"
-            className="hidden items-center gap-2 md:flex"
+            className="hidden items-center gap-2 rounded-xl px-2 py-2 md:flex"
           >
             <User size={20} />
 
             <div className="hidden xl:block">
-              <p className="text-[10px] opacity-50">Hello,</p>
-              <p className="max-w-[100px] truncate text-sm font-semibold">
+              <p className="text-[9px] opacity-45">
+                Hello,
+              </p>
+
+              <p className="max-w-[100px] truncate text-sm font-bold">
                 {userName}
               </p>
             </div>
           </Link>
 
+          {/* ORDERS */}
           <Link
             href="/orders"
-            className="hidden items-center gap-2 lg:flex"
+            className="hidden items-center gap-2 rounded-xl px-2 py-2 lg:flex"
           >
             <Package size={20} />
-            <span className="text-sm font-semibold">
+            <span className="text-sm font-bold">
               Orders
             </span>
           </Link>
 
+          {/* WISHLIST */}
           <button
             onClick={() => setWishlist(!wishlist)}
-            className="rounded-xl p-2"
+            className="relative rounded-xl p-2"
+            aria-label="Wishlist"
           >
             <Heart
               size={22}
-              fill={wishlist ? "currentColor" : "none"}
+              fill={
+                wishlist ? "currentColor" : "none"
+              }
               className={
-                wishlist ? "text-[#b88a2a]" : ""
+                wishlist
+                  ? "text-[#b88a2a]"
+                  : ""
               }
             />
           </button>
 
-          <Link href="/cart" className="relative rounded-xl p-2">
+          {/* CART */}
+          <Link
+            href="/cart"
+            className="relative rounded-xl p-2"
+          >
             <ShoppingCart size={23} />
 
             {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b88a2a] px-1 text-[10px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b88a2a] px-1 text-[10px] font-black text-white">
                 {cartCount}
               </span>
             )}
           </Link>
 
+          {/* THEME */}
           <button
             onClick={toggleTheme}
-            className="rounded-xl border border-black/10 px-3 py-2 text-xs dark:border-white/10"
+            className={
+              isDark
+                ? "rounded-xl border border-white/10 px-3 py-2 text-xs"
+                : "rounded-xl border border-black/10 px-3 py-2 text-xs"
+            }
+            aria-label="Toggle theme"
           >
             {isDark ? "☀️" : "🌙"}
           </button>
         </div>
 
+        {/* MOBILE MENU */}
         {mobileMenu && (
           <div
             className={
               isDark
-                ? "border-t border-white/10 p-5"
-                : "border-t border-black/5 bg-white p-5"
+                ? "border-t border-white/10 bg-[#11100e] px-5 py-5"
+                : "border-t border-black/5 bg-white px-5 py-5"
             }
           >
-            <div className="mb-5 flex items-center gap-3 rounded-xl border border-black/10 px-3">
-              <Search size={18} />
+            <div
+              className={
+                isDark
+                  ? "mb-5 flex overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                  : "mb-5 flex overflow-hidden rounded-xl border border-black/10 bg-[#f7f5ef]"
+              }
+            >
+              <Search
+                size={18}
+                className="ml-3 mt-3 opacity-40"
+              />
 
               <input
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
                 placeholder="Search products..."
-                className="h-11 flex-1 bg-transparent outline-none"
+                className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm outline-none"
               />
             </div>
 
@@ -580,7 +895,7 @@ export default function ProductDetailPage() {
         )}
       </nav>
 
-      {/* Categories */}
+      {/* CATEGORY NAV */}
       <div
         className={
           isDark
@@ -588,7 +903,7 @@ export default function ProductDetailPage() {
             : "border-b border-black/5 bg-white"
         }
       >
-        <div className="mx-auto flex max-w-7xl gap-7 overflow-x-auto px-4 py-3 text-sm lg:px-8">
+        <div className="mx-auto flex max-w-7xl gap-7 overflow-x-auto px-4 py-3 text-sm font-medium lg:px-8">
           {[
             "Electronics",
             "Fashion",
@@ -601,8 +916,10 @@ export default function ProductDetailPage() {
           ].map((category) => (
             <Link
               key={category}
-              href="/dashboard"
-              className="whitespace-nowrap hover:text-[#b88a2a]"
+              href={`/dashboard?category=${encodeURIComponent(
+                category
+              )}`}
+              className="whitespace-nowrap transition hover:text-[#b88a2a]"
             >
               {category}
             </Link>
@@ -610,54 +927,78 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Main */}
-      <div className="mx-auto max-w-7xl px-4 py-7 lg:px-8 lg:py-10">
-        {/* Breadcrumb */}
-        <div className="mb-7 flex items-center gap-2 overflow-x-auto text-xs opacity-50">
-          <Link href="/dashboard">Home</Link>
-          <ChevronRight size={13} />
+      {/* MAIN */}
+      <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-9">
+        {/* BREADCRUMB */}
+        <div className="mb-7 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
+          <Link
+            href="/dashboard"
+            className="opacity-50 hover:text-[#b88a2a] hover:opacity-100"
+          >
+            Home
+          </Link>
 
-          <span>{product.category}</span>
+          <ChevronRight
+            size={13}
+            className="opacity-30"
+          />
 
-          <ChevronRight size={13} />
+          <Link
+            href={`/dashboard?category=${encodeURIComponent(
+              product.category
+            )}`}
+            className="opacity-50 hover:text-[#b88a2a] hover:opacity-100"
+          >
+            {product.category}
+          </Link>
 
-          <span className="whitespace-nowrap">
+          <ChevronRight
+            size={13}
+            className="opacity-30"
+          />
+
+          <span className="max-w-[250px] truncate font-medium opacity-80">
             {product.name}
           </span>
         </div>
 
-        {/* Product section */}
-        <div className="grid gap-10 lg:grid-cols-2">
-          {/* Gallery */}
+        {/* PRODUCT AREA */}
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          {/* IMAGE AREA */}
           <div>
             <div
               className={
                 isDark
-                  ? "relative flex min-h-[480px] items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white"
-                  : "relative flex min-h-[480px] items-center justify-center overflow-hidden rounded-3xl border border-black/5 bg-white"
+                  ? "relative flex min-h-[440px] items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-white"
+                  : "relative flex min-h-[440px] items-center justify-center overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-sm"
               }
             >
-              <img
-                src={product.images[selectedImage]}
-                alt={product.name}
-                className="h-[430px] w-full object-contain p-8"
-              />
+              {/* SALE BADGE */}
+              {discount > 0 && (
+                <div className="absolute left-5 top-5 z-10 rounded-full bg-[#b88a2a] px-4 py-2 text-xs font-black text-white">
+                  {discount}% OFF
+                </div>
+              )}
 
+              {/* SHARE */}
               <button
-                onClick={() => setWishlist(!wishlist)}
-                className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md"
+                onClick={shareProduct}
+                className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white shadow-sm transition hover:scale-105"
+                aria-label="Share"
               >
-                <Heart
-                  size={21}
-                  fill={wishlist ? "#b88a2a" : "none"}
-                  className={
-                    wishlist
-                      ? "text-[#b88a2a]"
-                      : "text-black"
-                  }
+                <Share2
+                  size={19}
+                  className="text-black"
                 />
               </button>
 
+              <img
+                src={product.images[selectedImage]}
+                alt={product.name}
+                className="h-[390px] w-full object-contain p-8 transition duration-500 hover:scale-105 sm:h-[460px]"
+              />
+
+              {/* PREVIOUS */}
               <button
                 onClick={() =>
                   setSelectedImage(
@@ -666,7 +1007,8 @@ export default function ProductDetailPage() {
                       : selectedImage - 1
                   )
                 }
-                className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md"
+                className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105"
+                aria-label="Previous image"
               >
                 <ArrowLeft
                   size={18}
@@ -674,6 +1016,7 @@ export default function ProductDetailPage() {
                 />
               </button>
 
+              {/* NEXT */}
               <button
                 onClick={() =>
                   setSelectedImage(
@@ -683,7 +1026,8 @@ export default function ProductDetailPage() {
                       : selectedImage + 1
                   )
                 }
-                className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md"
+                className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg transition hover:scale-105"
+                aria-label="Next image"
               >
                 <ArrowRight
                   size={18}
@@ -692,77 +1036,139 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            {/* Thumbnails */}
+            {/* THUMBNAILS */}
             <div className="mt-4 grid grid-cols-4 gap-3">
-              {product.images.map((image, index) => (
-                <button
-                  key={image}
-                  onClick={() => setSelectedImage(index)}
-                  className={
-                    selectedImage === index
-                      ? "overflow-hidden rounded-2xl border-2 border-[#b88a2a] bg-white"
-                      : "overflow-hidden rounded-2xl border border-black/10 bg-white"
-                  }
-                >
-                  <img
-                    src={image}
-                    alt={`${product.name} ${index + 1}`}
-                    className="h-24 w-full object-contain p-2"
-                  />
-                </button>
-              ))}
+              {product.images.map(
+                (image, index) => (
+                  <button
+                    key={image}
+                    onClick={() =>
+                      setSelectedImage(index)
+                    }
+                    className={
+                      selectedImage === index
+                        ? "overflow-hidden rounded-2xl border-2 border-[#b88a2a] bg-white shadow-sm"
+                        : "overflow-hidden rounded-2xl border border-black/10 bg-white transition hover:border-[#b88a2a]/50"
+                    }
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${
+                        index + 1
+                      }`}
+                      className="h-20 w-full object-contain p-2 sm:h-24"
+                    />
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* IMAGE BENEFITS */}
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                {
+                  icon: Truck,
+                  text: "Free Delivery",
+                },
+                {
+                  icon: ShieldCheck,
+                  text: "Secure Payment",
+                },
+                {
+                  icon: RotateCcw,
+                  text: "Easy Returns",
+                },
+              ].map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <div
+                    key={item.text}
+                    className={
+                      isDark
+                        ? "rounded-2xl border border-white/10 p-3 text-center"
+                        : "rounded-2xl border border-black/5 bg-white p-3 text-center"
+                    }
+                  >
+                    <Icon
+                      size={20}
+                      className="mx-auto mb-2 text-[#b88a2a]"
+                    />
+
+                    <p className="text-[10px] font-bold sm:text-xs">
+                      {item.text}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Details */}
+          {/* DETAILS */}
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#b88a2a]">
+            {/* BRAND */}
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#b88a2a]">
               {product.brand}
             </p>
 
-            <h1 className="mt-2 text-3xl font-black leading-tight lg:text-4xl">
+            {/* NAME */}
+            <h1 className="mt-3 text-3xl font-black leading-[1.12] tracking-tight sm:text-4xl lg:text-[42px]">
               {product.name}
             </h1>
 
-            {/* Rating */}
+            {/* RATING */}
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1 rounded-lg bg-[#b88a2a] px-3 py-1.5 text-sm font-bold text-white">
+              <div className="flex items-center gap-1.5 rounded-lg bg-[#b88a2a] px-3 py-1.5 text-sm font-black text-white">
                 {product.rating}
-                <Star size={14} fill="currentColor" />
+                <Star
+                  size={14}
+                  fill="currentColor"
+                />
               </div>
 
-              <span className="text-sm font-semibold">
-                {product.reviews.toLocaleString("en-IN")} Ratings
-                & Reviews
+              <span className="text-sm font-semibold opacity-70">
+                {product.reviews.toLocaleString(
+                  "en-IN"
+                )}{" "}
+                Ratings & Reviews
               </span>
 
-              <span className="text-xs opacity-50">
-                {product.stock} items left
+              <span className="text-xs opacity-40">
+                •
+              </span>
+
+              <span className="text-xs font-semibold text-green-600">
+                In Stock
               </span>
             </div>
 
             <div className="my-6 h-px bg-current opacity-10" />
 
-            {/* Price */}
-            <div className="flex flex-wrap items-end gap-3">
-              <span className="text-4xl font-black">
-                ₹{formatPrice(product.price)}
-              </span>
+            {/* PRICE */}
+            <div>
+              <div className="flex flex-wrap items-end gap-3">
+                <span className="text-4xl font-black tracking-tight">
+                  ₹{formatPrice(product.price)}
+                </span>
 
-              <span className="text-lg text-gray-400 line-through">
-                ₹{formatPrice(product.originalPrice)}
-              </span>
+                <span className="mb-1 text-lg text-gray-400 line-through">
+                  ₹
+                  {formatPrice(
+                    product.originalPrice
+                  )}
+                </span>
 
-              <span className="font-bold text-green-600">
-                {discount}% OFF
-              </span>
+                <span className="mb-1 rounded-md bg-green-50 px-2 py-1 text-sm font-black text-green-600">
+                  {discount}% OFF
+                </span>
+              </div>
+
+              <p className="mt-2 text-xs opacity-50">
+                Inclusive of all taxes
+              </p>
             </div>
 
-            <p className="mt-2 text-sm opacity-50">
-              Inclusive of all taxes
-            </p>
-
-            {/* Offers */}
+            {/* OFFERS */}
             <div
               className={
                 isDark
@@ -770,67 +1176,87 @@ export default function ProductDetailPage() {
                   : "mt-6 rounded-2xl border border-[#b88a2a]/20 bg-[#fff8e9] p-5"
               }
             >
-              <h3 className="mb-3 font-bold">
-                Special Offers
-              </h3>
+              <div className="mb-4 flex items-center gap-2">
+                <Zap
+                  size={18}
+                  className="text-[#b88a2a]"
+                />
+
+                <h3 className="font-black">
+                  Special Offers
+                </h3>
+              </div>
 
               <div className="space-y-3 text-sm">
-                <div className="flex gap-3">
-                  <Check
-                    size={17}
-                    className="shrink-0 text-green-600"
-                  />
-                  <span>
-                    Extra ₹1,000 off on selected bank cards
-                  </span>
-                </div>
+                {[
+                  "Extra ₹1,000 off on selected bank cards",
+                  "Free delivery on this product",
+                  "7 days easy replacement available",
+                ].map((offer) => (
+                  <div
+                    key={offer}
+                    className="flex gap-3"
+                  >
+                    <Check
+                      className="mt-0.5 shrink-0 text-green-600"
+                      size={17}
+                    />
 
-                <div className="flex gap-3">
-                  <Check
-                    size={17}
-                    className="shrink-0 text-green-600"
-                  />
-                  <span>
-                    Free delivery on this product
-                  </span>
-                </div>
-
-                <div className="flex gap-3">
-                  <Check
-                    size={17}
-                    className="shrink-0 text-green-600"
-                  />
-                  <span>
-                    7 days easy replacement available
-                  </span>
-                </div>
+                    <span className="opacity-80">
+                      {offer}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Delivery */}
-            <div className="mt-6">
-              <div className="mb-3 flex items-center gap-2 font-bold">
-                <MapPin
+            {/* DELIVERY */}
+            <div className="mt-7">
+              <div className="mb-3 flex items-center gap-2">
+                <Truck
                   size={19}
                   className="text-[#b88a2a]"
                 />
-                Check Delivery
+
+                <span className="font-black">
+                  Delivery
+                </span>
+
+                <span className="text-xs opacity-50">
+                  Check availability
+                </span>
               </div>
 
-              <div className="flex max-w-md overflow-hidden rounded-xl border border-black/10 bg-white">
+              <div
+                className={
+                  isDark
+                    ? "flex max-w-md overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                    : "flex max-w-md overflow-hidden rounded-xl border border-black/10 bg-white"
+                }
+              >
+                <MapPin
+                  className="ml-3 mt-3 shrink-0 text-gray-400"
+                  size={18}
+                />
+
                 <input
                   value={pincode}
                   onChange={(e) =>
-                    setPincode(e.target.value)
+                    setPincode(
+                      e.target.value.replace(
+                        /\D/g,
+                        ""
+                      )
+                    )
                   }
-                  maxLength={6}
                   placeholder="Enter pincode"
-                  className="min-w-0 flex-1 px-4 py-3 text-sm text-black outline-none"
+                  maxLength={6}
+                  className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm outline-none"
                 />
 
                 <button
                   onClick={checkDelivery}
-                  className="px-5 text-sm font-bold text-[#b88a2a]"
+                  className="px-5 text-sm font-black text-[#b88a2a]"
                 >
                   Check
                 </button>
@@ -838,8 +1264,10 @@ export default function ProductDetailPage() {
 
               {deliveryMessage && (
                 <p
-                  className={`mt-2 text-sm ${
-                    deliveryMessage.includes("Great")
+                  className={`mt-2 text-xs font-semibold ${
+                    deliveryMessage.includes(
+                      "available"
+                    )
                       ? "text-green-600"
                       : "text-red-500"
                   }`}
@@ -849,155 +1277,206 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Quantity */}
-            <div className="mt-6">
-              <p className="mb-3 text-sm font-bold">
-                Quantity
-              </p>
+            {/* QUANTITY */}
+            <div className="mt-7">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-black">
+                  Quantity
+                </p>
 
-              <div className="flex w-fit items-center overflow-hidden rounded-xl border border-black/10 bg-white">
+                <p className="text-xs opacity-50">
+                  {product.stock} units available
+                </p>
+              </div>
+
+              <div
+                className={
+                  isDark
+                    ? "flex w-fit items-center overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                    : "flex w-fit items-center overflow-hidden rounded-xl border border-black/10 bg-white"
+                }
+              >
                 <button
                   onClick={() =>
                     setQuantity((value) =>
                       Math.max(1, value - 1)
                     )
                   }
-                  className="flex h-11 w-11 items-center justify-center text-black hover:bg-gray-100"
+                  className="flex h-12 w-12 items-center justify-center hover:bg-black/5"
+                  aria-label="Decrease quantity"
                 >
                   <Minus size={17} />
                 </button>
 
-                <span className="flex h-11 w-12 items-center justify-center border-x border-black/10 font-bold text-black">
+                <span className="flex h-12 w-14 items-center justify-center border-x border-black/10 text-sm font-black">
                   {quantity}
                 </span>
 
                 <button
                   onClick={() =>
                     setQuantity((value) =>
-                      Math.min(product.stock, value + 1)
+                      Math.min(
+                        product.stock,
+                        value + 1
+                      )
                     )
                   }
-                  className="flex h-11 w-11 items-center justify-center text-black hover:bg-gray-100"
+                  className="flex h-12 w-12 items-center justify-center hover:bg-black/5"
+                  aria-label="Increase quantity"
                 >
                   <Plus size={17} />
                 </button>
               </div>
             </div>
 
-            {/* Actions */}
+            {/* ACTION BUTTONS */}
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               <button
                 onClick={addToCart}
-                className="flex h-14 items-center justify-center gap-3 rounded-2xl border-2 border-[#b88a2a] font-bold text-[#b88a2a] transition hover:bg-[#b88a2a] hover:text-white"
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl border-2 border-[#b88a2a] font-black text-[#b88a2a] transition hover:bg-[#b88a2a] hover:text-white"
               >
                 <ShoppingCart size={20} />
-                Add to Cart
+
+                {addedMessage
+                  ? addedMessage
+                  : "Add to Cart"}
               </button>
 
               <button
                 onClick={buyNow}
-                className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-[#b88a2a] font-bold text-white shadow-lg transition hover:brightness-95"
+                className="flex h-14 items-center justify-center gap-3 rounded-2xl bg-[#b88a2a] font-black text-white shadow-lg shadow-[#b88a2a]/20 transition hover:brightness-95"
               >
                 <Zap size={20} />
                 Buy Now
               </button>
             </div>
 
-            {/* Service cards */}
-            <div className="mt-7 grid grid-cols-3 gap-2">
+            {/* STOCK INFO */}
+            <div className="mt-5 flex items-center gap-2 text-xs">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+
+              <span className="font-semibold text-green-600">
+                In stock and ready to ship
+              </span>
+            </div>
+
+            {/* QUICK INFO */}
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
               <div
                 className={
                   isDark
-                    ? "rounded-2xl border border-white/10 p-4 text-center"
-                    : "rounded-2xl border border-black/5 bg-white p-4 text-center"
+                    ? "rounded-2xl border border-white/10 p-4"
+                    : "rounded-2xl border border-black/5 bg-white p-4"
                 }
               >
-                <Truck
-                  className="mx-auto mb-2 text-[#b88a2a]"
+                <Clock3
                   size={21}
+                  className="mb-3 text-[#b88a2a]"
                 />
-                <p className="text-xs font-semibold">
-                  Free Delivery
+
+                <p className="text-xs font-black">
+                  Fast Delivery
+                </p>
+
+                <p className="mt-1 text-[11px] opacity-50">
+                  {product.delivery}
                 </p>
               </div>
 
               <div
                 className={
                   isDark
-                    ? "rounded-2xl border border-white/10 p-4 text-center"
-                    : "rounded-2xl border border-black/5 bg-white p-4 text-center"
+                    ? "rounded-2xl border border-white/10 p-4"
+                    : "rounded-2xl border border-black/5 bg-white p-4"
                 }
               >
                 <ShieldCheck
-                  className="mx-auto mb-2 text-[#b88a2a]"
                   size={21}
+                  className="mb-3 text-[#b88a2a]"
                 />
-                <p className="text-xs font-semibold">
+
+                <p className="text-xs font-black">
                   Secure Payment
+                </p>
+
+                <p className="mt-1 text-[11px] opacity-50">
+                  100% secure checkout
                 </p>
               </div>
 
               <div
                 className={
                   isDark
-                    ? "rounded-2xl border border-white/10 p-4 text-center"
-                    : "rounded-2xl border border-black/5 bg-white p-4 text-center"
+                    ? "rounded-2xl border border-white/10 p-4"
+                    : "rounded-2xl border border-black/5 bg-white p-4"
                 }
               >
-                <Package
-                  className="mx-auto mb-2 text-[#b88a2a]"
+                <RotateCcw
                   size={21}
+                  className="mb-3 text-[#b88a2a]"
                 />
-                <p className="text-xs font-semibold">
+
+                <p className="text-xs font-black">
                   Easy Returns
+                </p>
+
+                <p className="mt-1 text-[11px] opacity-50">
+                  7 days replacement
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Highlights */}
+        {/* HIGHLIGHTS */}
         <section
           className={
             isDark
               ? "mt-12 overflow-hidden rounded-3xl border border-white/10 bg-[#181715]"
-              : "mt-12 overflow-hidden rounded-3xl border border-black/5 bg-white"
+              : "mt-12 overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm"
           }
         >
-          <div className="border-b border-current/10 px-6 py-5">
+          <div className="border-b border-current/10 px-6 py-5 lg:px-8">
             <h2 className="text-2xl font-black">
               Product Highlights
             </h2>
+
+            <p className="mt-1 text-xs opacity-50">
+              Everything you need to know about this
+              product
+            </p>
           </div>
 
           <div className="grid gap-5 p-6 sm:grid-cols-2 lg:grid-cols-3 lg:p-8">
-            {product.highlights.map((highlight) => (
-              <div
-                key={highlight}
-                className="flex gap-3"
-              >
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#b88a2a]/15">
-                  <Check
-                    size={14}
-                    className="text-[#b88a2a]"
-                  />
-                </div>
+            {product.highlights.map(
+              (highlight) => (
+                <div
+                  key={highlight}
+                  className="flex gap-3"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#b88a2a]/10">
+                    <Check
+                      size={15}
+                      className="text-[#b88a2a]"
+                    />
+                  </div>
 
-                <p className="text-sm leading-6 opacity-75">
-                  {highlight}
-                </p>
-              </div>
-            ))}
+                  <p className="text-sm leading-6 opacity-75">
+                    {highlight}
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </section>
 
-        {/* Specification / Description */}
+        {/* SPECIFICATIONS + DESCRIPTION */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <section
             className={
               isDark
                 ? "overflow-hidden rounded-3xl border border-white/10 bg-[#181715]"
-                : "overflow-hidden rounded-3xl border border-black/5 bg-white"
+                : "overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm"
             }
           >
             <div className="border-b border-current/10 px-6 py-5">
@@ -1006,29 +1485,31 @@ export default function ProductDetailPage() {
               </h2>
             </div>
 
-            {product.specifications.map(
-              ([key, value]) => (
-                <div
-                  key={key}
-                  className="grid grid-cols-2 border-b border-current/5 px-6 py-4 text-sm last:border-0"
-                >
-                  <span className="opacity-50">
-                    {key}
-                  </span>
+            <div>
+              {product.specifications.map(
+                ([key, value]) => (
+                  <div
+                    key={key}
+                    className="grid grid-cols-2 border-b border-current/5 px-6 py-4 text-sm last:border-0"
+                  >
+                    <span className="opacity-45">
+                      {key}
+                    </span>
 
-                  <span className="font-semibold">
-                    {value}
-                  </span>
-                </div>
-              )
-            )}
+                    <span className="font-semibold">
+                      {value}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
           </section>
 
           <section
             className={
               isDark
                 ? "rounded-3xl border border-white/10 bg-[#181715] p-6"
-                : "rounded-3xl border border-black/5 bg-white p-6"
+                : "rounded-3xl border border-black/5 bg-white p-6 shadow-sm"
             }
           >
             <h2 className="text-2xl font-black">
@@ -1043,18 +1524,18 @@ export default function ProductDetailPage() {
               <div className="flex gap-3">
                 <ShieldCheck
                   className="shrink-0 text-[#b88a2a]"
-                  size={22}
+                  size={23}
                 />
 
                 <div>
-                  <h3 className="font-bold">
+                  <h3 className="font-black">
                     Genuine Product Guarantee
                   </h3>
 
                   <p className="mt-1 text-xs leading-5 opacity-60">
-                    PrimeCart aims to provide quality
-                    products from verified sellers and
-                    brands.
+                    PrimeCart products are sourced from
+                    verified sellers and brands to provide
+                    a safe and reliable shopping experience.
                   </p>
                 </div>
               </div>
@@ -1062,54 +1543,59 @@ export default function ProductDetailPage() {
           </section>
         </div>
 
-        {/* Reviews */}
+        {/* REVIEWS */}
         <section
           className={
             isDark
               ? "mt-6 overflow-hidden rounded-3xl border border-white/10 bg-[#181715]"
-              : "mt-6 overflow-hidden rounded-3xl border border-black/5 bg-white"
+              : "mt-6 overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm"
           }
         >
           <button
             onClick={() =>
               setShowReviews(!showReviews)
             }
-            className="flex w-full items-center justify-between px-6 py-5 text-left"
+            className="flex w-full items-center justify-between px-6 py-5 text-left lg:px-8"
           >
             <div>
               <h2 className="text-2xl font-black">
                 Customer Reviews
               </h2>
 
-              <div className="mt-2 flex items-center gap-2">
-                <span className="font-bold">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="font-black">
                   {product.rating}/5
                 </span>
 
                 <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={15}
-                      fill="#b88a2a"
-                      className="text-[#b88a2a]"
-                    />
-                  ))}
+                  {[1, 2, 3, 4, 5].map(
+                    (star) => (
+                      <Star
+                        key={star}
+                        size={15}
+                        fill="currentColor"
+                        className="text-[#b88a2a]"
+                      />
+                    )
+                  )}
                 </div>
 
                 <span className="text-xs opacity-50">
-                  {product.reviews} reviews
+                  {product.reviews.toLocaleString(
+                    "en-IN"
+                  )}{" "}
+                  reviews
                 </span>
               </div>
             </div>
 
             <ChevronDown
               size={22}
-              className={
+              className={`transition ${
                 showReviews
-                  ? "rotate-180 transition"
-                  : "transition"
-              }
+                  ? "rotate-180"
+                  : ""
+              }`}
             />
           </button>
 
@@ -1118,25 +1604,35 @@ export default function ProductDetailPage() {
               {reviews.map((review) => (
                 <div
                   key={review.name}
-                  className="border-b border-current/5 p-6 last:border-0"
+                  className="border-b border-current/5 p-6 last:border-0 lg:px-8"
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-bold">
+                      <p className="font-black">
                         {review.name}
                       </p>
 
-                      <div className="mt-1 flex gap-1">
-                        {Array.from({
-                          length: review.rating,
-                        }).map((_, index) => (
-                          <Star
-                            key={index}
-                            size={14}
-                            fill="#b88a2a"
-                            className="text-[#b88a2a]"
-                          />
-                        ))}
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex gap-0.5">
+                          {Array.from({
+                            length: review.rating,
+                          }).map(
+                            (_, index) => (
+                              <Star
+                                key={index}
+                                size={14}
+                                fill="currentColor"
+                                className="text-[#b88a2a]"
+                              />
+                            )
+                          )}
+                        </div>
+
+                        {review.verified && (
+                          <span className="text-[10px] font-bold text-green-600">
+                            ✓ Verified Purchase
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1145,7 +1641,7 @@ export default function ProductDetailPage() {
                     </span>
                   </div>
 
-                  <p className="mt-3 text-sm leading-6 opacity-70">
+                  <p className="mt-4 max-w-3xl text-sm leading-7 opacity-70">
                     {review.text}
                   </p>
                 </div>
@@ -1153,9 +1649,20 @@ export default function ProductDetailPage() {
             </div>
           )}
         </section>
+
+        {/* BACK TO SHOPPING */}
+        <div className="mt-8 flex justify-center">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/10 px-5 py-3 text-sm font-bold transition hover:border-[#b88a2a] hover:text-[#b88a2a]"
+          >
+            <ArrowLeft size={16} />
+            Continue Shopping
+          </Link>
+        </div>
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <footer
         className={
           isDark
@@ -1166,7 +1673,8 @@ export default function ProductDetailPage() {
         <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-4 lg:px-8">
           <div>
             <div className="text-2xl font-black">
-              Prime<span className="text-[#b88a2a]">
+              Prime
+              <span className="text-[#b88a2a]">
                 Cart
               </span>
             </div>
@@ -1179,16 +1687,23 @@ export default function ProductDetailPage() {
           </div>
 
           <div>
-            <h3 className="font-bold">Shop</h3>
+            <h3 className="font-bold">
+              Shop
+            </h3>
 
             <div className="mt-4 grid gap-3 text-sm text-white/50">
               <Link href="/dashboard">
                 All Products
               </Link>
-              <Link href="/dashboard">Deals</Link>
+
+              <Link href="/dashboard">
+                Deals
+              </Link>
+
               <Link href="/dashboard">
                 New Arrivals
               </Link>
+
               <Link href="/wishlist">
                 Wishlist
               </Link>
