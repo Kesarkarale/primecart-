@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertCircle,
   ArrowRight,
   CheckCircle2,
   Eye,
@@ -13,7 +14,6 @@ import {
   Mail,
   ShoppingBag,
   User,
-  AlertCircle,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -24,7 +24,8 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] =
+    useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
@@ -45,17 +46,15 @@ export default function RegisterPage() {
     const cleanName = fullName.trim();
     const cleanEmail = email.trim().toLowerCase();
 
-    // -------------------------
-    // VALIDATION
-    // -------------------------
-
     if (!cleanName) {
       setError("Please enter your full name.");
       return;
     }
 
     if (cleanName.length < 2) {
-      setError("Full name must contain at least 2 characters.");
+      setError(
+        "Full name must contain at least 2 characters."
+      );
       return;
     }
 
@@ -65,7 +64,7 @@ export default function RegisterPage() {
     }
 
     if (!password) {
-      setError("Please enter a password.");
+      setError("Please create a password.");
       return;
     }
 
@@ -73,6 +72,11 @@ export default function RegisterPage() {
       setError(
         "Password must be at least 6 characters long."
       );
+      return;
+    }
+
+    if (!confirmPassword) {
+      setError("Please confirm your password.");
       return;
     }
 
@@ -98,13 +102,20 @@ export default function RegisterPage() {
         });
 
       if (signupError) {
-        const message = signupError.message.toLowerCase();
+        const message =
+          signupError.message.toLowerCase();
 
-        if (message.includes("already registered")) {
+        if (
+          message.includes("already registered") ||
+          message.includes("already been registered") ||
+          message.includes("user already exists")
+        ) {
           setError(
-            "An account with this email already exists. Please login."
+            "An account with this email already exists. Please sign in."
           );
         } else if (message.includes("password")) {
+          setError(signupError.message);
+        } else if (message.includes("email")) {
           setError(signupError.message);
         } else {
           setError(signupError.message);
@@ -113,23 +124,39 @@ export default function RegisterPage() {
         return;
       }
 
-      // ----------------------------------
-      // SUCCESS
-      // ----------------------------------
-
-      if (data.user) {
-        setSuccess(
-          "Account created successfully! Please verify your email before logging in."
+      if (!data.user) {
+        setError(
+          "Account could not be created. Please try again."
         );
-
-        // Redirect to login after showing success
-        setTimeout(() => {
-          router.replace("/auth/login");
-        }, 2200);
+        return;
       }
-    } catch {
+
+      /*
+       * Supabase may either:
+       * 1. Return a user without a session when email
+       *    confirmation is enabled.
+       * 2. Return a session when confirmation is disabled.
+       *
+       * In both cases we send the user to login.
+       */
+
+      setSuccess(
+        "Account created successfully! Please verify your email before logging in."
+      );
+
+      setFullName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+
+      setTimeout(() => {
+        router.replace("/auth/login");
+      }, 2500);
+    } catch (err) {
+      console.error("Registration error:", err);
+
       setError(
-        "Something went wrong. Please try again."
+        "Something went wrong while creating your account. Please try again."
       );
     } finally {
       setLoading(false);
@@ -138,23 +165,16 @@ export default function RegisterPage() {
 
   return (
     <main className="register-page">
-      <div className="register-background">
-        <div className="register-glow glow-one" />
-        <div className="register-glow glow-two" />
-      </div>
+      <div className="background-glow glow-one" />
+      <div className="background-glow glow-two" />
 
       <div className="register-wrapper">
-        {/* =====================================
-            LEFT SHOWCASE
-        ====================================== */}
+        {/* LEFT */}
 
         <section className="register-showcase">
           <Link href="/" className="brand">
             <div className="brand-icon">
-              <ShoppingBag
-                size={21}
-                strokeWidth={2.4}
-              />
+              <ShoppingBag size={21} />
             </div>
 
             <span>
@@ -181,12 +201,13 @@ export default function RegisterPage() {
 
             <div className="benefits">
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
 
                 <div>
-                  <strong>Personalized recommendations</strong>
+                  <strong>
+                    Personalized recommendations
+                  </strong>
+
                   <span>
                     Discover products that fit your needs.
                   </span>
@@ -194,12 +215,11 @@ export default function RegisterPage() {
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
 
                 <div>
                   <strong>Exclusive deals</strong>
+
                   <span>
                     Find smart offers and special deals.
                   </span>
@@ -207,12 +227,11 @@ export default function RegisterPage() {
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
 
                 <div>
                   <strong>Earn PrimePoints</strong>
+
                   <span>
                     Get rewarded for your shopping activity.
                   </span>
@@ -221,28 +240,22 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="showcase-bottom">
+          <div className="showcase-footer">
             <span>© 2026 PrimeCart</span>
             <span>Smart shopping platform</span>
           </div>
         </section>
 
-        {/* =====================================
-            REGISTER CARD
-        ====================================== */}
+        {/* RIGHT */}
 
-        <section className="register-card-section">
+        <section className="register-section">
           <div className="register-card">
-
             {/* MOBILE BRAND */}
 
             <div className="mobile-brand">
               <Link href="/" className="brand">
                 <div className="brand-icon">
-                  <ShoppingBag
-                    size={20}
-                    strokeWidth={2.4}
-                  />
+                  <ShoppingBag size={20} />
                 </div>
 
                 <span>
@@ -279,7 +292,6 @@ export default function RegisterPage() {
             {success && (
               <div className="message success-message">
                 <CheckCircle2 size={18} />
-
                 <span>{success}</span>
               </div>
             )}
@@ -313,6 +325,7 @@ export default function RegisterPage() {
                     }
                     autoComplete="name"
                     disabled={loading}
+                    required
                   />
                 </div>
               </div>
@@ -340,6 +353,7 @@ export default function RegisterPage() {
                     }
                     autoComplete="email"
                     disabled={loading}
+                    required
                   />
                 </div>
               </div>
@@ -371,20 +385,16 @@ export default function RegisterPage() {
                     }
                     autoComplete="new-password"
                     disabled={loading}
+                    required
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(!showPassword)
+                      setShowPassword((value) => !value)
                     }
                     disabled={loading}
-                    aria-label={
-                      showPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
                   >
                     {showPassword ? (
                       <EyeOff size={19} />
@@ -426,6 +436,7 @@ export default function RegisterPage() {
                     }
                     autoComplete="new-password"
                     disabled={loading}
+                    required
                   />
 
                   <button
@@ -433,15 +444,10 @@ export default function RegisterPage() {
                     className="password-toggle"
                     onClick={() =>
                       setShowConfirmPassword(
-                        !showConfirmPassword
+                        (value) => !value
                       )
                     }
                     disabled={loading}
-                    aria-label={
-                      showConfirmPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
                   >
                     {showConfirmPassword ? (
                       <EyeOff size={19} />
@@ -454,7 +460,7 @@ export default function RegisterPage() {
 
               {/* TERMS */}
 
-              <div className="terms">
+              <p className="terms">
                 By creating an account, you agree to
                 PrimeCart&apos;s{" "}
                 <Link href="/terms">
@@ -465,13 +471,13 @@ export default function RegisterPage() {
                   Privacy Policy
                 </Link>
                 .
-              </div>
+              </p>
 
-              {/* REGISTER BUTTON */}
+              {/* BUTTON */}
 
               <button
                 type="submit"
-                className="register-button"
+                className="primary-button"
                 disabled={loading}
               >
                 {loading ? (
@@ -491,20 +497,16 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            {/* LOGIN */}
-
             <div className="divider">
               <span>or</span>
             </div>
 
-            <div className="login-text">
+            <div className="account-link">
               Already have an account?{" "}
               <Link href="/auth/login">
                 Sign in
               </Link>
             </div>
-
-            {/* SECURITY */}
 
             <div className="security-note">
               <LockKeyhole size={14} />
@@ -544,34 +546,26 @@ export default function RegisterPage() {
             sans-serif;
         }
 
-        .register-background {
+        .background-glow {
           position: fixed;
-          inset: 0;
-          pointer-events: none;
-          overflow: hidden;
-        }
-
-        .register-glow {
-          position: absolute;
+          width: 350px;
+          height: 350px;
           border-radius: 999px;
-          filter: blur(80px);
-          opacity: 0.42;
+          filter: blur(90px);
+          pointer-events: none;
+          opacity: 0.4;
         }
 
         .glow-one {
-          width: 380px;
-          height: 380px;
           top: -170px;
-          right: -100px;
-          background: rgba(214, 167, 54, 0.17);
+          right: -80px;
+          background: rgba(214, 167, 54, 0.2);
         }
 
         .glow-two {
-          width: 320px;
-          height: 320px;
-          bottom: -160px;
-          left: -120px;
-          background: rgba(214, 167, 54, 0.12);
+          bottom: -170px;
+          left: -100px;
+          background: rgba(214, 167, 54, 0.13);
         }
 
         .register-wrapper {
@@ -579,17 +573,15 @@ export default function RegisterPage() {
           z-index: 1;
           width: min(1180px, calc(100% - 40px));
           min-height: 100vh;
-          margin: 0 auto;
+          margin: auto;
           padding: 32px 0;
           display: grid;
           grid-template-columns: 1fr 0.9fr;
-          align-items: center;
           gap: 70px;
+          align-items: center;
         }
 
-        /* =====================================
-           BRAND
-        ====================================== */
+        /* BRAND */
 
         .brand {
           display: inline-flex;
@@ -619,9 +611,7 @@ export default function RegisterPage() {
             0 10px 25px rgba(198, 150, 36, 0.22);
         }
 
-        /* =====================================
-           LEFT SHOWCASE
-        ====================================== */
+        /* LEFT */
 
         .register-showcase {
           min-height: 680px;
@@ -642,7 +632,7 @@ export default function RegisterPage() {
           gap: 9px;
           padding: 9px 14px;
           border: 1px solid rgba(198, 150, 36, 0.22);
-          background: rgba(255, 255, 255, 0.65);
+          background: rgba(255, 255, 255, 0.7);
           border-radius: 999px;
           color: #7b5c15;
           font-size: 13px;
@@ -700,7 +690,6 @@ export default function RegisterPage() {
           border-radius: 12px;
           background: #f0dfb4;
           color: #866316;
-          font-size: 16px;
           font-weight: 900;
         }
 
@@ -717,7 +706,7 @@ export default function RegisterPage() {
           font-size: 13px;
         }
 
-        .showcase-bottom {
+        .showcase-footer {
           display: flex;
           justify-content: space-between;
           max-width: 570px;
@@ -725,11 +714,9 @@ export default function RegisterPage() {
           font-size: 12px;
         }
 
-        /* =====================================
-           REGISTER CARD
-        ====================================== */
+        /* CARD */
 
-        .register-card-section {
+        .register-section {
           display: flex;
           justify-content: center;
         }
@@ -737,7 +724,7 @@ export default function RegisterPage() {
         .register-card {
           width: min(470px, 100%);
           padding: 40px 42px;
-          background: rgba(255, 255, 255, 0.94);
+          background: rgba(255, 255, 255, 0.96);
           border: 1px solid #ebe5d8;
           border-radius: 28px;
           box-shadow:
@@ -778,9 +765,7 @@ export default function RegisterPage() {
           line-height: 1.6;
         }
 
-        /* =====================================
-           MESSAGES
-        ====================================== */
+        /* MESSAGES */
 
         .message {
           display: flex;
@@ -805,9 +790,7 @@ export default function RegisterPage() {
           border: 1px solid #d6ead1;
         }
 
-        /* =====================================
-           FORM
-        ====================================== */
+        /* FORM */
 
         .register-form {
           display: flex;
@@ -884,12 +867,8 @@ export default function RegisterPage() {
           font-size: 11px;
         }
 
-        /* =====================================
-           TERMS
-        ====================================== */
-
         .terms {
-          margin-top: 1px;
+          margin: 1px 0 0;
           color: #938c81;
           font-size: 11px;
           line-height: 1.6;
@@ -905,11 +884,9 @@ export default function RegisterPage() {
           text-decoration: underline;
         }
 
-        /* =====================================
-           BUTTON
-        ====================================== */
+        /* BUTTON */
 
-        .register-button {
+        .primary-button {
           width: 100%;
           height: 53px;
           border: 0;
@@ -926,20 +903,17 @@ export default function RegisterPage() {
           cursor: pointer;
           box-shadow:
             0 12px 24px rgba(198, 150, 36, 0.2);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            background 0.2s ease;
+          transition: 0.2s ease;
         }
 
-        .register-button:hover:not(:disabled) {
+        .primary-button:hover:not(:disabled) {
           transform: translateY(-1px);
           background: #b8881e;
           box-shadow:
             0 15px 30px rgba(198, 150, 36, 0.25);
         }
 
-        .register-button:disabled {
+        .primary-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
@@ -954,9 +928,7 @@ export default function RegisterPage() {
           }
         }
 
-        /* =====================================
-           LOGIN / SECURITY
-        ====================================== */
+        /* BOTTOM */
 
         .divider {
           display: flex;
@@ -975,19 +947,19 @@ export default function RegisterPage() {
           background: #eee9e0;
         }
 
-        .login-text {
+        .account-link {
           text-align: center;
           color: #817b70;
           font-size: 13px;
         }
 
-        .login-text a {
+        .account-link a {
           color: #a2771d;
           font-weight: 800;
           text-decoration: none;
         }
 
-        .login-text a:hover {
+        .account-link a:hover {
           text-decoration: underline;
         }
 
@@ -1003,9 +975,7 @@ export default function RegisterPage() {
           font-size: 11px;
         }
 
-        /* =====================================
-           TABLET
-        ====================================== */
+        /* TABLET */
 
         @media (max-width: 900px) {
           .register-wrapper {
@@ -1019,7 +989,7 @@ export default function RegisterPage() {
             display: none;
           }
 
-          .register-card-section {
+          .register-section {
             min-height: calc(100vh - 48px);
             align-items: center;
           }
@@ -1035,9 +1005,7 @@ export default function RegisterPage() {
           }
         }
 
-        /* =====================================
-           MOBILE
-        ====================================== */
+        /* MOBILE */
 
         @media (max-width: 520px) {
           .register-wrapper {
@@ -1045,7 +1013,7 @@ export default function RegisterPage() {
             padding: 12px 0;
           }
 
-          .register-card-section {
+          .register-section {
             min-height: calc(100vh - 24px);
           }
 
@@ -1076,7 +1044,7 @@ export default function RegisterPage() {
             height: 50px;
           }
 
-          .register-button {
+          .primary-button {
             height: 52px;
           }
 
