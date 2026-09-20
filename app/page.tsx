@@ -1,1570 +1,1817 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
 import {
   ArrowRight,
-  Check,
+  BadgeCheck,
+  Brain,
   ChevronRight,
-  Heart,
-  Menu,
-  Search,
-  ShoppingBag,
-  ShoppingCart,
-  Sparkles,
-  Star,
-  Sun,
-  Moon,
-  Truck,
-  UserRound,
-  X,
+  Gift,
+  Layers3,
   ShieldCheck,
-  Headphones,
-  RotateCcw,
-  Clock3,
-  Gem,
+  Sparkles,
+  Target,
+  Trophy,
+  Truck,
+  Zap,
 } from "lucide-react";
 
-/* =========================================================
-   CATEGORIES
-========================================================= */
-
 const categories = [
+  { name: "Mobile", icon: "📱" },
+  { name: "Home & Living", icon: "🏠" },
+  { name: "Appliance", icon: "⚡" },
+  { name: "Footwear", icon: "👟" },
+  { name: "Watch", icon: "⌚" },
+  { name: "Bag", icon: "👜" },
+  { name: "Toy & Baby", icon: "🧸" },
+  { name: "Automotive", icon: "🚗" },
+  { name: "Fashion", icon: "👕" },
+  { name: "Gaming", icon: "🎮" },
+];
+
+const features = [
   {
-    name: "Electronics",
-    products: "2500+ Products",
-    image: "/products/electronics.png",
+    icon: Brain,
+    title: "PrimeMatch",
+    text: "Tell us your needs, budget and priorities. PrimeCart helps you discover products that match you.",
+    tag: "Smart Shopping",
   },
   {
-    name: "Fashion",
-    products: "1800+ Products",
-    image: "/products/fashion.png",
+    icon: Target,
+    title: "Budget Builder",
+    text: "Set your budget and shopping goal. Build a useful cart without going over your limit.",
+    tag: "Budget Friendly",
   },
   {
-    name: "Watches",
-    products: "1200+ Products",
-    image: "/products/watch.png",
+    icon: Layers3,
+    title: "Build My Setup",
+    text: "Create complete setups for college, gaming, work, home, fitness and more.",
+    tag: "Complete Kits",
   },
   {
-    name: "Beauty",
-    products: "800+ Products",
-    image: "/products/perfume23.png",
+    icon: Trophy,
+    title: "PrimePoints",
+    text: "Shop, explore and complete challenges to collect points and unlock rewards.",
+    tag: "Rewards",
   },
   {
-    name: "Home & Living",
-    products: "1500+ Products",
-    image: "/products/home.png",
+    icon: Gift,
+    title: "Mystery Deal",
+    text: "Reveal surprise deals selected especially for PrimeCart shoppers.",
+    tag: "Surprise",
   },
   {
-    name: "Gaming",
-    products: "950+ Products",
-    image: "/products/gaming.png",
+    icon: Zap,
+    title: "Flash Deals",
+    text: "Discover limited-time offers before they disappear.",
+    tag: "Limited Time",
   },
 ];
 
-/* =========================================================
-   FEATURED PRODUCTS
-========================================================= */
-
-const products = [
+const steps = [
   {
-    name: "Samsung Smartphone Pro Max",
-    category: "Electronics",
-    price: "₹49,999",
-    oldPrice: "₹59,999",
-    rating: "4.8",
-    reviews: "328",
-    image: "/products/phone.png",
-    badge: "Best Seller",
+    number: "01",
+    title: "Tell us what you need",
+    text: "Choose your goal, category or shopping situation.",
   },
   {
-    name: "Sony Premium Headphones",
-    category: "Electronics",
-    price: "₹8,499",
-    oldPrice: "₹11,999",
-    rating: "4.7",
-    reviews: "214",
-    image: "/products/headphones.png",
-    badge: "Trending",
+    number: "02",
+    title: "Set your budget",
+    text: "Tell PrimeCart how much you want to spend.",
   },
   {
-    name: "Levis Premium Denim Jacket",
-    category: "Fashion",
-    price: "₹3,299",
-    oldPrice: "₹4,999",
-    rating: "4.6",
-    reviews: "156",
-    image: "/products/jacket.png",
-    badge: "New",
-  },
-  {
-    name: "GlowCare Luxury Serum",
-    category: "Beauty",
-    price: "₹1,499",
-    oldPrice: "₹2,199",
-    rating: "4.9",
-    reviews: "492",
-    image: "/products/serum.png",
-    badge: "Top Rated",
+    number: "03",
+    title: "Shop smarter",
+    text: "Get relevant products instead of endless scrolling.",
   },
 ];
-
-/* =========================================================
-   SERVICES
-========================================================= */
-
-const services = [
-  {
-    icon: Truck,
-    title: "Free & Fast Delivery",
-    description: "Free delivery on eligible orders above ₹499.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Secure Payments",
-    description: "Your payments are protected with trusted security.",
-  },
-  {
-    icon: RotateCcw,
-    title: "Easy Returns",
-    description: "Simple and hassle-free returns within 7 days.",
-  },
-  {
-    icon: Headphones,
-    title: "24/7 Customer Support",
-    description: "Our support team is always here to help.",
-  },
-];
-
-/* =========================================================
-   HOME PAGE
-========================================================= */
 
 export default function HomePage() {
-  const [openMenu, setOpenMenu] = useState(false);
-
-  const [isDark, setIsDark] = useState(false);
-
-  const [wishlist, setWishlist] = useState<number[]>([]);
-
-  const [email, setEmail] = useState("");
-
-  /* =======================================================
-     LOAD SAVED THEME
-  ======================================================= */
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("primecart-theme");
-
-    if (savedTheme === "dark") {
-      setIsDark(true);
-    } else {
-      setIsDark(false);
-    }
-  }, []);
-
-  /* =======================================================
-     THEME TOGGLE
-  ======================================================= */
-
-  const toggleTheme = () => {
-    setIsDark((current) => {
-      const nextTheme = !current;
-
-      localStorage.setItem(
-        "primecart-theme",
-        nextTheme ? "dark" : "light"
-      );
-
-      return nextTheme;
-    });
-  };
-
-  /* =======================================================
-     WISHLIST
-  ======================================================= */
-
-  const toggleWishlist = (index: number) => {
-    setWishlist((current) =>
-      current.includes(index)
-        ? current.filter((item) => item !== index)
-        : [...current, index]
-    );
-  };
-
-  /* =======================================================
-     THEME CLASSES
-  ======================================================= */
-
-  const pageBg = isDark
-    ? "bg-[#171512] text-[#f8f5ed]"
-    : "bg-[#fcfbf8] text-[#171717]";
-
-  const navbarBg = isDark
-    ? "bg-[#1d1b17]/95 border-[#3b3629]"
-    : "bg-white/95 border-[#ebe6da]";
-
-  const cardBg = isDark
-    ? "bg-[#211f1a] border-[#39352b]"
-    : "bg-white border-[#e9e4d8]";
-
-  const mutedText = isDark
-    ? "text-[#b9b4a7]"
-    : "text-[#6f6b63]";
-
-  const headingText = isDark
-    ? "text-[#faf7ef]"
-    : "text-[#171717]";
-
-  const goldText = "text-[#c9a227]";
-
-  const goldBg =
-    "bg-[#c9a227] hover:bg-[#b58e1c]";
-
   return (
-    <main
-      className={`min-h-screen overflow-hidden transition-colors duration-300 ${pageBg}`}
-    >
-      {/* =====================================================
-          ANNOUNCEMENT BAR
-      ===================================================== */}
+    <main className="landing-page">
 
-      <div
-        className={
-          isDark
-            ? "bg-[#252117] border-b border-[#403925]"
-            : "bg-[#f5f0e2] border-b border-[#e8dec4]"
-        }
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-9 flex items-center justify-center text-[10px] sm:text-xs tracking-wide">
-          <span className={`${goldText} font-bold mr-2`}>
-            PRIME OFFER
-          </span>
+      {/* ================= NAVBAR ================= */}
 
-          Free shipping on orders above ₹499
+      <header className="navbar">
+        <div className="container nav-inner">
 
-          <span className="mx-2 opacity-40">•</span>
+          <Link href="/" className="logo">
+            <span className="logo-icon">
+              <Sparkles size={20} />
+            </span>
 
-          Easy returns within 7 days
-
-          <span className="hidden sm:inline mx-2 opacity-40">
-            •
-          </span>
-
-          <span className="hidden sm:inline">
-            Premium shopping experience
-          </span>
-        </div>
-      </div>
-
-      {/* =====================================================
-          NAVBAR
-      ===================================================== */}
-
-      <nav
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors duration-300 ${navbarBg}`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[76px] flex items-center justify-between gap-5">
-          {/* LOGO */}
-
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 shrink-0"
-          >
-            <div className="relative w-11 h-11 sm:w-12 sm:h-12">
-              <Image
-                src="/logo.png"
-                alt="PrimeCart Logo"
-                fill
-                priority
-                className="object-contain"
-              />
-            </div>
-
-            <div>
-              <h1
-                className={`text-[21px] sm:text-2xl font-bold tracking-tight ${headingText}`}
-              >
-                Prime
-                <span className={goldText}>Cart</span>
-              </h1>
-
-              <p
-                className={`text-[8px] sm:text-[9px] uppercase tracking-[0.22em] ${mutedText}`}
-              >
-                Premium Shopping
-              </p>
-            </div>
+            <span className="logo-text">
+              Prime<span>Cart</span>
+            </span>
           </Link>
 
-          {/* DESKTOP NAVIGATION */}
+          <nav className="nav-links">
+            <a href="#features">Why PrimeCart</a>
+            <a href="#categories">Categories</a>
+            <a href="#how">How It Works</a>
+          </nav>
 
-          <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
-            <Link
-              href="/"
-              className={`${goldText} relative after:absolute after:left-0 after:-bottom-2 after:w-full after:h-[2px] after:bg-[#c9a227]`}
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/login"
-              className="hover:text-[#c9a227] transition"
-            >
-              Shop
-            </Link>
-
-            <Link
-              href="/login"
-              className="hover:text-[#c9a227] transition"
-            >
-              Categories
-            </Link>
-
-            <Link
-              href="/login"
-              className="hover:text-[#c9a227] transition"
-            >
-              Deals
-            </Link>
-
-            <Link
-              href="/login"
-              className="hover:text-[#c9a227] transition"
-            >
-              Contact
-            </Link>
-          </div>
-
-          {/* RIGHT ACTIONS */}
-
-          <div className="hidden md:flex items-center gap-1">
-            {/* SEARCH */}
-
-            <Link
-              href="/login"
-              aria-label="Search"
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-                isDark
-                  ? "hover:bg-[#302c23]"
-                  : "hover:bg-[#f7f3e8]"
-              }`}
-            >
-              <Search size={18} strokeWidth={1.8} />
-            </Link>
-
-            {/* WISHLIST */}
-
-            <Link
-              href="/login"
-              aria-label="Wishlist"
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-                isDark
-                  ? "hover:bg-[#302c23]"
-                  : "hover:bg-[#f7f3e8]"
-              }`}
-            >
-              <Heart size={18} strokeWidth={1.8} />
-            </Link>
-
-            {/* CART */}
-
-            <Link
-              href="/login"
-              aria-label="Shopping Cart"
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-                isDark
-                  ? "hover:bg-[#302c23]"
-                  : "hover:bg-[#f7f3e8]"
-              }`}
-            >
-              <ShoppingCart size={18} strokeWidth={1.8} />
-            </Link>
-
-            {/* THEME SWITCH */}
-
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className={`ml-1 w-10 h-10 rounded-full flex items-center justify-center transition ${
-                isDark
-                  ? "bg-[#302c23] text-[#e1bf45] hover:bg-[#3a352a]"
-                  : "bg-[#f7f3e8] text-[#9b7713] hover:bg-[#eee5cf]"
-              }`}
-            >
-              {isDark ? (
-                <Sun size={18} />
-              ) : (
-                <Moon size={18} />
-              )}
-            </button>
-
-            <div
-              className={`w-px h-7 mx-3 ${
-                isDark
-                  ? "bg-[#3b362d]"
-                  : "bg-[#e4dfd4]"
-              }`}
-            />
-
-            {/* LOGIN */}
-
-            <Link
-              href="/login"
-              className={`px-5 py-2.5 rounded-full border text-sm font-medium transition ${
-                isDark
-                  ? "border-[#554d3b] hover:border-[#c9a227] hover:text-[#d8b83d]"
-                  : "border-[#d8d3c8] hover:border-[#c9a227] hover:text-[#a37d12]"
-              }`}
-            >
+          <div className="nav-actions">
+            <Link href="/auth/login" className="login-btn">
               Login
             </Link>
 
-            {/* REGISTER */}
-
-            <Link
-              href="/register"
-              className={`ml-2 px-5 py-2.5 rounded-full text-white text-sm font-semibold shadow-sm transition ${goldBg}`}
-            >
-              Register
+            <Link href="/auth/register" className="start-btn">
+              Get Started
+              <ArrowRight size={16} />
             </Link>
           </div>
 
-          {/* MOBILE */}
-
-          <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isDark
-                  ? "bg-[#302c23] text-[#e1bf45]"
-                  : "bg-[#f7f3e8] text-[#9b7713]"
-              }`}
-            >
-              {isDark ? (
-                <Sun size={18} />
-              ) : (
-                <Moon size={18} />
-              )}
-            </button>
-
-            <button
-              onClick={() => setOpenMenu(!openMenu)}
-              aria-label="Open menu"
-              className={`w-10 h-10 rounded-full border flex items-center justify-center ${
-                isDark
-                  ? "border-[#494333]"
-                  : "border-[#ded9cf]"
-              }`}
-            >
-              {openMenu ? (
-                <X size={19} />
-              ) : (
-                <Menu size={19} />
-              )}
-            </button>
-          </div>
         </div>
+      </header>
 
-        {/* ===================================================
-            MOBILE MENU
-        =================================================== */}
+      {/* ================= HERO ================= */}
 
-        {openMenu && (
-          <div
-            className={`md:hidden border-t ${
-              isDark
-                ? "bg-[#1d1b17] border-[#3b3629]"
-                : "bg-white border-[#ebe6dc]"
-            }`}
-          >
-            <div className="max-w-7xl mx-auto px-5 py-6">
-              <div className="flex flex-col gap-1">
-                {[
-                  ["Home", "/"],
-                  ["Shop", "/login"],
-                  ["Categories", "/login"],
-                  ["Deals", "/login"],
-                  ["Contact", "/login"],
-                ].map(([label, href]) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    onClick={() => setOpenMenu(false)}
-                    className={`px-4 py-3.5 rounded-xl font-medium transition ${
-                      isDark
-                        ? "hover:bg-[#2a271f] hover:text-[#d4af37]"
-                        : "hover:bg-[#faf6eb] hover:text-[#b28b18]"
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
+      <section className="hero">
+
+        <div className="container hero-grid">
+
+          <div className="hero-content">
+
+            <div className="hero-badge">
+              <Sparkles size={14} />
+              A smarter way to shop
+            </div>
+
+            <h1>
+              Don&apos;t just shop.
+              <br />
+              <span>Shop smarter.</span>
+            </h1>
+
+            <p>
+              PrimeCart helps you discover the right products based on your
+              needs, budget and lifestyle — so you spend less time searching
+              and more time choosing.
+            </p>
+
+            <div className="hero-buttons">
+
+              <Link href="/auth/register" className="primary-btn">
+                Start Shopping
+                <ArrowRight size={18} />
+              </Link>
+
+              <a href="#features" className="secondary-btn">
+                Explore PrimeCart
+                <ChevronRight size={17} />
+              </a>
+
+            </div>
+
+            <div className="trust-items">
+
+              <div>
+                <ShieldCheck size={18} />
+                Secure Shopping
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-5">
-                <Link
-                  href="/login"
-                  onClick={() => setOpenMenu(false)}
-                  className={`py-3 rounded-xl border text-center font-medium ${
-                    isDark
-                      ? "border-[#514a39]"
-                      : "border-[#ddd8cd]"
-                  }`}
-                >
+              <div>
+                <Truck size={18} />
+                Easy Delivery
+              </div>
+
+              <div>
+                <BadgeCheck size={18} />
+                Smart Choices
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* HERO MOCKUP */}
+
+          <div className="hero-visual">
+
+            <div className="glow glow-1" />
+            <div className="glow glow-2" />
+
+            <div className="match-card">
+
+              <div className="match-header">
+
+                <div>
+                  <span>PRIMEMATCH</span>
+                  <h3>Your perfect match</h3>
+                </div>
+
+                <div className="match-score">
+                  92%
+                </div>
+
+              </div>
+
+              <div className="product-preview">
+
+                <div className="product-image">
+                  📱
+                </div>
+
+                <div className="product-info">
+
+                  <small>Mobile</small>
+
+                  <h4>
+                    Smartphone Pro Max
+                  </h4>
+
+                  <div className="rating">
+                    ★ 4.8
+                    <span>• 1.2k reviews</span>
+                  </div>
+
+                  <strong>
+                    ₹24,999
+                  </strong>
+
+                </div>
+
+                <button className="add-button">
+                  +
+                </button>
+
+              </div>
+
+              <div className="match-tags">
+                <span>✓ Within your budget</span>
+                <span>✓ Highly rated</span>
+                <span>✓ Matches your needs</span>
+              </div>
+
+            </div>
+
+            <div className="floating budget-card">
+
+              <div className="floating-icon">
+                💰
+              </div>
+
+              <div>
+                <small>Your budget</small>
+                <strong>₹30,000</strong>
+              </div>
+
+            </div>
+
+            <div className="floating points-card">
+
+              <div className="floating-icon">
+                ⭐
+              </div>
+
+              <div>
+                <small>PrimePoints</small>
+                <strong>+120 earned</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= STATS ================= */}
+
+      <section className="stats">
+
+        <div className="container stats-grid">
+
+          <div>
+            <strong>Smart</strong>
+            <span>Product Discovery</span>
+          </div>
+
+          <div>
+            <strong>10+</strong>
+            <span>Shopping Categories</span>
+          </div>
+
+          <div>
+            <strong>6</strong>
+            <span>Smart Shopping Tools</span>
+          </div>
+
+          <div>
+            <strong>1</strong>
+            <span>Simple Experience</span>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= FEATURES ================= */}
+
+      <section id="features" className="features">
+
+        <div className="container">
+
+          <div className="section-title">
+
+            <span>WHY PRIMECART</span>
+
+            <h2>
+              Shopping should feel
+              <br />
+              <strong>personal.</strong>
+            </h2>
+
+            <p>
+              PrimeCart is built around how you shop — not just what you want
+              to buy.
+            </p>
+
+          </div>
+
+          <div className="feature-grid">
+
+            {features.map((feature) => {
+
+              const Icon = feature.icon;
+
+              return (
+                <div className="feature-card" key={feature.title}>
+
+                  <div className="feature-top">
+
+                    <div className="feature-icon">
+                      <Icon size={22} />
+                    </div>
+
+                    <span>
+                      {feature.tag}
+                    </span>
+
+                  </div>
+
+                  <h3>
+                    {feature.title}
+                  </h3>
+
+                  <p>
+                    {feature.text}
+                  </p>
+
+                  <div className="feature-link">
+                    Explore
+                    <ArrowRight size={15} />
+                  </div>
+
+                </div>
+              );
+            })}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= CATEGORIES ================= */}
+
+      <section id="categories" className="categories">
+
+        <div className="container">
+
+          <div className="category-heading">
+
+            <div>
+
+              <span>
+                EXPLORE
+              </span>
+
+              <h2>
+                Find your
+                <br />
+                <strong>category.</strong>
+              </h2>
+
+            </div>
+
+            <Link
+              href="/auth/register"
+              className="view-all"
+            >
+              View all
+              <ArrowRight size={16} />
+            </Link>
+
+          </div>
+
+          <div className="category-grid">
+
+            {categories.map((category) => (
+
+              <Link
+                href="/auth/register"
+                className="category-card"
+                key={category.name}
+              >
+
+                <div className="category-icon">
+                  {category.icon}
+                </div>
+
+                <div>
+
+                  <strong>
+                    {category.name}
+                  </strong>
+
+                  <span>
+                    Explore
+                    <ArrowRight size={13} />
+                  </span>
+
+                </div>
+
+              </Link>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= HOW IT WORKS ================= */}
+
+      <section id="how" className="how">
+
+        <div className="container how-grid">
+
+          <div className="how-intro">
+
+            <span>
+              HOW IT WORKS
+            </span>
+
+            <h2>
+              Less scrolling.
+              <br />
+              <strong>Better choices.</strong>
+            </h2>
+
+            <p>
+              PrimeCart turns your shopping goal into a simple,
+              personalized journey.
+            </p>
+
+            <Link
+              href="/auth/register"
+              className="primary-btn"
+            >
+              Try PrimeCart
+              <ArrowRight size={17} />
+            </Link>
+
+          </div>
+
+          <div className="steps">
+
+            {steps.map((step) => (
+
+              <div className="step" key={step.number}>
+
+                <div className="step-number">
+                  {step.number}
+                </div>
+
+                <div>
+
+                  <h3>
+                    {step.title}
+                  </h3>
+
+                  <p>
+                    {step.text}
+                  </p>
+
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= DIFFERENCE ================= */}
+
+      <section className="difference">
+
+        <div className="container">
+
+          <div className="difference-card">
+
+            <div className="difference-content">
+
+              <span>
+                THE PRIMECART DIFFERENCE
+              </span>
+
+              <h2>
+                Stop searching for
+                <br />
+                <strong>hours.</strong>
+              </h2>
+
+              <p>
+                Whether you need a new phone, a gaming setup, college
+                essentials or something for your home — PrimeCart helps
+                you narrow down the choices.
+              </p>
+
+              <div className="difference-list">
+
+                <div>
+                  <b>01</b>
+                  Personalized discovery
+                </div>
+
+                <div>
+                  <b>02</b>
+                  Budget-aware recommendations
+                </div>
+
+                <div>
+                  <b>03</b>
+                  Situation-based shopping
+                </div>
+
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="primary-btn"
+              >
+                Create Your Account
+                <ArrowRight size={17} />
+              </Link>
+
+            </div>
+
+            <div className="difference-visual">
+
+              <div className="smart-circle">
+                <Brain size={55} />
+              </div>
+
+              <div className="mini-card mini-one">
+                <small>Need</small>
+                <strong>Gaming Setup</strong>
+              </div>
+
+              <div className="mini-card mini-two">
+                <small>Budget</small>
+                <strong>₹50,000</strong>
+              </div>
+
+              <div className="mini-card mini-three">
+                <small>Match</small>
+                <strong>96%</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= CTA ================= */}
+
+      <section className="cta">
+
+        <div className="container">
+
+          <div className="cta-card">
+
+            <div className="circle circle-one" />
+            <div className="circle circle-two" />
+
+            <div className="cta-content">
+
+              <span>
+                READY?
+              </span>
+
+              <h2>
+                Your smarter
+                <br />
+                shopping journey starts here.
+              </h2>
+
+              <p>
+                Create your PrimeCart account and discover a different
+                way to shop.
+              </p>
+
+              <Link
+                href="/auth/register"
+                className="cta-btn"
+              >
+                Get Started
+                <ArrowRight size={18} />
+              </Link>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ================= FOOTER ================= */}
+
+      <footer className="footer">
+
+        <div className="container">
+
+          <div className="footer-top">
+
+            <div className="footer-brand">
+
+              <Link href="/" className="logo">
+
+                <span className="logo-icon">
+                  <Sparkles size={19} />
+                </span>
+
+                <span className="logo-text">
+                  Prime<span>Cart</span>
+                </span>
+
+              </Link>
+
+              <p>
+                Shop smarter. Discover better.
+                <br />
+                Built for the way you shop.
+              </p>
+
+            </div>
+
+            <div className="footer-columns">
+
+              <div>
+                <h4>Explore</h4>
+                <a href="#features">Features</a>
+                <a href="#categories">Categories</a>
+                <a href="#how">How it works</a>
+              </div>
+
+              <div>
+                <h4>Account</h4>
+                <Link href="/auth/login">
                   Login
                 </Link>
-
-                <Link
-                  href="/register"
-                  onClick={() => setOpenMenu(false)}
-                  className="py-3 rounded-xl bg-[#c9a227] text-white text-center font-semibold"
-                >
+                <Link href="/auth/register">
                   Register
                 </Link>
               </div>
 
-              {/* MOBILE THEME */}
-
-              <button
-                onClick={toggleTheme}
-                className={`mt-3 w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium ${
-                  isDark
-                    ? "bg-[#2b281f] text-[#e0bd42]"
-                    : "bg-[#f7f3e8] text-[#9a7715]"
-                }`}
-              >
-                {isDark ? (
-                  <>
-                    <Sun size={17} />
-                    Switch to Light Mode
-                  </>
-                ) : (
-                  <>
-                    <Moon size={17} />
-                    Switch to Dark Mode
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* =====================================================
-          HERO
-      ===================================================== */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-        <div
-          className={`relative overflow-hidden rounded-[28px] sm:rounded-[38px] border transition-colors duration-300 ${
-            isDark
-              ? "bg-[#242119] border-[#403a2d]"
-              : "bg-white border-[#e9e4d9]"
-          }`}
-        >
-          {/* GOLD DECORATION */}
-
-          <div
-            className={`absolute -top-32 -right-20 w-[420px] h-[420px] rounded-full border ${
-              isDark
-                ? "border-[#d4af37]/15"
-                : "border-[#d4af37]/20"
-            }`}
-          />
-
-          <div
-            className={`absolute -bottom-48 left-[38%] w-[520px] h-[520px] rounded-full border ${
-              isDark
-                ? "border-[#d4af37]/10"
-                : "border-[#d4af37]/10"
-            }`}
-          />
-
-          <div className="relative grid lg:grid-cols-2 min-h-[570px]">
-            {/* HERO LEFT */}
-
-            <div className="flex flex-col justify-center px-7 sm:px-12 lg:px-16 py-14 lg:py-16 z-10">
-              <div
-                className={`inline-flex w-fit items-center gap-2 px-4 py-2 rounded-full border text-xs sm:text-sm font-semibold ${
-                  isDark
-                    ? "bg-[#d4af37]/10 border-[#d4af37]/25 text-[#e0bf4d]"
-                    : "bg-[#faf5e7] border-[#e1d3ad] text-[#a47c0d]"
-                }`}
-              >
-                <Gem size={14} />
-                Premium shopping experience
+              <div>
+                <h4>PrimeCart</h4>
+                <span>PrimeMatch</span>
+                <span>Budget Builder</span>
+                <span>PrimePoints</span>
               </div>
 
-              <h2
-                className={`mt-7 text-5xl sm:text-6xl lg:text-[76px] leading-[0.94] font-serif tracking-tight ${headingText}`}
-              >
-                Shop
-                <br />
-                <span className={`${goldText} italic`}>
-                  beautifully.
-                </span>
-              </h2>
-
-              <p
-                className={`mt-7 max-w-lg text-base sm:text-lg leading-relaxed ${mutedText}`}
-              >
-                Discover premium products, exclusive deals and
-                everyday essentials — carefully selected for a
-                better shopping experience.
-              </p>
-
-              <div className="flex flex-wrap gap-3 mt-8">
-                <Link
-                  href="/login"
-                  className={`group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-white font-semibold transition ${goldBg}`}
-                >
-                  Shop Now
-                  <ArrowRight
-                    size={17}
-                    className="group-hover:translate-x-1 transition"
-                  />
-                </Link>
-
-                <Link
-                  href="/login"
-                  className={`inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border font-medium transition ${
-                    isDark
-                      ? "border-[#554d3d] hover:border-[#c9a227] hover:text-[#d7b53b]"
-                      : "border-[#d9d4c9] hover:border-[#c9a227] hover:text-[#a17a11]"
-                  }`}
-                >
-                  Explore Deals
-                  <ChevronRight size={17} />
-                </Link>
-              </div>
-
-              {/* STATS */}
-
-              <div
-                className={`flex flex-wrap items-center gap-8 mt-10 pt-7 border-t ${
-                  isDark
-                    ? "border-[#403a2d]"
-                    : "border-[#ebe6dc]"
-                }`}
-              >
-                <div>
-                  <p className={`text-2xl font-bold ${headingText}`}>
-                    10K+
-                  </p>
-
-                  <p className={`text-xs mt-1 ${mutedText}`}>
-                    Happy Customers
-                  </p>
-                </div>
-
-                <div>
-                  <p className={`text-2xl font-bold ${headingText}`}>
-                    5K+
-                  </p>
-
-                  <p className={`text-xs mt-1 ${mutedText}`}>
-                    Products
-                  </p>
-                </div>
-
-                <div>
-                  <p className={`text-2xl font-bold ${headingText}`}>
-                    4.8
-                  </p>
-
-                  <p
-                    className={`text-xs mt-1 flex items-center gap-1 ${mutedText}`}
-                  >
-                    <Star
-                      size={12}
-                      className="fill-[#d4af37] text-[#d4af37]"
-                    />
-                    Customer Rating
-                  </p>
-                </div>
-              </div>
             </div>
 
-            {/* HERO RIGHT */}
-
-            <div className="relative flex items-center justify-center min-h-[320px] lg:min-h-0">
-              <div
-                className={`absolute w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] rounded-full blur-2xl ${
-                  isDark
-                    ? "bg-[#d4af37]/10"
-                    : "bg-[#d4af37]/10"
-                }`}
-              />
-
-              <Image
-                src="/hero-product.png"
-                alt="PrimeCart Products"
-                width={900}
-                height={900}
-                priority
-                className="relative z-10 w-[92%] sm:w-[86%] lg:w-[104%] max-w-[650px] object-contain drop-shadow-[0_25px_45px_rgba(150,115,20,0.15)]"
-              />
-
-              {/* FLOATING CARD */}
-
-              <div
-                className={`absolute bottom-7 right-6 sm:right-10 z-20 backdrop-blur-md rounded-2xl px-4 py-3 border ${
-                  isDark
-                    ? "bg-[#29251d]/90 border-[#554b35]"
-                    : "bg-white/90 border-[#e5ddca]"
-                }`}
-              >
-                <p
-                  className={`text-[9px] uppercase tracking-[0.2em] font-bold ${goldText}`}
-                >
-                  Prime Selection
-                </p>
-
-                <p
-                  className={`text-sm font-semibold mt-1 ${headingText}`}
-                >
-                  Curated for you
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          TRUST FEATURES
-      ===================================================== */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <div
-          className={`rounded-[25px] border shadow-sm grid grid-cols-2 lg:grid-cols-4 overflow-hidden ${cardBg}`}
-        >
-          {[
-            {
-              icon: Truck,
-              title: "Free Delivery",
-              text: "Above ₹499",
-            },
-            {
-              icon: ShieldCheck,
-              title: "Secure Payment",
-              text: "100% protected",
-            },
-            {
-              icon: RotateCcw,
-              title: "Easy Returns",
-              text: "Within 7 days",
-            },
-            {
-              icon: Headphones,
-              title: "24/7 Support",
-              text: "Always available",
-            },
-          ].map((item, index) => {
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.title}
-                className={`p-5 sm:p-7 flex items-center gap-4 ${
-                  index % 2 === 0
-                    ? "border-r"
-                    : ""
-                } ${
-                  index >= 2
-                    ? "border-t lg:border-t-0"
-                    : ""
-                } ${
-                  isDark
-                    ? "border-[#39352c]"
-                    : "border-[#eee9df]"
-                }`}
-              >
-                <div
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                    isDark
-                      ? "bg-[#302b20] text-[#d8b43a]"
-                      : "bg-[#faf5e7] text-[#a98418]"
-                  }`}
-                >
-                  <Icon size={20} strokeWidth={1.7} />
-                </div>
-
-                <div>
-                  <h3
-                    className={`font-semibold text-sm sm:text-base ${headingText}`}
-                  >
-                    {item.title}
-                  </h3>
-
-                  <p className={`text-xs sm:text-sm mt-1 ${mutedText}`}>
-                    {item.text}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* =====================================================
-          CATEGORIES
-      ===================================================== */}
-
-      <section
-        id="categories"
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16"
-      >
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p
-              className={`uppercase tracking-[0.2em] text-xs font-bold ${goldText}`}
-            >
-              Explore collection
-            </p>
-
-            <h2
-              className={`mt-2 text-3xl sm:text-4xl lg:text-5xl font-serif font-bold ${headingText}`}
-            >
-              Shop by Category
-            </h2>
           </div>
 
-          <Link
-            href="/login"
-            className={`hidden sm:flex items-center gap-1 text-sm font-semibold ${goldText} hover:gap-2 transition-all`}
-          >
-            View all
-            <ArrowRight size={16} />
-          </Link>
-        </div>
+          <div className="footer-bottom">
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {categories.map((category) => (
-            <Link
-              key={category.name}
-              href={`/categories/${category.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace("&", "and")}`}
-              className={`group rounded-[22px] border overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ${cardBg}`}
-            >
-              <div
-                className={`h-36 sm:h-40 flex items-center justify-center overflow-hidden ${
-                  isDark
-                    ? "bg-[#2a271f]"
-                    : "bg-[#faf7ef]"
-                }`}
-              >
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="w-full h-full object-contain p-5 group-hover:scale-110 transition-transform duration-500"
-                />
-              </div>
+            <span>
+              © 2026 PrimeCart. All rights reserved.
+            </span>
 
-              <div className="p-4">
-                <h3
-                  className={`font-semibold text-sm sm:text-base group-hover:text-[#c9a227] transition ${headingText}`}
-                >
-                  {category.name}
-                </h3>
+            <span>
+              Made for smarter shoppers.
+            </span>
 
-                <p className={`text-xs mt-1 ${mutedText}`}>
-                  {category.products}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex justify-center sm:hidden mt-7">
-          <Link
-            href="/login"
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-semibold ${goldBg}`}
-          >
-            View All Categories
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      </section>
-
-      {/* =====================================================
-          FEATURED PRODUCTS
-      ===================================================== */}
-
-      <section
-        id="featured"
-        className={`border-y transition-colors duration-300 ${
-          isDark
-            ? "bg-[#1c1a16] border-[#39352c]"
-            : "bg-white border-[#ebe6dc]"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
-          <div className="text-center mb-10">
-            <p
-              className={`uppercase tracking-[0.2em] text-xs font-bold ${goldText}`}
-            >
-              Curated for you
-            </p>
-
-            <h2
-              className={`mt-2 text-3xl sm:text-4xl lg:text-5xl font-serif font-bold ${headingText}`}
-            >
-              Featured Products
-            </h2>
-
-            <p
-              className={`max-w-xl mx-auto mt-4 text-sm sm:text-base ${mutedText}`}
-            >
-              Handpicked products that combine quality, style
-              and exceptional value.
-            </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {products.map((product, index) => (
-              <div
-                key={product.name}
-                className={`group rounded-[25px] border overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ${cardBg}`}
-              >
-                {/* PRODUCT IMAGE */}
-
-                <div
-                  className={`relative h-64 flex items-center justify-center overflow-hidden ${
-                    isDark
-                      ? "bg-[#29261f]"
-                      : "bg-[#faf7ef]"
-                  }`}
-                >
-                  <span
-                    className={`absolute left-4 top-4 z-10 text-[9px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full ${
-                      isDark
-                        ? "bg-[#d4af37] text-[#201d15]"
-                        : "bg-[#29261f] text-white"
-                    }`}
-                  >
-                    {product.badge}
-                  </span>
-
-                  <button
-                    onClick={() => toggleWishlist(index)}
-                    aria-label="Toggle wishlist"
-                    className={`absolute right-4 top-4 z-10 w-9 h-9 rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition ${
-                      isDark
-                        ? "bg-[#353127]"
-                        : "bg-white"
-                    }`}
-                  >
-                    <Heart
-                      size={17}
-                      className={
-                        wishlist.includes(index)
-                          ? "fill-[#c9a227] text-[#c9a227]"
-                          : isDark
-                          ? "text-[#ddd6c5]"
-                          : "text-gray-700"
-                      }
-                    />
-                  </button>
-
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-contain p-8 group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-
-                {/* PRODUCT DETAILS */}
-
-                <div className="p-5">
-                  <p
-                    className={`text-[10px] uppercase tracking-widest font-bold ${goldText}`}
-                  >
-                    {product.category}
-                  </p>
-
-                  <h3
-                    className={`font-semibold mt-2 line-clamp-2 min-h-[48px] ${headingText}`}
-                  >
-                    {product.name}
-                  </h3>
-
-                  {/* RATING */}
-
-                  <div className="flex items-center gap-1 mt-3">
-                    <Star
-                      size={14}
-                      className="fill-[#d4af37] text-[#d4af37]"
-                    />
-
-                    <span
-                      className={`text-sm font-medium ${headingText}`}
-                    >
-                      {product.rating}
-                    </span>
-
-                    <span className={`text-xs ${mutedText}`}>
-                      ({product.reviews})
-                    </span>
-                  </div>
-
-                  {/* PRICE */}
-
-                  <div className="flex items-center gap-2 mt-4">
-                    <span
-                      className={`text-xl font-bold ${headingText}`}
-                    >
-                      {product.price}
-                    </span>
-
-                    <span className={`text-sm line-through ${mutedText}`}>
-                      {product.oldPrice}
-                    </span>
-                  </div>
-
-                  {/* CART */}
-
-                  <Link
-                    href="/login"
-                    className={`mt-4 w-full py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition ${goldBg}`}
-                  >
-                    <ShoppingBag size={16} />
-                    Add to Cart
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-center mt-10">
-            <Link
-              href="/login"
-              className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-full border font-semibold transition ${
-                isDark
-                  ? "border-[#c9a227] text-[#d5b23c] hover:bg-[#c9a227] hover:text-white"
-                  : "border-[#c9a227] text-[#a27c12] hover:bg-[#c9a227] hover:text-white"
-              }`}
-            >
-              Explore All Products
-              <ArrowRight size={17} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          DEALS
-      ===================================================== */}
-
-      <section
-        id="deals"
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-14"
-      >
-        <div
-          className={`relative overflow-hidden rounded-[30px] border ${
-            isDark
-              ? "bg-[#29251d] border-[#51472f]"
-              : "bg-[#f5efdf] border-[#e5d9b9]"
-          }`}
-        >
-          <div
-            className={`absolute -right-24 -top-24 w-72 h-72 rounded-full border-[35px] ${
-              isDark
-                ? "border-[#d4af37]/10"
-                : "border-[#c9a227]/10"
-            }`}
-          />
-
-          <div className="relative grid lg:grid-cols-2 items-center gap-8 px-7 sm:px-12 lg:px-16 py-12">
-            <div>
-              <div
-                className={`inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold ${goldText}`}
-              >
-                <Clock3 size={15} />
-                Limited Time Offer
-              </div>
-
-              <h2
-                className={`mt-4 text-4xl sm:text-5xl font-serif font-bold ${headingText}`}
-              >
-                Exceptional deals.
-                <br />
-                <span className={goldText}>
-                  Everyday.
-                </span>
-              </h2>
-
-              <p className={`mt-4 max-w-lg leading-relaxed ${mutedText}`}>
-                Enjoy exclusive prices on selected products before
-                the offer ends. Premium quality without the premium
-                price.
-              </p>
-
-              <Link
-                href="/login"
-                className={`inline-flex items-center gap-2 mt-7 px-7 py-3.5 rounded-full text-white font-semibold transition ${goldBg}`}
-              >
-                Shop Deals
-                <ArrowRight size={17} />
-              </Link>
-            </div>
-
-            {/* OFFER CARD */}
-
-            <div className="flex lg:justify-end">
-              <div
-                className={`rounded-[25px] border p-7 sm:p-9 w-full max-w-sm shadow-sm ${
-                  isDark
-                    ? "bg-[#332e24] border-[#564b34]"
-                    : "bg-white border-[#e7dfcc]"
-                }`}
-              >
-                <p
-                  className={`text-xs uppercase tracking-[0.2em] ${mutedText}`}
-                >
-                  Today's offer
-                </p>
-
-                <div className="flex items-end gap-2 mt-2">
-                  <span
-                    className={`text-6xl font-bold ${headingText}`}
-                  >
-                    50
-                  </span>
-
-                  <span
-                    className={`text-3xl font-bold mb-2 ${goldText}`}
-                  >
-                    %
-                  </span>
-
-                  <span
-                    className={`mb-3 ${mutedText}`}
-                  >
-                    OFF
-                  </span>
-                </div>
-
-                <div
-                  className={`h-px my-5 ${
-                    isDark
-                      ? "bg-[#4b4435]"
-                      : "bg-[#e7e1d4]"
-                  }`}
-                />
-
-                <div
-                  className={`flex items-center gap-2 text-sm ${mutedText}`}
-                >
-                  <Check
-                    size={16}
-                    className={goldText}
-                  />
-                  Selected premium products
-                </div>
-
-                <div
-                  className={`flex items-center gap-2 text-sm mt-3 ${mutedText}`}
-                >
-                  <Check
-                    size={16}
-                    className={goldText}
-                  />
-                  Limited time availability
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          WHY PRIMECART
-      ===================================================== */}
-
-      <section
-        id="services"
-        className={
-          isDark
-            ? "bg-[#201e19] border-y border-[#39352c]"
-            : "bg-[#f7f4ec] border-y border-[#e9e3d6]"
-        }
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-          <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-12 items-center">
-            <div>
-              <p
-                className={`uppercase tracking-[0.2em] text-xs font-bold ${goldText}`}
-              >
-                Why PrimeCart
-              </p>
-
-              <h2
-                className={`mt-3 text-4xl sm:text-5xl font-serif ${headingText}`}
-              >
-                Shopping made
-                <br />
-                <span className={`${goldText} italic`}>
-                  effortless.
-                </span>
-              </h2>
-
-              <p
-                className={`mt-5 leading-relaxed max-w-md ${mutedText}`}
-              >
-                From discovering the right product to getting it
-                delivered to your doorstep, PrimeCart is designed
-                around a simple and premium shopping experience.
-              </p>
-
-              <Link
-                href="/login"
-                className={`inline-flex items-center gap-2 mt-7 text-sm font-semibold ${goldText} hover:gap-3 transition-all`}
-              >
-                Discover PrimeCart
-                <ArrowRight size={17} />
-              </Link>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              {services.map((service) => {
-                const Icon = service.icon;
-
-                return (
-                  <div
-                    key={service.title}
-                    className={`rounded-[22px] border p-6 transition ${
-                      isDark
-                        ? "bg-[#29261f] border-[#443e31] hover:border-[#c9a227]/40"
-                        : "bg-white border-[#e7e1d6] hover:border-[#d4af37]/50"
-                    }`}
-                  >
-                    <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                        isDark
-                          ? "bg-[#373126] text-[#d7b43e]"
-                          : "bg-[#faf5e7] text-[#a68116]"
-                      }`}
-                    >
-                      <Icon
-                        size={21}
-                        strokeWidth={1.7}
-                      />
-                    </div>
-
-                    <h3
-                      className={`font-semibold mt-5 ${headingText}`}
-                    >
-                      {service.title}
-                    </h3>
-
-                    <p
-                      className={`text-sm leading-relaxed mt-2 ${mutedText}`}
-                    >
-                      {service.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          NEWSLETTER
-      ===================================================== */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
-        <div
-          className={`rounded-[30px] border px-6 sm:px-12 py-12 text-center ${
-            isDark
-              ? "bg-[#211f1a] border-[#3e392e]"
-              : "bg-white border-[#e8e3d8]"
-          }`}
-        >
-          <div
-            className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${
-              isDark
-                ? "bg-[#352f22] text-[#d6b33d]"
-                : "bg-[#faf5e7] text-[#a68116]"
-            }`}
-          >
-            <Sparkles size={21} />
-          </div>
-
-          <h2
-            className={`mt-5 text-3xl sm:text-4xl font-serif font-bold ${headingText}`}
-          >
-            Stay in the PrimeCart circle
-          </h2>
-
-          <p
-            className={`mt-3 max-w-xl mx-auto text-sm sm:text-base ${mutedText}`}
-          >
-            Get first access to new arrivals, exclusive offers
-            and premium deals.
-          </p>
-
-          <div className="flex flex-col sm:flex-row max-w-lg mx-auto gap-2 mt-7">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              className={`flex-1 px-5 py-3.5 rounded-full border outline-none text-sm transition ${
-                isDark
-                  ? "bg-[#2b281f] border-[#4b4435] text-white placeholder:text-[#8e897d] focus:border-[#c9a227]"
-                  : "bg-[#faf9f6] border-[#ddd8cd] text-[#171717] placeholder:text-gray-400 focus:border-[#c9a227]"
-              }`}
-            />
-
-            <button
-              className={`px-7 py-3.5 rounded-full text-white font-semibold text-sm transition ${goldBg}`}
-            >
-              Subscribe
-            </button>
-          </div>
-
-          <p
-            className={`text-[11px] mt-4 ${mutedText}`}
-          >
-            No spam. Only useful PrimeCart updates.
-          </p>
-        </div>
-      </section>
-
-      {/* =====================================================
-          FOOTER
-      ===================================================== */}
-
-      <footer
-        className={`border-t ${
-          isDark
-            ? "bg-[#1b1915] border-[#39352c]"
-            : "bg-white border-[#e8e3d8]"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            {/* BRAND */}
-
-            <div>
-              <Link
-                href="/"
-                className="flex items-center gap-2.5"
-              >
-                <div className="relative w-12 h-12">
-                  <Image
-                    src="/logo.png"
-                    alt="PrimeCart"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-
-                <div>
-                  <h2
-                    className={`text-2xl font-bold ${headingText}`}
-                  >
-                    Prime
-                    <span className={goldText}>
-                      Cart
-                    </span>
-                  </h2>
-
-                  <p
-                    className={`text-[9px] uppercase tracking-[0.2em] ${mutedText}`}
-                  >
-                    Premium Shopping
-                  </p>
-                </div>
-              </Link>
-
-              <p
-                className={`text-sm leading-relaxed mt-5 max-w-xs ${mutedText}`}
-              >
-                Your destination for premium products, exclusive
-                deals and a better way to shop online.
-              </p>
-
-              <div className="flex items-center gap-2 mt-6">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    isDark
-                      ? "bg-[#302b20] text-[#d6b33d]"
-                      : "bg-[#faf5e7] text-[#a68116]"
-                  }`}
-                >
-                  <ShoppingBag size={17} />
-                </div>
-
-                <span
-                  className={`text-sm font-medium ${headingText}`}
-                >
-                  Premium shopping experience
-                </span>
-              </div>
-            </div>
-
-            {/* SHOP */}
-
-            <div>
-              <h3
-                className={`font-semibold text-lg ${headingText}`}
-              >
-                Shop
-              </h3>
-
-              <div
-                className={`flex flex-col gap-3 mt-5 text-sm ${mutedText}`}
-              >
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  All Products
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Categories
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Featured Products
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Deals & Offers
-                </Link>
-              </div>
-            </div>
-
-            {/* CUSTOMER CARE */}
-
-            <div>
-              <h3
-                className={`font-semibold text-lg ${headingText}`}
-              >
-                Customer Care
-              </h3>
-
-              <div
-                className={`flex flex-col gap-3 mt-5 text-sm ${mutedText}`}
-              >
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Contact Us
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Shipping Policy
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Returns & Refunds
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hover:text-[#c9a227] transition"
-                >
-                  Privacy Policy
-                </Link>
-              </div>
-            </div>
-
-            {/* HELP */}
-
-            <div>
-              <h3
-                className={`font-semibold text-lg ${headingText}`}
-              >
-                Need Help?
-              </h3>
-
-              <p
-                className={`text-sm leading-relaxed mt-5 ${mutedText}`}
-              >
-                Our support team is available whenever you need
-                assistance with your PrimeCart experience.
-              </p>
-
-              <Link
-                href="/login"
-                className={`inline-flex items-center gap-2 mt-5 text-sm font-semibold ${goldText}`}
-              >
-                <Headphones size={17} />
-                Contact Support
-              </Link>
-
-              <div
-                className={`flex items-center gap-3 mt-6 ${mutedText}`}
-              >
-                <div
-                  className={`w-9 h-9 rounded-full border flex items-center justify-center ${
-                    isDark
-                      ? "border-[#4a4436]"
-                      : "border-[#e2ddd2]"
-                  }`}
-                >
-                  <UserRound size={16} />
-                </div>
-
-                <span className="text-xs">
-                  Trusted by 10,000+ shoppers
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* COPYRIGHT */}
-
-        <div
-          className={`border-t ${
-            isDark
-              ? "border-[#39352c]"
-              : "border-[#e8e3d8]"
-          }`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-            <p className={mutedText}>
-              © 2026 PrimeCart. All Rights Reserved.
-            </p>
-
-            <p
-              className={`flex items-center gap-1 ${mutedText}`}
-            >
-              Crafted for modern shopping
-              <span className={goldText}>✦</span>
-            </p>
-          </div>
-        </div>
       </footer>
+
+      {/* ================= CSS ================= */}
+
+      <style jsx global>{`
+
+        * {
+          box-sizing: border-box;
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
+        body {
+          margin: 0;
+          background: #fcfaf6;
+          color: #17140e;
+          font-family:
+            Inter,
+            Arial,
+            Helvetica,
+            sans-serif;
+        }
+
+        a {
+          text-decoration: none;
+          color: inherit;
+        }
+
+        .container {
+          width: min(1180px, calc(100% - 40px));
+          margin: auto;
+        }
+
+        /* NAVBAR */
+
+        .navbar {
+          height: 76px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: rgba(252,250,246,.94);
+          backdrop-filter: blur(18px);
+          border-bottom: 1px solid #eee5d6;
+        }
+
+        .nav-inner {
+          height: 100%;
+          display: flex;
+          align-items: center;
+          gap: 30px;
+        }
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 900;
+        }
+
+        .logo-icon {
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          background: #17140e;
+          color: #dfb85d;
+        }
+
+        .logo-text {
+          font-size: 21px;
+          letter-spacing: -.8px;
+        }
+
+        .logo-text span {
+          color: #b8872d;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 34px;
+          margin-left: auto;
+        }
+
+        .nav-links a {
+          color: #686157;
+          font-size: 13px;
+          font-weight: 650;
+        }
+
+        .nav-links a:hover {
+          color: #17140e;
+        }
+
+        .nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .login-btn {
+          padding: 11px 14px;
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .start-btn {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          padding: 11px 16px;
+          border-radius: 12px;
+          background: #17140e;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        /* HERO */
+
+        .hero {
+          padding: 90px 0 100px;
+          overflow: hidden;
+        }
+
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          gap: 70px;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 8px 13px;
+          border-radius: 999px;
+          background: #f8efdc;
+          color: #87641f;
+          border: 1px solid #ead9b5;
+          font-size: 10px;
+          font-weight: 850;
+          text-transform: uppercase;
+          letter-spacing: .7px;
+        }
+
+        .hero-content h1 {
+          font-size: clamp(52px,6vw,76px);
+          line-height: .98;
+          letter-spacing: -4px;
+          margin: 23px 0;
+        }
+
+        .hero-content h1 span {
+          color: #bc8d2e;
+        }
+
+        .hero-content > p {
+          max-width: 590px;
+          color: #6e675c;
+          font-size: 16px;
+          line-height: 1.75;
+        }
+
+        .hero-buttons {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 30px;
+          flex-wrap: wrap;
+        }
+
+        .primary-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 14px 20px;
+          border-radius: 13px;
+          background: #17140e;
+          color: white;
+          font-size: 13px;
+          font-weight: 800;
+          transition: .2s;
+        }
+
+        .primary-btn:hover {
+          transform: translateY(-2px);
+        }
+
+        .secondary-btn {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 14px;
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .trust-items {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          margin-top: 35px;
+          color: #7b7468;
+          font-size: 11px;
+          font-weight: 650;
+        }
+
+        .trust-items div {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .trust-items svg {
+          color: #b98b30;
+        }
+
+        /* HERO VISUAL */
+
+        .hero-visual {
+          min-height: 520px;
+          position: relative;
+          display: grid;
+          place-items: center;
+        }
+
+        .glow {
+          position: absolute;
+          border-radius: 50%;
+        }
+
+        .glow-1 {
+          width: 370px;
+          height: 370px;
+          background: #efdfb8;
+          opacity: .55;
+        }
+
+        .glow-2 {
+          width: 220px;
+          height: 220px;
+          right: 10px;
+          bottom: 30px;
+          background: #e9d09c;
+          opacity: .35;
+        }
+
+        .match-card {
+          width: min(430px,100%);
+          padding: 24px;
+          position: relative;
+          z-index: 2;
+          background: white;
+          border: 1px solid #eadfcb;
+          border-radius: 27px;
+          box-shadow: 0 30px 80px rgba(67,49,18,.13);
+        }
+
+        .match-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .match-header span {
+          color: #a77924;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 1.3px;
+        }
+
+        .match-header h3 {
+          font-size: 20px;
+          margin: 5px 0 0;
+        }
+
+        .match-score {
+          width: 53px;
+          height: 53px;
+          display: grid;
+          place-items: center;
+          border-radius: 17px;
+          background: #f5ead2;
+          color: #87631d;
+          font-size: 14px;
+          font-weight: 900;
+        }
+
+        .product-preview {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-top: 22px;
+          padding: 15px;
+          background: #f8f5ef;
+          border-radius: 18px;
+        }
+
+        .product-image {
+          width: 82px;
+          height: 82px;
+          display: grid;
+          place-items: center;
+          border-radius: 15px;
+          background: #eee3cf;
+          font-size: 38px;
+        }
+
+        .product-info {
+          flex: 1;
+        }
+
+        .product-info small {
+          color: #a77924;
+          font-size: 9px;
+          text-transform: uppercase;
+          font-weight: 850;
+        }
+
+        .product-info h4 {
+          margin: 5px 0;
+          font-size: 14px;
+        }
+
+        .rating {
+          color: #a77924;
+          font-size: 10px;
+          font-weight: 800;
+          margin-bottom: 7px;
+        }
+
+        .rating span {
+          color: #8a8379;
+          font-weight: 500;
+        }
+
+        .product-info strong {
+          font-size: 17px;
+        }
+
+        .add-button {
+          width: 35px;
+          height: 35px;
+          border: 0;
+          border-radius: 11px;
+          background: #17140e;
+          color: white;
+          font-size: 22px;
+        }
+
+        .match-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 16px;
+        }
+
+        .match-tags span {
+          padding: 7px 9px;
+          border-radius: 8px;
+          background: #f8f3e8;
+          color: #766d5f;
+          font-size: 9px;
+          font-weight: 700;
+        }
+
+        .floating {
+          position: absolute;
+          z-index: 5;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 12px;
+          background: white;
+          border: 1px solid #e8dfd0;
+          border-radius: 15px;
+          box-shadow: 0 15px 35px rgba(60,44,19,.12);
+        }
+
+        .budget-card {
+          top: 35px;
+          left: -5px;
+        }
+
+        .points-card {
+          right: -5px;
+          bottom: 45px;
+        }
+
+        .floating-icon {
+          width: 35px;
+          height: 35px;
+          display: grid;
+          place-items: center;
+          border-radius: 10px;
+          background: #f5ead2;
+        }
+
+        .floating small {
+          display: block;
+          color: #8b8377;
+          font-size: 9px;
+        }
+
+        .floating strong {
+          display: block;
+          font-size: 12px;
+          margin-top: 3px;
+        }
+
+        /* STATS */
+
+        .stats {
+          border-top: 1px solid #eee5d6;
+          border-bottom: 1px solid #eee5d6;
+          background: white;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4,1fr);
+        }
+
+        .stats-grid > div {
+          padding: 25px 20px;
+          border-right: 1px solid #eee5d6;
+        }
+
+        .stats-grid > div:last-child {
+          border-right: 0;
+        }
+
+        .stats-grid strong {
+          display: block;
+          font-size: 25px;
+        }
+
+        .stats-grid span {
+          display: block;
+          margin-top: 5px;
+          color: #837b70;
+          font-size: 11px;
+        }
+
+        /* FEATURES */
+
+        .features {
+          padding: 115px 0;
+        }
+
+        .section-title {
+          text-align: center;
+          margin-bottom: 55px;
+        }
+
+        .section-title > span,
+        .category-heading > div > span,
+        .how-intro > span,
+        .difference-content > span,
+        .cta-content > span {
+          color: #a37826;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 1.7px;
+        }
+
+        .section-title h2,
+        .category-heading h2,
+        .how-intro h2,
+        .difference-content h2 {
+          font-size: clamp(40px,5vw,58px);
+          line-height: 1.04;
+          letter-spacing: -2.5px;
+          margin: 14px 0;
+        }
+
+        .section-title h2 strong,
+        .category-heading h2 strong,
+        .how-intro h2 strong,
+        .difference-content h2 strong {
+          color: #bd8e2f;
+        }
+
+        .section-title p {
+          max-width: 550px;
+          margin: auto;
+          color: #777064;
+          line-height: 1.7;
+          font-size: 14px;
+        }
+
+        .feature-grid {
+          display: grid;
+          grid-template-columns: repeat(3,1fr);
+          gap: 18px;
+        }
+
+        .feature-card {
+          padding: 25px;
+          background: white;
+          border: 1px solid #e9e1d2;
+          border-radius: 21px;
+          transition: .25s;
+        }
+
+        .feature-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 20px 45px rgba(65,48,18,.08);
+          border-color: #dcc79a;
+        }
+
+        .feature-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .feature-icon {
+          width: 48px;
+          height: 48px;
+          display: grid;
+          place-items: center;
+          border-radius: 14px;
+          background: #f6efdf;
+          color: #936b21;
+        }
+
+        .feature-top span {
+          padding: 7px 9px;
+          border-radius: 8px;
+          background: #f7f5f0;
+          color: #8c8376;
+          font-size: 9px;
+          font-weight: 800;
+        }
+
+        .feature-card h3 {
+          font-size: 19px;
+          margin: 25px 0 9px;
+        }
+
+        .feature-card p {
+          min-height: 62px;
+          margin: 0;
+          color: #777064;
+          font-size: 12px;
+          line-height: 1.7;
+        }
+
+        .feature-link {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 20px;
+          color: #9a7126;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        /* CATEGORIES */
+
+        .categories {
+          padding: 95px 0;
+          background: #f5f0e7;
+        }
+
+        .category-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: end;
+          margin-bottom: 40px;
+        }
+
+        .view-all {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .category-grid {
+          display: grid;
+          grid-template-columns: repeat(5,1fr);
+          gap: 12px;
+        }
+
+        .category-card {
+          min-height: 145px;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          background: white;
+          border: 1px solid #e9e1d2;
+          border-radius: 19px;
+          transition: .2s;
+        }
+
+        .category-card:hover {
+          transform: translateY(-4px);
+          border-color: #d7bc7e;
+        }
+
+        .category-icon {
+          font-size: 33px;
+        }
+
+        .category-card strong {
+          display: block;
+          font-size: 13px;
+          margin-bottom: 6px;
+        }
+
+        .category-card span {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          color: #918879;
+          font-size: 9px;
+        }
+
+        /* HOW */
+
+        .how {
+          padding: 115px 0;
+        }
+
+        .how-grid {
+          display: grid;
+          grid-template-columns: .8fr 1.2fr;
+          gap: 90px;
+          align-items: center;
+        }
+
+        .how-intro p {
+          max-width: 390px;
+          color: #777064;
+          font-size: 14px;
+          line-height: 1.75;
+          margin-bottom: 28px;
+        }
+
+        .steps {
+          border-left: 1px solid #dfd5c3;
+        }
+
+        .step {
+          display: flex;
+          gap: 25px;
+          padding: 22px 0 22px 30px;
+        }
+
+        .step-number {
+          width: 43px;
+          height: 43px;
+          flex: 0 0 43px;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          background: #f5ead2;
+          color: #956c20;
+          font-size: 10px;
+          font-weight: 900;
+        }
+
+        .step h3 {
+          margin: 1px 0 7px;
+          font-size: 17px;
+        }
+
+        .step p {
+          margin: 0;
+          color: #81796e;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+
+        /* DIFFERENCE */
+
+        .difference {
+          padding-bottom: 110px;
+        }
+
+        .difference-card {
+          display: grid;
+          grid-template-columns: 1fr .9fr;
+          min-height: 530px;
+          overflow: hidden;
+          border-radius: 30px;
+          background: #17140e;
+          color: white;
+        }
+
+        .difference-content {
+          padding: 70px;
+        }
+
+        .difference-content p {
+          max-width: 520px;
+          color: #c5beb2;
+          font-size: 13px;
+          line-height: 1.75;
+        }
+
+        .difference-list {
+          display: grid;
+          gap: 10px;
+          margin: 27px 0;
+        }
+
+        .difference-list div {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 12px;
+        }
+
+        .difference-list b {
+          color: #d5af59;
+          font-size: 9px;
+        }
+
+        .difference-visual {
+          position: relative;
+          display: grid;
+          place-items: center;
+          background: radial-gradient(circle,#51401f,#2d2619 40%,#17140e 70%);
+        }
+
+        .smart-circle {
+          width: 170px;
+          height: 170px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          color: #d6b05c;
+          background: #302816;
+          border: 1px solid #65532d;
+          box-shadow:
+            0 0 0 20px rgba(203,166,82,.04),
+            0 0 0 45px rgba(203,166,82,.025);
+        }
+
+        .mini-card {
+          position: absolute;
+          min-width: 130px;
+          padding: 13px 16px;
+          border-radius: 14px;
+          background: rgba(255,255,255,.09);
+          border: 1px solid rgba(255,255,255,.14);
+          backdrop-filter: blur(10px);
+        }
+
+        .mini-card small {
+          display: block;
+          color: #b9b1a5;
+          font-size: 8px;
+          margin-bottom: 5px;
+        }
+
+        .mini-card strong {
+          font-size: 12px;
+        }
+
+        .mini-one {
+          top: 85px;
+          left: 30px;
+        }
+
+        .mini-two {
+          top: 50%;
+          right: 25px;
+        }
+
+        .mini-three {
+          bottom: 75px;
+          left: 50px;
+        }
+
+        /* CTA */
+
+        .cta {
+          padding-bottom: 100px;
+        }
+
+        .cta-card {
+          position: relative;
+          overflow: hidden;
+          padding: 75px 25px;
+          border-radius: 30px;
+          background: #f0dfb9;
+          text-align: center;
+        }
+
+        .cta-content {
+          position: relative;
+          z-index: 2;
+        }
+
+        .cta-content h2 {
+          font-size: clamp(40px,5vw,60px);
+          line-height: 1.02;
+          letter-spacing: -2.5px;
+          margin: 15px 0;
+        }
+
+        .cta-content p {
+          color: #71664f;
+          font-size: 14px;
+          margin-bottom: 28px;
+        }
+
+        .cta-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 21px;
+          border-radius: 13px;
+          background: #17140e;
+          color: white;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .circle {
+          position: absolute;
+          border: 1px solid rgba(102,75,24,.13);
+          border-radius: 50%;
+        }
+
+        .circle-one {
+          width: 350px;
+          height: 350px;
+          left: -100px;
+          top: -160px;
+        }
+
+        .circle-two {
+          width: 450px;
+          height: 450px;
+          right: -170px;
+          bottom: -250px;
+        }
+
+        /* FOOTER */
+
+        .footer {
+          padding: 65px 0 25px;
+          background: #17140e;
+          color: white;
+        }
+
+        .footer-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 60px;
+          padding-bottom: 55px;
+          border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+
+        .footer-brand p {
+          color: #9c968c;
+          font-size: 11px;
+          line-height: 1.7;
+        }
+
+        .footer-columns {
+          display: flex;
+          gap: 75px;
+        }
+
+        .footer-columns div {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          min-width: 120px;
+        }
+
+        .footer-columns h4 {
+          margin: 0 0 6px;
+          color: #d4ae5b;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .footer-columns a,
+        .footer-columns span {
+          color: #9c968c;
+          font-size: 11px;
+        }
+
+        .footer-bottom {
+          display: flex;
+          justify-content: space-between;
+          padding-top: 22px;
+          color: #746f67;
+          font-size: 9px;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 1000px) {
+
+          .hero-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .hero-content {
+            text-align: center;
+          }
+
+          .hero-content > p {
+            margin: auto;
+          }
+
+          .hero-buttons,
+          .trust-items {
+            justify-content: center;
+          }
+
+          .hero-visual {
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+          }
+
+          .feature-grid {
+            grid-template-columns: repeat(2,1fr);
+          }
+
+          .category-grid {
+            grid-template-columns: repeat(4,1fr);
+          }
+
+        }
+
+        @media (max-width: 760px) {
+
+          .container {
+            width: calc(100% - 26px);
+          }
+
+          .navbar {
+            height: 68px;
+          }
+
+          .nav-links {
+            display: none;
+          }
+
+          .nav-inner {
+            justify-content: space-between;
+          }
+
+          .login-btn {
+            display: none;
+          }
+
+          .start-btn {
+            padding: 10px 12px;
+          }
+
+          .hero {
+            padding: 55px 0 65px;
+          }
+
+          .hero-content h1 {
+            font-size: 48px;
+            letter-spacing: -2.8px;
+          }
+
+          .hero-content > p {
+            font-size: 14px;
+          }
+
+          .hero-visual {
+            min-height: 420px;
+          }
+
+          .match-card {
+            padding: 18px;
+          }
+
+          .budget-card {
+            left: 0;
+            top: 10px;
+          }
+
+          .points-card {
+            right: 0;
+            bottom: 10px;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2,1fr);
+          }
+
+          .stats-grid > div:nth-child(2) {
+            border-right: 0;
+          }
+
+          .feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .category-grid {
+            grid-template-columns: repeat(2,1fr);
+          }
+
+          .category-heading {
+            align-items: flex-start;
+          }
+
+          .how-grid {
+            grid-template-columns: 1fr;
+            gap: 50px;
+          }
+
+          .difference-card {
+            grid-template-columns: 1fr;
+          }
+
+          .difference-content {
+            padding: 40px 25px;
+          }
+
+          .difference-visual {
+            min-height: 370px;
+          }
+
+          .footer-top {
+            flex-direction: column;
+          }
+
+          .footer-columns {
+            gap: 30px;
+            flex-wrap: wrap;
+          }
+
+          .footer-bottom {
+            flex-direction: column;
+            gap: 7px;
+          }
+
+        }
+
+        @media (max-width: 430px) {
+
+          .logo-text {
+            font-size: 18px;
+          }
+
+          .hero-content h1 {
+            font-size: 42px;
+          }
+
+          .hero-visual {
+            min-height: 390px;
+          }
+
+          .product-image {
+            width: 65px;
+            height: 65px;
+          }
+
+          .product-preview {
+            gap: 9px;
+            padding: 10px;
+          }
+
+          .match-tags span {
+            font-size: 8px;
+          }
+
+          .floating {
+            transform: scale(.88);
+          }
+
+          .section-title h2,
+          .category-heading h2,
+          .how-intro h2,
+          .difference-content h2 {
+            font-size: 39px;
+          }
+
+          .category-card {
+            min-height: 125px;
+            padding: 15px;
+          }
+
+        }
+
+      `}</style>
+
     </main>
   );
 }
