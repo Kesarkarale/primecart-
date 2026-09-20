@@ -7,18 +7,16 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   Heart,
   HeartOff,
+  Package,
   ShoppingCart,
   Star,
   Trash2,
-  Package,
 } from "lucide-react";
 
-import { toast } from "sonner";
-
 import { createClient } from "@/lib/supabase/client";
-import { addToCart } from "@/lib/cart";
 
 type Product = {
   id: string;
@@ -36,15 +34,20 @@ type Product = {
   is_flash_sale: boolean;
 };
 
-type WishlistRow = {
+type WishlistItem = {
   id: string;
   user_id: string;
   product_id: string;
   created_at: string;
+  product: Product | null;
 };
 
-type WishlistProduct = WishlistRow & {
-  product: Product | null;
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string | null;
+  quantity: number;
 };
 
 function getImageUrl(imageUrl: string | null) {
@@ -80,7 +83,9 @@ function getDiscount(
   price: number,
   originalPrice: number | null
 ) {
-  if (!originalPrice || originalPrice <= price) return 0;
+  if (!originalPrice || originalPrice <= price) {
+    return 0;
+  }
 
   return Math.round(
     ((originalPrice - price) / originalPrice) * 100
@@ -90,7 +95,7 @@ function getDiscount(
 export default function WishlistPage() {
   const supabase = createClient();
 
-  const [items, setItems] = useState<WishlistProduct[]>([]);
+  const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(
     null
@@ -99,6 +104,11 @@ export default function WishlistPage() {
     null
   );
 
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   useEffect(() => {
     loadWishlist();
   }, []);
@@ -106,6 +116,7 @@ export default function WishlistPage() {
   async function loadWishlist() {
     try {
       setLoading(true);
+      setMessage(null);
 
       const {
         data: { user },
@@ -146,23 +157,36 @@ export default function WishlistPage() {
 
       if (error) {
         console.error("Wishlist error:", error);
-        toast.error("Unable to load wishlist.");
+
+        setMessage({
+          type: "error",
+          text: "Unable to load your wishlist.",
+        });
+
         setItems([]);
         return;
       }
 
-      const formattedData: WishlistProduct[] =
-        ((data as any[]) || []).map((item) => ({
-          ...item,
+      const formatted: WishlistItem[] = ((data || []) as any[]).map(
+        (item) => ({
+          id: item.id,
+          user_id: item.user_id,
+          product_id: item.product_id,
+          created_at: item.created_at,
           product: Array.isArray(item.product)
             ? item.product[0] || null
             : item.product || null,
-        }));
+        })
+      );
 
-      setItems(formattedData);
+      setItems(formatted);
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong.");
+
+      setMessage({
+        type: "error",
+        text: "Something went wrong while loading wishlist.",
+      });
     } finally {
       setLoading(false);
     }
@@ -170,10 +194,11 @@ export default function WishlistPage() {
 
   async function removeFromWishlist(
     wishlistId: string,
-    productName?: string
+    productName: string
   ) {
     try {
       setRemovingId(wishlistId);
+      setMessage(null);
 
       const { error } = await supabase
         .from("wishlist")
@@ -182,7 +207,12 @@ export default function WishlistPage() {
 
       if (error) {
         console.error(error);
-        toast.error("Failed to remove from wishlist.");
+
+        setMessage({
+          type: "error",
+          text: "Failed to remove product from wishlist.",
+        });
+
         return;
       }
 
@@ -190,59 +220,90 @@ export default function WishlistPage() {
         current.filter((item) => item.id !== wishlistId)
       );
 
-      toast.success(
-        productName
-          ? `${productName} removed from wishlist.`
-          : "Removed from wishlist."
-      );
+      setMessage({
+        type: "success",
+        text: `${productName} removed from wishlist.`,
+      });
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong.");
+
+      setMessage({
+        type: "error",
+        text: "Something went wrong.",
+      });
     } finally {
       setRemovingId(null);
     }
   }
 
-  async function handleAddToCart(product: Product) {
-    if (product.stock <= 0) {
-      toast.error("This product is currently out of stock.");
-      return;
-    }
-
+  function addProductToCart(product: Product) {
     try {
       setAddingId(product.id);
+      setMessage(null);
 
-      /*
-       * Existing PrimeCart cart helper
-       */
-      await addToCart({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        image_url: product.image_url,
-        quantity: 1,
-      } as any);
+      const storedCart = localStorage.getItem(
+        "primecart-cart"
+      );
 
-      toast.success(`${product.name} added to cart.`);
+      let cart: CartItem[] = [];
+
+      if (storedCart) {
+        try {
+          cart = JSON.parse(storedCart);
+        } catch {
+          cart = [];
+        }
+      }
+
+      const existingIndex = cart.findIndex(
+        (item) => item.id === product.id
+      );
+
+      if (existingIndex >= 0) {
+        cart[existingIndex].quantity += 1;
+      } else {
+        cart.push({
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          image_url: product.image_url,
+          quantity: 1,
+        });
+      }
+
+      localStorage.setItem(
+        "primecart-cart",
+        JSON.stringify(cart)
+      );
+
+      window.dispatchEvent(new Event("cart-updated"));
+
+      setMessage({
+        type: "success",
+        text: `${product.name} added to cart.`,
+      });
     } catch (error) {
-      console.error("Cart error:", error);
-      toast.error("Unable to add product to cart.");
+      console.error(error);
+
+      setMessage({
+        type: "error",
+        text: "Unable to add product to cart.",
+      });
     } finally {
-      setAddingId(null);
+      setTimeout(() => {
+        setAddingId(null);
+      }, 400);
     }
   }
 
-  const validItems = useMemo(
-    () => items.filter((item) => item.product),
-    [items]
-  );
+  const validItems = useMemo(() => {
+    return items.filter((item) => item.product);
+  }, [items]);
 
   const totalValue = useMemo(() => {
-    return validItems.reduce(
-      (total, item) =>
-        total + Number(item.product?.price || 0),
-      0
-    );
+    return validItems.reduce((total, item) => {
+      return total + Number(item.product?.price || 0);
+    }, 0);
   }, [validItems]);
 
   return (
@@ -280,7 +341,7 @@ export default function WishlistPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Top Section */}
+        {/* Page Header */}
         <section className="mb-6 rounded-2xl border border-[#eadfca] bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
             <div className="flex items-center gap-4">
@@ -331,6 +392,33 @@ export default function WishlistPage() {
           </div>
         </section>
 
+        {/* Message */}
+        {message && (
+          <div
+            className={`mb-5 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm ${
+              message.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {message.type === "success" ? (
+              <Check size={17} />
+            ) : (
+              <HeartOff size={17} />
+            )}
+
+            <span>{message.text}</span>
+
+            <button
+              type="button"
+              onClick={() => setMessage(null)}
+              className="ml-auto text-xs font-semibold underline"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -353,7 +441,7 @@ export default function WishlistPage() {
           </div>
         )}
 
-        {/* Empty Wishlist */}
+        {/* Empty */}
         {!loading && validItems.length === 0 && (
           <div className="rounded-2xl border border-[#eadfca] bg-white px-6 py-16 text-center shadow-sm">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#fff5f5] text-[#c95b5b]">
@@ -380,7 +468,7 @@ export default function WishlistPage() {
           </div>
         )}
 
-        {/* Wishlist Grid */}
+        {/* Products */}
         {!loading && validItems.length > 0 && (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {validItems.map((item) => {
@@ -402,7 +490,7 @@ export default function WishlistPage() {
                   key={item.id}
                   className="group overflow-hidden rounded-2xl border border-[#eadfca] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
                 >
-                  {/* Image */}
+                  {/* Product Image */}
                   <div className="relative h-64 overflow-hidden bg-[#faf9f6]">
                     {image ? (
                       <Image
@@ -418,21 +506,19 @@ export default function WishlistPage() {
                       </div>
                     )}
 
-                    {/* Discount */}
                     {discount > 0 && (
                       <span className="absolute left-3 top-3 rounded-full bg-[#c9a24d] px-2.5 py-1 text-xs font-bold text-white">
                         {discount}% OFF
                       </span>
                     )}
 
-                    {/* Flash Sale */}
                     {product.is_flash_sale && (
                       <span className="absolute bottom-3 left-3 rounded-full bg-[#171717] px-2.5 py-1 text-xs font-semibold text-white">
                         Flash Deal
                       </span>
                     )}
 
-                    {/* Remove */}
+                    {/* Remove Wishlist */}
                     <button
                       type="button"
                       onClick={() =>
@@ -442,14 +528,14 @@ export default function WishlistPage() {
                         )
                       }
                       disabled={removingId === item.id}
+                      className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-[#eadfca] bg-white/95 text-[#b74c4c] shadow-sm transition hover:bg-[#fff4f4] disabled:opacity-50"
                       aria-label="Remove from wishlist"
-                      className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-[#eadfca] bg-white/95 text-[#b74c4c] shadow-sm transition hover:bg-[#fff4f4] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Trash2 size={17} />
                     </button>
                   </div>
 
-                  {/* Product Content */}
+                  {/* Content */}
                   <div className="p-4">
                     {product.brand && (
                       <p className="text-xs font-semibold uppercase tracking-wider text-[#a17c31]">
@@ -459,9 +545,8 @@ export default function WishlistPage() {
 
                     <Link
                       href={`/dashboard/products/${product.id}`}
-                      className="mt-1 block"
                     >
-                      <h3 className="line-clamp-2 min-h-[48px] text-base font-bold text-gray-900 transition group-hover:text-[#a17c31]">
+                      <h3 className="mt-1 line-clamp-2 min-h-[48px] text-base font-bold text-gray-900 transition group-hover:text-[#a17c31]">
                         {product.name}
                       </h3>
                     </Link>
@@ -479,6 +564,7 @@ export default function WishlistPage() {
                           size={13}
                           fill="currentColor"
                         />
+
                         {Number(product.rating || 0).toFixed(1)}
                       </div>
 
@@ -530,14 +616,14 @@ export default function WishlistPage() {
                           addingId === product.id
                         }
                         onClick={() =>
-                          handleAddToCart(product)
+                          addProductToCart(product)
                         }
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#c9a24d] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#b8913f] disabled:cursor-not-allowed disabled:bg-gray-300"
                       >
                         <ShoppingCart size={16} />
 
                         {addingId === product.id
-                          ? "Adding..."
+                          ? "Added"
                           : outOfStock
                             ? "Out of Stock"
                             : "Add to Cart"}
@@ -546,7 +632,6 @@ export default function WishlistPage() {
                       <Link
                         href={`/dashboard/products/${product.id}`}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#e5dccb] text-gray-600 transition hover:border-[#c9a24d] hover:bg-[#fffaf0] hover:text-[#9b762b]"
-                        aria-label="View product"
                       >
                         <ArrowRight size={18} />
                       </Link>
