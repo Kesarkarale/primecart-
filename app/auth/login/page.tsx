@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
   Eye,
   EyeOff,
+  Loader2,
   LockKeyhole,
   Mail,
-  ArrowRight,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
   ShoppingBag,
 } from "lucide-react";
 
@@ -19,9 +19,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const next = searchParams.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,8 +38,13 @@ export default function LoginPage() {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail || !password) {
-      setError("Please enter your email and password.");
+    if (!cleanEmail) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password.");
       return;
     }
 
@@ -51,7 +53,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
 
-      const { error: loginError } =
+      const { data, error: loginError } =
         await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
@@ -62,6 +64,7 @@ export default function LoginPage() {
 
         if (
           message.includes("email not confirmed") ||
+          message.includes("email not verified") ||
           message.includes("confirm")
         ) {
           setError(
@@ -78,15 +81,23 @@ export default function LoginPage() {
         return;
       }
 
+      if (!data.session) {
+        setError(
+          "Unable to create a login session. Please try again."
+        );
+        return;
+      }
+
       setSuccess("Login successful! Redirecting...");
 
-      // Small delay so user can see success message
       setTimeout(() => {
-        window.location.replace(next);
-      }, 500);
-    } catch {
+        window.location.href = "/dashboard";
+      }, 700);
+    } catch (err) {
+      console.error("Login error:", err);
+
       setError(
-        "Something went wrong. Please try again."
+        "Something went wrong while logging in. Please try again."
       );
     } finally {
       setLoading(false);
@@ -95,17 +106,16 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      <div className="login-background">
-        <div className="glow glow-one" />
-        <div className="glow glow-two" />
-      </div>
+      <div className="background-glow glow-one" />
+      <div className="background-glow glow-two" />
 
       <div className="login-wrapper">
         {/* LEFT SIDE */}
+
         <section className="login-showcase">
           <Link href="/" className="brand">
             <div className="brand-icon">
-              <ShoppingBag size={21} strokeWidth={2.4} />
+              <ShoppingBag size={21} />
             </div>
 
             <span>
@@ -126,15 +136,14 @@ export default function LoginPage() {
             </h1>
 
             <p>
-              Discover products that actually match your
-              needs, budget and lifestyle with PrimeCart.
+              Discover products that match your needs,
+              budget and lifestyle with PrimeCart.
             </p>
 
             <div className="benefits">
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
+
                 <div>
                   <strong>Personalized shopping</strong>
                   <span>
@@ -144,21 +153,20 @@ export default function LoginPage() {
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
+
                 <div>
                   <strong>Smart deals</strong>
                   <span>
-                    Get better value without endless searching.
+                    Discover better value without endless
+                    searching.
                   </span>
                 </div>
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">
-                  ✓
-                </div>
+                <div className="benefit-icon">✓</div>
+
                 <div>
                   <strong>PrimePoints rewards</strong>
                   <span>
@@ -169,22 +177,22 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="showcase-bottom">
+          <div className="showcase-footer">
             <span>© 2026 PrimeCart</span>
             <span>Smart shopping platform</span>
           </div>
         </section>
 
         {/* RIGHT SIDE */}
-        <section className="login-card-section">
+
+        <section className="login-section">
           <div className="login-card">
+            {/* MOBILE BRAND */}
+
             <div className="mobile-brand">
               <Link href="/" className="brand">
                 <div className="brand-icon">
-                  <ShoppingBag
-                    size={20}
-                    strokeWidth={2.4}
-                  />
+                  <ShoppingBag size={20} />
                 </div>
 
                 <span>
@@ -192,6 +200,8 @@ export default function LoginPage() {
                 </span>
               </Link>
             </div>
+
+            {/* HEADER */}
 
             <div className="card-header">
               <div className="welcome-icon">
@@ -205,12 +215,16 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* ERROR */}
+
             {error && (
               <div className="message error-message">
                 <AlertCircle size={18} />
                 <span>{error}</span>
               </div>
             )}
+
+            {/* SUCCESS */}
 
             {success && (
               <div className="message success-message">
@@ -219,11 +233,14 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* FORM */}
+
             <form
               onSubmit={handleLogin}
               className="login-form"
             >
               {/* EMAIL */}
+
               <div className="field">
                 <label htmlFor="email">
                   Email address
@@ -245,13 +262,15 @@ export default function LoginPage() {
                     }
                     autoComplete="email"
                     disabled={loading}
+                    required
                   />
                 </div>
               </div>
 
               {/* PASSWORD */}
+
               <div className="field">
-                <div className="password-label">
+                <div className="password-header">
                   <label htmlFor="password">
                     Password
                   </label>
@@ -270,7 +289,9 @@ export default function LoginPage() {
                   <input
                     id="password"
                     type={
-                      showPassword ? "text" : "password"
+                      showPassword
+                        ? "text"
+                        : "password"
                     }
                     placeholder="Enter your password"
                     value={password}
@@ -279,20 +300,21 @@ export default function LoginPage() {
                     }
                     autoComplete="current-password"
                     disabled={loading}
+                    required
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(!showPassword)
+                      setShowPassword((value) => !value)
                     }
+                    disabled={loading}
                     aria-label={
                       showPassword
                         ? "Hide password"
                         : "Show password"
                     }
-                    disabled={loading}
                   >
                     {showPassword ? (
                       <EyeOff size={19} />
@@ -303,30 +325,30 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* REMEMBER ME */}
-              <div className="form-options">
-                <label className="remember">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) =>
-                      setRememberMe(e.target.checked)
-                    }
-                    disabled={loading}
-                  />
+              {/* REMEMBER */}
 
-                  <span className="custom-checkbox">
-                    {rememberMe && "✓"}
-                  </span>
+              <label className="remember">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) =>
+                    setRememberMe(e.target.checked)
+                  }
+                  disabled={loading}
+                />
 
-                  <span>Remember me</span>
-                </label>
-              </div>
+                <span className="custom-checkbox">
+                  {rememberMe ? "✓" : ""}
+                </span>
 
-              {/* LOGIN BUTTON */}
+                <span>Remember me</span>
+              </label>
+
+              {/* BUTTON */}
+
               <button
                 type="submit"
-                className="login-button"
+                className="primary-button"
                 disabled={loading}
               >
                 {loading ? (
@@ -350,7 +372,7 @@ export default function LoginPage() {
               <span>or</span>
             </div>
 
-            <div className="signup-text">
+            <div className="account-link">
               Don&apos;t have an account?{" "}
               <Link href="/auth/register">
                 Create account
@@ -394,34 +416,26 @@ export default function LoginPage() {
             sans-serif;
         }
 
-        .login-background {
+        .background-glow {
           position: fixed;
-          inset: 0;
-          pointer-events: none;
-          overflow: hidden;
-        }
-
-        .glow {
-          position: absolute;
+          width: 350px;
+          height: 350px;
           border-radius: 999px;
-          filter: blur(80px);
-          opacity: 0.42;
+          filter: blur(90px);
+          pointer-events: none;
+          opacity: 0.4;
         }
 
         .glow-one {
-          width: 380px;
-          height: 380px;
           top: -170px;
-          right: -100px;
-          background: rgba(214, 167, 54, 0.17);
+          right: -80px;
+          background: rgba(214, 167, 54, 0.2);
         }
 
         .glow-two {
-          width: 320px;
-          height: 320px;
-          bottom: -160px;
-          left: -120px;
-          background: rgba(214, 167, 54, 0.12);
+          bottom: -170px;
+          left: -100px;
+          background: rgba(214, 167, 54, 0.13);
         }
 
         .login-wrapper {
@@ -429,23 +443,15 @@ export default function LoginPage() {
           z-index: 1;
           width: min(1180px, calc(100% - 40px));
           min-height: 100vh;
-          margin: 0 auto;
+          margin: auto;
           padding: 32px 0;
           display: grid;
           grid-template-columns: 1fr 0.9fr;
-          align-items: center;
           gap: 70px;
+          align-items: center;
         }
 
-        /* LEFT */
-
-        .login-showcase {
-          min-height: 680px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 28px 10px;
-        }
+        /* BRAND */
 
         .brand {
           display: inline-flex;
@@ -475,6 +481,16 @@ export default function LoginPage() {
             0 10px 25px rgba(198, 150, 36, 0.22);
         }
 
+        /* LEFT */
+
+        .login-showcase {
+          min-height: 680px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 28px 10px;
+        }
+
         .showcase-content {
           max-width: 570px;
         }
@@ -486,7 +502,7 @@ export default function LoginPage() {
           gap: 9px;
           padding: 9px 14px;
           border: 1px solid rgba(198, 150, 36, 0.22);
-          background: rgba(255, 255, 255, 0.65);
+          background: rgba(255, 255, 255, 0.7);
           border-radius: 999px;
           color: #7b5c15;
           font-size: 13px;
@@ -499,12 +515,13 @@ export default function LoginPage() {
           height: 7px;
           border-radius: 50%;
           background: #d2a132;
-          box-shadow: 0 0 0 5px rgba(210, 161, 50, 0.12);
+          box-shadow:
+            0 0 0 5px rgba(210, 161, 50, 0.12);
         }
 
         .showcase-content h1 {
           margin: 0;
-          font-size: clamp(48px, 5.2vw, 72px);
+          font-size: clamp(48px, 5vw, 72px);
           line-height: 0.99;
           letter-spacing: -4px;
           font-weight: 850;
@@ -543,7 +560,6 @@ export default function LoginPage() {
           border-radius: 12px;
           background: #f0dfb4;
           color: #866316;
-          font-size: 16px;
           font-weight: 900;
         }
 
@@ -560,7 +576,7 @@ export default function LoginPage() {
           font-size: 13px;
         }
 
-        .showcase-bottom {
+        .showcase-footer {
           display: flex;
           justify-content: space-between;
           max-width: 570px;
@@ -570,7 +586,7 @@ export default function LoginPage() {
 
         /* CARD */
 
-        .login-card-section {
+        .login-section {
           display: flex;
           justify-content: center;
         }
@@ -578,7 +594,7 @@ export default function LoginPage() {
         .login-card {
           width: min(470px, 100%);
           padding: 42px;
-          background: rgba(255, 255, 255, 0.94);
+          background: rgba(255, 255, 255, 0.96);
           border: 1px solid #ebe5d8;
           border-radius: 28px;
           box-shadow:
@@ -619,6 +635,8 @@ export default function LoginPage() {
           line-height: 1.6;
         }
 
+        /* MESSAGE */
+
         .message {
           display: flex;
           align-items: flex-start;
@@ -642,6 +660,8 @@ export default function LoginPage() {
           border: 1px solid #d6ead1;
         }
 
+        /* FORM */
+
         .login-form {
           display: flex;
           flex-direction: column;
@@ -655,26 +675,26 @@ export default function LoginPage() {
         }
 
         .field label,
-        .password-label label {
+        .password-header label {
           color: #353129;
           font-size: 13px;
           font-weight: 700;
         }
 
-        .password-label {
+        .password-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
 
-        .password-label a {
-          color: #a87c1b;
+        .password-header a {
+          color: #a2771d;
           font-size: 12px;
           font-weight: 700;
           text-decoration: none;
         }
 
-        .password-label a:hover {
+        .password-header a:hover {
           text-decoration: underline;
         }
 
@@ -730,14 +750,11 @@ export default function LoginPage() {
           color: #a87c1b;
         }
 
-        .form-options {
-          margin-top: -3px;
-        }
-
         .remember {
           display: inline-flex;
           align-items: center;
           gap: 9px;
+          width: fit-content;
           color: #777168;
           font-size: 13px;
           cursor: pointer;
@@ -756,7 +773,7 @@ export default function LoginPage() {
           border: 1px solid #d8d1c4;
           border-radius: 5px;
           background: #fff;
-          color: #fff;
+          color: white;
           font-size: 11px;
           font-weight: 900;
         }
@@ -766,7 +783,9 @@ export default function LoginPage() {
           background: #c69624;
         }
 
-        .login-button {
+        /* BUTTON */
+
+        .primary-button {
           width: 100%;
           height: 54px;
           border: 0;
@@ -782,20 +801,17 @@ export default function LoginPage() {
           cursor: pointer;
           box-shadow:
             0 12px 24px rgba(198, 150, 36, 0.2);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            background 0.2s ease;
+          transition: 0.2s ease;
         }
 
-        .login-button:hover:not(:disabled) {
+        .primary-button:hover:not(:disabled) {
           transform: translateY(-1px);
           background: #b8881e;
           box-shadow:
             0 15px 30px rgba(198, 150, 36, 0.25);
         }
 
-        .login-button:disabled {
+        .primary-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
@@ -809,6 +825,8 @@ export default function LoginPage() {
             transform: rotate(360deg);
           }
         }
+
+        /* BOTTOM */
 
         .divider {
           display: flex;
@@ -827,19 +845,19 @@ export default function LoginPage() {
           background: #eee9e0;
         }
 
-        .signup-text {
+        .account-link {
           text-align: center;
           color: #817b70;
           font-size: 13px;
         }
 
-        .signup-text a {
+        .account-link a {
           color: #a2771d;
           font-weight: 800;
           text-decoration: none;
         }
 
-        .signup-text a:hover {
+        .account-link a:hover {
           text-decoration: underline;
         }
 
@@ -869,7 +887,7 @@ export default function LoginPage() {
             display: none;
           }
 
-          .login-card-section {
+          .login-section {
             min-height: calc(100vh - 48px);
             align-items: center;
           }
@@ -893,7 +911,7 @@ export default function LoginPage() {
             padding: 12px 0;
           }
 
-          .login-card-section {
+          .login-section {
             min-height: calc(100vh - 24px);
           }
 
@@ -924,7 +942,7 @@ export default function LoginPage() {
             height: 50px;
           }
 
-          .login-button {
+          .primary-button {
             height: 52px;
           }
         }
