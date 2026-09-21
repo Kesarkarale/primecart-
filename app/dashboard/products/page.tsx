@@ -73,15 +73,36 @@ function getImageUrl(value: string | null) {
 
   if (!image) return null;
 
+  // External URL
   if (
     image.startsWith("http://") ||
-    image.startsWith("https://") ||
-    image.startsWith("/")
+    image.startsWith("https://")
   ) {
     return image;
   }
 
-  return `/${image}`;
+  // Already correct public URL
+  if (image.startsWith("/products/")) {
+    return image;
+  }
+
+  // DB value: products/dvfghj.png
+  if (image.startsWith("products/")) {
+    return `/${image}`;
+  }
+
+  // DB value: public/products/dvfghj.png
+  if (image.startsWith("public/products/")) {
+    return image.replace(/^public/, "");
+  }
+
+  // DB value: /public/products/dvfghj.png
+  if (image.startsWith("/public/products/")) {
+    return image.replace("/public", "");
+  }
+
+  // DB value: only dvfghj.png
+  return `/products/${image}`;
 }
 
 function getDiscount(price: number, original: number) {
