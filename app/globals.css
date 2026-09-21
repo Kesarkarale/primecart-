@@ -1,64 +1,140 @@
 @import "tailwindcss";
 
+/* =========================================================
+   PRIME CART GLOBAL THEME
+   Tailwind CSS v4
+========================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f3;
+  --foreground: #17130d;
+
+  --card: #ffffff;
+  --card-foreground: #17130d;
+
+  --border: #eadfc9;
+  --muted: #f5f0e6;
+
+  --gold: #b9975b;
+  --gold-dark: #977538;
+
+  --font-sans: Arial, Helvetica, sans-serif;
 }
+
+/* =========================================================
+   TAILWIND THEME TOKENS
+========================================================= */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================================
+   LIGHT THEME
+========================================================= */
+
+html.light {
+  --background: #faf8f3;
+  --foreground: #17130d;
+
+  --card: #ffffff;
+  --card-foreground: #17130d;
+
+  --border: #eadfc9;
+  --muted: #f5f0e6;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-
-html {
-  background: #faf8f3;
-}
+/* =========================================================
+   DARK THEME
+========================================================= */
 
 html.dark {
-  background: #0f0e0b;
+  --background: #0f0e0b;
+  --foreground: #f5f1e8;
+
+  --card: #181612;
+  --card-foreground: #f5f1e8;
+
+  --border: #393126;
+  --muted: #211d15;
 }
 
-body {
-  background: #faf8f3;
-  color: #17130d;
+/* =========================================================
+   BASE
+========================================================= */
+
+html {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+
   transition:
     background-color 0.25s ease,
     color 0.25s ease;
 }
 
-html.dark body {
-  background: #0f0e0b;
-  color: #f5f1e8;
+body {
+  min-height: 100vh;
+
+  margin: 0;
+  padding: 0;
+
+  background: var(--background);
+  color: var(--foreground);
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
-/* Dark mode helpers */
+/* =========================================================
+   DARK MODE - COMMON PRIME CART COLORS
+========================================================= */
 
+/* White cards */
 html.dark .bg-white {
   background-color: #181612 !important;
 }
 
+/* Main light background */
 html.dark .bg-\[\#faf8f3\] {
   background-color: #0f0e0b !important;
 }
 
+/* Warm cream */
 html.dark .bg-\[\#fffaf0\] {
   background-color: #211d15 !important;
+}
+
+/* Light cream */
+html.dark .bg-\[\#fff7e8\] {
+  background-color: #211d15 !important;
+}
+
+/* =========================================================
+   TEXT COLORS
+========================================================= */
+
+html.dark .text-neutral-950 {
+  color: #faf7ef !important;
 }
 
 html.dark .text-neutral-900 {
@@ -81,6 +157,14 @@ html.dark .text-neutral-500 {
   color: #a9a095 !important;
 }
 
+html.dark .text-neutral-400 {
+  color: #8f877c !important;
+}
+
+/* =========================================================
+   BORDERS
+========================================================= */
+
 html.dark .border-\[\#eadfc9\] {
   border-color: #393126 !important;
 }
@@ -89,6 +173,118 @@ html.dark .border-\[\#eee5d5\] {
   border-color: #332d24 !important;
 }
 
+html.dark .border-\[\#e8d7b5\] {
+  border-color: #493e2e !important;
+}
+
+/* =========================================================
+   HOVER BACKGROUNDS
+========================================================= */
+
 html.dark .hover\:bg-\[\#faf8f3\]:hover {
   background-color: #211d15 !important;
+}
+
+html.dark .hover\:bg-white:hover {
+  background-color: #211d15 !important;
+}
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color: #f5f1e8;
+  background-color: #181612;
+  border-color: #393126;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #81786d;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #b9975b;
+}
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+::selection {
+  background: rgba(185, 151, 91, 0.3);
+  color: inherit;
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #b9975b transparent;
+}
+
+html.dark {
+  scrollbar-color: #6f5a37 #0f0e0b;
+}
+
+/* Chrome / Edge scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5aa79;
+  border-radius: 999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #6f5a37;
+}
+
+/* =========================================================
+   SMOOTH THEME TRANSITION
+========================================================= */
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body,
+button,
+input,
+textarea,
+select,
+header,
+section,
+aside,
+main,
+footer,
+nav {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
 }
