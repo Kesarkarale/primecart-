@@ -7,63 +7,71 @@ import {
   Brain,
   ChevronRight,
   Gift,
+  Heart,
   Layers3,
+  Menu,
+  Search,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
+  Star,
   Target,
   Trophy,
   Truck,
+  UserRound,
+  X,
   Zap,
 } from "lucide-react";
+import { useState } from "react";
 
 const categories = [
-  { name: "Mobile", icon: "📱" },
-  { name: "Home & Living", icon: "🏠" },
-  { name: "Appliance", icon: "⚡" },
-  { name: "Footwear", icon: "👟" },
-  { name: "Watch", icon: "⌚" },
-  { name: "Bag", icon: "👜" },
-  { name: "Toy & Baby", icon: "🧸" },
-  { name: "Automotive", icon: "🚗" },
-  { name: "Fashion", icon: "👕" },
-  { name: "Gaming", icon: "🎮" },
+  { name: "Mobile", icon: "📱", count: "Smartphones & accessories" },
+  { name: "Home & Living", icon: "🏠", count: "Make your space better" },
+  { name: "Appliance", icon: "⚡", count: "Everyday essentials" },
+  { name: "Footwear", icon: "👟", count: "Style meets comfort" },
+  { name: "Watch", icon: "⌚", count: "Time in your style" },
+  { name: "Bag", icon: "👜", count: "Carry it your way" },
+  { name: "Toy & Baby", icon: "🧸", count: "For little moments" },
+  { name: "Automotive", icon: "🚗", count: "Drive better" },
+  { name: "Fashion", icon: "👕", count: "Your everyday style" },
+  { name: "Gaming", icon: "🎮", count: "Level up your setup" },
 ];
 
 const features = [
   {
     icon: Brain,
     title: "PrimeMatch",
-    text: "Tell us your needs, budget and priorities. PrimeCart helps you discover products that match you.",
-    tag: "Smart Shopping",
+    text: "Tell us what you need, your budget and priorities. PrimeCart helps you discover products that actually fit.",
+    tag: "Smart Discovery",
   },
   {
     icon: Target,
     title: "Budget Builder",
-    text: "Set your budget and shopping goal. Build a useful cart without going over your limit.",
-    tag: "Budget Friendly",
+    text: "Set your spending limit and build a useful shopping list without losing control of your budget.",
+    tag: "Budget Smart",
   },
   {
     icon: Layers3,
     title: "Build My Setup",
-    text: "Create complete setups for college, gaming, work, home, fitness and more.",
-    tag: "Complete Kits",
+    text: "Create complete setups for gaming, college, work, fitness, home and more.",
+    tag: "Complete Setup",
   },
   {
     icon: Trophy,
     title: "PrimePoints",
-    text: "Shop, explore and complete challenges to collect points and unlock rewards.",
+    text: "Shop, explore and engage with PrimeCart to collect points and unlock rewards.",
     tag: "Rewards",
   },
   {
     icon: Gift,
     title: "Mystery Deal",
-    text: "Reveal surprise deals selected especially for PrimeCart shoppers.",
+    text: "Open surprise offers and discover deals selected for PrimeCart shoppers.",
     tag: "Surprise",
   },
   {
     icon: Zap,
     title: "Flash Deals",
-    text: "Discover limited-time offers before they disappear.",
+    text: "Catch limited-time offers before they disappear and make every purchase count.",
     tag: "Limited Time",
   },
 ];
@@ -72,1746 +80,828 @@ const steps = [
   {
     number: "01",
     title: "Tell us what you need",
-    text: "Choose your goal, category or shopping situation.",
+    text: "Choose a category, shopping goal or situation.",
   },
   {
     number: "02",
-    title: "Set your budget",
-    text: "Tell PrimeCart how much you want to spend.",
+    title: "Set your preferences",
+    text: "Add your budget, priorities and product preferences.",
   },
   {
     number: "03",
-    title: "Shop smarter",
-    text: "Get relevant products instead of endless scrolling.",
+    title: "Discover better products",
+    text: "Explore relevant choices instead of endlessly scrolling.",
+  },
+];
+
+const trustPoints = [
+  {
+    icon: ShieldCheck,
+    title: "Secure",
+    text: "Protected account experience",
+  },
+  {
+    icon: Truck,
+    title: "Reliable",
+    text: "Easy shopping & delivery",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Relevant",
+    text: "Smarter product discovery",
   },
 ];
 
 export default function HomePage() {
+  const [mobileMenu, setMobileMenu] = useState(false);
+
   return (
-    <main className="landing-page">
+    <main className="min-h-screen overflow-hidden bg-[#fcfaf6] text-[#17140e]">
+      {/* =====================================================
+          NAVBAR
+      ===================================================== */}
 
-      {/* ================= NAVBAR ================= */}
+      <header className="sticky top-0 z-[100] border-b border-[#ebe3d5] bg-[#fcfaf6]/90 backdrop-blur-2xl">
+        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#17140e] text-[#dcb75f] shadow-sm">
+              <Sparkles size={19} />
+            </div>
 
-      <header className="navbar">
-        <div className="container nav-inner">
-
-          <Link href="/" className="logo">
-            <span className="logo-icon">
-              <Sparkles size={20} />
-            </span>
-
-            <span className="logo-text">
-              Prime<span>Cart</span>
-            </span>
+            <div className="text-[21px] font-black tracking-[-0.9px]">
+              Prime<span className="text-[#b8872d]">Cart</span>
+            </div>
           </Link>
 
-          <nav className="nav-links">
-            <a href="#features">Why PrimeCart</a>
-            <a href="#categories">Categories</a>
-            <a href="#how">How It Works</a>
+          {/* Desktop navigation */}
+          <nav className="hidden items-center gap-8 lg:flex">
+            <a
+              href="#features"
+              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
+            >
+              Why PrimeCart
+            </a>
+
+            <a
+              href="#categories"
+              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
+            >
+              Categories
+            </a>
+
+            <a
+              href="#how"
+              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
+            >
+              How It Works
+            </a>
           </nav>
 
-          <div className="nav-actions">
-            <Link href="/auth/login" className="login-btn">
+          {/* Desktop actions */}
+          <div className="hidden items-center gap-2 sm:flex">
+            <Link
+              href="/auth/login"
+              className="rounded-xl px-4 py-2.5 text-[13px] font-bold text-[#5e564b] transition hover:text-[#17140e]"
+            >
               Login
             </Link>
 
-            <Link href="/auth/register" className="start-btn">
+            <Link
+              href="/auth/register"
+              className="flex items-center gap-2 rounded-xl bg-[#17140e] px-4 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#29251e]"
+            >
               Get Started
-              <ArrowRight size={16} />
+              <ArrowRight size={15} />
             </Link>
           </div>
 
+          {/* Mobile */}
+          <button
+            onClick={() => setMobileMenu(!mobileMenu)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-[#3c352b] sm:hidden"
+            aria-label="Toggle menu"
+          >
+            {mobileMenu ? <X size={19} /> : <Menu size={19} />}
+          </button>
         </div>
+
+        {mobileMenu && (
+          <div className="border-t border-[#ebe3d5] bg-white px-4 py-4 sm:hidden">
+            <div className="mx-auto flex max-w-[1280px] flex-col gap-1">
+              <a
+                href="#features"
+                onClick={() => setMobileMenu(false)}
+                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+              >
+                Why PrimeCart
+              </a>
+
+              <a
+                href="#categories"
+                onClick={() => setMobileMenu(false)}
+                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+              >
+                Categories
+              </a>
+
+              <a
+                href="#how"
+                onClick={() => setMobileMenu(false)}
+                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+              >
+                How It Works
+              </a>
+
+              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#eee7da] pt-3">
+                <Link
+                  href="/auth/login"
+                  className="rounded-xl border border-[#e5dccb] px-4 py-3 text-center text-sm font-bold"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/auth/register"
+                  className="rounded-xl bg-[#17140e] px-4 py-3 text-center text-sm font-bold text-white"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* ================= HERO ================= */}
+      {/* =====================================================
+          HERO
+      ===================================================== */}
 
-      <section className="hero">
+      <section className="relative overflow-hidden">
+        {/* background decoration */}
+        <div className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-[#ead6a7]/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-40 top-0 h-[500px] w-[500px] rounded-full bg-[#d8bd7d]/15 blur-3xl" />
 
-        <div className="container hero-grid">
-
-          <div className="hero-content">
-
-            <div className="hero-badge">
-              <Sparkles size={14} />
+        <div className="relative mx-auto grid max-w-[1280px] items-center gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pt-20 lg:grid-cols-[1fr_0.92fr] lg:px-8 lg:pb-28 lg:pt-24">
+          {/* LEFT */}
+          <div className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e8d8b7] bg-[#f9f1df] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#8c6826]">
+              <Sparkles size={13} />
               A smarter way to shop
             </div>
 
-            <h1>
+            <h1 className="mt-7 text-[50px] font-black leading-[0.98] tracking-[-3px] sm:text-[64px] lg:text-[76px]">
               Don&apos;t just shop.
               <br />
-              <span>Shop smarter.</span>
+              <span className="text-[#b8872d]">Shop smarter.</span>
             </h1>
 
-            <p>
+            <p className="mx-auto mt-7 max-w-[590px] text-[15px] leading-7 text-[#71695e] sm:text-base lg:mx-0">
               PrimeCart helps you discover the right products based on your
-              needs, budget and lifestyle — so you spend less time searching
-              and more time choosing.
+              needs, budget and lifestyle — giving you a simpler way to
+              decide what is actually worth buying.
             </p>
 
-            <div className="hero-buttons">
-
-              <Link href="/auth/register" className="primary-btn">
+            <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+              <Link
+                href="/auth/register"
+                className="group flex items-center gap-2 rounded-xl bg-[#17140e] px-5 py-3.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(20,18,12,0.12)] transition hover:-translate-y-1"
+              >
                 Start Shopping
-                <ArrowRight size={18} />
+                <ArrowRight
+                  size={17}
+                  className="transition group-hover:translate-x-1"
+                />
               </Link>
 
-              <a href="#features" className="secondary-btn">
+              <a
+                href="#features"
+                className="flex items-center gap-1.5 rounded-xl border border-[#e5dccb] bg-white px-5 py-3.5 text-sm font-bold text-[#51493e] transition hover:border-[#cdb783]"
+              >
                 Explore PrimeCart
-                <ChevronRight size={17} />
+                <ChevronRight size={16} />
               </a>
-
             </div>
 
-            <div className="trust-items">
+            {/* mini trust */}
+            <div className="mt-9 flex flex-wrap justify-center gap-x-5 gap-y-3 lg:justify-start">
+              {trustPoints.map((item) => {
+                const Icon = item.icon;
 
-              <div>
-                <ShieldCheck size={18} />
-                Secure Shopping
-              </div>
+                return (
+                  <div
+                    key={item.title}
+                    className="flex items-center gap-2 text-left"
+                  >
+                    <Icon size={17} className="text-[#b8872d]" />
 
-              <div>
-                <Truck size={18} />
-                Easy Delivery
-              </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-[#4f483e]">
+                        {item.title}
+                      </p>
 
-              <div>
-                <BadgeCheck size={18} />
-                Smart Choices
-              </div>
-
+                      <p className="text-[9px] text-[#91887b]">
+                        {item.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
           </div>
 
-          {/* HERO MOCKUP */}
+          {/* RIGHT VISUAL */}
+          <div className="relative mx-auto min-h-[500px] w-full max-w-[560px]">
+            {/* glow */}
+            <div className="absolute left-1/2 top-1/2 h-[390px] w-[390px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ead8ad]/35 blur-3xl" />
 
-          <div className="hero-visual">
-
-            <div className="glow glow-1" />
-            <div className="glow glow-2" />
-
-            <div className="match-card">
-
-              <div className="match-header">
-
+            {/* Main dashboard mockup */}
+            <div className="absolute left-1/2 top-1/2 z-10 w-[94%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[28px] border border-[#e7dcc7] bg-white p-4 shadow-[0_35px_90px_rgba(70,50,18,0.15)] sm:p-5">
+              {/* mock header */}
+              <div className="flex items-center justify-between border-b border-[#eee7da] pb-4">
                 <div>
-                  <span>PRIMEMATCH</span>
-                  <h3>Your perfect match</h3>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#b8872d]">
+                    PrimeMatch
+                  </p>
+
+                  <h3 className="mt-1 text-lg font-black tracking-tight sm:text-xl">
+                    Your perfect match
+                  </h3>
                 </div>
 
-                <div className="match-score">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6ecd8] text-sm font-black text-[#8c6826]">
                   92%
                 </div>
-
               </div>
 
-              <div className="product-preview">
+              {/* search bar */}
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ece5d9] bg-[#fbfaf7] px-3 py-2.5">
+                <Search size={15} className="text-[#9c9385]" />
+                <span className="text-[10px] text-[#948a7b]">
+                  Looking for something special?
+                </span>
+              </div>
 
-                <div className="product-image">
-                  📱
-                </div>
-
-                <div className="product-info">
-
-                  <small>Mobile</small>
-
-                  <h4>
-                    Smartphone Pro Max
-                  </h4>
-
-                  <div className="rating">
-                    ★ 4.8
-                    <span>• 1.2k reviews</span>
+              {/* product */}
+              <div className="mt-4 rounded-2xl border border-[#eee7da] bg-[#faf8f3] p-3.5 sm:p-4">
+                <div className="flex gap-3">
+                  <div className="flex h-[82px] w-[82px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#eee3cf] to-[#dfcfad] text-4xl">
+                    📱
                   </div>
 
-                  <strong>
-                    ₹24,999
-                  </strong>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-[#ad8029]">
+                          Mobile
+                        </span>
 
+                        <h4 className="mt-1 truncate text-sm font-black">
+                          Smartphone Pro Max
+                        </h4>
+                      </div>
+
+                      <Heart
+                        size={16}
+                        className="shrink-0 text-[#9e9486]"
+                      />
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-[#9a7126]">
+                      <Star size={11} fill="currentColor" />
+                      4.8
+                      <span className="font-medium text-[#958c80]">
+                        · 1.2k reviews
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <strong className="text-base">
+                        ₹24,999
+                      </strong>
+
+                      <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#17140e] text-white">
+                        <ShoppingBag size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <button className="add-button">
-                  +
-                </button>
-
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {[
+                    "Within budget",
+                    "Highly rated",
+                    "Matches your needs",
+                  ].map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-lg bg-white px-2.5 py-1.5 text-[8px] font-bold text-[#766d60]"
+                    >
+                      ✓ {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              <div className="match-tags">
-                <span>✓ Within your budget</span>
-                <span>✓ Highly rated</span>
-                <span>✓ Matches your needs</span>
-              </div>
+              {/* recommendation bar */}
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-[#17140e] px-4 py-3 text-white">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-[#d8b45f]" />
 
+                  <span className="text-[9px] font-semibold text-white/70">
+                    3 more products match your preferences
+                  </span>
+                </div>
+
+                <ChevronRight size={14} className="text-[#d8b45f]" />
+              </div>
             </div>
 
-            <div className="floating budget-card">
-
-              <div className="floating-icon">
+            {/* floating budget */}
+            <div className="absolute left-0 top-[60px] z-20 flex items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:left-[-8px]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5ead2] text-lg">
                 💰
               </div>
 
               <div>
-                <small>Your budget</small>
-                <strong>₹30,000</strong>
+                <p className="text-[8px] text-[#93897b]">Your budget</p>
+                <p className="mt-0.5 text-xs font-black">₹30,000</p>
               </div>
-
             </div>
 
-            <div className="floating points-card">
-
-              <div className="floating-icon">
+            {/* floating points */}
+            <div className="absolute bottom-[65px] right-0 z-20 flex items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:right-[-8px]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5ead2] text-lg">
                 ⭐
               </div>
 
               <div>
-                <small>PrimePoints</small>
-                <strong>+120 earned</strong>
+                <p className="text-[8px] text-[#93897b]">PrimePoints</p>
+                <p className="mt-0.5 text-xs font-black text-[#9b7227]">
+                  +120 earned
+                </p>
               </div>
-
             </div>
 
+            {/* floating profile */}
+            <div className="absolute bottom-0 left-[18%] z-20 hidden items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:flex">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#17140e] text-white">
+                <UserRound size={14} />
+              </div>
+
+              <div>
+                <p className="text-[8px] text-[#93897b]">
+                  Personalised for you
+                </p>
+
+                <p className="text-[10px] font-black">
+                  Shopping profile ready
+                </p>
+              </div>
+            </div>
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= STATS ================= */}
+      {/* =====================================================
+          VALUE STRIP
+      ===================================================== */}
 
-      <section className="stats">
+      <section className="border-y border-[#ebe3d5] bg-white">
+        <div className="mx-auto grid max-w-[1280px] grid-cols-2 sm:grid-cols-4">
+          {[
+            ["Smart", "Product discovery"],
+            ["10+", "Shopping categories"],
+            ["6", "Smart shopping tools"],
+            ["1", "Simple experience"],
+          ].map(([number, label], index) => (
+            <div
+              key={label}
+              className={`px-4 py-6 text-center ${
+                index !== 3 ? "border-r border-[#eee7da]" : ""
+              } ${index === 1 ? "max-sm:border-r-0" : ""}`}
+            >
+              <p className="text-xl font-black tracking-tight sm:text-2xl">
+                {number}
+              </p>
 
-        <div className="container stats-grid">
-
-          <div>
-            <strong>Smart</strong>
-            <span>Product Discovery</span>
-          </div>
-
-          <div>
-            <strong>10+</strong>
-            <span>Shopping Categories</span>
-          </div>
-
-          <div>
-            <strong>6</strong>
-            <span>Smart Shopping Tools</span>
-          </div>
-
-          <div>
-            <strong>1</strong>
-            <span>Simple Experience</span>
-          </div>
-
+              <p className="mt-1 text-[10px] font-medium text-[#8a8175] sm:text-[11px]">
+                {label}
+              </p>
+            </div>
+          ))}
         </div>
-
       </section>
 
-      {/* ================= FEATURES ================= */}
+      {/* =====================================================
+          FEATURES
+      ===================================================== */}
 
-      <section id="features" className="features">
+      <section id="features" className="py-24 sm:py-28">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
+              WHY PRIMECART
+            </span>
 
-        <div className="container">
-
-          <div className="section-title">
-
-            <span>WHY PRIMECART</span>
-
-            <h2>
+            <h2 className="mt-4 text-[40px] font-black leading-[1.03] tracking-[-2.3px] sm:text-[54px]">
               Shopping should feel
               <br />
-              <strong>personal.</strong>
+              <span className="text-[#b8872d]">personal.</span>
             </h2>
 
-            <p>
-              PrimeCart is built around how you shop — not just what you want
-              to buy.
+            <p className="mt-5 text-sm leading-7 text-[#7c7468] sm:text-[15px]">
+              PrimeCart is designed around your shopping goals, budget and
+              preferences — not just a never-ending product catalogue.
             </p>
-
           </div>
 
-          <div className="feature-grid">
-
+          <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => {
-
               const Icon = feature.icon;
 
               return (
-                <div className="feature-card" key={feature.title}>
+                <div
+                  key={feature.title}
+                  className="group relative overflow-hidden rounded-[24px] border border-[#e8dfd1] bg-white p-6 transition duration-300 hover:-translate-y-1.5 hover:border-[#d5be88] hover:shadow-[0_22px_55px_rgba(66,49,19,0.08)]"
+                >
+                  <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#f5ead3] opacity-0 blur-2xl transition group-hover:opacity-70" />
 
-                  <div className="feature-top">
+                  <div className="relative">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f5ecd9] text-[#95702b] transition group-hover:bg-[#17140e] group-hover:text-[#dcb75f]">
+                        <Icon size={22} />
+                      </div>
 
-                    <div className="feature-icon">
-                      <Icon size={22} />
+                      <span className="rounded-lg bg-[#faf7f1] px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wide text-[#8d8375]">
+                        {feature.tag}
+                      </span>
                     </div>
 
-                    <span>
-                      {feature.tag}
-                    </span>
+                    <h3 className="mt-7 text-[19px] font-black">
+                      {feature.title}
+                    </h3>
 
+                    <p className="mt-2.5 min-h-[66px] text-[12px] leading-6 text-[#7c7469]">
+                      {feature.text}
+                    </p>
+
+                    <div className="mt-6 flex items-center gap-1.5 text-[11px] font-black text-[#9b7227]">
+                      Explore feature
+                      <ArrowRight
+                        size={14}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </div>
                   </div>
-
-                  <h3>
-                    {feature.title}
-                  </h3>
-
-                  <p>
-                    {feature.text}
-                  </p>
-
-                  <div className="feature-link">
-                    Explore
-                    <ArrowRight size={15} />
-                  </div>
-
                 </div>
               );
             })}
-
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= CATEGORIES ================= */}
+      {/* =====================================================
+          CATEGORIES
+      ===================================================== */}
 
-      <section id="categories" className="categories">
-
-        <div className="container">
-
-          <div className="category-heading">
-
+      <section
+        id="categories"
+        className="border-y border-[#e9e0d2] bg-[#f5f0e7] py-24 sm:py-28"
+      >
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
             <div>
-
-              <span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
                 EXPLORE
               </span>
 
-              <h2>
+              <h2 className="mt-3 text-[40px] font-black leading-[1.03] tracking-[-2px] sm:text-[52px]">
                 Find your
                 <br />
-                <strong>category.</strong>
+                <span className="text-[#b8872d]">category.</span>
               </h2>
 
+              <p className="mt-4 max-w-lg text-sm leading-6 text-[#7c7468]">
+                From everyday essentials to your next big upgrade, explore
+                everything in one place.
+              </p>
             </div>
 
             <Link
               href="/auth/register"
-              className="view-all"
+              className="flex w-fit items-center gap-2 rounded-xl border border-[#ddcfb5] bg-white px-4 py-3 text-xs font-black text-[#5b5144] transition hover:border-[#b9975b]"
             >
-              View all
-              <ArrowRight size={16} />
+              Explore all categories
+              <ArrowRight size={15} />
             </Link>
-
           </div>
 
-          <div className="category-grid">
-
+          <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((category) => (
-
               <Link
                 href="/auth/register"
-                className="category-card"
                 key={category.name}
+                className="group min-h-[155px] rounded-[21px] border border-[#e6ddcf] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-[#d1b779] hover:shadow-[0_18px_40px_rgba(70,51,18,0.07)]"
               >
-
-                <div className="category-icon">
-                  {category.icon}
-                </div>
-
-                <div>
-
-                  <strong>
-                    {category.name}
-                  </strong>
-
-                  <span>
-                    Explore
-                    <ArrowRight size={13} />
+                <div className="flex items-start justify-between">
+                  <span className="text-[34px] transition duration-300 group-hover:scale-110">
+                    {category.icon}
                   </span>
 
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#faf7f1] text-[#9c752c] transition group-hover:bg-[#17140e] group-hover:text-white">
+                    <ArrowRight size={13} />
+                  </div>
                 </div>
 
+                <div className="mt-8">
+                  <h3 className="text-[13px] font-black">
+                    {category.name}
+                  </h3>
+
+                  <p className="mt-1 text-[9px] leading-4 text-[#938a7d]">
+                    {category.count}
+                  </p>
+                </div>
               </Link>
-
             ))}
-
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= HOW IT WORKS ================= */}
+      {/* =====================================================
+          HOW IT WORKS
+      ===================================================== */}
 
-      <section id="how" className="how">
-
-        <div className="container how-grid">
-
-          <div className="how-intro">
-
-            <span>
+      <section id="how" className="py-24 sm:py-28">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-16 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
               HOW IT WORKS
             </span>
 
-            <h2>
+            <h2 className="mt-4 text-[40px] font-black leading-[1.03] tracking-[-2px] sm:text-[54px]">
               Less scrolling.
               <br />
-              <strong>Better choices.</strong>
+              <span className="text-[#b8872d]">Better choices.</span>
             </h2>
 
-            <p>
-              PrimeCart turns your shopping goal into a simple,
-              personalized journey.
+            <p className="mt-5 max-w-md text-sm leading-7 text-[#7c7468]">
+              PrimeCart turns your shopping goal into a simpler,
+              personalized journey so you can spend less time searching and
+              more time choosing.
             </p>
 
             <Link
               href="/auth/register"
-              className="primary-btn"
+              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#17140e] px-5 py-3.5 text-sm font-bold text-white transition hover:-translate-y-1"
             >
               Try PrimeCart
-              <ArrowRight size={17} />
+              <ArrowRight size={16} />
             </Link>
-
           </div>
 
-          <div className="steps">
+          <div className="relative">
+            <div className="absolute bottom-0 left-[30px] top-0 w-px bg-[#e3d9c7]" />
 
-            {steps.map((step) => (
+            <div className="space-y-2">
+              {steps.map((step) => (
+                <div
+                  key={step.number}
+                  className="group relative flex gap-5 rounded-[22px] p-5 transition hover:bg-[#faf7f1] sm:gap-7 sm:p-7"
+                >
+                  <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#dfd0b3] bg-[#f7eedc] text-[10px] font-black text-[#916c28]">
+                    {step.number}
+                  </div>
 
-              <div className="step" key={step.number}>
+                  <div className="pt-1">
+                    <h3 className="text-lg font-black">
+                      {step.title}
+                    </h3>
 
-                <div className="step-number">
-                  {step.number}
+                    <p className="mt-2 max-w-md text-[12px] leading-6 text-[#81786b]">
+                      {step.text}
+                    </p>
+                  </div>
+
+                  <ChevronRight
+                    size={18}
+                    className="ml-auto mt-2 hidden text-[#b9975b] sm:block"
+                  />
                 </div>
-
-                <div>
-
-                  <h3>
-                    {step.title}
-                  </h3>
-
-                  <p>
-                    {step.text}
-                  </p>
-
-                </div>
-
-              </div>
-
-            ))}
-
+              ))}
+            </div>
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= DIFFERENCE ================= */}
+      {/* =====================================================
+          DIFFERENCE
+      ===================================================== */}
 
-      <section className="difference">
-
-        <div className="container">
-
-          <div className="difference-card">
-
-            <div className="difference-content">
-
-              <span>
+      <section className="pb-24 sm:pb-28">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="grid overflow-hidden rounded-[30px] bg-[#17140e] text-white lg:grid-cols-[1fr_0.9fr]">
+            <div className="p-7 sm:p-10 lg:p-16">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d2aa54]">
                 THE PRIMECART DIFFERENCE
               </span>
 
-              <h2>
-                Stop searching for
+              <h2 className="mt-4 text-[40px] font-black leading-[1.02] tracking-[-2px] sm:text-[55px]">
+                Stop searching
                 <br />
-                <strong>hours.</strong>
+                for <span className="text-[#d7b25d]">hours.</span>
               </h2>
 
-              <p>
-                Whether you need a new phone, a gaming setup, college
-                essentials or something for your home — PrimeCart helps
-                you narrow down the choices.
+              <p className="mt-6 max-w-xl text-sm leading-7 text-white/55">
+                Whether you need a new phone, gaming setup, college
+                essentials or something for your home, PrimeCart helps you
+                narrow down the choices.
               </p>
 
-              <div className="difference-list">
-
-                <div>
-                  <b>01</b>
-                  Personalized discovery
-                </div>
-
-                <div>
-                  <b>02</b>
-                  Budget-aware recommendations
-                </div>
-
-                <div>
-                  <b>03</b>
-                  Situation-based shopping
-                </div>
-
+              <div className="mt-8 space-y-3">
+                {[
+                  "Personalized product discovery",
+                  "Budget-aware recommendations",
+                  "Situation-based shopping",
+                ].map((item, index) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 text-xs font-semibold text-white/80"
+                  >
+                    <span className="text-[9px] font-black text-[#d4ad58]">
+                      0{index + 1}
+                    </span>
+                    {item}
+                  </div>
+                ))}
               </div>
 
               <Link
                 href="/auth/register"
-                className="primary-btn"
+                className="mt-9 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3.5 text-sm font-black text-[#17140e] transition hover:bg-[#f3ead9]"
               >
                 Create Your Account
-                <ArrowRight size={17} />
+                <ArrowRight size={16} />
               </Link>
-
             </div>
 
-            <div className="difference-visual">
+            <div className="relative flex min-h-[420px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#4a3b20_0%,#282116_38%,#17140e_72%)]">
+              <div className="absolute h-[280px] w-[280px] rounded-full border border-[#cba85c]/15" />
+              <div className="absolute h-[390px] w-[390px] rounded-full border border-[#cba85c]/10" />
 
-              <div className="smart-circle">
-                <Brain size={55} />
+              <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[#705b31] bg-[#2e2617] text-[#d7b15d] shadow-[0_0_80px_rgba(205,168,83,0.12)]">
+                <Brain size={54} />
               </div>
 
-              <div className="mini-card mini-one">
-                <small>Need</small>
-                <strong>Gaming Setup</strong>
+              <div className="absolute left-6 top-14 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:left-10">
+                <p className="text-[8px] text-white/45">Shopping goal</p>
+                <p className="mt-1 text-xs font-black">
+                  Gaming Setup
+                </p>
               </div>
 
-              <div className="mini-card mini-two">
-                <small>Budget</small>
-                <strong>₹50,000</strong>
+              <div className="absolute right-5 top-[45%] rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:right-10">
+                <p className="text-[8px] text-white/45">Budget</p>
+                <p className="mt-1 text-xs font-black">
+                  ₹50,000
+                </p>
               </div>
 
-              <div className="mini-card mini-three">
-                <small>Match</small>
-                <strong>96%</strong>
+              <div className="absolute bottom-12 left-12 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:left-20">
+                <p className="text-[8px] text-white/45">Match score</p>
+                <p className="mt-1 text-xs font-black text-[#d8b45f]">
+                  96%
+                </p>
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= CTA ================= */}
+      {/* =====================================================
+          CTA
+      ===================================================== */}
 
-      <section className="cta">
+      <section className="pb-24 sm:pb-28">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[30px] bg-[#efdfba] px-6 py-20 text-center sm:px-10">
+            <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full border border-[#a98238]/10" />
+            <div className="absolute -bottom-48 -right-24 h-96 w-96 rounded-full border border-[#a98238]/10" />
 
-        <div className="container">
-
-          <div className="cta-card">
-
-            <div className="circle circle-one" />
-            <div className="circle circle-two" />
-
-            <div className="cta-content">
-
-              <span>
-                READY?
+            <div className="relative z-10 mx-auto max-w-2xl">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#92702e]">
+                READY TO SHOP DIFFERENTLY?
               </span>
 
-              <h2>
-                Your smarter
+              <h2 className="mt-4 text-[40px] font-black leading-[1.02] tracking-[-2px] sm:text-[58px]">
+                Your smarter shopping
                 <br />
-                shopping journey starts here.
+                journey starts here.
               </h2>
 
-              <p>
-                Create your PrimeCart account and discover a different
-                way to shop.
+              <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-[#74684f]">
+                Create your PrimeCart account and discover a more
+                personalized way to shop.
               </p>
 
               <Link
                 href="/auth/register"
-                className="cta-btn"
+                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[#17140e] px-6 py-3.5 text-sm font-black text-white transition hover:-translate-y-1"
               >
                 Get Started
-                <ArrowRight size={18} />
+                <ArrowRight size={17} />
               </Link>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
-      {/* ================= FOOTER ================= */}
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
 
-      <footer className="footer">
+      <footer className="bg-[#17140e] text-white">
+        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+            <div>
+              <Link href="/" className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#29251d] text-[#dcb75f]">
+                  <Sparkles size={18} />
+                </div>
 
-        <div className="container">
-
-          <div className="footer-top">
-
-            <div className="footer-brand">
-
-              <Link href="/" className="logo">
-
-                <span className="logo-icon">
-                  <Sparkles size={19} />
-                </span>
-
-                <span className="logo-text">
-                  Prime<span>Cart</span>
-                </span>
-
+                <div className="text-xl font-black tracking-tight">
+                  Prime<span className="text-[#d0a74e]">Cart</span>
+                </div>
               </Link>
 
-              <p>
-                Shop smarter. Discover better.
-                <br />
-                Built for the way you shop.
+              <p className="mt-5 max-w-xs text-xs leading-6 text-white/45">
+                A smarter shopping experience built around your needs,
+                budget and preferences.
               </p>
-
             </div>
 
-            <div className="footer-columns">
+            <FooterColumn
+              title="Explore"
+              links={[
+                ["Why PrimeCart", "#features"],
+                ["Categories", "#categories"],
+                ["How It Works", "#how"],
+              ]}
+            />
 
-              <div>
-                <h4>Explore</h4>
-                <a href="#features">Features</a>
-                <a href="#categories">Categories</a>
-                <a href="#how">How it works</a>
-              </div>
+            <FooterColumn
+              title="Account"
+              links={[
+                ["Login", "/auth/login"],
+                ["Register", "/auth/register"],
+              ]}
+            />
 
-              <div>
-                <h4>Account</h4>
-                <Link href="/auth/login">
-                  Login
-                </Link>
-                <Link href="/auth/register">
-                  Register
-                </Link>
-              </div>
-
-              <div>
-                <h4>PrimeCart</h4>
-                <span>PrimeMatch</span>
-                <span>Budget Builder</span>
-                <span>PrimePoints</span>
-              </div>
-
-            </div>
-
+            <FooterColumn
+              title="PrimeCart"
+              links={[
+                ["PrimeMatch", "/auth/register"],
+                ["Budget Builder", "/auth/register"],
+                ["PrimePoints", "/auth/register"],
+              ]}
+            />
           </div>
 
-          <div className="footer-bottom">
-
-            <span>
-              © 2026 PrimeCart. All rights reserved.
-            </span>
-
-            <span>
-              Made for smarter shoppers.
-            </span>
-
+          <div className="mt-12 flex flex-col justify-between gap-3 border-t border-white/10 pt-5 text-[10px] text-white/35 sm:flex-row">
+            <span>© 2026 PrimeCart. All rights reserved.</span>
+            <span>Shop smarter. Discover better.</span>
           </div>
-
         </div>
-
       </footer>
-
-      {/* ================= CSS ================= */}
-
-      <style jsx global>{`
-
-        * {
-          box-sizing: border-box;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body {
-          margin: 0;
-          background: #fcfaf6;
-          color: #17140e;
-          font-family:
-            Inter,
-            Arial,
-            Helvetica,
-            sans-serif;
-        }
-
-        a {
-          text-decoration: none;
-          color: inherit;
-        }
-
-        .container {
-          width: min(1180px, calc(100% - 40px));
-          margin: auto;
-        }
-
-        /* NAVBAR */
-
-        .navbar {
-          height: 76px;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          background: rgba(252,250,246,.94);
-          backdrop-filter: blur(18px);
-          border-bottom: 1px solid #eee5d6;
-        }
-
-        .nav-inner {
-          height: 100%;
-          display: flex;
-          align-items: center;
-          gap: 30px;
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-weight: 900;
-        }
-
-        .logo-icon {
-          width: 40px;
-          height: 40px;
-          display: grid;
-          place-items: center;
-          border-radius: 13px;
-          background: #17140e;
-          color: #dfb85d;
-        }
-
-        .logo-text {
-          font-size: 21px;
-          letter-spacing: -.8px;
-        }
-
-        .logo-text span {
-          color: #b8872d;
-        }
-
-        .nav-links {
-          display: flex;
-          gap: 34px;
-          margin-left: auto;
-        }
-
-        .nav-links a {
-          color: #686157;
-          font-size: 13px;
-          font-weight: 650;
-        }
-
-        .nav-links a:hover {
-          color: #17140e;
-        }
-
-        .nav-actions {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-        }
-
-        .login-btn {
-          padding: 11px 14px;
-          font-size: 13px;
-          font-weight: 750;
-        }
-
-        .start-btn {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          padding: 11px 16px;
-          border-radius: 12px;
-          background: #17140e;
-          color: #fff;
-          font-size: 13px;
-          font-weight: 750;
-        }
-
-        /* HERO */
-
-        .hero {
-          padding: 90px 0 100px;
-          overflow: hidden;
-        }
-
-        .hero-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          align-items: center;
-          gap: 70px;
-        }
-
-        .hero-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 8px 13px;
-          border-radius: 999px;
-          background: #f8efdc;
-          color: #87641f;
-          border: 1px solid #ead9b5;
-          font-size: 10px;
-          font-weight: 850;
-          text-transform: uppercase;
-          letter-spacing: .7px;
-        }
-
-        .hero-content h1 {
-          font-size: clamp(52px,6vw,76px);
-          line-height: .98;
-          letter-spacing: -4px;
-          margin: 23px 0;
-        }
-
-        .hero-content h1 span {
-          color: #bc8d2e;
-        }
-
-        .hero-content > p {
-          max-width: 590px;
-          color: #6e675c;
-          font-size: 16px;
-          line-height: 1.75;
-        }
-
-        .hero-buttons {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 30px;
-          flex-wrap: wrap;
-        }
-
-        .primary-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 14px 20px;
-          border-radius: 13px;
-          background: #17140e;
-          color: white;
-          font-size: 13px;
-          font-weight: 800;
-          transition: .2s;
-        }
-
-        .primary-btn:hover {
-          transform: translateY(-2px);
-        }
-
-        .secondary-btn {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding: 14px;
-          font-size: 13px;
-          font-weight: 750;
-        }
-
-        .trust-items {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-          margin-top: 35px;
-          color: #7b7468;
-          font-size: 11px;
-          font-weight: 650;
-        }
-
-        .trust-items div {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .trust-items svg {
-          color: #b98b30;
-        }
-
-        /* HERO VISUAL */
-
-        .hero-visual {
-          min-height: 520px;
-          position: relative;
-          display: grid;
-          place-items: center;
-        }
-
-        .glow {
-          position: absolute;
-          border-radius: 50%;
-        }
-
-        .glow-1 {
-          width: 370px;
-          height: 370px;
-          background: #efdfb8;
-          opacity: .55;
-        }
-
-        .glow-2 {
-          width: 220px;
-          height: 220px;
-          right: 10px;
-          bottom: 30px;
-          background: #e9d09c;
-          opacity: .35;
-        }
-
-        .match-card {
-          width: min(430px,100%);
-          padding: 24px;
-          position: relative;
-          z-index: 2;
-          background: white;
-          border: 1px solid #eadfcb;
-          border-radius: 27px;
-          box-shadow: 0 30px 80px rgba(67,49,18,.13);
-        }
-
-        .match-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
-
-        .match-header span {
-          color: #a77924;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 1.3px;
-        }
-
-        .match-header h3 {
-          font-size: 20px;
-          margin: 5px 0 0;
-        }
-
-        .match-score {
-          width: 53px;
-          height: 53px;
-          display: grid;
-          place-items: center;
-          border-radius: 17px;
-          background: #f5ead2;
-          color: #87631d;
-          font-size: 14px;
-          font-weight: 900;
-        }
-
-        .product-preview {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-top: 22px;
-          padding: 15px;
-          background: #f8f5ef;
-          border-radius: 18px;
-        }
-
-        .product-image {
-          width: 82px;
-          height: 82px;
-          display: grid;
-          place-items: center;
-          border-radius: 15px;
-          background: #eee3cf;
-          font-size: 38px;
-        }
-
-        .product-info {
-          flex: 1;
-        }
-
-        .product-info small {
-          color: #a77924;
-          font-size: 9px;
-          text-transform: uppercase;
-          font-weight: 850;
-        }
-
-        .product-info h4 {
-          margin: 5px 0;
-          font-size: 14px;
-        }
-
-        .rating {
-          color: #a77924;
-          font-size: 10px;
-          font-weight: 800;
-          margin-bottom: 7px;
-        }
-
-        .rating span {
-          color: #8a8379;
-          font-weight: 500;
-        }
-
-        .product-info strong {
-          font-size: 17px;
-        }
-
-        .add-button {
-          width: 35px;
-          height: 35px;
-          border: 0;
-          border-radius: 11px;
-          background: #17140e;
-          color: white;
-          font-size: 22px;
-        }
-
-        .match-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin-top: 16px;
-        }
-
-        .match-tags span {
-          padding: 7px 9px;
-          border-radius: 8px;
-          background: #f8f3e8;
-          color: #766d5f;
-          font-size: 9px;
-          font-weight: 700;
-        }
-
-        .floating {
-          position: absolute;
-          z-index: 5;
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          padding: 12px;
-          background: white;
-          border: 1px solid #e8dfd0;
-          border-radius: 15px;
-          box-shadow: 0 15px 35px rgba(60,44,19,.12);
-        }
-
-        .budget-card {
-          top: 35px;
-          left: -5px;
-        }
-
-        .points-card {
-          right: -5px;
-          bottom: 45px;
-        }
-
-        .floating-icon {
-          width: 35px;
-          height: 35px;
-          display: grid;
-          place-items: center;
-          border-radius: 10px;
-          background: #f5ead2;
-        }
-
-        .floating small {
-          display: block;
-          color: #8b8377;
-          font-size: 9px;
-        }
-
-        .floating strong {
-          display: block;
-          font-size: 12px;
-          margin-top: 3px;
-        }
-
-        /* STATS */
-
-        .stats {
-          border-top: 1px solid #eee5d6;
-          border-bottom: 1px solid #eee5d6;
-          background: white;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4,1fr);
-        }
-
-        .stats-grid > div {
-          padding: 25px 20px;
-          border-right: 1px solid #eee5d6;
-        }
-
-        .stats-grid > div:last-child {
-          border-right: 0;
-        }
-
-        .stats-grid strong {
-          display: block;
-          font-size: 25px;
-        }
-
-        .stats-grid span {
-          display: block;
-          margin-top: 5px;
-          color: #837b70;
-          font-size: 11px;
-        }
-
-        /* FEATURES */
-
-        .features {
-          padding: 115px 0;
-        }
-
-        .section-title {
-          text-align: center;
-          margin-bottom: 55px;
-        }
-
-        .section-title > span,
-        .category-heading > div > span,
-        .how-intro > span,
-        .difference-content > span,
-        .cta-content > span {
-          color: #a37826;
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 1.7px;
-        }
-
-        .section-title h2,
-        .category-heading h2,
-        .how-intro h2,
-        .difference-content h2 {
-          font-size: clamp(40px,5vw,58px);
-          line-height: 1.04;
-          letter-spacing: -2.5px;
-          margin: 14px 0;
-        }
-
-        .section-title h2 strong,
-        .category-heading h2 strong,
-        .how-intro h2 strong,
-        .difference-content h2 strong {
-          color: #bd8e2f;
-        }
-
-        .section-title p {
-          max-width: 550px;
-          margin: auto;
-          color: #777064;
-          line-height: 1.7;
-          font-size: 14px;
-        }
-
-        .feature-grid {
-          display: grid;
-          grid-template-columns: repeat(3,1fr);
-          gap: 18px;
-        }
-
-        .feature-card {
-          padding: 25px;
-          background: white;
-          border: 1px solid #e9e1d2;
-          border-radius: 21px;
-          transition: .25s;
-        }
-
-        .feature-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 20px 45px rgba(65,48,18,.08);
-          border-color: #dcc79a;
-        }
-
-        .feature-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .feature-icon {
-          width: 48px;
-          height: 48px;
-          display: grid;
-          place-items: center;
-          border-radius: 14px;
-          background: #f6efdf;
-          color: #936b21;
-        }
-
-        .feature-top span {
-          padding: 7px 9px;
-          border-radius: 8px;
-          background: #f7f5f0;
-          color: #8c8376;
-          font-size: 9px;
-          font-weight: 800;
-        }
-
-        .feature-card h3 {
-          font-size: 19px;
-          margin: 25px 0 9px;
-        }
-
-        .feature-card p {
-          min-height: 62px;
-          margin: 0;
-          color: #777064;
-          font-size: 12px;
-          line-height: 1.7;
-        }
-
-        .feature-link {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-top: 20px;
-          color: #9a7126;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        /* CATEGORIES */
-
-        .categories {
-          padding: 95px 0;
-          background: #f5f0e7;
-        }
-
-        .category-heading {
-          display: flex;
-          justify-content: space-between;
-          align-items: end;
-          margin-bottom: 40px;
-        }
-
-        .view-all {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .category-grid {
-          display: grid;
-          grid-template-columns: repeat(5,1fr);
-          gap: 12px;
-        }
-
-        .category-card {
-          min-height: 145px;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          background: white;
-          border: 1px solid #e9e1d2;
-          border-radius: 19px;
-          transition: .2s;
-        }
-
-        .category-card:hover {
-          transform: translateY(-4px);
-          border-color: #d7bc7e;
-        }
-
-        .category-icon {
-          font-size: 33px;
-        }
-
-        .category-card strong {
-          display: block;
-          font-size: 13px;
-          margin-bottom: 6px;
-        }
-
-        .category-card span {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-          color: #918879;
-          font-size: 9px;
-        }
-
-        /* HOW */
-
-        .how {
-          padding: 115px 0;
-        }
-
-        .how-grid {
-          display: grid;
-          grid-template-columns: .8fr 1.2fr;
-          gap: 90px;
-          align-items: center;
-        }
-
-        .how-intro p {
-          max-width: 390px;
-          color: #777064;
-          font-size: 14px;
-          line-height: 1.75;
-          margin-bottom: 28px;
-        }
-
-        .steps {
-          border-left: 1px solid #dfd5c3;
-        }
-
-        .step {
-          display: flex;
-          gap: 25px;
-          padding: 22px 0 22px 30px;
-        }
-
-        .step-number {
-          width: 43px;
-          height: 43px;
-          flex: 0 0 43px;
-          display: grid;
-          place-items: center;
-          border-radius: 13px;
-          background: #f5ead2;
-          color: #956c20;
-          font-size: 10px;
-          font-weight: 900;
-        }
-
-        .step h3 {
-          margin: 1px 0 7px;
-          font-size: 17px;
-        }
-
-        .step p {
-          margin: 0;
-          color: #81796e;
-          font-size: 12px;
-          line-height: 1.6;
-        }
-
-        /* DIFFERENCE */
-
-        .difference {
-          padding-bottom: 110px;
-        }
-
-        .difference-card {
-          display: grid;
-          grid-template-columns: 1fr .9fr;
-          min-height: 530px;
-          overflow: hidden;
-          border-radius: 30px;
-          background: #17140e;
-          color: white;
-        }
-
-        .difference-content {
-          padding: 70px;
-        }
-
-        .difference-content p {
-          max-width: 520px;
-          color: #c5beb2;
-          font-size: 13px;
-          line-height: 1.75;
-        }
-
-        .difference-list {
-          display: grid;
-          gap: 10px;
-          margin: 27px 0;
-        }
-
-        .difference-list div {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 12px;
-        }
-
-        .difference-list b {
-          color: #d5af59;
-          font-size: 9px;
-        }
-
-        .difference-visual {
-          position: relative;
-          display: grid;
-          place-items: center;
-          background: radial-gradient(circle,#51401f,#2d2619 40%,#17140e 70%);
-        }
-
-        .smart-circle {
-          width: 170px;
-          height: 170px;
-          display: grid;
-          place-items: center;
-          border-radius: 50%;
-          color: #d6b05c;
-          background: #302816;
-          border: 1px solid #65532d;
-          box-shadow:
-            0 0 0 20px rgba(203,166,82,.04),
-            0 0 0 45px rgba(203,166,82,.025);
-        }
-
-        .mini-card {
-          position: absolute;
-          min-width: 130px;
-          padding: 13px 16px;
-          border-radius: 14px;
-          background: rgba(255,255,255,.09);
-          border: 1px solid rgba(255,255,255,.14);
-          backdrop-filter: blur(10px);
-        }
-
-        .mini-card small {
-          display: block;
-          color: #b9b1a5;
-          font-size: 8px;
-          margin-bottom: 5px;
-        }
-
-        .mini-card strong {
-          font-size: 12px;
-        }
-
-        .mini-one {
-          top: 85px;
-          left: 30px;
-        }
-
-        .mini-two {
-          top: 50%;
-          right: 25px;
-        }
-
-        .mini-three {
-          bottom: 75px;
-          left: 50px;
-        }
-
-        /* CTA */
-
-        .cta {
-          padding-bottom: 100px;
-        }
-
-        .cta-card {
-          position: relative;
-          overflow: hidden;
-          padding: 75px 25px;
-          border-radius: 30px;
-          background: #f0dfb9;
-          text-align: center;
-        }
-
-        .cta-content {
-          position: relative;
-          z-index: 2;
-        }
-
-        .cta-content h2 {
-          font-size: clamp(40px,5vw,60px);
-          line-height: 1.02;
-          letter-spacing: -2.5px;
-          margin: 15px 0;
-        }
-
-        .cta-content p {
-          color: #71664f;
-          font-size: 14px;
-          margin-bottom: 28px;
-        }
-
-        .cta-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 14px 21px;
-          border-radius: 13px;
-          background: #17140e;
-          color: white;
-          font-size: 13px;
-          font-weight: 800;
-        }
-
-        .circle {
-          position: absolute;
-          border: 1px solid rgba(102,75,24,.13);
-          border-radius: 50%;
-        }
-
-        .circle-one {
-          width: 350px;
-          height: 350px;
-          left: -100px;
-          top: -160px;
-        }
-
-        .circle-two {
-          width: 450px;
-          height: 450px;
-          right: -170px;
-          bottom: -250px;
-        }
-
-        /* FOOTER */
-
-        .footer {
-          padding: 65px 0 25px;
-          background: #17140e;
-          color: white;
-        }
-
-        .footer-top {
-          display: flex;
-          justify-content: space-between;
-          gap: 60px;
-          padding-bottom: 55px;
-          border-bottom: 1px solid rgba(255,255,255,.1);
-        }
-
-        .footer-brand p {
-          color: #9c968c;
-          font-size: 11px;
-          line-height: 1.7;
-        }
-
-        .footer-columns {
-          display: flex;
-          gap: 75px;
-        }
-
-        .footer-columns div {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          min-width: 120px;
-        }
-
-        .footer-columns h4 {
-          margin: 0 0 6px;
-          color: #d4ae5b;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-
-        .footer-columns a,
-        .footer-columns span {
-          color: #9c968c;
-          font-size: 11px;
-        }
-
-        .footer-bottom {
-          display: flex;
-          justify-content: space-between;
-          padding-top: 22px;
-          color: #746f67;
-          font-size: 9px;
-        }
-
-        /* MOBILE */
-
-        @media (max-width: 1000px) {
-
-          .hero-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .hero-content {
-            text-align: center;
-          }
-
-          .hero-content > p {
-            margin: auto;
-          }
-
-          .hero-buttons,
-          .trust-items {
-            justify-content: center;
-          }
-
-          .hero-visual {
-            width: 100%;
-            max-width: 600px;
-            margin: auto;
-          }
-
-          .feature-grid {
-            grid-template-columns: repeat(2,1fr);
-          }
-
-          .category-grid {
-            grid-template-columns: repeat(4,1fr);
-          }
-
-        }
-
-        @media (max-width: 760px) {
-
-          .container {
-            width: calc(100% - 26px);
-          }
-
-          .navbar {
-            height: 68px;
-          }
-
-          .nav-links {
-            display: none;
-          }
-
-          .nav-inner {
-            justify-content: space-between;
-          }
-
-          .login-btn {
-            display: none;
-          }
-
-          .start-btn {
-            padding: 10px 12px;
-          }
-
-          .hero {
-            padding: 55px 0 65px;
-          }
-
-          .hero-content h1 {
-            font-size: 48px;
-            letter-spacing: -2.8px;
-          }
-
-          .hero-content > p {
-            font-size: 14px;
-          }
-
-          .hero-visual {
-            min-height: 420px;
-          }
-
-          .match-card {
-            padding: 18px;
-          }
-
-          .budget-card {
-            left: 0;
-            top: 10px;
-          }
-
-          .points-card {
-            right: 0;
-            bottom: 10px;
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(2,1fr);
-          }
-
-          .stats-grid > div:nth-child(2) {
-            border-right: 0;
-          }
-
-          .feature-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .category-grid {
-            grid-template-columns: repeat(2,1fr);
-          }
-
-          .category-heading {
-            align-items: flex-start;
-          }
-
-          .how-grid {
-            grid-template-columns: 1fr;
-            gap: 50px;
-          }
-
-          .difference-card {
-            grid-template-columns: 1fr;
-          }
-
-          .difference-content {
-            padding: 40px 25px;
-          }
-
-          .difference-visual {
-            min-height: 370px;
-          }
-
-          .footer-top {
-            flex-direction: column;
-          }
-
-          .footer-columns {
-            gap: 30px;
-            flex-wrap: wrap;
-          }
-
-          .footer-bottom {
-            flex-direction: column;
-            gap: 7px;
-          }
-
-        }
-
-        @media (max-width: 430px) {
-
-          .logo-text {
-            font-size: 18px;
-          }
-
-          .hero-content h1 {
-            font-size: 42px;
-          }
-
-          .hero-visual {
-            min-height: 390px;
-          }
-
-          .product-image {
-            width: 65px;
-            height: 65px;
-          }
-
-          .product-preview {
-            gap: 9px;
-            padding: 10px;
-          }
-
-          .match-tags span {
-            font-size: 8px;
-          }
-
-          .floating {
-            transform: scale(.88);
-          }
-
-          .section-title h2,
-          .category-heading h2,
-          .how-intro h2,
-          .difference-content h2 {
-            font-size: 39px;
-          }
-
-          .category-card {
-            min-height: 125px;
-            padding: 15px;
-          }
-
-        }
-
-      `}</style>
-
     </main>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: [string, string][];
+}) {
+  return (
+    <div>
+      <h4 className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d1aa56]">
+        {title}
+      </h4>
+
+      <div className="mt-5 flex flex-col gap-3">
+        {links.map(([label, href]) => (
+          <Link
+            key={label}
+            href={href}
+            className="w-fit text-xs text-white/45 transition hover:text-white"
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
