@@ -105,38 +105,29 @@ export function ThemeProvider({
     }
   }, [theme, mounted]);
 
-  function setTheme(themeValue: Theme) {
-    setThemeState(themeValue);
+ function setTheme(themeValue: Theme) {
+  setThemeState(themeValue);
 
-    localStorage.setItem(
-      "primecart-theme",
-      themeValue
-    );
+  localStorage.setItem("primecart-theme", themeValue);
 
-    // Apply immediately without waiting
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+  const systemPrefersDark = window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  ).matches;
 
-    const finalTheme =
-      themeValue === "system"
-        ? systemPrefersDark
-          ? "dark"
-          : "light"
-        : themeValue;
+  const finalTheme =
+    themeValue === "system"
+      ? systemPrefersDark
+        ? "dark"
+        : "light"
+      : themeValue;
 
-    document.documentElement.classList.remove(
-      "light",
-      "dark"
-    );
+  document.documentElement.classList.remove("light", "dark");
+  document.documentElement.classList.add(finalTheme);
 
-    document.documentElement.classList.add(finalTheme);
+  document.documentElement.style.colorScheme = finalTheme;
 
-    document.documentElement.style.colorScheme =
-      finalTheme;
-
-    setResolvedTheme(finalTheme);
-  }
+  setResolvedTheme(finalTheme);
+}
 
   function toggleTheme() {
     if (resolvedTheme === "dark") {
