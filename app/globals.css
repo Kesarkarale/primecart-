@@ -24,3 +24,71 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+html {
+  background: #faf8f3;
+}
+
+html.dark {
+  background: #0f0e0b;
+}
+
+body {
+  background: #faf8f3;
+  color: #17130d;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+html.dark body {
+  background: #0f0e0b;
+  color: #f5f1e8;
+}
+
+/* Dark mode helpers */
+
+html.dark .bg-white {
+  background-color: #181612 !important;
+}
+
+html.dark .bg-\[\#faf8f3\] {
+  background-color: #0f0e0b !important;
+}
+
+html.dark .bg-\[\#fffaf0\] {
+  background-color: #211d15 !important;
+}
+
+html.dark .text-neutral-900 {
+  color: #f5f1e8 !important;
+}
+
+html.dark .text-neutral-800 {
+  color: #eee8dc !important;
+}
+
+html.dark .text-neutral-700 {
+  color: #d8d0c2 !important;
+}
+
+html.dark .text-neutral-600 {
+  color: #c4bbae !important;
+}
+
+html.dark .text-neutral-500 {
+  color: #a9a095 !important;
+}
+
+html.dark .border-\[\#eadfc9\] {
+  border-color: #393126 !important;
+}
+
+html.dark .border-\[\#eee5d5\] {
+  border-color: #332d24 !important;
+}
+
+html.dark .hover\:bg-\[\#faf8f3\]:hover {
+  background-color: #211d15 !important;
+}
