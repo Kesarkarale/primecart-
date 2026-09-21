@@ -1,18 +1,18 @@
 "use client";
 
+import { createClient } from "@/lib/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BarChart3,
   Bell,
+  ChevronDown,
   ChevronRight,
   Clock3,
   Crown,
   Heart,
-  Layers3,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -30,9 +30,13 @@ import {
   WalletCards,
   X,
   Zap,
+  Layers3,
+  Eye,
+  CircleDollarSign,
+  ShoppingCart,
+  BadgePercent,
 } from "lucide-react";
-
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 
 type Product = {
   id: string;
@@ -66,6 +70,21 @@ type Order = {
   created_at: string;
 };
 
+type Profile = {
+  full_name: string | null;
+  email: string | null;
+  avatar_url?: string | null;
+};
+
+type DashboardStats = {
+  orders: number;
+  wishlist: number;
+  spent: number;
+  points: number;
+};
+
+const GOLD = "#b9975b";
+
 const categoryIcons: Record<string, string> = {
   "home-living": "🏠",
   mobile: "📱",
@@ -79,19 +98,6 @@ const categoryIcons: Record<string, string> = {
   gaming: "🎮",
 };
 
-const categoryImages: Record<string, string> = {
-  mobile: "/smartphone-x-pro.png",
-  "home-living": "/cookware-set.png",
-  appliance: "/air-fryer.png",
-  footwear: "/sports-running-shoes.png",
-  watch: "/classic-watch.png",
-  bag: "/bag.png",
-  "toy-baby": "/toy-baby.png",
-  automotive: "/automotive.png",
-  fashion: "/casual-tshirt.png",
-  gaming: "/gaming-mouse.png",
-};
-
 function getImageUrl(imageUrl: string | null) {
   if (!imageUrl) return null;
 
@@ -99,11 +105,11 @@ function getImageUrl(imageUrl: string | null) {
 
   if (!value) return null;
 
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/")
+  ) {
     return value;
   }
 
@@ -118,192 +124,214 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
-function getDiscount(price: number, originalPrice: number | null) {
-  if (!originalPrice || originalPrice <= price) return 0;
-
-  return Math.round(((originalPrice - price) / originalPrice) * 100);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+function getDiscount(price: number, original: number | null) {
+  if (!original || original <= price) return 0;
+  return Math.round(((original - price) / original) * 100);
 }
 
 function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-
-  if (!parts.length) return "PC";
-
-  return parts
+  return name
+    .split(" ")
+    .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
+    .map((item) => item[0]?.toUpperCase())
     .join("");
 }
 
-function getFirstName(name: string) {
-  return name.trim().split(/\s+/)[0] || "there";
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function getStatusClasses(status: string) {
-  const normalized = status.toLowerCase();
+const sidebarItems = [
+  {
+    label: "Overview",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Products",
+    href: "/dashboard/products",
+    icon: ShoppingBag,
+  },
+  {
+    label: "Categories",
+    href: "/dashboard/categories",
+    icon: Layers3,
+  },
+  {
+    label: "My Orders",
+    href: "/dashboard/orders",
+    icon: Package,
+  },
+  {
+    label: "Wishlist",
+    href: "/dashboard/wishlist",
+    icon: Heart,
+  },
+];
 
-  if (
-    normalized.includes("deliver") ||
-    normalized.includes("complete") ||
-    normalized.includes("success")
-  ) {
-    return "bg-emerald-50 text-emerald-700 border-emerald-100";
-  }
-
-  if (
-    normalized.includes("cancel") ||
-    normalized.includes("fail")
-  ) {
-    return "bg-red-50 text-red-700 border-red-100";
-  }
-
-  return "bg-amber-50 text-amber-700 border-amber-100";
-}
+const smartTools = [
+  {
+    title: "PrimeMatch",
+    description: "Find products matched to your needs.",
+    href: "/dashboard/prime-match",
+    icon: Target,
+    tag: "AI MATCH",
+  },
+  {
+    title: "Budget Builder",
+    description: "Plan your shopping within budget.",
+    href: "/dashboard/budget-builder",
+    icon: WalletCards,
+    tag: "SMART",
+  },
+  {
+    title: "Setup Builder",
+    description: "Build your complete setup easily.",
+    href: "/dashboard/setup-builder",
+    icon: Sparkles,
+    tag: "CURATED",
+  },
+  {
+    title: "PrimePoints",
+    description: "Track and use your shopping rewards.",
+    href: "/dashboard/prime-points",
+    icon: Crown,
+    tag: "REWARDS",
+  },
+];
 
 export default function DashboardPage() {
-  const router = useRouter();
   const supabase = createClient();
 
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [mobileSidebar, setMobileSidebar] = useState(false);
 
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    orders: 0,
+    wishlist: 0,
+    spent: 0,
+    points: 0,
+  });
 
-  const [wishlistCount, setWishlistCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [mobileMenu, setMobileMenu] = useState(false);
   const [search, setSearch] = useState("");
-
-  const [error, setError] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadDashboard() {
-      setLoading(true);
-      setError("");
-
       try {
+        setLoading(true);
+
         const {
-          data: { user: currentUser },
+          data: { user },
         } = await supabase.auth.getUser();
 
-        if (!currentUser) {
-          router.replace("/auth/login");
+        if (!user) {
+          window.location.replace("/auth/login");
           return;
         }
 
-        if (!mounted) return;
-
-        setUser(currentUser);
-
         const [
-          profileResponse,
-          productsResponse,
-          categoriesResponse,
-          ordersResponse,
-          wishlistResponse,
+          profileResult,
+          productsResult,
+          categoriesResult,
+          ordersResult,
+          wishlistResult,
         ] = await Promise.all([
           supabase
             .from("profiles")
-            .select("*")
-            .eq("id", currentUser.id)
+            .select("full_name,email,avatar_url")
+            .eq("id", user.id)
             .maybeSingle(),
 
           supabase
             .from("products")
             .select(
               `
-                id,
-                name,
-                slug,
-                short_description,
-                description,
-                price,
-                original_price,
-                stock,
-                image_url,
-                brand,
-                rating,
-                reviews_count,
-                is_featured,
-                is_flash_sale,
-                is_active,
-                category_id
-              `
+              id,
+              name,
+              slug,
+              short_description,
+              description,
+              price,
+              original_price,
+              stock,
+              image_url,
+              brand,
+              rating,
+              reviews_count,
+              is_featured,
+              is_flash_sale,
+              is_active,
+              category_id
+            `,
             )
             .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(100),
+            .order("created_at", { ascending: false }),
 
           supabase
             .from("categories")
-            .select("id, name, slug")
-            .order("name"),
+            .select("id,name,slug")
+            .order("name", { ascending: true }),
 
           supabase
             .from("orders")
-            .select("id, status, total_amount, created_at")
-            .eq("user_id", currentUser.id)
-            .order("created_at", { ascending: false })
-            .limit(5),
+            .select("id,status,total_amount,created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
 
           supabase
             .from("wishlist")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", currentUser.id),
+            .select("id")
+            .eq("user_id", user.id),
         ]);
-
-        if (profileResponse.error) {
-          console.warn(profileResponse.error.message);
-        }
-
-        if (productsResponse.error) {
-          throw new Error(productsResponse.error.message);
-        }
-
-        if (categoriesResponse.error) {
-          console.warn(categoriesResponse.error.message);
-        }
-
-        if (ordersResponse.error) {
-          console.warn(ordersResponse.error.message);
-        }
-
-        if (wishlistResponse.error) {
-          console.warn(wishlistResponse.error.message);
-        }
 
         if (!mounted) return;
 
-        setProfile(profileResponse.data);
-        setProducts((productsResponse.data || []) as Product[]);
-        setCategories((categoriesResponse.data || []) as Category[]);
-        setOrders((ordersResponse.data || []) as Order[]);
-        setWishlistCount(wishlistResponse.count || 0);
-      } catch (err: any) {
-        console.error(err);
+        if (profileResult.data) {
+          setProfile(profileResult.data);
+        } else {
+          setProfile({
+            full_name: user.user_metadata?.full_name ?? "PrimeCart User",
+            email: user.email ?? "",
+          });
+        }
 
-        if (mounted) {
-          setError(
-            err?.message ||
-              "Something went wrong while loading your dashboard."
-          );
-        }
+        const productRows = (productsResult.data ?? []) as Product[];
+        const categoryRows = (categoriesResult.data ?? []) as Category[];
+        const orderRows = (ordersResult.data ?? []) as Order[];
+
+        setProducts(productRows);
+        setCategories(categoryRows);
+        setOrders(orderRows);
+
+        const totalSpent = orderRows.reduce(
+          (sum, order) => sum + Number(order.total_amount || 0),
+          0,
+        );
+
+        setStats({
+          orders: orderRows.length,
+          wishlist: wishlistResult.data?.length ?? 0,
+          spent: totalSpent,
+          points: Math.floor(totalSpent / 10),
+        });
+      } catch (error) {
+        console.error("Dashboard loading error:", error);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     }
 
@@ -312,329 +340,273 @@ export default function DashboardPage() {
     return () => {
       mounted = false;
     };
-  }, [router]);
-
-  const displayName =
-    profile?.full_name ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split("@")[0] ||
-    "there";
-
-  const firstName = getFirstName(displayName);
+  }, [supabase]);
 
   const featuredProducts = useMemo(() => {
-    return products
-      .filter((product) => product.is_featured)
-      .slice(0, 4);
+    const featured = products.filter((product) => product.is_featured);
+
+    return featured.length > 0 ? featured.slice(0, 6) : products.slice(0, 6);
   }, [products]);
 
-  const fallbackProducts = useMemo(() => {
-    return products.slice(0, 4);
+  const flashProducts = useMemo(() => {
+    const flash = products.filter((product) => product.is_flash_sale);
+
+    return flash.length > 0 ? flash.slice(0, 4) : products.slice(0, 4);
   }, [products]);
-
-  const dashboardProducts =
-    featuredProducts.length > 0 ? featuredProducts : fallbackProducts;
-
-  const flashSaleProducts = useMemo(() => {
-    return products
-      .filter((product) => product.is_flash_sale)
-      .slice(0, 4);
-  }, [products]);
-
-  const totalSpent = useMemo(() => {
-    return orders.reduce(
-      (sum, order) => sum + Number(order.total_amount || 0),
-      0
-    );
-  }, [orders]);
 
   const searchResults = useMemo(() => {
-    const value = search.trim().toLowerCase();
+    if (!search.trim()) return [];
 
-    if (!value) return [];
+    const value = search.toLowerCase();
 
     return products
       .filter(
         (product) =>
           product.name.toLowerCase().includes(value) ||
-          product.brand?.toLowerCase().includes(value)
+          product.brand?.toLowerCase().includes(value),
       )
-      .slice(0, 5);
-  }, [search, products]);
+      .slice(0, 6);
+  }, [products, search]);
 
-  async function handleLogout() {
+  const userName =
+    profile?.full_name?.trim() ||
+    profile?.email?.split("@")[0] ||
+    "PrimeCart User";
+
+  const firstName = userName.split(" ")[0];
+
+  async function handleSignOut() {
     await supabase.auth.signOut();
-    router.replace("/auth/login");
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#faf8f3] text-[#17130d]">
-        <div className="flex min-h-screen">
-          <aside className="hidden w-[260px] border-r border-[#eadfc9] bg-white lg:block">
-            <div className="h-full animate-pulse p-6">
-              <div className="mb-10 h-10 w-36 rounded-xl bg-[#f3ecde]" />
-
-              <div className="space-y-3">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-11 rounded-xl bg-[#f7f2e9]"
-                  />
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          <main className="flex-1 p-5 sm:p-8">
-            <div className="mx-auto max-w-[1500px] animate-pulse">
-              <div className="mb-8 h-16 rounded-2xl bg-white" />
-              <div className="mb-8 h-[300px] rounded-[28px] bg-white" />
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-32 rounded-2xl bg-white"
-                  />
-                ))}
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
+    window.location.replace("/auth/login");
   }
 
   return (
     <div className="min-h-screen bg-[#faf8f3] text-[#17130d]">
-      {/* Mobile Overlay */}
-      {mobileMenu && (
-        <button
-          aria-label="Close menu"
-          onClick={() => setMobileMenu(false)}
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
-        />
-      )}
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {mobileSidebar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileSidebar(false)}
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
 
-      <div className="flex min-h-screen">
-        {/* ================= SIDEBAR ================= */}
-        <aside
-          className={`fixed inset-y-0 left-0 z-50 w-[270px] transform border-r border-[#eadfc9] bg-white transition-transform duration-300 lg:static lg:translate-x-0 ${
-            mobileMenu ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <div className="flex h-full flex-col">
-            {/* Logo */}
-            <div className="flex h-[78px] items-center justify-between border-b border-[#f0e8da] px-6">
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenu(false)}
-                className="flex items-center gap-3"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b9975b] text-white shadow-[0_8px_24px_rgba(185,151,91,0.25)]">
-                  <ShoppingBag size={20} strokeWidth={2.4} />
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed left-0 top-0 z-50 h-screen w-[270px]
+          border-r border-[#eadfc9] bg-white
+          transition-transform duration-300
+          lg:translate-x-0
+          ${mobileSidebar ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <div className="flex h-full flex-col">
+          {/* Logo */}
+          <div className="flex h-[82px] items-center justify-between border-b border-[#eadfc9] px-6">
+            <Link href="/dashboard" className="group flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#17130d] text-white shadow-lg transition-transform group-hover:scale-105">
+                <ShoppingBag size={21} />
+              </div>
+
+              <div>
+                <div className="text-[20px] font-black tracking-tight">
+                  Prime<span className="text-[#b9975b]">Cart</span>
                 </div>
-
-                <div>
-                  <p className="text-lg font-black tracking-tight">
-                    PrimeCart
-                  </p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a0834e]">
-                    Shop Smarter
-                  </p>
-                </div>
-              </Link>
-
-              <button
-                onClick={() => setMobileMenu(false)}
-                className="rounded-lg p-2 text-[#776b5b] hover:bg-[#f7f2e9] lg:hidden"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-              <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
-                Workspace
-              </p>
-
-              <nav className="space-y-1.5">
-                <SidebarLink
-                  href="/dashboard"
-                  icon={<LayoutDashboard size={18} />}
-                  label="Dashboard"
-                  active
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/products"
-                  icon={<Package size={18} />}
-                  label="Products"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/categories"
-                  icon={<LayersIcon />}
-                  label="Categories"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/orders"
-                  icon={<ShoppingBag size={18} />}
-                  label="My Orders"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/wishlist"
-                  icon={<Heart size={18} />}
-                  label="Wishlist"
-                  badge={wishlistCount > 0 ? wishlistCount : undefined}
-                  onClick={() => setMobileMenu(false)}
-                />
-              </nav>
-
-              <p className="mb-3 mt-8 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
-                Smart Shopping
-              </p>
-
-              <nav className="space-y-1.5">
-                <SidebarLink
-                  href="/dashboard/prime-match"
-                  icon={<Sparkles size={18} />}
-                  label="PrimeMatch"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/budget-builder"
-                  icon={<WalletCards size={18} />}
-                  label="Budget Builder"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/setup-builder"
-                  icon={<Target size={18} />}
-                  label="Build My Setup"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/prime-points"
-                  icon={<Crown size={18} />}
-                  label="PrimePoints"
-                  onClick={() => setMobileMenu(false)}
-                />
-              </nav>
-
-              <p className="mb-3 mt-8 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
-                Account
-              </p>
-
-              <nav className="space-y-1.5">
-                <SidebarLink
-                  href="/dashboard/profile"
-                  icon={<User size={18} />}
-                  label="Profile"
-                  onClick={() => setMobileMenu(false)}
-                />
-
-                <SidebarLink
-                  href="/dashboard/settings"
-                  icon={<Settings size={18} />}
-                  label="Settings"
-                  onClick={() => setMobileMenu(false)}
-                />
-              </nav>
-            </div>
-
-            {/* Sidebar Bottom */}
-            <div className="border-t border-[#f0e8da] p-4">
-              <div className="rounded-2xl bg-[#faf7f0] p-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b9975b] text-sm font-black text-white">
-                    {getInitials(displayName)}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-black">
-                      {displayName}
-                    </p>
-
-                    <p className="truncate text-xs text-[#8d8272]">
-                      {user?.email}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleLogout}
-                    title="Logout"
-                    className="rounded-lg p-2 text-[#8d8272] transition hover:bg-white hover:text-red-600"
-                  >
-                    <LogOut size={17} />
-                  </button>
+                <div className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#9b8d77]">
+                  Shop Smarter
                 </div>
               </div>
-            </div>
+            </Link>
+
+            <button
+              onClick={() => setMobileSidebar(false)}
+              className="rounded-xl p-2 text-[#766c5e] hover:bg-[#f5f0e6] lg:hidden"
+            >
+              <X size={19} />
+            </button>
           </div>
-        </aside>
 
-        {/* ================= MAIN ================= */}
-        <main className="min-w-0 flex-1">
-          <div className="mx-auto max-w-[1550px] px-4 pb-12 sm:px-6 lg:px-8">
-            {/* Top Header */}
-            <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-[#eadfc9]/80 bg-[#faf8f3]/95 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setMobileMenu(true)}
-                  className="rounded-xl border border-[#eadfc9] bg-white p-2.5 text-[#554b3e] lg:hidden"
-                >
-                  <Menu size={20} />
-                </button>
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a49682]">
+              Main Menu
+            </p>
 
-                {/* Search */}
-                <div className="relative min-w-0 flex-1 max-w-2xl">
-                  <Search
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a79b89]"
-                  />
+            <nav className="space-y-1.5">
+              {sidebarItems.map((item, index) => {
+                const Icon = item.icon;
+                const active = index === 0;
 
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search products, brands and categories..."
-                    className="h-11 w-full rounded-xl border border-[#eadfc9] bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-[#aaa092] focus:border-[#c5a15f] focus:ring-4 focus:ring-[#b9975b]/10"
-                  />
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileSidebar(false)}
+                    className={`
+                      group relative flex items-center gap-3 rounded-2xl
+                      px-4 py-3.5 text-sm font-bold transition-all
+                      ${
+                        active
+                          ? "bg-[#17130d] text-white shadow-lg shadow-black/10"
+                          : "text-[#62594d] hover:bg-[#f7f2e8] hover:text-[#17130d]"
+                      }
+                    `}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="activeNav"
+                        className="absolute left-0 h-7 w-1 rounded-r-full bg-[#b9975b]"
+                      />
+                    )}
 
-                  {search.trim() && (
-                    <div className="absolute left-0 right-0 top-[52px] z-50 overflow-hidden rounded-2xl border border-[#eadfc9] bg-white p-2 shadow-[0_18px_60px_rgba(40,30,15,0.12)]">
-                      {searchResults.length > 0 ? (
-                        searchResults.map((product) => (
+                    <Icon size={18} />
+
+                    <span>{item.label}</span>
+
+                    {item.label === "Wishlist" && stats.wishlist > 0 && (
+                      <span
+                        className={`ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ${
+                          active
+                            ? "bg-[#b9975b] text-white"
+                            : "bg-[#f1e8d7] text-[#977538]"
+                        }`}
+                      >
+                        {stats.wishlist}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="my-7 h-px bg-[#eee6d8]" />
+
+            <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a49682]">
+              Smart Shopping
+            </p>
+
+            <nav className="space-y-1.5">
+              {smartTools.map((tool) => {
+                const Icon = tool.icon;
+
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    onClick={() => setMobileSidebar(false)}
+                    className="group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all hover:bg-[#f7f2e8]"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffdf9] text-[#977538] transition-all group-hover:border-[#b9975b] group-hover:bg-[#b9975b] group-hover:text-white">
+                      <Icon size={16} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold">{tool.title}</p>
+                      <p className="truncate text-[10px] text-[#968a78]">
+                        {tool.tag}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Sidebar bottom */}
+          <div className="border-t border-[#eadfc9] p-4">
+            <Link
+              href="/dashboard/settings"
+              className="mb-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#62594d] hover:bg-[#f7f2e8]"
+            >
+              <Settings size={18} />
+              Settings
+            </Link>
+
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#9b5b50] hover:bg-[#fff1ef]"
+            >
+              <LogOut size={18} />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="lg:pl-[270px]">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-[#eadfc9]/80 bg-[#faf8f3]/90 backdrop-blur-xl">
+          <div className="flex h-[76px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+            <button
+              onClick={() => setMobileSidebar(true)}
+              className="rounded-xl border border-[#eadfc9] bg-white p-2.5 lg:hidden"
+            >
+              <Menu size={19} />
+            </button>
+
+            {/* Search */}
+            <div className="relative max-w-xl flex-1">
+              <div className="flex h-11 items-center gap-3 rounded-2xl border border-[#eadfc9] bg-white px-4 shadow-sm transition-all focus-within:border-[#b9975b] focus-within:ring-4 focus-within:ring-[#b9975b]/10">
+                <Search size={18} className="text-[#a19480]" />
+
+                <input
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setSearchOpen(true);
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search products, brands..."
+                  className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#a79a88]"
+                />
+
+                {search && (
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setSearchOpen(false);
+                    }}
+                    className="text-[#958875]"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              <AnimatePresence>
+                {searchOpen && search && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    className="absolute left-0 right-0 top-[52px] overflow-hidden rounded-2xl border border-[#eadfc9] bg-white p-2 shadow-2xl"
+                  >
+                    {searchResults.length > 0 ? (
+                      searchResults.map((product) => {
+                        const image = getImageUrl(product.image_url);
+
+                        return (
                           <Link
                             key={product.id}
                             href={`/dashboard/products/${product.id}`}
-                            onClick={() => setSearch("")}
-                            className="flex items-center gap-3 rounded-xl p-2.5 transition hover:bg-[#faf7f0]"
+                            onClick={() => setSearchOpen(false)}
+                            className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-[#faf7f0]"
                           >
-                            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#f5f0e7]">
-                              {getImageUrl(product.image_url) ? (
+                            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-[#f7f2e8]">
+                              {image && (
                                 <Image
-                                  src={getImageUrl(product.image_url)!}
+                                  src={image}
                                   alt={product.name}
                                   fill
-                                  sizes="44px"
-                                  className="object-contain p-1"
+                                  sizes="48px"
+                                  className="object-cover"
                                 />
-                              ) : (
-                                <div className="flex h-full items-center justify-center text-[#a0834e]">
-                                  <Package size={17} />
-                                </div>
                               )}
                             </div>
 
@@ -642,1113 +614,831 @@ export default function DashboardPage() {
                               <p className="truncate text-sm font-bold">
                                 {product.name}
                               </p>
-                              <p className="text-xs text-[#918574]">
-                                {formatPrice(Number(product.price))}
+                              <p className="text-xs text-[#9a8e7c]">
+                                {product.brand || "PrimeCart"}
                               </p>
                             </div>
 
-                            <ChevronRight
-                              size={16}
-                              className="text-[#b9975b]"
-                            />
+                            <span className="text-sm font-black">
+                              {formatPrice(Number(product.price))}
+                            </span>
                           </Link>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-center">
-                          <Search
-                            size={22}
-                            className="mx-auto mb-2 text-[#c3b59e]"
-                          />
-                          <p className="text-sm font-bold">
-                            No products found
-                          </p>
-                          <p className="mt-1 text-xs text-[#958a79]">
-                            Try another product or brand.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-8 text-center">
+                        <Search className="mx-auto mb-2 text-[#b5a994]" />
+                        <p className="text-sm font-bold">No products found</p>
+                        <p className="mt-1 text-xs text-[#9a8e7c]">
+                          Try another product or brand.
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                <Link
-                  href="/dashboard/wishlist"
-                  className="relative hidden h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#6d6253] transition hover:border-[#c9a24d] hover:text-[#a27e3c] sm:flex"
+            <div className="ml-auto flex items-center gap-2">
+              {/* Notification */}
+              <div className="relative">
+                <button
+                  onClick={() => setNotificationOpen((value) => !value)}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfc9] bg-white text-[#655b4e] transition hover:border-[#b9975b] hover:text-[#977538]"
                 >
-                  <Heart size={19} />
+                  <Bell size={18} />
 
-                  {wishlistCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b9975b] px-1 text-[9px] font-black text-white">
-                      {wishlistCount > 9 ? "9+" : wishlistCount}
-                    </span>
-                  )}
-                </Link>
-
-                <button className="relative hidden h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#6d6253] transition hover:border-[#c9a24d] hover:text-[#a27e3c] sm:flex">
-                  <Bell size={19} />
-                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#b9975b]" />
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#b9975b]" />
                 </button>
 
-                <Link
-                  href="/dashboard/profile"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b9975b] text-sm font-black text-white shadow-[0_6px_18px_rgba(185,151,91,0.22)]"
+                <AnimatePresence>
+                  {notificationOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      className="absolute right-0 top-14 w-[300px] rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-2xl"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="font-black">Notifications</h3>
+                        <span className="rounded-full bg-[#f4ead8] px-2 py-1 text-[10px] font-black text-[#977538]">
+                          NEW
+                        </span>
+                      </div>
+
+                      <div className="rounded-xl bg-[#faf7f0] p-3">
+                        <p className="text-sm font-bold">
+                          Welcome to PrimeCart
+                        </p>
+                        <p className="mt-1 text-xs text-[#8e8271]">
+                          Explore personalised shopping tools and exclusive
+                          deals.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Profile */}
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen((value) => !value)}
+                  className="flex items-center gap-2 rounded-2xl border border-[#eadfc9] bg-white p-1.5 pr-3 transition hover:border-[#b9975b]"
                 >
-                  {getInitials(displayName)}
-                </Link>
-              </div>
-            </header>
-
-            {/* Error */}
-            {error && (
-              <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
-                {error}
-              </div>
-            )}
-
-            {/* ================= HERO ================= */}
-            <section className="relative overflow-hidden rounded-[30px] border border-[#dfcfb1] bg-gradient-to-br from-[#fffdf8] via-[#faf4e7] to-[#f2e7d0] p-6 shadow-[0_18px_60px_rgba(80,60,25,0.07)] sm:p-8 lg:p-10">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#d9bd82]/20 blur-3xl" />
-              <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-white/60 blur-3xl" />
-
-              <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_390px]">
-                <div>
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#dfcfb1] bg-white/70 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-[#92713b]">
-                    <Sparkles size={13} />
-                    Smart shopping dashboard
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#17130d] text-xs font-black text-white">
+                    {getInitials(userName)}
                   </div>
 
-                  <h1 className="max-w-3xl text-3xl font-black tracking-[-0.04em] text-[#20190f] sm:text-4xl lg:text-5xl">
-                    Welcome back,{" "}
-                    <span className="text-[#b18b49]">{firstName}.</span>
-                  </h1>
+                  <div className="hidden text-left sm:block">
+                    <p className="max-w-[110px] truncate text-xs font-black">
+                      {userName}
+                    </p>
+                    <p className="text-[10px] text-[#978b79]">Prime Member</p>
+                  </div>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-7 text-[#756957] sm:text-base">
-                    Your smarter shopping journey starts here. Discover
-                    products, compare choices, build your setup and get
-                    recommendations tailored to you.
-                  </p>
+                  <ChevronDown size={15} className="text-[#918574]" />
+                </button>
 
-                  <div className="mt-7 flex flex-wrap gap-3">
-                    <Link
-                      href="/dashboard/products"
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-5 text-sm font-black text-white shadow-[0_10px_25px_rgba(185,151,91,0.25)] transition hover:-translate-y-0.5 hover:bg-[#a8864e]"
+                <AnimatePresence>
+                  {profileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                      className="absolute right-0 top-14 w-56 rounded-2xl border border-[#eadfc9] bg-white p-2 shadow-2xl"
                     >
-                      Explore Products
-                      <ArrowRight size={16} />
-                    </Link>
+                      <Link
+                        href="/dashboard/profile"
+                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold hover:bg-[#faf7f0]"
+                      >
+                        <User size={17} />
+                        My Profile
+                      </Link>
 
-                    <Link
-                      href="/dashboard/prime-match"
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#d9c7a7] bg-white/80 px-5 text-sm font-black text-[#665238] transition hover:bg-white"
-                    >
-                      <Sparkles size={16} />
-                      Try PrimeMatch
-                    </Link>
-                  </div>
+                      <Link
+                        href="/dashboard/settings"
+                        className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold hover:bg-[#faf7f0]"
+                      >
+                        <Settings size={17} />
+                        Settings
+                      </Link>
 
-                  <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-bold text-[#817563]">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                        ✓
-                      </span>
-                      Verified products
-                    </span>
+                      <div className="my-1 h-px bg-[#eee6d8]" />
 
-                    <span className="inline-flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                        ✓
-                      </span>
-                      Secure checkout
-                    </span>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#9b5b50] hover:bg-[#fff1ef]"
+                      >
+                        <LogOut size={17} />
+                        Sign Out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </header>
 
-                    <span className="inline-flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                        ✓
-                      </span>
-                      Easy returns
-                    </span>
-                  </div>
+        <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {/* Hero */}
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55 }}
+            className="relative overflow-hidden rounded-[30px] bg-[#17130d] p-6 text-white shadow-xl sm:p-8 lg:p-10"
+          >
+            <div className="absolute -right-20 -top-32 h-72 w-72 rounded-full bg-[#b9975b]/20 blur-3xl" />
+            <div className="absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-[#b9975b]/10 blur-3xl" />
+
+            <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1fr_300px]">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#d7bd8b]">
+                  <Sparkles size={13} />
+                  Your Personal Shopping Space
                 </div>
 
-                {/* Hero Smart Card */}
-                <div className="relative">
-                  <div className="rounded-[26px] border border-white/80 bg-white/85 p-5 shadow-[0_25px_70px_rgba(73,53,20,0.12)] backdrop-blur-xl">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
-                          Smart recommendation
-                        </p>
-                        <p className="mt-1 text-sm font-black">
-                          Picked for your shopping style
-                        </p>
-                      </div>
+                <h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+                  Good to see you,{" "}
+                  <span className="text-[#d3b77e]">{firstName}.</span>
+                  <br />
+                  Ready to shop smarter?
+                </h1>
 
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7efdf] text-[#a17d40]">
-                        <BrainIcon />
-                      </div>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:text-base">
+                  Discover products picked around your budget, preferences and
+                  shopping goals — all in one place.
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Link
+                    href="/dashboard/products"
+                    className="group inline-flex items-center gap-2 rounded-xl bg-[#b9975b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c9aa70]"
+                  >
+                    Explore Products
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  </Link>
+
+                  <Link
+                    href="/dashboard/prime-match"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                  >
+                    <Target size={16} />
+                    Try PrimeMatch
+                  </Link>
+                </div>
+              </div>
+
+              {/* Hero visual */}
+              <div className="relative hidden h-[220px] lg:block">
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute right-4 top-4 w-[230px] rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b9975b]">
+                      <Crown size={19} />
                     </div>
 
-                    <div className="rounded-2xl bg-[#faf7f0] p-4">
-                      <div className="flex gap-4">
-                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white">
-                          {getImageUrl(
-                            dashboardProducts[0]?.image_url ||
-                              "/smartphone-x-pro.png"
-                          ) ? (
-                            <Image
-                              src={
-                                getImageUrl(
-                                  dashboardProducts[0]?.image_url ||
-                                    "/smartphone-x-pro.png"
-                                )!
-                              }
-                              alt={
-                                dashboardProducts[0]?.name ||
-                                "Recommended product"
-                              }
-                              fill
-                              sizes="96px"
-                              className="object-contain p-2"
-                            />
-                          ) : null}
-                        </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#d3b77e]">
+                      PrimePoints
+                    </span>
+                  </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-2 inline-flex rounded-full bg-[#e8f6ec] px-2 py-1 text-[9px] font-black uppercase tracking-wider text-[#2d7b48]">
-                            Smart pick
+                  <p className="text-xs text-white/50">Current balance</p>
+
+                  <p className="mt-1 text-3xl font-black">
+                    {stats.points.toLocaleString("en-IN")}
+                  </p>
+
+                  <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${Math.min((stats.points % 1000) / 10, 100)}%`,
+                      }}
+                      transition={{ duration: 1.2, delay: 0.4 }}
+                      className="h-full rounded-full bg-[#b9975b]"
+                    />
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Stats */}
+          <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[
+              {
+                label: "Total Orders",
+                value: stats.orders.toLocaleString("en-IN"),
+                icon: Package,
+                sub: "All time orders",
+              },
+              {
+                label: "Wishlist",
+                value: stats.wishlist.toLocaleString("en-IN"),
+                icon: Heart,
+                sub: "Saved products",
+              },
+              {
+                label: "Total Spent",
+                value: formatPrice(stats.spent),
+                icon: CircleDollarSign,
+                sub: "Shopping total",
+              },
+              {
+                label: "PrimePoints",
+                value: stats.points.toLocaleString("en-IN"),
+                icon: Crown,
+                sub: "Reward balance",
+              },
+            ].map((item, index) => {
+              const Icon = item.icon;
+
+              return (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.45,
+                    delay: index * 0.08,
+                  }}
+                  whileHover={{ y: -4 }}
+                  className="group rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm transition-shadow hover:shadow-lg sm:p-5"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f1e5] text-[#977538] transition-colors group-hover:bg-[#b9975b] group-hover:text-white">
+                      <Icon size={18} />
+                    </div>
+
+                    <TrendingUp
+                      size={15}
+                      className="text-[#b9975b] opacity-60"
+                    />
+                  </div>
+
+                  <p className="mt-5 text-xs font-bold text-[#948775]">
+                    {item.label}
+                  </p>
+
+                  <p className="mt-1 truncate text-xl font-black tracking-tight sm:text-2xl">
+                    {loading ? "—" : item.value}
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-medium text-[#aa9d8b]">
+                    {item.sub}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </section>
+
+          {/* Smart tools */}
+          <section className="mt-9">
+            <div className="mb-5 flex items-end justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b08e52]">
+                  Intelligent Shopping
+                </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Shop smarter
+                </h2>
+              </div>
+
+              <span className="hidden text-xs font-medium text-[#948775] sm:block">
+                Tools designed for better decisions
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {smartTools.map((tool, index) => {
+                const Icon = tool.icon;
+
+                return (
+                  <motion.div
+                    key={tool.href}
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.45,
+                      delay: index * 0.07,
+                    }}
+                    whileHover={{ y: -5 }}
+                  >
+                    <Link
+                      href={tool.href}
+                      className="group relative block h-full overflow-hidden rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition-shadow hover:shadow-xl"
+                    >
+                      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#b9975b]/5 transition-transform duration-500 group-hover:scale-150" />
+
+                      <div className="relative">
+                        <div className="flex items-center justify-between">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f6f0e4] text-[#977538] transition-all group-hover:bg-[#b9975b] group-hover:text-white">
+                            <Icon size={20} />
                           </div>
 
-                          <h3 className="line-clamp-2 text-sm font-black">
-                            {dashboardProducts[0]?.name ||
-                              "Discover your next favourite"}
+                          <span className="rounded-full bg-[#faf4e8] px-2 py-1 text-[8px] font-black tracking-widest text-[#977538]">
+                            {tool.tag}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-5 text-base font-black">
+                          {tool.title}
+                        </h3>
+
+                        <p className="mt-1 min-h-[38px] text-xs leading-5 text-[#8e8272]">
+                          {tool.description}
+                        </p>
+
+                        <div className="mt-5 flex items-center gap-1 text-xs font-black text-[#977538]">
+                          Explore
+                          <ArrowRight
+                            size={14}
+                            className="transition-transform group-hover:translate-x-1"
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Categories */}
+          <section className="mt-10">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b08e52]">
+                  Browse
+                </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Shop by category
+                </h2>
+              </div>
+
+              <Link
+                href="/dashboard/categories"
+                className="group flex items-center gap-1 text-xs font-black text-[#977538]"
+              >
+                View all
+                <ChevronRight
+                  size={15}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10">
+              {categories.slice(0, 10).map((category, index) => (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    delay: index * 0.04,
+                    duration: 0.35,
+                  }}
+                  whileHover={{ y: -4 }}
+                >
+                  <Link
+                    href={`/dashboard/categories/${category.slug}`}
+                    className="group flex h-full flex-col items-center justify-center rounded-2xl border border-[#eadfc9] bg-white px-2 py-5 text-center shadow-sm transition-all hover:border-[#b9975b] hover:shadow-lg"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf5eb] text-2xl transition-transform duration-300 group-hover:scale-110">
+                      {categoryIcons[category.slug] || "🛍️"}
+                    </div>
+
+                    <span className="mt-3 line-clamp-2 text-[11px] font-black">
+                      {category.name}
+                    </span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+
+          {/* Featured */}
+          <section className="mt-10">
+            <div className="mb-5 flex items-end justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b08e52]">
+                  Curated for you
+                </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Featured products
+                </h2>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="group flex items-center gap-1 text-xs font-black text-[#977538]"
+              >
+                View all products
+                <ArrowRight
+                  size={15}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </Link>
+            </div>
+
+            {featuredProducts.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {featuredProducts.map((product, index) => {
+                  const image = getImageUrl(product.image_url);
+                  const discount = getDiscount(
+                    Number(product.price),
+                    product.original_price
+                      ? Number(product.original_price)
+                      : null,
+                  );
+
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 18 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: index * 0.05,
+                      }}
+                      whileHover={{ y: -5 }}
+                      className="group overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-sm hover:shadow-xl"
+                    >
+                      <Link href={`/dashboard/products/${product.id}`}>
+                        <div className="relative aspect-square overflow-hidden bg-[#f7f3eb]">
+                          {image ? (
+                            <Image
+                              src={image}
+                              alt={product.name}
+                              fill
+                              sizes="(max-width: 640px) 50vw, 200px"
+                              className="object-cover transition duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[#b4a68f]">
+                              <ShoppingBag size={35} />
+                            </div>
+                          )}
+
+                          {discount > 0 && (
+                            <span className="absolute left-3 top-3 rounded-full bg-[#17130d] px-2 py-1 text-[9px] font-black text-white">
+                              -{discount}%
+                            </span>
+                          )}
+
+                          <button
+                            onClick={(e) => e.preventDefault()}
+                            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#756958] opacity-0 shadow-sm backdrop-blur transition-all group-hover:opacity-100 hover:text-red-500"
+                          >
+                            <Heart size={15} />
+                          </button>
+                        </div>
+
+                        <div className="p-4">
+                          <p className="truncate text-[10px] font-bold uppercase tracking-wide text-[#a08f77]">
+                            {product.brand || "PrimeCart"}
+                          </p>
+
+                          <h3 className="mt-1 line-clamp-2 min-h-[38px] text-sm font-black leading-5">
+                            {product.name}
                           </h3>
 
                           <div className="mt-2 flex items-center gap-1">
                             <Star
-                              size={13}
-                              className="fill-[#b9975b] text-[#b9975b]"
+                              size={12}
+                              fill={GOLD}
+                              className="text-[#b9975b]"
                             />
-                            <span className="text-xs font-black">
-                              {Number(
-                                dashboardProducts[0]?.rating || 4.8
-                              ).toFixed(1)}
+                            <span className="text-[11px] font-bold">
+                              {Number(product.rating || 0).toFixed(1)}
+                            </span>
+                            <span className="text-[10px] text-[#a29482]">
+                              ({product.reviews_count || 0})
                             </span>
                           </div>
 
-                          <div className="mt-2 text-lg font-black text-[#a17d40]">
-                            {formatPrice(
-                              Number(
-                                dashboardProducts[0]?.price || 24999
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Link
-                      href="/dashboard/prime-match"
-                      className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#17130d] text-sm font-black text-white transition hover:bg-[#2b2419]"
-                    >
-                      Find My Match
-                      <ArrowRight size={15} />
-                    </Link>
-                  </div>
-
-                  <div className="absolute -right-2 -top-5 hidden rounded-xl border border-[#eadfc9] bg-white px-4 py-3 shadow-lg sm:block">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-[#9c8866]">
-                      PrimePoints
-                    </p>
-                    <p className="mt-0.5 text-sm font-black">
-                      Earn on every order
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ================= STATS ================= */}
-            <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                icon={<ShoppingBag size={19} />}
-                label="Total Orders"
-                value={orders.length}
-                caption="Your recent purchases"
-              />
-
-              <StatCard
-                icon={<Heart size={19} />}
-                label="Wishlist"
-                value={wishlistCount}
-                caption="Products saved"
-              />
-
-              <StatCard
-                icon={<WalletCards size={19} />}
-                label="Total Spent"
-                value={formatPrice(totalSpent)}
-                caption="Across loaded orders"
-              />
-
-              <StatCard
-                icon={<Crown size={19} />}
-                label="PrimePoints"
-                value="0"
-                caption="Keep shopping to earn"
-                href="/dashboard/prime-points"
-              />
-            </section>
-
-            {/* ================= SMART TOOLS ================= */}
-            <section className="mt-10">
-              <SectionHeader
-                eyebrow="PrimeCart Intelligence"
-                title="Shop smarter, not harder."
-                description="Tools designed to make choosing the right product easier."
-              />
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <SmartTool
-                  href="/dashboard/prime-match"
-                  icon={<Sparkles size={21} />}
-                  title="PrimeMatch"
-                  description="Find products that fit your needs and preferences."
-                />
-
-                <SmartTool
-                  href="/dashboard/budget-builder"
-                  icon={<WalletCards size={21} />}
-                  title="Budget Builder"
-                  description="Set your budget and discover the best options."
-                />
-
-                <SmartTool
-                  href="/dashboard/setup-builder"
-                  icon={<Target size={21} />}
-                  title="Build My Setup"
-                  description="Create a complete setup from compatible products."
-                />
-
-                <SmartTool
-                  href="/dashboard/prime-points"
-                  icon={<Crown size={21} />}
-                  title="PrimePoints"
-                  description="Track rewards and make every purchase count."
-                />
-              </div>
-            </section>
-
-            {/* ================= CATEGORIES ================= */}
-            <section className="mt-10">
-              <SectionHeader
-                eyebrow="Explore"
-                title="Shop by category"
-                description="Jump directly into the products you are looking for."
-                action={
-                  <Link
-                    href="/dashboard/categories"
-                    className="hidden items-center gap-1 text-sm font-black text-[#a27e3c] sm:flex"
-                  >
-                    View all
-                    <ArrowRight size={15} />
-                  </Link>
-                }
-              />
-
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                {categories.slice(0, 10).map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/dashboard/categories/${category.slug}`}
-                    className="group overflow-hidden rounded-2xl border border-[#eadfc9] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_16px_35px_rgba(70,50,20,0.08)]"
-                  >
-                    <div className="relative h-28 overflow-hidden bg-[#f7f2e9]">
-                      {categoryImages[category.slug] &&
-                      getImageUrl(categoryImages[category.slug]) ? (
-                        <Image
-                          src={getImageUrl(categoryImages[category.slug])!}
-                          alt={category.name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 20vw"
-                          className="object-contain p-5 transition duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-4xl">
-                          {categoryIcons[category.slug] || "🛍️"}
-                        </div>
-                      )}
-
-                      <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#a17d40] opacity-0 shadow-sm transition group-hover:opacity-100">
-                        <ChevronRight size={14} />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3.5">
-                      <span className="truncate text-sm font-black">
-                        {category.name}
-                      </span>
-                      <ArrowRight
-                        size={14}
-                        className="shrink-0 text-[#b9975b] transition group-hover:translate-x-1"
-                      />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* ================= FEATURED PRODUCTS ================= */}
-            <section className="mt-10">
-              <SectionHeader
-                eyebrow="Curated for you"
-                title="Featured products"
-                description="Popular picks from the PrimeCart catalog."
-                action={
-                  <Link
-                    href="/dashboard/products"
-                    className="hidden items-center gap-1 text-sm font-black text-[#a27e3c] sm:flex"
-                  >
-                    View all products
-                    <ArrowRight size={15} />
-                  </Link>
-                }
-              />
-
-              {dashboardProducts.length > 0 ? (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {dashboardProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Package size={28} />}
-                  title="No products available"
-                  description="Products will appear here once they are added to your catalog."
-                  href="/dashboard/products"
-                  action="Browse Products"
-                />
-              )}
-            </section>
-
-            {/* ================= FLASH DEALS ================= */}
-            {flashSaleProducts.length > 0 && (
-              <section className="mt-10 overflow-hidden rounded-[28px] border border-[#e5d4b4] bg-[#201a12] p-5 text-white sm:p-7">
-                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#e2c98e]">
-                      <Zap size={13} />
-                      Limited-time deals
-                    </div>
-
-                    <h2 className="mt-3 text-2xl font-black tracking-tight">
-                      Flash deals worth checking.
-                    </h2>
-
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-white/60">
-                      Grab selected products before the deal disappears.
-                    </p>
-                  </div>
-
-                  <Link
-                    href="/dashboard/products?flash=true"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c9a24d] px-5 text-sm font-black text-white transition hover:bg-[#b58d3f]"
-                  >
-                    Explore deals
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {flashSaleProducts.map((product) => {
-                    const discount = getDiscount(
-                      Number(product.price),
-                      product.original_price
-                        ? Number(product.original_price)
-                        : null
-                    );
-
-                    return (
-                      <Link
-                        key={product.id}
-                        href={`/dashboard/products/${product.id}`}
-                        className="group flex gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 transition hover:border-[#c9a24d]/50 hover:bg-white/[0.09]"
-                      >
-                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white">
-                          {getImageUrl(product.image_url) ? (
-                            <Image
-                              src={getImageUrl(product.image_url)!}
-                              alt={product.name}
-                              fill
-                              sizes="80px"
-                              className="object-contain p-2 transition group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-[#b9975b]">
-                              <Package size={20} />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="min-w-0 py-1">
-                          <p className="truncate text-sm font-black">
-                            {product.name}
-                          </p>
-
-                          <p className="mt-1 text-xs text-white/50">
-                            {product.brand || "PrimeCart"}
-                          </p>
-
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="text-sm font-black text-[#e3c987]">
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-base font-black">
                               {formatPrice(Number(product.price))}
                             </span>
 
-                            {discount > 0 && (
-                              <span className="text-[10px] font-black text-emerald-300">
-                                {discount}% OFF
-                              </span>
-                            )}
+                            {product.original_price &&
+                              Number(product.original_price) >
+                                Number(product.price) && (
+                                <span className="text-[10px] font-medium text-[#a49888] line-through">
+                                  {formatPrice(
+                                    Number(product.original_price),
+                                  )}
+                                </span>
+                              )}
                           </div>
                         </div>
                       </Link>
-                    );
-                  })}
-                </div>
-              </section>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState text="No featured products available yet." />
             )}
+          </section>
 
-            {/* ================= ORDERS + QUICK ACTIONS ================= */}
-            <section className="mt-10 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-              {/* Recent Orders */}
-              <div className="rounded-[26px] border border-[#eadfc9] bg-white p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
-                      Activity
-                    </p>
-                    <h2 className="mt-1 text-xl font-black">
-                      Recent orders
-                    </h2>
-                  </div>
-
-                  <Link
-                    href="/dashboard/orders"
-                    className="inline-flex items-center gap-1 text-xs font-black text-[#a17d40]"
-                  >
-                    View all
-                    <ArrowRight size={14} />
-                  </Link>
+          {/* Flash deals */}
+          <section className="mt-10 overflow-hidden rounded-[28px] bg-[#17130d] p-5 text-white sm:p-7">
+            <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <div className="inline-flex items-center gap-2 text-[#d3b77e]">
+                  <Zap size={16} fill="currentColor" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                    Limited Time
+                  </span>
                 </div>
 
-                <div className="mt-5">
-                  {orders.length > 0 ? (
-                    <div className="divide-y divide-[#f0e8da]">
-                      {orders.map((order) => (
-                        <Link
-                          href="/dashboard/orders"
-                          key={order.id}
-                          className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
-                        >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf5e9] text-[#a17d40]">
-                            <Package size={18} />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-black">
-                              Order #{order.id.slice(0, 8).toUpperCase()}
-                            </p>
-
-                            <div className="mt-1 flex items-center gap-2 text-xs text-[#948877]">
-                              <Clock3 size={12} />
-                              {formatDate(order.created_at)}
-                            </div>
-                          </div>
-
-                          <div className="text-right">
-                            <p className="text-sm font-black">
-                              {formatPrice(Number(order.total_amount))}
-                            </p>
-
-                            <span
-                              className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[9px] font-black uppercase ${getStatusClasses(
-                                order.status
-                              )}`}
-                            >
-                              {order.status}
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl bg-[#faf7f0] px-5 py-10 text-center">
-                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#b9975b] shadow-sm">
-                        <ShoppingBag size={22} />
-                      </div>
-
-                      <h3 className="mt-4 text-sm font-black">
-                        No orders yet
-                      </h3>
-
-                      <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#928675]">
-                        Start shopping and your recent orders will appear
-                        here.
-                      </p>
-
-                      <Link
-                        href="/dashboard/products"
-                        className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-black text-white"
-                      >
-                        Start Shopping
-                        <ArrowRight size={14} />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="rounded-[26px] border border-[#eadfc9] bg-white p-5 sm:p-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
-                  Shortcuts
+                <h2 className="mt-1 text-2xl font-black">Flash deals</h2>
+                <p className="mt-1 text-xs text-white/50">
+                  Grab selected deals before they disappear.
                 </p>
-
-                <h2 className="mt-1 text-xl font-black">
-                  Quick actions
-                </h2>
-
-                <div className="mt-5 space-y-2.5">
-                  <QuickAction
-                    href="/dashboard/products"
-                    icon={<ShoppingBag size={18} />}
-                    title="Browse Products"
-                    description="Explore the full catalog"
-                  />
-
-                  <QuickAction
-                    href="/dashboard/wishlist"
-                    icon={<Heart size={18} />}
-                    title="Open Wishlist"
-                    description={`${wishlistCount} saved ${
-                      wishlistCount === 1 ? "item" : "items"
-                    }`}
-                  />
-
-                  <QuickAction
-                    href="/dashboard/orders"
-                    icon={<Truck size={18} />}
-                    title="Track Orders"
-                    description="Check your purchase history"
-                  />
-
-                  <QuickAction
-                    href="/dashboard/profile"
-                    icon={<User size={18} />}
-                    title="My Profile"
-                    description="Manage your account"
-                  />
-
-                  <QuickAction
-                    href="/dashboard/settings"
-                    icon={<Settings size={18} />}
-                    title="Settings"
-                    description="Preferences & security"
-                  />
-                </div>
               </div>
-            </section>
 
-            {/* ================= VALUE BANNER ================= */}
-            <section className="mt-10 overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white">
-              <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="p-6 sm:p-8">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-[#faf4e7] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#a17d40]">
-                    <Crown size={13} />
-                    PrimeCart difference
-                  </div>
+              <Link
+                href="/dashboard/products"
+                className="flex items-center gap-1 text-xs font-black text-[#d3b77e]"
+              >
+                Explore deals
+                <ArrowRight size={14} />
+              </Link>
+            </div>
 
-                  <h2 className="mt-4 max-w-2xl text-2xl font-black tracking-tight sm:text-3xl">
-                    A shopping experience designed around better decisions.
-                  </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {flashProducts.map((product, index) => {
+                const image = getImageUrl(product.image_url);
+                const discount = getDiscount(
+                  Number(product.price),
+                  product.original_price
+                    ? Number(product.original_price)
+                    : null,
+                );
 
-                  <p className="mt-3 max-w-2xl text-sm leading-7 text-[#7f7464]">
-                    Instead of endlessly scrolling through products, PrimeCart
-                    gives you smarter ways to discover, compare and choose.
+                return (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                  >
+                    <Link
+                      href={`/dashboard/products/${product.id}`}
+                      className="group flex gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:bg-white/[0.08]"
+                    >
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white">
+                        {image && (
+                          <Image
+                            src={image}
+                            alt={product.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover transition duration-500 group-hover:scale-110"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 py-1">
+                        <div className="flex items-center gap-1">
+                          <BadgePercent
+                            size={11}
+                            className="text-[#d3b77e]"
+                          />
+                          <span className="text-[9px] font-black text-[#d3b77e]">
+                            {discount > 0 ? `${discount}% OFF` : "DEAL"}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 line-clamp-2 text-xs font-bold leading-4">
+                          {product.name}
+                        </p>
+
+                        <p className="mt-2 text-sm font-black">
+                          {formatPrice(Number(product.price))}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Bottom grid */}
+          <section className="mt-10 grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
+            {/* Orders */}
+            <div className="rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b08e52]">
+                    Activity
                   </p>
-
-                  <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                    <MiniBenefit
-                      icon={<BrainIcon />}
-                      title="Smarter picks"
-                      text="Personalized discovery"
-                    />
-
-                    <MiniBenefit
-                      icon={<TrendingUp size={17} />}
-                      title="Better value"
-                      text="Budget-focused choices"
-                    />
-
-                    <MiniBenefit
-                      icon={<ShieldIcon />}
-                      title="More confidence"
-                      text="Clear product details"
-                    />
-                  </div>
+                  <h2 className="mt-1 text-xl font-black">
+                    Recent orders
+                  </h2>
                 </div>
-
-                <div className="relative hidden overflow-hidden bg-[#211b12] lg:block">
-                  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#c9a24d]/20 blur-3xl" />
-                  <div className="absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-[#c9a24d]/10 blur-3xl" />
-
-                  <div className="relative flex h-full min-h-[280px] items-center justify-center p-10">
-                    <div className="w-full max-w-[280px] rounded-[24px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#d9bd82]">
-                            PrimeCart
-                          </p>
-                          <p className="mt-1 text-lg font-black text-white">
-                            Shop smarter.
-                          </p>
-                        </div>
-
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a24d] text-white">
-                          <Sparkles size={18} />
-                        </div>
-                      </div>
-
-                      <div className="mt-6 space-y-2">
-                        <div className="h-2 rounded-full bg-white/10" />
-                        <div className="h-2 w-4/5 rounded-full bg-white/10" />
-                        <div className="h-2 w-3/5 rounded-full bg-[#c9a24d]/60" />
-                      </div>
-
-                      <div className="mt-6 flex items-center justify-between rounded-xl bg-white/5 px-3 py-3">
-                        <span className="text-xs font-bold text-white/50">
-                          Smart score
-                        </span>
-
-                        <span className="text-sm font-black text-[#e2c98e]">
-                          Personalised
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Footer */}
-            <footer className="mt-10 flex flex-col justify-between gap-3 border-t border-[#eadfc9] pt-6 text-xs text-[#918575] sm:flex-row">
-              <p>
-                © {new Date().getFullYear()} PrimeCart. Shop smarter.
-              </p>
-
-              <div className="flex flex-wrap gap-4">
-                <Link
-                  href="/dashboard/products"
-                  className="transition hover:text-[#a17d40]"
-                >
-                  Products
-                </Link>
 
                 <Link
                   href="/dashboard/orders"
-                  className="transition hover:text-[#a17d40]"
+                  className="text-xs font-black text-[#977538]"
                 >
-                  Orders
-                </Link>
-
-                <Link
-                  href="/dashboard/profile"
-                  className="transition hover:text-[#a17d40]"
-                >
-                  Profile
-                </Link>
-
-                <Link
-                  href="/dashboard/settings"
-                  className="transition hover:text-[#a17d40]"
-                >
-                  Settings
+                  View all
                 </Link>
               </div>
-            </footer>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
 
-/* =========================================================
-   COMPONENTS
-========================================================= */
+              {orders.length > 0 ? (
+                <div className="space-y-3">
+                  {orders.slice(0, 5).map((order, index) => (
+                    <motion.div
+                      key={order.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.06 }}
+                      className="flex items-center gap-3 rounded-xl border border-[#f0e9dc] p-3"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7f1e5] text-[#977538]">
+                        {order.status?.toLowerCase() === "delivered" ? (
+                          <ShieldCheck size={18} />
+                        ) : (
+                          <Truck size={18} />
+                        )}
+                      </div>
 
-function SidebarLink({
-  href,
-  icon,
-  label,
-  active = false,
-  badge,
-  onClick,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  badge?: number;
-  onClick?: () => void;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
-        active
-          ? "bg-[#f7f0e1] text-[#9a7539]"
-          : "text-[#766b5d] hover:bg-[#faf7f0] hover:text-[#9a7539]"
-      }`}
-    >
-      <span
-        className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
-          active
-            ? "bg-[#b9975b] text-white shadow-sm"
-            : "bg-transparent text-[#8c8171] group-hover:text-[#a17d40]"
-        }`}
-      >
-        {icon}
-      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black">
+                          Order #{order.id.slice(0, 8)}
+                        </p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-[10px] text-[#978b79]">
+                            {formatDate(order.created_at)}
+                          </span>
+                          <span className="h-1 w-1 rounded-full bg-[#c7bba8]" />
+                          <span className="text-[10px] font-bold capitalize text-[#977538]">
+                            {order.status || "Processing"}
+                          </span>
+                        </div>
+                      </div>
 
-      <span className="flex-1">{label}</span>
+                      <p className="text-sm font-black">
+                        {formatPrice(Number(order.total_amount || 0))}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState text="Your recent orders will appear here." />
+              )}
+            </div>
 
-      {badge !== undefined && (
-        <span className="flex min-w-5 items-center justify-center rounded-full bg-[#b9975b] px-1.5 py-0.5 text-[9px] font-black text-white">
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-}
+            {/* Quick actions */}
+            <div className="rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-6">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b08e52]">
+                Shortcuts
+              </p>
 
-function StatCard({
-  icon,
-  label,
-  value,
-  caption,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  caption: string;
-  href?: string;
-}) {
-  const content = (
-    <div className="group rounded-2xl border border-[#eadfc9] bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-[#d7bb82] hover:shadow-[0_14px_35px_rgba(70,50,20,0.06)]">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40]">
-          {icon}
+              <h2 className="mt-1 text-xl font-black">Quick actions</h2>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {[
+                  {
+                    title: "Browse Products",
+                    href: "/dashboard/products",
+                    icon: ShoppingCart,
+                  },
+                  {
+                    title: "My Wishlist",
+                    href: "/dashboard/wishlist",
+                    icon: Heart,
+                  },
+                  {
+                    title: "My Orders",
+                    href: "/dashboard/orders",
+                    icon: Package,
+                  },
+                  {
+                    title: "My Profile",
+                    href: "/dashboard/profile",
+                    icon: User,
+                  },
+                ].map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="group rounded-2xl border border-[#eee6d8] p-4 transition-all hover:border-[#b9975b] hover:bg-[#fffdf9]"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7f1e5] text-[#977538] transition group-hover:bg-[#b9975b] group-hover:text-white">
+                        <Icon size={17} />
+                      </div>
+
+                      <p className="mt-3 text-xs font-black">
+                        {item.title}
+                      </p>
+
+                      <ArrowRight
+                        size={13}
+                        className="mt-2 text-[#a79782] transition-transform group-hover:translate-x-1"
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-[#17130d] p-5 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b9975b]">
+                    <Sparkles size={18} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-black">
+                      Personalised shopping
+                    </p>
+                    <p className="text-[10px] text-white/50">
+                      Powered by PrimeCart tools
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href="/dashboard/prime-match"
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-xs font-black text-[#17130d] transition hover:bg-[#f3eadb]"
+                >
+                  Find my match
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer banner */}
+          <motion.section
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-10 overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white p-6 shadow-sm sm:p-8"
+          >
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#17130d] text-[#d3b77e]">
+                  <ShieldCheck size={22} />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-black">
+                    A smarter way to shop
+                  </h3>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-[#918575]">
+                    Discover products, compare options, manage your wishlist
+                    and make better shopping decisions with PrimeCart.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-xs font-black text-white transition hover:bg-[#2b251c]"
+              >
+                Start Shopping
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </motion.section>
+
+          <footer className="py-8 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#aaa08f]">
+              © {new Date().getFullYear()} PrimeCart · Shop Smarter
+            </p>
+          </footer>
         </div>
-
-        {href && (
-          <ArrowRight
-            size={16}
-            className="text-[#b7aa98] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
-          />
-        )}
-      </div>
-
-      <p className="mt-5 text-xs font-bold text-[#938777]">
-        {label}
-      </p>
-
-      <p className="mt-1 truncate text-xl font-black tracking-tight">
-        {value}
-      </p>
-
-      <p className="mt-1 text-[11px] font-medium text-[#aaa092]">
-        {caption}
-      </p>
-    </div>
-  );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-
-  return content;
-}
-
-function SectionHeader({
-  eyebrow,
-  title,
-  description,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-end justify-between gap-4">
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
-          {eyebrow}
-        </p>
-
-        <h2 className="mt-1 text-2xl font-black tracking-tight">
-          {title}
-        </h2>
-
-        <p className="mt-1 text-sm text-[#918575]">
-          {description}
-        </p>
-      </div>
-
-      {action}
+      </main>
     </div>
   );
 }
 
-function SmartTool({
-  href,
-  icon,
-  title,
-  description,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
+function EmptyState({ text }: { text: string }) {
   return (
-    <Link
-      href={href}
-      className="group rounded-2xl border border-[#eadfc9] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_16px_35px_rgba(70,50,20,0.07)]"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40] transition group-hover:bg-[#b9975b] group-hover:text-white">
-          {icon}
-        </div>
-
-        <ArrowRight
-          size={17}
-          className="text-[#b7aa98] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
-        />
-      </div>
-
-      <h3 className="mt-5 text-base font-black">{title}</h3>
-
-      <p className="mt-2 text-xs leading-5 text-[#918575]">
-        {description}
-      </p>
-    </Link>
-  );
-}
-
-function ProductCard({
-  product,
-}: {
-  product: Product;
-}) {
-  const discount = getDiscount(
-    Number(product.price),
-    product.original_price
-      ? Number(product.original_price)
-      : null
-  );
-
-  return (
-    <Link
-      href={`/dashboard/products/${product.id}`}
-      className="group overflow-hidden rounded-[22px] border border-[#eadfc9] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_18px_45px_rgba(70,50,20,0.08)]"
-    >
-      <div className="relative h-56 overflow-hidden bg-[#f8f4ec]">
-        {getImageUrl(product.image_url) ? (
-          <Image
-            src={getImageUrl(product.image_url)!}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
-            className="object-contain p-6 transition duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-[#b8aa95]">
-            <Package size={32} />
-          </div>
-        )}
-
-        {discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-[#b9975b] px-2.5 py-1 text-[9px] font-black text-white">
-            {discount}% OFF
-          </span>
-        )}
-
-        {product.is_flash_sale && (
-          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[#201a12] px-2.5 py-1 text-[9px] font-black text-white">
-            <Zap size={10} />
-            Flash
-          </span>
-        )}
-      </div>
-
-      <div className="p-4">
-        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-[#a0834e]">
-          {product.brand || "PrimeCart"}
-        </p>
-
-        <h3 className="mt-1 line-clamp-2 min-h-[40px] text-sm font-black leading-5">
-          {product.name}
-        </h3>
-
-        <div className="mt-3 flex items-center gap-1">
-          <Star
-            size={13}
-            className="fill-[#b9975b] text-[#b9975b]"
-          />
-
-          <span className="text-xs font-black">
-            {Number(product.rating || 0).toFixed(1)}
-          </span>
-
-          <span className="text-[10px] text-[#9d9181]">
-            ({product.reviews_count || 0})
-          </span>
-        </div>
-
-        <div className="mt-3 flex items-end gap-2">
-          <span className="text-lg font-black">
-            {formatPrice(Number(product.price))}
-          </span>
-
-          {product.original_price &&
-            Number(product.original_price) >
-              Number(product.price) && (
-              <span className="pb-0.5 text-xs font-medium text-[#a59a8a] line-through">
-                {formatPrice(Number(product.original_price))}
-              </span>
-            )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function QuickAction({
-  href,
-  icon,
-  title,
-  description,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 rounded-xl border border-transparent p-3 transition hover:border-[#eadfc9] hover:bg-[#faf7f0]"
-    >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40]">
-        {icon}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-black">{title}</p>
-        <p className="mt-0.5 truncate text-[11px] text-[#958978]">
-          {description}
-        </p>
-      </div>
-
-      <ChevronRight
-        size={16}
-        className="text-[#b6a997] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
-      />
-    </Link>
-  );
-}
-
-function MiniBenefit({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#faf4e7] text-[#a17d40]">
-        {icon}
-      </div>
-
-      <div>
-        <p className="text-xs font-black">{title}</p>
-        <p className="mt-0.5 text-[10px] text-[#958978]">
-          {text}
-        </p>
-      </div>
+    <div className="flex min-h-[170px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#ded3c0] bg-[#fdfbf7] px-5 text-center">
+      <ShoppingBag size={28} className="text-[#b5a68f]" />
+      <p className="mt-3 text-sm font-bold text-[#6f6558]">{text}</p>
     </div>
   );
-}
-
-function EmptyState({
-  icon,
-  title,
-  description,
-  href,
-  action,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  href: string;
-  action: string;
-}) {
-  return (
-    <div className="mt-5 rounded-2xl border border-dashed border-[#ddceb3] bg-white px-6 py-12 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf4e7] text-[#a17d40]">
-        {icon}
-      </div>
-
-      <h3 className="mt-4 text-base font-black">{title}</h3>
-
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#918575]">
-        {description}
-      </p>
-
-      <Link
-        href={href}
-        className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-black text-white"
-      >
-        {action}
-        <ArrowRight size={14} />
-      </Link>
-    </div>
-  );
-}
-
-function LayersIcon() {
-  return <Layers3 size={18} />;
-}
-
-function BrainIcon() {
-  return <BarChart3 size={17} />;
-}
-
-function ShieldIcon() {
-  return <ShieldCheckIcon />;
-}
-
-function ShieldCheckIcon() {
-  return <ShieldCheck size={17} />;
 }
