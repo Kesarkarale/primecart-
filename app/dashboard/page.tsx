@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BarChart3,
   Bell,
   ChevronRight,
-  CircleUserRound,
-  Gift,
+  Clock3,
+  Crown,
   Heart,
-  Home,
-  Layers3,
+  LayoutDashboard,
   LogOut,
   Menu,
   Package,
@@ -22,8 +22,7 @@ import {
   Sparkles,
   Star,
   Target,
-  TicketPercent,
-  Trophy,
+  TrendingUp,
   Truck,
   User,
   WalletCards,
@@ -33,2142 +32,1721 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 
-const categories = [
-  {
-    name: "Mobile",
-    icon: "📱",
-    count: "120+ Products",
-  },
-  {
-    name: "Home & Living",
-    icon: "🏠",
-    count: "180+ Products",
-  },
-  {
-    name: "Appliance",
-    icon: "⚡",
-    count: "95+ Products",
-  },
-  {
-    name: "Footwear",
-    icon: "👟",
-    count: "150+ Products",
-  },
-  {
-    name: "Watch",
-    icon: "⌚",
-    count: "80+ Products",
-  },
-  {
-    name: "Bag",
-    icon: "👜",
-    count: "110+ Products",
-  },
-  {
-    name: "Toy & Baby",
-    icon: "🧸",
-    count: "90+ Products",
-  },
-  {
-    name: "Automotive",
-    icon: "🚗",
-    count: "75+ Products",
-  },
-  {
-    name: "Fashion",
-    icon: "👕",
-    count: "200+ Products",
-  },
-  {
-    name: "Gaming",
-    icon: "🎮",
-    count: "100+ Products",
-  },
-];
+type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  description: string | null;
+  price: number;
+  original_price: number | null;
+  stock: number;
+  image_url: string | null;
+  brand: string | null;
+  rating: number;
+  reviews_count: number;
+  is_featured: boolean;
+  is_flash_sale: boolean;
+  is_active: boolean;
+  category_id: string | null;
+};
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Smartphone X Pro",
-    category: "Mobile",
-    price: "₹49,999",
-    oldPrice: "₹59,999",
-    rating: "4.8",
-    reviews: "324",
-    image: "/products/smartphone-x-pro.png",
-    badge: "Featured",
-  },
-  {
-    id: 2,
-    name: "Smart Watch Pro",
-    category: "Watch",
-    price: "₹5,999",
-    oldPrice: "₹7,499",
-    rating: "4.7",
-    reviews: "182",
-    image: "/products/smart-watch-pro.png",
-    badge: "Popular",
-  },
-  {
-    id: 3,
-    name: "Wireless Headphones",
-    category: "Mobile",
-    price: "₹2,999",
-    oldPrice: "₹4,499",
-    rating: "4.6",
-    reviews: "241",
-    image: "/products/wireless-headphones.png",
-    badge: "Deal",
-  },
-  {
-    id: 4,
-    name: "Running Sports Shoes",
-    category: "Footwear",
-    price: "₹2,499",
-    oldPrice: "₹3,999",
-    rating: "4.8",
-    reviews: "198",
-    image: "/products/sports-running-shoes.png",
-    badge: "Trending",
-  },
-];
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+};
 
-const recentOrders = [
-  {
-    id: "#PC-10248",
-    product: "Wireless Headphones",
-    date: "18 Sep 2026",
-    amount: "₹2,999",
-    status: "Delivered",
-  },
-  {
-    id: "#PC-10231",
-    product: "Smart Watch Pro",
-    date: "14 Sep 2026",
-    amount: "₹5,999",
-    status: "Shipped",
-  },
-  {
-    id: "#PC-10198",
-    product: "Running Sports Shoes",
-    date: "10 Sep 2026",
-    amount: "₹2,499",
-    status: "Delivered",
-  },
-];
+type Order = {
+  id: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+};
+
+const categoryIcons: Record<string, string> = {
+  "home-living": "🏠",
+  mobile: "📱",
+  appliance: "⚡",
+  footwear: "👟",
+  watch: "⌚",
+  bag: "👜",
+  "toy-baby": "🧸",
+  automotive: "🚗",
+  fashion: "👕",
+  gaming: "🎮",
+};
+
+const categoryImages: Record<string, string> = {
+  mobile: "/smartphone-x-pro.png",
+  "home-living": "/cookware-set.png",
+  appliance: "/air-fryer.png",
+  footwear: "/sports-running-shoes.png",
+  watch: "/classic-watch.png",
+  bag: "/bag.png",
+  "toy-baby": "/toy-baby.png",
+  automotive: "/automotive.png",
+  fashion: "/casual-tshirt.png",
+  gaming: "/gaming-mouse.png",
+};
+
+function getImageUrl(imageUrl: string | null) {
+  if (!imageUrl) return null;
+
+  const value = imageUrl.trim();
+
+  if (!value) return null;
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return value;
+  }
+
+  return `/${value}`;
+}
+
+function formatPrice(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function getDiscount(price: number, originalPrice: number | null) {
+  if (!originalPrice || originalPrice <= price) return 0;
+
+  return Math.round(((originalPrice - price) / originalPrice) * 100);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (!parts.length) return "PC";
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] || "there";
+}
+
+function getStatusClasses(status: string) {
+  const normalized = status.toLowerCase();
+
+  if (
+    normalized.includes("deliver") ||
+    normalized.includes("complete") ||
+    normalized.includes("success")
+  ) {
+    return "bg-emerald-50 text-emerald-700 border-emerald-100";
+  }
+
+  if (
+    normalized.includes("cancel") ||
+    normalized.includes("fail")
+  ) {
+    return "bg-red-50 text-red-700 border-red-100";
+  }
+
+  return "bg-amber-50 text-amber-700 border-amber-100";
+}
 
 export default function DashboardPage() {
   const router = useRouter();
+  const supabase = createClient();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const [search, setSearch] = useState("");
-  const [userName, setUserName] = useState("Kesar");
 
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadUser() {
-      const supabase = createClient();
+    let mounted = true;
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    async function loadDashboard() {
+      setLoading(true);
+      setError("");
 
-      if (!user) {
-        router.replace("/auth/login");
-        return;
+      try {
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+
+        if (!currentUser) {
+          router.replace("/auth/login");
+          return;
+        }
+
+        if (!mounted) return;
+
+        setUser(currentUser);
+
+        const [
+          profileResponse,
+          productsResponse,
+          categoriesResponse,
+          ordersResponse,
+          wishlistResponse,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .maybeSingle(),
+
+          supabase
+            .from("products")
+            .select(
+              `
+                id,
+                name,
+                slug,
+                short_description,
+                description,
+                price,
+                original_price,
+                stock,
+                image_url,
+                brand,
+                rating,
+                reviews_count,
+                is_featured,
+                is_flash_sale,
+                is_active,
+                category_id
+              `
+            )
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(100),
+
+          supabase
+            .from("categories")
+            .select("id, name, slug")
+            .order("name"),
+
+          supabase
+            .from("orders")
+            .select("id, status, total_amount, created_at")
+            .eq("user_id", currentUser.id)
+            .order("created_at", { ascending: false })
+            .limit(5),
+
+          supabase
+            .from("wishlist")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", currentUser.id),
+        ]);
+
+        if (profileResponse.error) {
+          console.warn(profileResponse.error.message);
+        }
+
+        if (productsResponse.error) {
+          throw new Error(productsResponse.error.message);
+        }
+
+        if (categoriesResponse.error) {
+          console.warn(categoriesResponse.error.message);
+        }
+
+        if (ordersResponse.error) {
+          console.warn(ordersResponse.error.message);
+        }
+
+        if (wishlistResponse.error) {
+          console.warn(wishlistResponse.error.message);
+        }
+
+        if (!mounted) return;
+
+        setProfile(profileResponse.data);
+        setProducts((productsResponse.data || []) as Product[]);
+        setCategories((categoriesResponse.data || []) as Category[]);
+        setOrders((ordersResponse.data || []) as Order[]);
+        setWishlistCount(wishlistResponse.count || 0);
+      } catch (err: any) {
+        console.error(err);
+
+        if (mounted) {
+          setError(
+            err?.message ||
+              "Something went wrong while loading your dashboard."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-
-      const name =
-        user.user_metadata?.full_name ||
-        user.email?.split("@")[0] ||
-        "Kesar";
-
-      setUserName(name);
     }
 
-    loadUser();
+    loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
+  const displayName =
+    profile?.full_name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "there";
+
+  const firstName = getFirstName(displayName);
+
+  const featuredProducts = useMemo(() => {
+    return products
+      .filter((product) => product.is_featured)
+      .slice(0, 4);
+  }, [products]);
+
+  const fallbackProducts = useMemo(() => {
+    return products.slice(0, 4);
+  }, [products]);
+
+  const dashboardProducts =
+    featuredProducts.length > 0 ? featuredProducts : fallbackProducts;
+
+  const flashSaleProducts = useMemo(() => {
+    return products
+      .filter((product) => product.is_flash_sale)
+      .slice(0, 4);
+  }, [products]);
+
+  const totalSpent = useMemo(() => {
+    return orders.reduce(
+      (sum, order) => sum + Number(order.total_amount || 0),
+      0
+    );
+  }, [orders]);
+
+  const searchResults = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    if (!value) return [];
+
+    return products
+      .filter(
+        (product) =>
+          product.name.toLowerCase().includes(value) ||
+          product.brand?.toLowerCase().includes(value)
+      )
+      .slice(0, 5);
+  }, [search, products]);
+
   async function handleLogout() {
-    setLoggingOut(true);
+    await supabase.auth.signOut();
+    router.replace("/auth/login");
+  }
 
-    try {
-      const supabase = createClient();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#faf8f3] text-[#17130d]">
+        <div className="flex min-h-screen">
+          <aside className="hidden w-[260px] border-r border-[#eadfc9] bg-white lg:block">
+            <div className="h-full animate-pulse p-6">
+              <div className="mb-10 h-10 w-36 rounded-xl bg-[#f3ecde]" />
 
-      await supabase.auth.signOut();
+              <div className="space-y-3">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-11 rounded-xl bg-[#f7f2e9]"
+                  />
+                ))}
+              </div>
+            </div>
+          </aside>
 
-      window.location.href = "/auth/login";
-    } catch (error) {
-      console.error("Logout error:", error);
-      setLoggingOut(false);
-    }
+          <main className="flex-1 p-5 sm:p-8">
+            <div className="mx-auto max-w-[1500px] animate-pulse">
+              <div className="mb-8 h-16 rounded-2xl bg-white" />
+              <div className="mb-8 h-[300px] rounded-[28px] bg-white" />
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-32 rounded-2xl bg-white"
+                  />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="dashboard-page">
-      {/* =====================================
-          MOBILE OVERLAY
-      ====================================== */}
-
-      {sidebarOpen && (
+    <div className="min-h-screen bg-[#faf8f3] text-[#17130d]">
+      {/* Mobile Overlay */}
+      {mobileMenu && (
         <button
-          className="sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-          aria-label="Close sidebar"
+          aria-label="Close menu"
+          onClick={() => setMobileMenu(false)}
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      {/* =====================================
-          SIDEBAR
-      ====================================== */}
+      <div className="flex min-h-screen">
+        {/* ================= SIDEBAR ================= */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-[270px] transform border-r border-[#eadfc9] bg-white transition-transform duration-300 lg:static lg:translate-x-0 ${
+            mobileMenu ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex h-full flex-col">
+            {/* Logo */}
+            <div className="flex h-[78px] items-center justify-between border-b border-[#f0e8da] px-6">
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenu(false)}
+                className="flex items-center gap-3"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b9975b] text-white shadow-[0_8px_24px_rgba(185,151,91,0.25)]">
+                  <ShoppingBag size={20} strokeWidth={2.4} />
+                </div>
 
-      <aside
-        className={`dashboard-sidebar ${
-          sidebarOpen ? "sidebar-open" : ""
-        }`}
-      >
-        <div className="sidebar-top">
-          <Link href="/" className="dashboard-logo">
-            <div className="logo-icon">
-              <ShoppingBag size={20} />
+                <div>
+                  <p className="text-lg font-black tracking-tight">
+                    PrimeCart
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a0834e]">
+                    Shop Smarter
+                  </p>
+                </div>
+              </Link>
+
+              <button
+                onClick={() => setMobileMenu(false)}
+                className="rounded-lg p-2 text-[#776b5b] hover:bg-[#f7f2e9] lg:hidden"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <span>
-              Prime<span>Cart</span>
-            </span>
-          </Link>
+            {/* Navigation */}
+            <div className="flex-1 overflow-y-auto px-4 py-6">
+              <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
+                Workspace
+              </p>
 
-          <button
-            className="mobile-close"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X size={20} />
-          </button>
-        </div>
+              <nav className="space-y-1.5">
+                <SidebarLink
+                  href="/dashboard"
+                  icon={<LayoutDashboard size={18} />}
+                  label="Dashboard"
+                  active
+                  onClick={() => setMobileMenu(false)}
+                />
 
-        <div className="sidebar-label">
-          MAIN MENU
-        </div>
+                <SidebarLink
+                  href="/dashboard/products"
+                  icon={<Package size={18} />}
+                  label="Products"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-        <nav className="sidebar-nav">
-          <Link
-            href="/dashboard"
-            className="sidebar-link active"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Home size={19} />
-            <span>Dashboard</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/categories"
+                  icon={<LayersIcon />}
+                  label="Categories"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-          <Link
-            href="/dashboard/products"
-            className="sidebar-link"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Package size={19} />
-            <span>Products</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/orders"
+                  icon={<ShoppingBag size={18} />}
+                  label="My Orders"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-          <Link
-            href="/dashboard/categories"
-            className="sidebar-link"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Layers3 size={19} />
-            <span>Categories</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/wishlist"
+                  icon={<Heart size={18} />}
+                  label="Wishlist"
+                  badge={wishlistCount > 0 ? wishlistCount : undefined}
+                  onClick={() => setMobileMenu(false)}
+                />
+              </nav>
 
-          <Link
-            href="/dashboard/orders"
-            className="sidebar-link"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <ShoppingBag size={19} />
-            <span>My Orders</span>
-          </Link>
+              <p className="mb-3 mt-8 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
+                Smart Shopping
+              </p>
 
-          <Link
-            href="/dashboard/wishlist"
-            className="sidebar-link"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Heart size={19} />
-            <span>Wishlist</span>
-          </Link>
-        </nav>
+              <nav className="space-y-1.5">
+                <SidebarLink
+                  href="/dashboard/prime-match"
+                  icon={<Sparkles size={18} />}
+                  label="PrimeMatch"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-        <div className="sidebar-label secondary-label">
-          SMART SHOPPING
-        </div>
+                <SidebarLink
+                  href="/dashboard/budget-builder"
+                  icon={<WalletCards size={18} />}
+                  label="Budget Builder"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-        <nav className="sidebar-nav">
-          <Link
-            href="/dashboard/prime-match"
-            className="sidebar-link"
-          >
-            <Target size={19} />
-            <span>PrimeMatch</span>
-            <span className="new-badge">NEW</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/setup-builder"
+                  icon={<Target size={18} />}
+                  label="Build My Setup"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-          <Link
-            href="/dashboard/budget-builder"
-            className="sidebar-link"
-          >
-            <WalletCards size={19} />
-            <span>Budget Builder</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/prime-points"
+                  icon={<Crown size={18} />}
+                  label="PrimePoints"
+                  onClick={() => setMobileMenu(false)}
+                />
+              </nav>
 
-          <Link
-            href="/dashboard/setup-builder"
-            className="sidebar-link"
-          >
-            <Layers3 size={19} />
-            <span>Build My Setup</span>
-          </Link>
+              <p className="mb-3 mt-8 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#a69a88]">
+                Account
+              </p>
 
-          <Link
-            href="/dashboard/prime-points"
-            className="sidebar-link"
-          >
-            <Trophy size={19} />
-            <span>PrimePoints</span>
-          </Link>
-        </nav>
+              <nav className="space-y-1.5">
+                <SidebarLink
+                  href="/dashboard/profile"
+                  icon={<User size={18} />}
+                  label="Profile"
+                  onClick={() => setMobileMenu(false)}
+                />
 
-        <div className="sidebar-bottom">
-          <Link
-            href="/dashboard/settings"
-            className="sidebar-link"
-          >
-            <Settings size={19} />
-            <span>Settings</span>
-          </Link>
+                <SidebarLink
+                  href="/dashboard/settings"
+                  icon={<Settings size={18} />}
+                  label="Settings"
+                  onClick={() => setMobileMenu(false)}
+                />
+              </nav>
+            </div>
 
-          <button
-            className="sidebar-link logout-link"
-            onClick={handleLogout}
-            disabled={loggingOut}
-          >
-            <LogOut size={19} />
-            <span>
-              {loggingOut ? "Signing out..." : "Sign out"}
-            </span>
-          </button>
-        </div>
-      </aside>
+            {/* Sidebar Bottom */}
+            <div className="border-t border-[#f0e8da] p-4">
+              <div className="rounded-2xl bg-[#faf7f0] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b9975b] text-sm font-black text-white">
+                    {getInitials(displayName)}
+                  </div>
 
-      {/* =====================================
-          MAIN
-      ====================================== */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black">
+                      {displayName}
+                    </p>
 
-      <section className="dashboard-main">
-        {/* HEADER */}
+                    <p className="truncate text-xs text-[#8d8272]">
+                      {user?.email}
+                    </p>
+                  </div>
 
-        <header className="dashboard-header">
-          <div className="header-left">
-            <button
-              className="menu-button"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={21} />
-            </button>
-
-            <div className="page-heading">
-              <span>Overview</span>
-              <h1>Dashboard</h1>
+                  <button
+                    onClick={handleLogout}
+                    title="Logout"
+                    className="rounded-lg p-2 text-[#8d8272] transition hover:bg-white hover:text-red-600"
+                  >
+                    <LogOut size={17} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+        </aside>
 
-          <div className="header-actions">
-            {/* SEARCH */}
+        {/* ================= MAIN ================= */}
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto max-w-[1550px] px-4 pb-12 sm:px-6 lg:px-8">
+            {/* Top Header */}
+            <header className="sticky top-0 z-30 -mx-4 mb-6 border-b border-[#eadfc9]/80 bg-[#faf8f3]/95 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setMobileMenu(true)}
+                  className="rounded-xl border border-[#eadfc9] bg-white p-2.5 text-[#554b3e] lg:hidden"
+                >
+                  <Menu size={20} />
+                </button>
 
-            <div className="dashboard-search">
-              <Search size={18} />
+                {/* Search */}
+                <div className="relative min-w-0 flex-1 max-w-2xl">
+                  <Search
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a79b89]"
+                  />
 
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search products, brands and categories..."
+                    className="h-11 w-full rounded-xl border border-[#eadfc9] bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-[#aaa092] focus:border-[#c5a15f] focus:ring-4 focus:ring-[#b9975b]/10"
+                  />
+
+                  {search.trim() && (
+                    <div className="absolute left-0 right-0 top-[52px] z-50 overflow-hidden rounded-2xl border border-[#eadfc9] bg-white p-2 shadow-[0_18px_60px_rgba(40,30,15,0.12)]">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((product) => (
+                          <Link
+                            key={product.id}
+                            href={`/dashboard/products/${product.id}`}
+                            onClick={() => setSearch("")}
+                            className="flex items-center gap-3 rounded-xl p-2.5 transition hover:bg-[#faf7f0]"
+                          >
+                            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#f5f0e7]">
+                              {getImageUrl(product.image_url) ? (
+                                <Image
+                                  src={getImageUrl(product.image_url)!}
+                                  alt={product.name}
+                                  fill
+                                  sizes="44px"
+                                  className="object-contain p-1"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-[#a0834e]">
+                                  <Package size={17} />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold">
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-[#918574]">
+                                {formatPrice(Number(product.price))}
+                              </p>
+                            </div>
+
+                            <ChevronRight
+                              size={16}
+                              className="text-[#b9975b]"
+                            />
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-center">
+                          <Search
+                            size={22}
+                            className="mx-auto mb-2 text-[#c3b59e]"
+                          />
+                          <p className="text-sm font-bold">
+                            No products found
+                          </p>
+                          <p className="mt-1 text-xs text-[#958a79]">
+                            Try another product or brand.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <Link
+                  href="/dashboard/wishlist"
+                  className="relative hidden h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#6d6253] transition hover:border-[#c9a24d] hover:text-[#a27e3c] sm:flex"
+                >
+                  <Heart size={19} />
+
+                  {wishlistCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b9975b] px-1 text-[9px] font-black text-white">
+                      {wishlistCount > 9 ? "9+" : wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
+                <button className="relative hidden h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#6d6253] transition hover:border-[#c9a24d] hover:text-[#a27e3c] sm:flex">
+                  <Bell size={19} />
+                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#b9975b]" />
+                </button>
+
+                <Link
+                  href="/dashboard/profile"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b9975b] text-sm font-black text-white shadow-[0_6px_18px_rgba(185,151,91,0.22)]"
+                >
+                  {getInitials(displayName)}
+                </Link>
+              </div>
+            </header>
+
+            {/* Error */}
+            {error && (
+              <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                {error}
+              </div>
+            )}
+
+            {/* ================= HERO ================= */}
+            <section className="relative overflow-hidden rounded-[30px] border border-[#dfcfb1] bg-gradient-to-br from-[#fffdf8] via-[#faf4e7] to-[#f2e7d0] p-6 shadow-[0_18px_60px_rgba(80,60,25,0.07)] sm:p-8 lg:p-10">
+              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#d9bd82]/20 blur-3xl" />
+              <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-white/60 blur-3xl" />
+
+              <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_390px]">
+                <div>
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#dfcfb1] bg-white/70 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-[#92713b]">
+                    <Sparkles size={13} />
+                    Smart shopping dashboard
+                  </div>
+
+                  <h1 className="max-w-3xl text-3xl font-black tracking-[-0.04em] text-[#20190f] sm:text-4xl lg:text-5xl">
+                    Welcome back,{" "}
+                    <span className="text-[#b18b49]">{firstName}.</span>
+                  </h1>
+
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-[#756957] sm:text-base">
+                    Your smarter shopping journey starts here. Discover
+                    products, compare choices, build your setup and get
+                    recommendations tailored to you.
+                  </p>
+
+                  <div className="mt-7 flex flex-wrap gap-3">
+                    <Link
+                      href="/dashboard/products"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-5 text-sm font-black text-white shadow-[0_10px_25px_rgba(185,151,91,0.25)] transition hover:-translate-y-0.5 hover:bg-[#a8864e]"
+                    >
+                      Explore Products
+                      <ArrowRight size={16} />
+                    </Link>
+
+                    <Link
+                      href="/dashboard/prime-match"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#d9c7a7] bg-white/80 px-5 text-sm font-black text-[#665238] transition hover:bg-white"
+                    >
+                      <Sparkles size={16} />
+                      Try PrimeMatch
+                    </Link>
+                  </div>
+
+                  <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-bold text-[#817563]">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                        ✓
+                      </span>
+                      Verified products
+                    </span>
+
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                        ✓
+                      </span>
+                      Secure checkout
+                    </span>
+
+                    <span className="inline-flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                        ✓
+                      </span>
+                      Easy returns
+                    </span>
+                  </div>
+                </div>
+
+                {/* Hero Smart Card */}
+                <div className="relative">
+                  <div className="rounded-[26px] border border-white/80 bg-white/85 p-5 shadow-[0_25px_70px_rgba(73,53,20,0.12)] backdrop-blur-xl">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
+                          Smart recommendation
+                        </p>
+                        <p className="mt-1 text-sm font-black">
+                          Picked for your shopping style
+                        </p>
+                      </div>
+
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f7efdf] text-[#a17d40]">
+                        <BrainIcon />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-[#faf7f0] p-4">
+                      <div className="flex gap-4">
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white">
+                          {getImageUrl(
+                            dashboardProducts[0]?.image_url ||
+                              "/smartphone-x-pro.png"
+                          ) ? (
+                            <Image
+                              src={
+                                getImageUrl(
+                                  dashboardProducts[0]?.image_url ||
+                                    "/smartphone-x-pro.png"
+                                )!
+                              }
+                              alt={
+                                dashboardProducts[0]?.name ||
+                                "Recommended product"
+                              }
+                              fill
+                              sizes="96px"
+                              className="object-contain p-2"
+                            />
+                          ) : null}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 inline-flex rounded-full bg-[#e8f6ec] px-2 py-1 text-[9px] font-black uppercase tracking-wider text-[#2d7b48]">
+                            Smart pick
+                          </div>
+
+                          <h3 className="line-clamp-2 text-sm font-black">
+                            {dashboardProducts[0]?.name ||
+                              "Discover your next favourite"}
+                          </h3>
+
+                          <div className="mt-2 flex items-center gap-1">
+                            <Star
+                              size={13}
+                              className="fill-[#b9975b] text-[#b9975b]"
+                            />
+                            <span className="text-xs font-black">
+                              {Number(
+                                dashboardProducts[0]?.rating || 4.8
+                              ).toFixed(1)}
+                            </span>
+                          </div>
+
+                          <div className="mt-2 text-lg font-black text-[#a17d40]">
+                            {formatPrice(
+                              Number(
+                                dashboardProducts[0]?.price || 24999
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/dashboard/prime-match"
+                      className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#17130d] text-sm font-black text-white transition hover:bg-[#2b2419]"
+                    >
+                      Find My Match
+                      <ArrowRight size={15} />
+                    </Link>
+                  </div>
+
+                  <div className="absolute -right-2 -top-5 hidden rounded-xl border border-[#eadfc9] bg-white px-4 py-3 shadow-lg sm:block">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-[#9c8866]">
+                      PrimePoints
+                    </p>
+                    <p className="mt-0.5 text-sm font-black">
+                      Earn on every order
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ================= STATS ================= */}
+            <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                icon={<ShoppingBag size={19} />}
+                label="Total Orders"
+                value={orders.length}
+                caption="Your recent purchases"
+              />
+
+              <StatCard
+                icon={<Heart size={19} />}
+                label="Wishlist"
+                value={wishlistCount}
+                caption="Products saved"
+              />
+
+              <StatCard
+                icon={<WalletCards size={19} />}
+                label="Total Spent"
+                value={formatPrice(totalSpent)}
+                caption="Across loaded orders"
+              />
+
+              <StatCard
+                icon={<Crown size={19} />}
+                label="PrimePoints"
+                value="0"
+                caption="Keep shopping to earn"
+                href="/dashboard/prime-points"
+              />
+            </section>
+
+            {/* ================= SMART TOOLS ================= */}
+            <section className="mt-10">
+              <SectionHeader
+                eyebrow="PrimeCart Intelligence"
+                title="Shop smarter, not harder."
+                description="Tools designed to make choosing the right product easier."
+              />
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <SmartTool
+                  href="/dashboard/prime-match"
+                  icon={<Sparkles size={21} />}
+                  title="PrimeMatch"
+                  description="Find products that fit your needs and preferences."
+                />
+
+                <SmartTool
+                  href="/dashboard/budget-builder"
+                  icon={<WalletCards size={21} />}
+                  title="Budget Builder"
+                  description="Set your budget and discover the best options."
+                />
+
+                <SmartTool
+                  href="/dashboard/setup-builder"
+                  icon={<Target size={21} />}
+                  title="Build My Setup"
+                  description="Create a complete setup from compatible products."
+                />
+
+                <SmartTool
+                  href="/dashboard/prime-points"
+                  icon={<Crown size={21} />}
+                  title="PrimePoints"
+                  description="Track rewards and make every purchase count."
+                />
+              </div>
+            </section>
+
+            {/* ================= CATEGORIES ================= */}
+            <section className="mt-10">
+              <SectionHeader
+                eyebrow="Explore"
+                title="Shop by category"
+                description="Jump directly into the products you are looking for."
+                action={
+                  <Link
+                    href="/dashboard/categories"
+                    className="hidden items-center gap-1 text-sm font-black text-[#a27e3c] sm:flex"
+                  >
+                    View all
+                    <ArrowRight size={15} />
+                  </Link>
                 }
               />
-            </div>
 
-            {/* NOTIFICATION */}
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {categories.slice(0, 10).map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/dashboard/categories/${category.slug}`}
+                    className="group overflow-hidden rounded-2xl border border-[#eadfc9] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_16px_35px_rgba(70,50,20,0.08)]"
+                  >
+                    <div className="relative h-28 overflow-hidden bg-[#f7f2e9]">
+                      {categoryImages[category.slug] &&
+                      getImageUrl(categoryImages[category.slug]) ? (
+                        <Image
+                          src={getImageUrl(categoryImages[category.slug])!}
+                          alt={category.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, 20vw"
+                          className="object-contain p-5 transition duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-4xl">
+                          {categoryIcons[category.slug] || "🛍️"}
+                        </div>
+                      )}
 
-            <button
-              className="header-icon-button"
-              aria-label="Notifications"
-            >
-              <Bell size={19} />
-              <span className="notification-dot" />
-            </button>
+                      <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#a17d40] opacity-0 shadow-sm transition group-hover:opacity-100">
+                        <ChevronRight size={14} />
+                      </div>
+                    </div>
 
-            {/* PROFILE */}
-
-            <Link
-              href="/dashboard/profile"
-              className="profile-button"
-            >
-              <div className="profile-avatar">
-                <CircleUserRound size={21} />
+                    <div className="flex items-center justify-between p-3.5">
+                      <span className="truncate text-sm font-black">
+                        {category.name}
+                      </span>
+                      <ArrowRight
+                        size={14}
+                        className="shrink-0 text-[#b9975b] transition group-hover:translate-x-1"
+                      />
+                    </div>
+                  </Link>
+                ))}
               </div>
+            </section>
 
-              <div className="profile-info">
-                <strong>{userName}</strong>
-                <span>Customer</span>
-              </div>
-
-              <ChevronRight size={16} />
-            </Link>
-          </div>
-        </header>
-
-        <div className="dashboard-content">
-          {/* =====================================
-              WELCOME
-          ====================================== */}
-
-          <section className="welcome-section">
-            <div>
-              <p className="welcome-small">
-                Good to see you again 👋
-              </p>
-
-              <h2>
-                Welcome back,{" "}
-                <span>{userName}</span>
-              </h2>
-
-              <p className="welcome-description">
-                Discover smarter products, better deals and
-                personalized recommendations.
-              </p>
-            </div>
-
-            <Link
-              href="/dashboard/products"
-              className="browse-button"
-            >
-              Browse products
-              <ArrowRight size={18} />
-            </Link>
-          </section>
-
-          {/* =====================================
-              STATS
-          ====================================== */}
-
-          <section className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon gold">
-                <ShoppingBag size={21} />
-              </div>
-
-              <div>
-                <span>Total Orders</span>
-                <strong>12</strong>
-                <small>
-                  <b>+3</b> this month
-                </small>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon purple">
-                <Heart size={21} />
-              </div>
-
-              <div>
-                <span>Wishlist</span>
-                <strong>8</strong>
-                <small>
-                  <b>2</b> new items
-                </small>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon green">
-                <Trophy size={21} />
-              </div>
-
-              <div>
-                <span>PrimePoints</span>
-                <strong>2,480</strong>
-                <small>
-                  <b>+320</b> earned
-                </small>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon orange">
-                <TicketPercent size={21} />
-              </div>
-
-              <div>
-                <span>Saved</span>
-                <strong>₹3,840</strong>
-                <small>
-                  through PrimeCart
-                </small>
-              </div>
-            </div>
-          </section>
-
-          {/* =====================================
-              SMART SHOPPING
-          ====================================== */}
-
-          <section className="section">
-            <div className="section-header">
-              <div>
-                <span className="section-eyebrow">
-                  SHOP SMARTER
-                </span>
-
-                <h3>
-                  What are you shopping for?
-                </h3>
-              </div>
-
-              <Sparkles
-                size={23}
-                className="section-sparkle"
+            {/* ================= FEATURED PRODUCTS ================= */}
+            <section className="mt-10">
+              <SectionHeader
+                eyebrow="Curated for you"
+                title="Featured products"
+                description="Popular picks from the PrimeCart catalog."
+                action={
+                  <Link
+                    href="/dashboard/products"
+                    className="hidden items-center gap-1 text-sm font-black text-[#a27e3c] sm:flex"
+                  >
+                    View all products
+                    <ArrowRight size={15} />
+                  </Link>
+                }
               />
-            </div>
 
-            <div className="smart-grid">
-              {/* PRIMEMATCH */}
+              {dashboardProducts.length > 0 ? (
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {dashboardProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<Package size={28} />}
+                  title="No products available"
+                  description="Products will appear here once they are added to your catalog."
+                  href="/dashboard/products"
+                  action="Browse Products"
+                />
+              )}
+            </section>
 
-              <Link
-                href="/dashboard/prime-match"
-                className="smart-card prime-match"
-              >
-                <div className="smart-card-icon">
-                  <Target size={24} />
+            {/* ================= FLASH DEALS ================= */}
+            {flashSaleProducts.length > 0 && (
+              <section className="mt-10 overflow-hidden rounded-[28px] border border-[#e5d4b4] bg-[#201a12] p-5 text-white sm:p-7">
+                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#e2c98e]">
+                      <Zap size={13} />
+                      Limited-time deals
+                    </div>
+
+                    <h2 className="mt-3 text-2xl font-black tracking-tight">
+                      Flash deals worth checking.
+                    </h2>
+
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-white/60">
+                      Grab selected products before the deal disappears.
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/dashboard/products?flash=true"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c9a24d] px-5 text-sm font-black text-white transition hover:bg-[#b58d3f]"
+                  >
+                    Explore deals
+                    <ArrowRight size={16} />
+                  </Link>
                 </div>
 
-                <span className="smart-label">
-                  SMART MATCH
-                </span>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {flashSaleProducts.map((product) => {
+                    const discount = getDiscount(
+                      Number(product.price),
+                      product.original_price
+                        ? Number(product.original_price)
+                        : null
+                    );
 
-                <h4>PrimeMatch</h4>
+                    return (
+                      <Link
+                        key={product.id}
+                        href={`/dashboard/products/${product.id}`}
+                        className="group flex gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 transition hover:border-[#c9a24d]/50 hover:bg-white/[0.09]"
+                      >
+                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white">
+                          {getImageUrl(product.image_url) ? (
+                            <Image
+                              src={getImageUrl(product.image_url)!}
+                              alt={product.name}
+                              fill
+                              sizes="80px"
+                              className="object-contain p-2 transition group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[#b9975b]">
+                              <Package size={20} />
+                            </div>
+                          )}
+                        </div>
 
-                <p>
-                  Tell us what you need and we&apos;ll help
-                  you find the right products.
-                </p>
+                        <div className="min-w-0 py-1">
+                          <p className="truncate text-sm font-black">
+                            {product.name}
+                          </p>
 
-                <div className="smart-link">
-                  Find my match
-                  <ArrowRight size={16} />
+                          <p className="mt-1 text-xs text-white/50">
+                            {product.brand || "PrimeCart"}
+                          </p>
+
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-sm font-black text-[#e3c987]">
+                              {formatPrice(Number(product.price))}
+                            </span>
+
+                            {discount > 0 && (
+                              <span className="text-[10px] font-black text-emerald-300">
+                                {discount}% OFF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-              </Link>
+              </section>
+            )}
 
-              {/* BUDGET */}
+            {/* ================= ORDERS + QUICK ACTIONS ================= */}
+            <section className="mt-10 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+              {/* Recent Orders */}
+              <div className="rounded-[26px] border border-[#eadfc9] bg-white p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
+                      Activity
+                    </p>
+                    <h2 className="mt-1 text-xl font-black">
+                      Recent orders
+                    </h2>
+                  </div>
 
-              <Link
-                href="/dashboard/budget-builder"
-                className="smart-card budget-builder"
-              >
-                <div className="smart-card-icon">
-                  <WalletCards size={24} />
+                  <Link
+                    href="/dashboard/orders"
+                    className="inline-flex items-center gap-1 text-xs font-black text-[#a17d40]"
+                  >
+                    View all
+                    <ArrowRight size={14} />
+                  </Link>
                 </div>
 
-                <span className="smart-label">
-                  PLAN YOUR BUDGET
-                </span>
+                <div className="mt-5">
+                  {orders.length > 0 ? (
+                    <div className="divide-y divide-[#f0e8da]">
+                      {orders.map((order) => (
+                        <Link
+                          href="/dashboard/orders"
+                          key={order.id}
+                          className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf5e9] text-[#a17d40]">
+                            <Package size={18} />
+                          </div>
 
-                <h4>Budget Builder</h4>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-black">
+                              Order #{order.id.slice(0, 8).toUpperCase()}
+                            </p>
 
-                <p>
-                  Set your budget and build a smart shopping
-                  plan around it.
-                </p>
+                            <div className="mt-1 flex items-center gap-2 text-xs text-[#948877]">
+                              <Clock3 size={12} />
+                              {formatDate(order.created_at)}
+                            </div>
+                          </div>
 
-                <div className="smart-link">
-                  Build my budget
-                  <ArrowRight size={16} />
+                          <div className="text-right">
+                            <p className="text-sm font-black">
+                              {formatPrice(Number(order.total_amount))}
+                            </p>
+
+                            <span
+                              className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[9px] font-black uppercase ${getStatusClasses(
+                                order.status
+                              )}`}
+                            >
+                              {order.status}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-[#faf7f0] px-5 py-10 text-center">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#b9975b] shadow-sm">
+                        <ShoppingBag size={22} />
+                      </div>
+
+                      <h3 className="mt-4 text-sm font-black">
+                        No orders yet
+                      </h3>
+
+                      <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#928675]">
+                        Start shopping and your recent orders will appear
+                        here.
+                      </p>
+
+                      <Link
+                        href="/dashboard/products"
+                        className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-black text-white"
+                      >
+                        Start Shopping
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              </Link>
-
-              {/* SETUP */}
-
-              <Link
-                href="/dashboard/setup-builder"
-                className="smart-card setup-builder"
-              >
-                <div className="smart-card-icon">
-                  <Layers3 size={24} />
-                </div>
-
-                <span className="smart-label">
-                  COMPLETE THE SET
-                </span>
-
-                <h4>Build My Setup</h4>
-
-                <p>
-                  Create complete kits for gaming, college,
-                  work, travel and more.
-                </p>
-
-                <div className="smart-link">
-                  Build a setup
-                  <ArrowRight size={16} />
-                </div>
-              </Link>
-            </div>
-          </section>
-
-          {/* =====================================
-              CATEGORIES
-          ====================================== */}
-
-          <section className="section">
-            <div className="section-header">
-              <div>
-                <span className="section-eyebrow">
-                  EXPLORE
-                </span>
-
-                <h3>Shop by category</h3>
               </div>
 
-              <Link
-                href="/dashboard/categories"
-                className="view-link"
-              >
-                View all
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+              {/* Quick Actions */}
+              <div className="rounded-[26px] border border-[#eadfc9] bg-white p-5 sm:p-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
+                  Shortcuts
+                </p>
 
-            <div className="categories-grid">
-              {categories.map((category) => (
-                <Link
-                  href={`/dashboard/categories/${encodeURIComponent(
-                    category.name
-                  )}`}
-                  className="category-card"
-                  key={category.name}
-                >
-                  <div className="category-icon">
-                    {category.icon}
-                  </div>
+                <h2 className="mt-1 text-xl font-black">
+                  Quick actions
+                </h2>
 
-                  <div className="category-info">
-                    <strong>{category.name}</strong>
-                    <span>{category.count}</span>
-                  </div>
-
-                  <ChevronRight
-                    size={16}
-                    className="category-arrow"
+                <div className="mt-5 space-y-2.5">
+                  <QuickAction
+                    href="/dashboard/products"
+                    icon={<ShoppingBag size={18} />}
+                    title="Browse Products"
+                    description="Explore the full catalog"
                   />
-                </Link>
-              ))}
-            </div>
-          </section>
 
-          {/* =====================================
-              FEATURED PRODUCTS
-          ====================================== */}
+                  <QuickAction
+                    href="/dashboard/wishlist"
+                    icon={<Heart size={18} />}
+                    title="Open Wishlist"
+                    description={`${wishlistCount} saved ${
+                      wishlistCount === 1 ? "item" : "items"
+                    }`}
+                  />
 
-          <section className="section">
-            <div className="section-header">
-              <div>
-                <span className="section-eyebrow">
-                  CURATED FOR YOU
-                </span>
+                  <QuickAction
+                    href="/dashboard/orders"
+                    icon={<Truck size={18} />}
+                    title="Track Orders"
+                    description="Check your purchase history"
+                  />
 
-                <h3>Featured products</h3>
+                  <QuickAction
+                    href="/dashboard/profile"
+                    icon={<User size={18} />}
+                    title="My Profile"
+                    description="Manage your account"
+                  />
+
+                  <QuickAction
+                    href="/dashboard/settings"
+                    icon={<Settings size={18} />}
+                    title="Settings"
+                    description="Preferences & security"
+                  />
+                </div>
               </div>
+            </section>
 
-              <Link
-                href="/dashboard/products"
-                className="view-link"
-              >
-                View all products
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+            {/* ================= VALUE BANNER ================= */}
+            <section className="mt-10 overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white">
+              <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="p-6 sm:p-8">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#faf4e7] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-[#a17d40]">
+                    <Crown size={13} />
+                    PrimeCart difference
+                  </div>
 
-            <div className="products-grid">
-              {featuredProducts.map((product) => (
-                <Link
-                  href={`/dashboard/products/${product.id}`}
-                  className="product-card"
-                  key={product.id}
-                >
-                  <div className="product-image">
-                    <span className="product-badge">
-                      {product.badge}
-                    </span>
+                  <h2 className="mt-4 max-w-2xl text-2xl font-black tracking-tight sm:text-3xl">
+                    A shopping experience designed around better decisions.
+                  </h2>
 
-                    <button
-                      className="wishlist-button"
-                      onClick={(e) =>
-                        e.preventDefault()
-                      }
-                      aria-label="Add to wishlist"
-                    >
-                      <Heart size={17} />
-                    </button>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-[#7f7464]">
+                    Instead of endlessly scrolling through products, PrimeCart
+                    gives you smarter ways to discover, compare and choose.
+                  </p>
 
-                    <img
-                      src={product.image}
-                      alt={product.name}
+                  <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                    <MiniBenefit
+                      icon={<BrainIcon />}
+                      title="Smarter picks"
+                      text="Personalized discovery"
+                    />
+
+                    <MiniBenefit
+                      icon={<TrendingUp size={17} />}
+                      title="Better value"
+                      text="Budget-focused choices"
+                    />
+
+                    <MiniBenefit
+                      icon={<ShieldIcon />}
+                      title="More confidence"
+                      text="Clear product details"
                     />
                   </div>
-
-                  <div className="product-content">
-                    <span className="product-category">
-                      {product.category}
-                    </span>
-
-                    <h4>{product.name}</h4>
-
-                    <div className="rating">
-                      <Star
-                        size={14}
-                        fill="currentColor"
-                      />
-
-                      <strong>{product.rating}</strong>
-
-                      <span>
-                        ({product.reviews})
-                      </span>
-                    </div>
-
-                    <div className="product-price">
-                      <strong>{product.price}</strong>
-                      <del>{product.oldPrice}</del>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* =====================================
-              PRIMEPOINTS BANNER
-          ====================================== */}
-
-          <section className="points-banner">
-            <div className="points-left">
-              <div className="points-icon">
-                <Trophy size={27} />
-              </div>
-
-              <div>
-                <span>PRIMECART REWARDS</span>
-                <h3>
-                  You&apos;re only 520 points away from
-                  your next reward.
-                </h3>
-                <p>
-                  Keep shopping and earn more PrimePoints.
-                </p>
-              </div>
-            </div>
-
-            <div className="points-right">
-              <div className="points-number">
-                2,480
-                <span> / 3,000</span>
-              </div>
-
-              <div className="progress">
-                <div className="progress-value" />
-              </div>
-
-              <Link href="/dashboard/prime-points">
-                View rewards
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-          </section>
-
-          {/* =====================================
-              RECENT ORDERS
-          ====================================== */}
-
-          <section className="section orders-section">
-            <div className="section-header">
-              <div>
-                <span className="section-eyebrow">
-                  ACTIVITY
-                </span>
-
-                <h3>Recent orders</h3>
-              </div>
-
-              <Link
-                href="/dashboard/orders"
-                className="view-link"
-              >
-                View all orders
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-
-            <div className="orders-table">
-              <div className="orders-header">
-                <span>Order</span>
-                <span>Product</span>
-                <span>Date</span>
-                <span>Amount</span>
-                <span>Status</span>
-              </div>
-
-              {recentOrders.map((order) => (
-                <div
-                  className="order-row"
-                  key={order.id}
-                >
-                  <strong>{order.id}</strong>
-
-                  <div className="order-product">
-                    <div className="order-product-icon">
-                      <Package size={17} />
-                    </div>
-
-                    <span>{order.product}</span>
-                  </div>
-
-                  <span className="order-date">
-                    {order.date}
-                  </span>
-
-                  <strong>{order.amount}</strong>
-
-                  <span
-                    className={`order-status ${
-                      order.status === "Delivered"
-                        ? "delivered"
-                        : "shipped"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          {/* =====================================
-              QUICK ACTIONS
-          ====================================== */}
-
-          <section className="quick-actions">
-            <Link href="/dashboard/products">
-              <Package size={19} />
-              <span>Browse Products</span>
-              <ArrowRight size={16} />
-            </Link>
-
-            <Link href="/dashboard/orders">
-              <Truck size={19} />
-              <span>Track Orders</span>
-              <ArrowRight size={16} />
-            </Link>
-
-            <Link href="/dashboard/prime-points">
-              <Gift size={19} />
-              <span>Redeem Rewards</span>
-              <ArrowRight size={16} />
-            </Link>
-
-            <Link href="/dashboard/profile">
-              <User size={19} />
-              <span>My Profile</span>
-              <ArrowRight size={16} />
-            </Link>
-          </section>
-        </div>
-      </section>
-
-      <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        body {
-          margin: 0;
-          background: #faf8f3;
-        }
-
-        .dashboard-page {
-          min-height: 100vh;
-          display: flex;
-          background: #faf8f3;
-          color: #211f1a;
-          font-family:
-            Inter,
-            ui-sans-serif,
-            system-ui,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-        }
-
-        /* =====================================
-           SIDEBAR
-        ====================================== */
-
-        .dashboard-sidebar {
-          width: 250px;
-          min-width: 250px;
-          height: 100vh;
-          position: sticky;
-          top: 0;
-          display: flex;
-          flex-direction: column;
-          padding: 25px 16px;
-          background: #ffffff;
-          border-right: 1px solid #ebe5d9;
-          z-index: 50;
-        }
-
-        .sidebar-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 8px;
-          margin-bottom: 35px;
-        }
-
-        .dashboard-logo {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          color: #191714;
-          text-decoration: none;
-          font-size: 22px;
-          font-weight: 850;
-          letter-spacing: -0.7px;
-        }
-
-        .dashboard-logo > span > span {
-          color: #c69624;
-        }
-
-        .logo-icon {
-          width: 39px;
-          height: 39px;
-          display: grid;
-          place-items: center;
-          border-radius: 12px;
-          background: #d4a233;
-          color: white;
-        }
-
-        .mobile-close {
-          display: none;
-          border: 0;
-          background: transparent;
-          color: #777168;
-          cursor: pointer;
-        }
-
-        .sidebar-label {
-          padding: 0 12px;
-          margin-bottom: 9px;
-          color: #aaa398;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 1.3px;
-        }
-
-        .secondary-label {
-          margin-top: 25px;
-        }
-
-        .sidebar-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .sidebar-link {
-          min-height: 44px;
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 0 12px;
-          border: 0;
-          border-radius: 12px;
-          background: transparent;
-          color: #777168;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s ease;
-        }
-
-        .sidebar-link:hover {
-          background: #faf6eb;
-          color: #a2771d;
-        }
-
-        .sidebar-link.active {
-          background: #f7edd4;
-          color: #9a721b;
-          font-weight: 750;
-        }
-
-        .new-badge {
-          margin-left: auto;
-          padding: 3px 6px;
-          border-radius: 5px;
-          background: #e9d18f;
-          color: #73520d;
-          font-size: 8px;
-          font-weight: 900;
-        }
-
-        .sidebar-bottom {
-          margin-top: auto;
-          padding-top: 15px;
-          border-top: 1px solid #eee9e0;
-        }
-
-        .logout-link {
-          width: 100%;
-          margin-top: 4px;
-        }
-
-        /* =====================================
-           MAIN
-        ====================================== */
-
-        .dashboard-main {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .dashboard-header {
-          height: 76px;
-          position: sticky;
-          top: 0;
-          z-index: 30;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 34px;
-          background: rgba(250, 248, 243, 0.92);
-          border-bottom: 1px solid #ebe5d9;
-          backdrop-filter: blur(18px);
-        }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .menu-button {
-          display: none;
-          width: 39px;
-          height: 39px;
-          border: 1px solid #e7e0d4;
-          border-radius: 10px;
-          background: #fff;
-          color: #514d45;
-          cursor: pointer;
-        }
-
-        .page-heading span {
-          display: block;
-          margin-bottom: 2px;
-          color: #aaa398;
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-
-        .page-heading h1 {
-          margin: 0;
-          color: #25221c;
-          font-size: 19px;
-          letter-spacing: -0.4px;
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .dashboard-search {
-          width: 235px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          padding: 0 12px;
-          border: 1px solid #e6dfd3;
-          border-radius: 11px;
-          background: #fff;
-          color: #aaa398;
-        }
-
-        .dashboard-search input {
-          width: 100%;
-          border: 0;
-          outline: 0;
-          background: transparent;
-          color: #302c25;
-          font-size: 12px;
-        }
-
-        .dashboard-search input::placeholder {
-          color: #aaa398;
-        }
-
-        .header-icon-button {
-          width: 40px;
-          height: 40px;
-          position: relative;
-          display: grid;
-          place-items: center;
-          border: 1px solid #e6dfd3;
-          border-radius: 11px;
-          background: #fff;
-          color: #625d54;
-          cursor: pointer;
-        }
-
-        .notification-dot {
-          width: 6px;
-          height: 6px;
-          position: absolute;
-          top: 9px;
-          right: 9px;
-          border-radius: 50%;
-          background: #c69624;
-          border: 1px solid white;
-        }
-
-        .profile-button {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          color: #28251f;
-          text-decoration: none;
-        }
-
-        .profile-avatar {
-          width: 39px;
-          height: 39px;
-          display: grid;
-          place-items: center;
-          border-radius: 11px;
-          background: #f0dfb4;
-          color: #906a17;
-        }
-
-        .profile-info strong,
-        .profile-info span {
-          display: block;
-        }
-
-        .profile-info strong {
-          max-width: 100px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 12px;
-        }
-
-        .profile-info span {
-          margin-top: 2px;
-          color: #aaa398;
-          font-size: 10px;
-        }
-
-        /* =====================================
-           CONTENT
-        ====================================== */
-
-        .dashboard-content {
-          width: min(1420px, calc(100% - 68px));
-          margin: 0 auto;
-          padding: 30px 0 50px;
-        }
-
-        .welcome-section {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 7px 0 27px;
-        }
-
-        .welcome-small {
-          margin: 0 0 7px;
-          color: #a2771d;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-        }
-
-        .welcome-section h2 {
-          margin: 0;
-          color: #211f1a;
-          font-size: clamp(25px, 3vw, 35px);
-          letter-spacing: -1.3px;
-        }
-
-        .welcome-section h2 span {
-          color: #c69624;
-        }
-
-        .welcome-description {
-          margin: 9px 0 0;
-          color: #898278;
-          font-size: 13px;
-        }
-
-        .browse-button {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          padding: 12px 17px;
-          border-radius: 11px;
-          background: #c69624;
-          color: white;
-          text-decoration: none;
-          font-size: 12px;
-          font-weight: 750;
-          box-shadow:
-            0 8px 20px rgba(198, 150, 36, 0.16);
-        }
-
-        /* =====================================
-           STATS
-        ====================================== */
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-        }
-
-        .stat-card {
-          min-height: 105px;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 18px;
-          background: #fff;
-          border: 1px solid #ebe5d9;
-          border-radius: 17px;
-        }
-
-        .stat-icon {
-          width: 45px;
-          height: 45px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 13px;
-        }
-
-        .stat-icon.gold {
-          background: #f7edd4;
-          color: #a1771d;
-        }
-
-        .stat-icon.purple {
-          background: #eee7fa;
-          color: #7955a7;
-        }
-
-        .stat-icon.green {
-          background: #e8f4e8;
-          color: #528456;
-        }
-
-        .stat-icon.orange {
-          background: #fff0df;
-          color: #bc7731;
-        }
-
-        .stat-card span {
-          display: block;
-          color: #918a80;
-          font-size: 10px;
-          font-weight: 650;
-        }
-
-        .stat-card strong {
-          display: block;
-          margin: 4px 0 3px;
-          color: #25221d;
-          font-size: 21px;
-        }
-
-        .stat-card small {
-          color: #aaa398;
-          font-size: 9px;
-        }
-
-        .stat-card small b {
-          color: #57925c;
-        }
-
-        /* =====================================
-           SECTION
-        ====================================== */
-
-        .section {
-          margin-top: 37px;
-        }
-
-        .section-header {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          margin-bottom: 17px;
-        }
-
-        .section-eyebrow {
-          display: block;
-          margin-bottom: 5px;
-          color: #b08a2d;
-          font-size: 9px;
-          font-weight: 850;
-          letter-spacing: 1.4px;
-        }
-
-        .section-header h3 {
-          margin: 0;
-          color: #28251f;
-          font-size: 20px;
-          letter-spacing: -0.5px;
-        }
-
-        .section-sparkle {
-          color: #c69624;
-        }
-
-        .view-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          color: #a2771d;
-          text-decoration: none;
-          font-size: 11px;
-          font-weight: 750;
-        }
-
-        .view-link:hover {
-          color: #79570d;
-        }
-
-        /* =====================================
-           SMART CARDS
-        ====================================== */
-
-        .smart-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 15px;
-        }
-
-        .smart-card {
-          min-height: 205px;
-          position: relative;
-          overflow: hidden;
-          padding: 22px;
-          border-radius: 19px;
-          color: #29251d;
-          text-decoration: none;
-          border: 1px solid #e9e0cd;
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .smart-card:hover {
-          transform: translateY(-3px);
-          box-shadow:
-            0 15px 35px rgba(54, 43, 20, 0.08);
-        }
-
-        .prime-match {
-          background: linear-gradient(
-            135deg,
-            #fff8e8,
-            #f8edcf
-          );
-        }
-
-        .budget-builder {
-          background: linear-gradient(
-            135deg,
-            #f6f1fb,
-            #ebe2f6
-          );
-        }
-
-        .setup-builder {
-          background: linear-gradient(
-            135deg,
-            #eef7f2,
-            #dfeee4
-          );
-        }
-
-        .smart-card-icon {
-          width: 44px;
-          height: 44px;
-          display: grid;
-          place-items: center;
-          margin-bottom: 13px;
-          border-radius: 13px;
-          background: rgba(255, 255, 255, 0.72);
-          color: #a2771d;
-        }
-
-        .budget-builder .smart-card-icon {
-          color: #7755a2;
-        }
-
-        .setup-builder .smart-card-icon {
-          color: #4e8058;
-        }
-
-        .smart-label {
-          display: block;
-          color: #a38d61;
-          font-size: 8px;
-          font-weight: 850;
-          letter-spacing: 1.1px;
-        }
-
-        .smart-card h4 {
-          margin: 5px 0 6px;
-          font-size: 18px;
-          letter-spacing: -0.4px;
-        }
-
-        .smart-card p {
-          max-width: 280px;
-          margin: 0;
-          color: #777064;
-          font-size: 11px;
-          line-height: 1.6;
-        }
-
-        .smart-link {
-          position: absolute;
-          left: 22px;
-          bottom: 19px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #9a721b;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .budget-builder .smart-link {
-          color: #7957a1;
-        }
-
-        .setup-builder .smart-link {
-          color: #4f7d58;
-        }
-
-        /* =====================================
-           CATEGORIES
-        ====================================== */
-
-        .categories-grid {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 11px;
-        }
-
-        .category-card {
-          min-height: 82px;
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          position: relative;
-          padding: 12px;
-          background: white;
-          border: 1px solid #ebe5d9;
-          border-radius: 14px;
-          color: #29261f;
-          text-decoration: none;
-          transition: 0.2s ease;
-        }
-
-        .category-card:hover {
-          border-color: #dbc484;
-          transform: translateY(-2px);
-          box-shadow:
-            0 8px 22px rgba(57, 47, 25, 0.06);
-        }
-
-        .category-icon {
-          width: 42px;
-          height: 42px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 12px;
-          background: #faf5e9;
-          font-size: 20px;
-        }
-
-        .category-info {
-          min-width: 0;
-        }
-
-        .category-info strong {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 11px;
-        }
-
-        .category-info span {
-          display: block;
-          margin-top: 4px;
-          color: #aaa398;
-          font-size: 9px;
-        }
-
-        .category-arrow {
-          margin-left: auto;
-          flex-shrink: 0;
-          color: #c2baad;
-        }
-
-        /* =====================================
-           PRODUCTS
-        ====================================== */
-
-        .products-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 15px;
-        }
-
-        .product-card {
-          overflow: hidden;
-          background: #fff;
-          border: 1px solid #ebe5d9;
-          border-radius: 17px;
-          color: #29261f;
-          text-decoration: none;
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .product-card:hover {
-          transform: translateY(-3px);
-          box-shadow:
-            0 15px 35px rgba(57, 47, 25, 0.08);
-        }
-
-        .product-image {
-          height: 190px;
-          position: relative;
-          display: grid;
-          place-items: center;
-          padding: 25px;
-          background: #f8f6f1;
-        }
-
-        .product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          transition: transform 0.25s ease;
-        }
-
-        .product-card:hover .product-image img {
-          transform: scale(1.05);
-        }
-
-        .product-badge {
-          position: absolute;
-          top: 11px;
-          left: 11px;
-          z-index: 2;
-          padding: 5px 8px;
-          border-radius: 6px;
-          background: #c69624;
-          color: white;
-          font-size: 8px;
-          font-weight: 850;
-          text-transform: uppercase;
-          letter-spacing: 0.4px;
-        }
-
-        .wishlist-button {
-          width: 31px;
-          height: 31px;
-          position: absolute;
-          z-index: 3;
-          top: 10px;
-          right: 10px;
-          display: grid;
-          place-items: center;
-          border: 1px solid #e6dfd3;
-          border-radius: 50%;
-          background: white;
-          color: #888176;
-          cursor: pointer;
-        }
-
-        .wishlist-button:hover {
-          color: #b64c55;
-        }
-
-        .product-content {
-          padding: 14px;
-        }
-
-        .product-category {
-          color: #b08a2d;
-          font-size: 9px;
-          font-weight: 750;
-          text-transform: uppercase;
-          letter-spacing: 0.6px;
-        }
-
-        .product-content h4 {
-          min-height: 37px;
-          margin: 5px 0 7px;
-          color: #29261f;
-          font-size: 13px;
-          line-height: 1.4;
-        }
-
-        .rating {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: #d29d26;
-          font-size: 10px;
-        }
-
-        .rating span {
-          color: #aaa398;
-        }
-
-        .product-price {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: 9px;
-        }
-
-        .product-price strong {
-          color: #25221c;
-          font-size: 15px;
-        }
-
-        .product-price del {
-          color: #aaa398;
-          font-size: 10px;
-        }
-
-        /* =====================================
-           POINTS
-        ====================================== */
-
-        .points-banner {
-          min-height: 150px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 30px;
-          margin-top: 37px;
-          padding: 25px 28px;
-          border-radius: 19px;
-          background:
-            radial-gradient(
-              circle at 80% 20%,
-              rgba(255, 255, 255, 0.3),
-              transparent 30%
-            ),
-            linear-gradient(
-              135deg,
-              #d7ad4c,
-              #b98a20
-            );
-          color: white;
-          box-shadow:
-            0 15px 35px rgba(154, 111, 22, 0.15);
-        }
-
-        .points-left {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .points-icon {
-          width: 55px;
-          height: 55px;
-          display: grid;
-          place-items: center;
-          flex-shrink: 0;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.18);
-        }
-
-        .points-left span {
-          font-size: 8px;
-          font-weight: 850;
-          letter-spacing: 1.2px;
-          opacity: 0.82;
-        }
-
-        .points-left h3 {
-          max-width: 520px;
-          margin: 6px 0 4px;
-          font-size: 17px;
-        }
-
-        .points-left p {
-          margin: 0;
-          font-size: 10px;
-          opacity: 0.8;
-        }
-
-        .points-right {
-          width: 245px;
-          flex-shrink: 0;
-        }
-
-        .points-number {
-          margin-bottom: 8px;
-          font-size: 15px;
-          font-weight: 850;
-        }
-
-        .points-number span {
-          opacity: 0.6;
-          font-size: 11px;
-        }
-
-        .progress {
-          height: 6px;
-          overflow: hidden;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.25);
-        }
-
-        .progress-value {
-          width: 82.6%;
-          height: 100%;
-          border-radius: inherit;
-          background: white;
-        }
-
-        .points-right a {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          margin-top: 11px;
-          color: white;
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 800;
-        }
-
-        /* =====================================
-           ORDERS
-        ====================================== */
-
-        .orders-table {
-          overflow: hidden;
-          background: white;
-          border: 1px solid #ebe5d9;
-          border-radius: 16px;
-        }
-
-        .orders-header,
-        .order-row {
-          display: grid;
-          grid-template-columns:
-            1fr
-            1.8fr
-            1.2fr
-            0.8fr
-            0.9fr;
-          align-items: center;
-          column-gap: 15px;
-          padding: 15px 18px;
-        }
-
-        .orders-header {
-          background: #faf8f3;
-          color: #aaa398;
-          font-size: 9px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-        }
-
-        .order-row {
-          min-height: 66px;
-          border-top: 1px solid #f0ebe2;
-          color: #575249;
-          font-size: 11px;
-        }
-
-        .order-row > strong {
-          color: #37332b;
-        }
-
-        .order-product {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          min-width: 0;
-        }
-
-        .order-product span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .order-product-icon {
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          flex-shrink: 0;
-          border-radius: 9px;
-          background: #f7edd4;
-          color: #9d751e;
-        }
-
-        .order-date {
-          color: #918a80;
-        }
-
-        .order-status {
-          width: fit-content;
-          padding: 5px 8px;
-          border-radius: 6px;
-          font-size: 8px;
-          font-weight: 800;
-        }
-
-        .order-status.delivered {
-          background: #e8f4e8;
-          color: #4f8455;
-        }
-
-        .order-status.shipped {
-          background: #edf1fa;
-          color: #5c6f9e;
-        }
-
-        /* =====================================
-           QUICK ACTIONS
-        ====================================== */
-
-        .quick-actions {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 11px;
-          margin-top: 28px;
-        }
-
-        .quick-actions a {
-          min-height: 55px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 0 15px;
-          background: white;
-          border: 1px solid #ebe5d9;
-          border-radius: 12px;
-          color: #625c52;
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 700;
-          transition: 0.2s ease;
-        }
-
-        .quick-actions a svg:first-child {
-          color: #b18a2c;
-        }
-
-        .quick-actions a svg:last-child {
-          margin-left: auto;
-          color: #bcb4a8;
-        }
-
-        .quick-actions a:hover {
-          border-color: #dbc484;
-          color: #9a721b;
-        }
-
-        /* =====================================
-           OVERLAY
-        ====================================== */
-
-        .sidebar-overlay {
-          display: none;
-        }
-
-        /* =====================================
-           RESPONSIVE
-        ====================================== */
-
-        @media (max-width: 1200px) {
-          .dashboard-sidebar {
-            width: 225px;
-            min-width: 225px;
-          }
-
-          .dashboard-content {
-            width: min(100% - 44px, 1200px);
-          }
-
-          .categories-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
-
-          .products-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (max-width: 950px) {
-          .dashboard-sidebar {
-            position: fixed;
-            left: -270px;
-            top: 0;
-            bottom: 0;
-            width: 250px;
-            min-width: 250px;
-            transition: left 0.25s ease;
-            box-shadow:
-              15px 0 40px rgba(31, 25, 14, 0.08);
-          }
-
-          .dashboard-sidebar.sidebar-open {
-            left: 0;
-          }
-
-          .mobile-close {
-            display: block;
-          }
-
-          .sidebar-overlay {
-            display: block;
-            position: fixed;
-            inset: 0;
-            z-index: 40;
-            border: 0;
-            background: rgba(31, 25, 14, 0.25);
-            backdrop-filter: blur(2px);
-          }
-
-          .menu-button {
-            display: grid;
-            place-items: center;
-          }
-
-          .dashboard-header {
-            padding: 0 22px;
-          }
-
-          .dashboard-search {
-            width: 190px;
-          }
-
-          .smart-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .smart-card {
-            min-height: 180px;
-          }
-
-          .categories-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .quick-actions {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (max-width: 700px) {
-          .dashboard-header {
-            height: auto;
-            min-height: 70px;
-            padding: 12px 16px;
-          }
-
-          .header-actions {
-            gap: 7px;
-          }
-
-          .dashboard-search {
-            display: none;
-          }
-
-          .profile-info,
-          .profile-button > svg {
-            display: none;
-          }
-
-          .dashboard-content {
-            width: calc(100% - 28px);
-            padding-top: 23px;
-          }
-
-          .welcome-section {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 17px;
-          }
-
-          .browse-button {
-            width: 100%;
-            justify-content: center;
-          }
-
-          .stats-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-          }
-
-          .stat-card {
-            min-height: 92px;
-            padding: 13px;
-            gap: 10px;
-          }
-
-          .stat-icon {
-            width: 38px;
-            height: 38px;
-          }
-
-          .stat-card strong {
-            font-size: 18px;
-          }
-
-          .categories-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .products-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-          }
-
-          .product-image {
-            height: 150px;
-            padding: 18px;
-          }
-
-          .product-content {
-            padding: 11px;
-          }
-
-          .points-banner {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 20px;
-          }
-
-          .points-right {
-            width: 100%;
-          }
-
-          .orders-table {
-            overflow-x: auto;
-          }
-
-          .orders-header,
-          .order-row {
-            min-width: 700px;
-          }
-        }
-
-        @media (max-width: 430px) {
-          .page-heading {
-            display: none;
-          }
-
-          .profile-avatar {
-            width: 36px;
-            height: 36px;
-          }
-
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .categories-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .category-card {
-            min-height: 75px;
-          }
-
-          .category-icon {
-            width: 36px;
-            height: 36px;
-            font-size: 17px;
-          }
-
-          .products-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .product-image {
-            height: 135px;
-          }
-
-          .product-content h4 {
-            font-size: 12px;
-          }
-
-          .product-price strong {
-            font-size: 13px;
-          }
-
-          .quick-actions {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-    </main>
+                <div className="relative hidden overflow-hidden bg-[#211b12] lg:block">
+                  <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#c9a24d]/20 blur-3xl" />
+                  <div className="absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-[#c9a24d]/10 blur-3xl" />
+
+                  <div className="relative flex h-full min-h-[280px] items-center justify-center p-10">
+                    <div className="w-full max-w-[280px] rounded-[24px] border border-white/10 bg-white/[0.07] p-5 backdrop-blur-xl">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#d9bd82]">
+                            PrimeCart
+                          </p>
+                          <p className="mt-1 text-lg font-black text-white">
+                            Shop smarter.
+                          </p>
+                        </div>
+
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a24d] text-white">
+                          <Sparkles size={18} />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 space-y-2">
+                        <div className="h-2 rounded-full bg-white/10" />
+                        <div className="h-2 w-4/5 rounded-full bg-white/10" />
+                        <div className="h-2 w-3/5 rounded-full bg-[#c9a24d]/60" />
+                      </div>
+
+                      <div className="mt-6 flex items-center justify-between rounded-xl bg-white/5 px-3 py-3">
+                        <span className="text-xs font-bold text-white/50">
+                          Smart score
+                        </span>
+
+                        <span className="text-sm font-black text-[#e2c98e]">
+                          Personalised
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="mt-10 flex flex-col justify-between gap-3 border-t border-[#eadfc9] pt-6 text-xs text-[#918575] sm:flex-row">
+              <p>
+                © {new Date().getFullYear()} PrimeCart. Shop smarter.
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  href="/dashboard/products"
+                  className="transition hover:text-[#a17d40]"
+                >
+                  Products
+                </Link>
+
+                <Link
+                  href="/dashboard/orders"
+                  className="transition hover:text-[#a17d40]"
+                >
+                  Orders
+                </Link>
+
+                <Link
+                  href="/dashboard/profile"
+                  className="transition hover:text-[#a17d40]"
+                >
+                  Profile
+                </Link>
+
+                <Link
+                  href="/dashboard/settings"
+                  className="transition hover:text-[#a17d40]"
+                >
+                  Settings
+                </Link>
+              </div>
+            </footer>
+          </div>
+        </main>
+      </div>
+    </div>
   );
+}
+
+/* =========================================================
+   COMPONENTS
+========================================================= */
+
+function SidebarLink({
+  href,
+  icon,
+  label,
+  active = false,
+  badge,
+  onClick,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  badge?: number;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
+        active
+          ? "bg-[#f7f0e1] text-[#9a7539]"
+          : "text-[#766b5d] hover:bg-[#faf7f0] hover:text-[#9a7539]"
+      }`}
+    >
+      <span
+        className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+          active
+            ? "bg-[#b9975b] text-white shadow-sm"
+            : "bg-transparent text-[#8c8171] group-hover:text-[#a17d40]"
+        }`}
+      >
+        {icon}
+      </span>
+
+      <span className="flex-1">{label}</span>
+
+      {badge !== undefined && (
+        <span className="flex min-w-5 items-center justify-center rounded-full bg-[#b9975b] px-1.5 py-0.5 text-[9px] font-black text-white">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  caption,
+  href,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  caption: string;
+  href?: string;
+}) {
+  const content = (
+    <div className="group rounded-2xl border border-[#eadfc9] bg-white p-5 transition duration-300 hover:-translate-y-0.5 hover:border-[#d7bb82] hover:shadow-[0_14px_35px_rgba(70,50,20,0.06)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40]">
+          {icon}
+        </div>
+
+        {href && (
+          <ArrowRight
+            size={16}
+            className="text-[#b7aa98] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
+          />
+        )}
+      </div>
+
+      <p className="mt-5 text-xs font-bold text-[#938777]">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-xl font-black tracking-tight">
+        {value}
+      </p>
+
+      <p className="mt-1 text-[11px] font-medium text-[#aaa092]">
+        {caption}
+      </p>
+    </div>
+  );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a0834e]">
+          {eyebrow}
+        </p>
+
+        <h2 className="mt-1 text-2xl font-black tracking-tight">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-sm text-[#918575]">
+          {description}
+        </p>
+      </div>
+
+      {action}
+    </div>
+  );
+}
+
+function SmartTool({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl border border-[#eadfc9] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_16px_35px_rgba(70,50,20,0.07)]"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40] transition group-hover:bg-[#b9975b] group-hover:text-white">
+          {icon}
+        </div>
+
+        <ArrowRight
+          size={17}
+          className="text-[#b7aa98] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
+        />
+      </div>
+
+      <h3 className="mt-5 text-base font-black">{title}</h3>
+
+      <p className="mt-2 text-xs leading-5 text-[#918575]">
+        {description}
+      </p>
+    </Link>
+  );
+}
+
+function ProductCard({
+  product,
+}: {
+  product: Product;
+}) {
+  const discount = getDiscount(
+    Number(product.price),
+    product.original_price
+      ? Number(product.original_price)
+      : null
+  );
+
+  return (
+    <Link
+      href={`/dashboard/products/${product.id}`}
+      className="group overflow-hidden rounded-[22px] border border-[#eadfc9] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#c9a24d] hover:shadow-[0_18px_45px_rgba(70,50,20,0.08)]"
+    >
+      <div className="relative h-56 overflow-hidden bg-[#f8f4ec]">
+        {getImageUrl(product.image_url) ? (
+          <Image
+            src={getImageUrl(product.image_url)!}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+            className="object-contain p-6 transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[#b8aa95]">
+            <Package size={32} />
+          </div>
+        )}
+
+        {discount > 0 && (
+          <span className="absolute left-3 top-3 rounded-full bg-[#b9975b] px-2.5 py-1 text-[9px] font-black text-white">
+            {discount}% OFF
+          </span>
+        )}
+
+        {product.is_flash_sale && (
+          <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[#201a12] px-2.5 py-1 text-[9px] font-black text-white">
+            <Zap size={10} />
+            Flash
+          </span>
+        )}
+      </div>
+
+      <div className="p-4">
+        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-[#a0834e]">
+          {product.brand || "PrimeCart"}
+        </p>
+
+        <h3 className="mt-1 line-clamp-2 min-h-[40px] text-sm font-black leading-5">
+          {product.name}
+        </h3>
+
+        <div className="mt-3 flex items-center gap-1">
+          <Star
+            size={13}
+            className="fill-[#b9975b] text-[#b9975b]"
+          />
+
+          <span className="text-xs font-black">
+            {Number(product.rating || 0).toFixed(1)}
+          </span>
+
+          <span className="text-[10px] text-[#9d9181]">
+            ({product.reviews_count || 0})
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-end gap-2">
+          <span className="text-lg font-black">
+            {formatPrice(Number(product.price))}
+          </span>
+
+          {product.original_price &&
+            Number(product.original_price) >
+              Number(product.price) && (
+              <span className="pb-0.5 text-xs font-medium text-[#a59a8a] line-through">
+                {formatPrice(Number(product.original_price))}
+              </span>
+            )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function QuickAction({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-xl border border-transparent p-3 transition hover:border-[#eadfc9] hover:bg-[#faf7f0]"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf4e7] text-[#a17d40]">
+        {icon}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-black">{title}</p>
+        <p className="mt-0.5 truncate text-[11px] text-[#958978]">
+          {description}
+        </p>
+      </div>
+
+      <ChevronRight
+        size={16}
+        className="text-[#b6a997] transition group-hover:translate-x-1 group-hover:text-[#a17d40]"
+      />
+    </Link>
+  );
+}
+
+function MiniBenefit({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#faf4e7] text-[#a17d40]">
+        {icon}
+      </div>
+
+      <div>
+        <p className="text-xs font-black">{title}</p>
+        <p className="mt-0.5 text-[10px] text-[#958978]">
+          {text}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+  href,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-dashed border-[#ddceb3] bg-white px-6 py-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf4e7] text-[#a17d40]">
+        {icon}
+      </div>
+
+      <h3 className="mt-4 text-base font-black">{title}</h3>
+
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#918575]">
+        {description}
+      </p>
+
+      <Link
+        href={href}
+        className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-black text-white"
+      >
+        {action}
+        <ArrowRight size={14} />
+      </Link>
+    </div>
+  );
+}
+
+function LayersIcon() {
+  return <Layers3 size={18} />;
+}
+
+function BrainIcon() {
+  return <BarChart3 size={17} />;
+}
+
+function ShieldIcon() {
+  return <ShieldCheckIcon />;
+}
+
+function ShieldCheckIcon() {
+  return <ShieldCheck size={17} />;
 }
