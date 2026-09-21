@@ -648,7 +648,7 @@ export default function ProductDetailPage() {
     addToCart();
 
     window.setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/dashboard/checkout");
     }, 300);
   }
 
