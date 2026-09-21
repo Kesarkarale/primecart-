@@ -10,6 +10,7 @@ import {
   BadgeCheck,
   Check,
   ChevronRight,
+  Clock3,
   Copy,
   Heart,
   ImageOff,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   Star,
   Truck,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -61,22 +63,22 @@ type Category = {
    HELPERS
 ========================================================= */
 
-function getImageUrl(imageUrl: string | null) {
-  if (!imageUrl) return null;
-
-  const value = imageUrl.trim();
-
+function getImageUrl(value: string | null) {
   if (!value) return null;
 
+  const image = value.trim();
+
+  if (!image) return null;
+
   if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("/")
+    image.startsWith("http://") ||
+    image.startsWith("https://") ||
+    image.startsWith("/")
   ) {
-    return value;
+    return image;
   }
 
-  return `/${value}`;
+  return `/${image}`;
 }
 
 function formatPrice(value: number) {
@@ -93,8 +95,14 @@ function getDiscount(price: number, original: number | null) {
   return Math.round(((original - price) / original) * 100);
 }
 
+function getSavings(price: number, original: number | null) {
+  if (!original || original <= price) return 0;
+
+  return original - price;
+}
+
 /* =========================================================
-   PRODUCT CARD
+   RELATED PRODUCT CARD
 ========================================================= */
 
 function RelatedProductCard({
@@ -106,13 +114,15 @@ function RelatedProductCard({
 
   const discount = getDiscount(
     Number(product.price),
-    product.original_price ? Number(product.original_price) : null,
+    product.original_price
+      ? Number(product.original_price)
+      : null,
   );
 
   return (
     <Link
       href={`/dashboard/products/${product.id}`}
-      className="group block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className="group overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--card)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--gold)]/40 hover:shadow-xl"
     >
       <div className="relative aspect-square overflow-hidden bg-[var(--muted)]">
         {image ? (
@@ -120,23 +130,23 @@ function RelatedProductCard({
             src={image}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 220px"
+            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 220px"
             className="object-contain p-5 transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-[var(--foreground)]/30">
+          <div className="flex h-full items-center justify-center text-[var(--foreground)]/25">
             <ImageOff size={38} />
           </div>
         )}
 
         {discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-[var(--gold)] px-2.5 py-1 text-[9px] font-black text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-[var(--foreground)] px-2.5 py-1 text-[9px] font-black text-[var(--background)]">
             {discount}% OFF
           </span>
         )}
 
         {product.is_flash_sale && (
-          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-[var(--foreground)] px-2.5 py-1 text-[9px] font-black text-[var(--background)]">
+          <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-[var(--gold)] px-2.5 py-1 text-[9px] font-black text-white">
             <Zap size={10} fill="currentColor" />
             DEAL
           </span>
@@ -144,33 +154,34 @@ function RelatedProductCard({
       </div>
 
       <div className="p-4">
-        <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--foreground)]/45">
+        <p className="truncate text-[9px] font-black uppercase tracking-[0.16em] text-[var(--foreground)]/40">
           {product.brand || "PrimeCart"}
         </p>
 
-        <h3 className="mt-1 line-clamp-2 min-h-[40px] text-sm font-black leading-5 text-[var(--card-foreground)]">
+        <h3 className="mt-1 line-clamp-2 min-h-[40px] text-sm font-black leading-5">
           {product.name}
         </h3>
 
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="mt-2 flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-[var(--gold)] px-1.5 py-0.5 text-[10px] font-black text-white">
             {Number(product.rating || 0).toFixed(1)}
             <Star size={9} fill="currentColor" />
           </span>
 
-          <span className="text-[10px] text-[var(--foreground)]/45">
-            ({product.reviews_count || 0})
+          <span className="text-[10px] text-[var(--foreground)]/40">
+            {product.reviews_count || 0} reviews
           </span>
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-base font-black text-[var(--card-foreground)]">
+          <span className="text-base font-black">
             {formatPrice(Number(product.price))}
           </span>
 
           {product.original_price &&
-            Number(product.original_price) > Number(product.price) && (
-              <span className="text-[10px] text-[var(--foreground)]/40 line-through">
+            Number(product.original_price) >
+              Number(product.price) && (
+              <span className="text-[10px] text-[var(--foreground)]/35 line-through">
                 {formatPrice(Number(product.original_price))}
               </span>
             )}
@@ -189,7 +200,7 @@ function RelatedProductCard({
 }
 
 /* =========================================================
-   MAIN PAGE
+   MAIN
 ========================================================= */
 
 export default function ProductDetailPage() {
@@ -205,20 +216,30 @@ export default function ProductDetailPage() {
         ? params.id[0]
         : "";
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [product, setProduct] = useState<Product | null>(
+    null,
+  );
+
+  const [category, setCategory] = useState<Category | null>(
+    null,
+  );
+
+  const [relatedProducts, setRelatedProducts] = useState<
+    Product[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
-  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedLoading, setRelatedLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [quantity, setQuantity] = useState(1);
   const [wishlist, setWishlist] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [cartAdded, setCartAdded] = useState(false);
+  const [wishlistLoading, setWishlistLoading] =
+    useState(false);
+
+  const [cartMessage, setCartMessage] = useState("");
   const [shareMessage, setShareMessage] = useState("");
-  const [buying, setBuying] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
 
   /* =======================================================
      LOAD PRODUCT
@@ -237,126 +258,19 @@ export default function ProductDetailPage() {
       try {
         setLoading(true);
         setError("");
+
         setProduct(null);
         setCategory(null);
         setRelatedProducts([]);
-        setQuantity(1);
         setWishlist(false);
+        setQuantity(1);
+        setActiveImage(0);
 
-        const { data: productData, error: productError } =
+        const { data, error: productError } =
           await supabase
             .from("products")
             .select(
               `
-                id,
-                name,
-                slug,
-                short_description,
-                description,
-                price,
-                original_price,
-                stock,
-                image_url,
-                brand,
-                rating,
-                reviews_count,
-                is_featured,
-                is_flash_sale,
-                is_active,
-                category_id
-              `,
-            )
-            .eq("id", productId)
-            .eq("is_active", true)
-            .maybeSingle();
-
-        if (productError) {
-          throw productError;
-        }
-
-        if (!productData) {
-          if (mounted) {
-            setError("This product could not be found.");
-            setLoading(false);
-          }
-
-          return;
-        }
-
-        const currentProduct = productData as Product;
-
-        if (!mounted) return;
-
-        setProduct(currentProduct);
-
-        if (currentProduct.category_id) {
-          const { data: categoryData } = await supabase
-            .from("categories")
-            .select("id,name,slug")
-            .eq("id", currentProduct.category_id)
-            .maybeSingle();
-
-          if (mounted && categoryData) {
-            setCategory(categoryData as Category);
-          }
-        }
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          const { data: wishlistData } = await supabase
-            .from("wishlist")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("product_id", currentProduct.id)
-            .maybeSingle();
-
-          if (mounted) {
-            setWishlist(Boolean(wishlistData));
-          }
-        }
-      } catch (err) {
-        console.error("Product loading error:", err);
-
-        if (mounted) {
-          setError("Unable to load this product. Please try again.");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadProduct();
-
-    return () => {
-      mounted = false;
-    };
-  }, [productId, supabase]);
-
-  /* =======================================================
-     LOAD RELATED PRODUCTS
-  ======================================================= */
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadRelatedProducts() {
-      if (!product?.category_id) {
-        setRelatedProducts([]);
-        return;
-      }
-
-      try {
-        setRelatedLoading(true);
-
-        const { data, error: relatedError } = await supabase
-          .from("products")
-          .select(
-            `
               id,
               name,
               slug,
@@ -374,13 +288,129 @@ export default function ProductDetailPage() {
               is_active,
               category_id
             `,
-          )
-          .eq("category_id", product.category_id)
-          .eq("is_active", true)
-          .neq("id", product.id)
-          .order("is_featured", { ascending: false })
-          .order("rating", { ascending: false })
-          .limit(8);
+            )
+            .eq("id", productId)
+            .eq("is_active", true)
+            .maybeSingle();
+
+        if (productError) {
+          throw productError;
+        }
+
+        if (!data) {
+          if (mounted) {
+            setError("This product is no longer available.");
+            setLoading(false);
+          }
+
+          return;
+        }
+
+        const currentProduct = data as Product;
+
+        if (!mounted) return;
+
+        setProduct(currentProduct);
+
+        if (currentProduct.category_id) {
+          const { data: categoryData } =
+            await supabase
+              .from("categories")
+              .select("id,name,slug")
+              .eq("id", currentProduct.category_id)
+              .maybeSingle();
+
+          if (mounted && categoryData) {
+            setCategory(categoryData as Category);
+          }
+        }
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: wishlistData } =
+            await supabase
+              .from("wishlist")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("product_id", currentProduct.id)
+              .maybeSingle();
+
+          if (mounted) {
+            setWishlist(Boolean(wishlistData));
+          }
+        }
+      } catch (err) {
+        console.error("Product detail error:", err);
+
+        if (mounted) {
+          setError("Unable to load this product.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProduct();
+
+    return () => {
+      mounted = false;
+    };
+  }, [productId, supabase]);
+
+  /* =======================================================
+     RELATED PRODUCTS
+  ======================================================= */
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRelated() {
+      if (!product?.category_id) {
+        setRelatedLoading(false);
+        return;
+      }
+
+      try {
+        setRelatedLoading(true);
+
+        const { data, error: relatedError } =
+          await supabase
+            .from("products")
+            .select(
+              `
+              id,
+              name,
+              slug,
+              short_description,
+              description,
+              price,
+              original_price,
+              stock,
+              image_url,
+              brand,
+              rating,
+              reviews_count,
+              is_featured,
+              is_flash_sale,
+              is_active,
+              category_id
+            `,
+            )
+            .eq("category_id", product.category_id)
+            .eq("is_active", true)
+            .neq("id", product.id)
+            .order("is_featured", {
+              ascending: false,
+            })
+            .order("rating", {
+              ascending: false,
+            })
+            .limit(8);
 
         if (relatedError) {
           throw relatedError;
@@ -402,7 +432,7 @@ export default function ProductDetailPage() {
       }
     }
 
-    loadRelatedProducts();
+    loadRelated();
 
     return () => {
       mounted = false;
@@ -410,32 +440,90 @@ export default function ProductDetailPage() {
   }, [product, supabase]);
 
   /* =======================================================
-     PRODUCT GUARD
+     IMPORTANT NULL GUARD
   ======================================================= */
 
-  const discount = product
-    ? getDiscount(
-        Number(product.price),
-        product.original_price
-          ? Number(product.original_price)
-          : null,
-      )
-    : 0;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[var(--background)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="h-5 w-28 animate-pulse rounded bg-[var(--muted)]" />
 
-  const image = product ? getImageUrl(product.image_url) : null;
+          <div className="mt-7 grid gap-7 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="aspect-square animate-pulse rounded-[28px] bg-[var(--muted)]" />
 
-  const maxQuantity = product
-    ? Math.max(1, Math.min(product.stock, 10))
-    : 1;
+            <div className="space-y-4">
+              <div className="h-4 w-32 animate-pulse rounded bg-[var(--muted)]" />
+              <div className="h-12 w-full animate-pulse rounded bg-[var(--muted)]" />
+              <div className="h-5 w-44 animate-pulse rounded bg-[var(--muted)]" />
+              <div className="h-24 w-full animate-pulse rounded bg-[var(--muted)]" />
+              <div className="h-14 w-full animate-pulse rounded bg-[var(--muted)]" />
+              <div className="h-14 w-full animate-pulse rounded bg-[var(--muted)]" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[var(--background)] px-5">
+        <div className="w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-8 text-center shadow-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--gold)]">
+            <ShoppingBag size={28} />
+          </div>
+
+          <h1 className="mt-5 text-2xl font-black">
+            Product unavailable
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/50">
+            {error || "We could not find this product."}
+          </p>
+
+          <Link
+            href="/dashboard/products"
+            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[var(--gold)] px-5 py-3 text-xs font-black text-white"
+          >
+            <ArrowLeft size={15} />
+            Browse Products
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  /* =======================================================
+     DERIVED VALUES
+  ======================================================= */
+
+  const discount = getDiscount(
+    Number(product.price),
+    product.original_price
+      ? Number(product.original_price)
+      : null,
+  );
+
+  const savings = getSavings(
+    Number(product.price),
+    product.original_price
+      ? Number(product.original_price)
+      : null,
+  );
+
+  const image = getImageUrl(product.image_url);
+
+  const maxQuantity = Math.max(
+    1,
+    Math.min(Number(product.stock), 10),
+  );
 
   /* =======================================================
      CART
   ======================================================= */
 
-  function addToCart(
-    selectedProduct: Product,
-    selectedQuantity: number,
-  ) {
+  function addToCart() {
     try {
       const saved = localStorage.getItem("primecart-cart");
 
@@ -460,18 +548,21 @@ export default function ProductDetailPage() {
       }
 
       const existing = items.find(
-        (item) => item.id === selectedProduct.id,
+        (item) => item.id === product.id,
       );
 
       if (existing) {
-        existing.quantity += selectedQuantity;
+        existing.quantity = Math.min(
+          existing.quantity + quantity,
+          maxQuantity,
+        );
       } else {
         items.push({
-          id: selectedProduct.id,
-          name: selectedProduct.name,
-          price: Number(selectedProduct.price),
-          image_url: selectedProduct.image_url,
-          quantity: selectedQuantity,
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          image_url: product.image_url,
+          quantity,
         });
       }
 
@@ -482,10 +573,10 @@ export default function ProductDetailPage() {
 
       window.dispatchEvent(new Event("cart-updated"));
 
-      setCartAdded(true);
+      setCartMessage("Added to cart");
 
       window.setTimeout(() => {
-        setCartAdded(false);
+        setCartMessage("");
       }, 2200);
     } catch (err) {
       console.error("Cart error:", err);
@@ -497,8 +588,6 @@ export default function ProductDetailPage() {
   ======================================================= */
 
   async function toggleWishlist() {
-    if (!product) return;
-
     try {
       setWishlistLoading(true);
 
@@ -512,28 +601,24 @@ export default function ProductDetailPage() {
       }
 
       if (wishlist) {
-        const { error: deleteError } = await supabase
+        const { error } = await supabase
           .from("wishlist")
           .delete()
           .eq("user_id", user.id)
           .eq("product_id", product.id);
 
-        if (deleteError) {
-          throw deleteError;
-        }
+        if (error) throw error;
 
         setWishlist(false);
       } else {
-        const { error: insertError } = await supabase
+        const { error } = await supabase
           .from("wishlist")
           .insert({
             user_id: user.id,
             product_id: product.id,
           });
 
-        if (insertError) {
-          throw insertError;
-        }
+        if (error) throw error;
 
         setWishlist(true);
       }
@@ -548,28 +633,27 @@ export default function ProductDetailPage() {
      SHARE
   ======================================================= */
 
-  async function handleShare() {
-    if (!product) return;
-
-    const shareData = {
-      title: product.name,
-      text:
-        product.short_description ||
-        `Check out ${product.name} on PrimeCart.`,
-      url: window.location.href,
-    };
+  async function shareProduct() {
+    const url = window.location.href;
 
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({
+          title: product.name,
+          text:
+            product.short_description ||
+            `Check out ${product.name} on PrimeCart.`,
+          url,
+        });
+
         setShareMessage("Shared successfully");
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(url);
         setShareMessage("Product link copied");
       }
     } catch {
       try {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(url);
         setShareMessage("Product link copied");
       } catch {
         setShareMessage("Unable to share");
@@ -578,94 +662,25 @@ export default function ProductDetailPage() {
 
     window.setTimeout(() => {
       setShareMessage("");
-    }, 2200);
+    }, 2000);
   }
 
   /* =======================================================
      BUY NOW
   ======================================================= */
 
-  function handleBuyNow() {
-    if (!product || product.stock <= 0) return;
+  function buyNow() {
+    if (product.stock <= 0) return;
 
-    setBuying(true);
-
-    addToCart(product, quantity);
+    addToCart();
 
     window.setTimeout(() => {
       router.push("/dashboard");
-    }, 350);
+    }, 300);
   }
 
   /* =======================================================
-     LOADING
-  ======================================================= */
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="h-6 w-32 animate-pulse rounded-lg bg-[var(--muted)]" />
-
-          <div className="mt-6 grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="h-[520px] animate-pulse rounded-[28px] bg-[var(--muted)]" />
-
-            <div className="space-y-5">
-              <div className="h-5 w-32 animate-pulse rounded bg-[var(--muted)]" />
-              <div className="h-12 w-full animate-pulse rounded bg-[var(--muted)]" />
-              <div className="h-6 w-40 animate-pulse rounded bg-[var(--muted)]" />
-              <div className="h-32 w-full animate-pulse rounded bg-[var(--muted)]" />
-              <div className="h-16 w-full animate-pulse rounded bg-[var(--muted)]" />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  /* =======================================================
-     ERROR / NOT FOUND
-  ======================================================= */
-
-  if (error || !product) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--background)] px-5 text-[var(--foreground)]">
-        <div className="w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-8 text-center shadow-xl">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--muted)] text-[var(--gold)]">
-            <ShoppingBag size={28} />
-          </div>
-
-          <h1 className="mt-6 text-2xl font-black">
-            Product unavailable
-          </h1>
-
-          <p className="mt-2 text-sm leading-6 text-[var(--foreground)]/55">
-            {error || "This product is no longer available."}
-          </p>
-
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/dashboard/products"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--gold)] px-5 py-3 text-sm font-black text-white transition hover:bg-[var(--gold-dark)]"
-            >
-              <ArrowLeft size={16} />
-              Browse Products
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="flex flex-1 items-center justify-center rounded-xl border border-[var(--border)] px-5 py-3 text-sm font-black transition hover:bg-[var(--muted)]"
-            >
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  /* =======================================================
-     MAIN PRODUCT PAGE
+     MAIN
   ======================================================= */
 
   return (
@@ -674,13 +689,12 @@ export default function ProductDetailPage() {
           HEADER
       =================================================== */}
 
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/dashboard/products"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] transition hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
-              aria-label="Back to products"
             >
               <ArrowLeft size={18} />
             </Link>
@@ -693,14 +707,14 @@ export default function ProductDetailPage() {
                 <ShoppingBag size={17} />
               </div>
 
-              <span className="text-lg font-black tracking-tight">
+              <span className="text-lg font-black">
                 Prime<span className="text-[var(--gold)]">Cart</span>
               </span>
             </Link>
 
             <div className="hidden h-5 w-px bg-[var(--border)] sm:block" />
 
-            <span className="truncate text-xs font-bold text-[var(--foreground)]/50">
+            <span className="truncate text-xs font-bold text-[var(--foreground)]/45">
               Product Details
             </span>
           </div>
@@ -708,7 +722,7 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/wishlist"
-              className="hidden h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 text-xs font-black transition hover:border-[var(--gold)] sm:flex"
+              className="hidden h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 text-xs font-black sm:flex"
             >
               <Heart size={16} />
               Wishlist
@@ -716,10 +730,12 @@ export default function ProductDetailPage() {
 
             <Link
               href="/dashboard/products"
-              className="flex h-10 items-center gap-2 rounded-xl bg-[var(--gold)] px-3.5 text-xs font-black text-white transition hover:bg-[var(--gold-dark)]"
+              className="flex h-10 items-center gap-2 rounded-xl bg-[var(--gold)] px-4 text-xs font-black text-white transition hover:bg-[var(--gold-dark)]"
             >
               <ShoppingCart size={16} />
-              <span className="hidden sm:inline">Continue Shopping</span>
+              <span className="hidden sm:block">
+                Continue Shopping
+              </span>
               <span className="sm:hidden">Shop</span>
             </Link>
           </div>
@@ -727,13 +743,13 @@ export default function ProductDetailPage() {
       </header>
 
       {/* ===================================================
-          CONTENT
+          PAGE
       =================================================== */}
 
-      <div className="mx-auto max-w-7xl px-4 pb-16 pt-5 sm:px-6 lg:px-8 lg:pt-7">
+      <div className="mx-auto max-w-7xl px-4 pb-20 pt-5 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
 
-        <div className="mb-6 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-[var(--foreground)]/45">
+        <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-[var(--foreground)]/40">
           <Link
             href="/dashboard"
             className="hover:text-[var(--gold-dark)]"
@@ -741,7 +757,7 @@ export default function ProductDetailPage() {
             Home
           </Link>
 
-          <ChevronRight size={13} />
+          <ChevronRight size={12} />
 
           <Link
             href="/dashboard/products"
@@ -752,7 +768,7 @@ export default function ProductDetailPage() {
 
           {category && (
             <>
-              <ChevronRight size={13} />
+              <ChevronRight size={12} />
 
               <Link
                 href={`/dashboard/categories/${category.slug}`}
@@ -763,104 +779,165 @@ export default function ProductDetailPage() {
             </>
           )}
 
-          <ChevronRight size={13} />
+          <ChevronRight size={12} />
 
-          <span className="max-w-[180px] truncate text-[var(--foreground)]/65">
+          <span className="max-w-[220px] truncate text-[var(--foreground)]/60">
             {product.name}
           </span>
-        </div>
+        </nav>
 
         {/* =================================================
-            PRODUCT HERO
+            PRODUCT AREA
         ================================================= */}
 
-        <section className="grid items-start gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-8">
-          {/* IMAGE CARD */}
+        <section className="grid items-start gap-7 lg:grid-cols-[1.04fr_0.96fr]">
+          {/* =================================================
+              LEFT / GALLERY
+          ================================================= */}
 
-          <div className="lg:sticky lg:top-[90px]">
-            <div className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--card)] shadow-sm">
-              <div className="absolute left-5 top-5 z-10 flex flex-wrap gap-2">
+          <div className="lg:sticky lg:top-[88px]">
+            <div className="grid gap-3 sm:grid-cols-[82px_1fr]">
+              {/* Thumbnail */}
+
+              <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
+                <button
+                  onClick={() => setActiveImage(0)}
+                  className={`relative h-[68px] w-[68px] shrink-0 overflow-hidden rounded-xl border-2 bg-[var(--muted)] transition ${
+                    activeImage === 0
+                      ? "border-[var(--gold)]"
+                      : "border-[var(--border)]"
+                  }`}
+                >
+                  {image ? (
+                    <Image
+                      src={image}
+                      alt={product.name}
+                      fill
+                      sizes="68px"
+                      className="object-contain p-2"
+                    />
+                  ) : (
+                    <ImageOff className="m-auto mt-5" size={20} />
+                  )}
+                </button>
+
                 {product.is_featured && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--foreground)] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[var(--background)]">
-                    <BadgeCheck size={12} />
-                    Featured
-                  </span>
+                  <div className="hidden h-[68px] w-[68px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--muted)] sm:flex">
+                    <Sparkles
+                      size={20}
+                      className="text-[var(--gold)]"
+                    />
+                  </div>
                 )}
 
-                {product.is_flash_sale && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-white">
-                    <Zap size={11} fill="currentColor" />
-                    Flash Deal
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={toggleWishlist}
-                disabled={wishlistLoading}
-                className={`absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-xl transition ${
-                  wishlist
-                    ? "border-red-200 bg-red-50 text-red-500"
-                    : "border-[var(--border)] bg-[var(--card)]/90 text-[var(--foreground)]/55 hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
-                }`}
-                aria-label="Toggle wishlist"
-              >
-                <Heart
-                  size={19}
-                  fill={wishlist ? "currentColor" : "none"}
-                />
-              </button>
-
-              <div className="relative aspect-square min-h-[360px] bg-[var(--muted)] sm:min-h-[500px]">
-                {image ? (
-                  <Image
-                    src={image}
-                    alt={product.name}
-                    fill
-                    priority
-                    sizes="(max-width: 1024px) 100vw, 55vw"
-                    className="object-contain p-8 sm:p-12 lg:p-16"
+                <div className="hidden h-[68px] w-[68px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--muted)] sm:flex">
+                  <BadgeCheck
+                    size={20}
+                    className="text-emerald-500"
                   />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[var(--foreground)]/25">
-                    <div className="text-center">
-                      <ImageOff
-                        size={54}
-                        className="mx-auto"
-                      />
-                      <p className="mt-3 text-sm font-bold">
-                        Image unavailable
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between">
-                  <div className="rounded-full border border-[var(--border)] bg-[var(--card)]/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider backdrop-blur">
-                    Genuine Product
-                  </div>
-
-                  <button
-                    onClick={handleShare}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)]/90 transition hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
-                    aria-label="Share product"
-                  >
-                    <Share2 size={17} />
-                  </button>
                 </div>
               </div>
-            </div>
 
-            {shareMessage && (
-              <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-center text-xs font-bold text-[var(--gold-dark)]">
-                {shareMessage}
+              {/* Main image */}
+
+              <div className="order-1 sm:order-2">
+                <div className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                  {/* Badges */}
+
+                  <div className="absolute left-5 top-5 z-10 flex flex-wrap gap-2">
+                    {product.is_featured && (
+                      <span className="flex items-center gap-1.5 rounded-full bg-[var(--foreground)] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[var(--background)]">
+                        <BadgeCheck size={12} />
+                        Featured
+                      </span>
+                    )}
+
+                    {product.is_flash_sale && (
+                      <span className="flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-white">
+                        <Zap size={11} fill="currentColor" />
+                        Flash Deal
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Wishlist */}
+
+                  <button
+                    onClick={toggleWishlist}
+                    disabled={wishlistLoading}
+                    className={`absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border bg-[var(--card)]/90 backdrop-blur transition ${
+                      wishlist
+                        ? "border-red-200 text-red-500"
+                        : "border-[var(--border)] text-[var(--foreground)]/50 hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
+                    }`}
+                  >
+                    <Heart
+                      size={19}
+                      fill={
+                        wishlist
+                          ? "currentColor"
+                          : "none"
+                      }
+                    />
+                  </button>
+
+                  {/* Product */}
+
+                  <div className="relative aspect-square min-h-[360px] bg-[var(--muted)] sm:min-h-[510px]">
+                    {image ? (
+                      <Image
+                        src={image}
+                        alt={product.name}
+                        fill
+                        priority
+                        sizes="(max-width:1024px) 100vw, 55vw"
+                        className="object-contain p-8 sm:p-14 lg:p-16"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-center text-[var(--foreground)]/25">
+                          <ImageOff
+                            size={52}
+                            className="mx-auto"
+                          />
+                          <p className="mt-3 text-xs font-bold">
+                            Image unavailable
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bottom image info */}
+
+                    <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between">
+                      <span className="rounded-full border border-[var(--border)] bg-[var(--card)]/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider backdrop-blur">
+                        Genuine Product
+                      </span>
+
+                      <button
+                        onClick={shareProduct}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)]/90 backdrop-blur transition hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
+                      >
+                        <Share2 size={17} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {shareMessage && (
+                  <div className="mt-3 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-4 py-3 text-center text-xs font-black text-[var(--gold-dark)]">
+                    {shareMessage}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* PRODUCT INFO */}
+          {/* =================================================
+              RIGHT / PURCHASE PANEL
+          ================================================= */}
 
-          <div className="min-w-0 lg:sticky lg:top-[90px]">
+          <div className="lg:sticky lg:top-[88px]">
             <div className="rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm sm:p-7">
               {/* Brand */}
 
@@ -869,20 +946,19 @@ export default function ProductDetailPage() {
                   {product.brand || "PrimeCart Exclusive"}
                 </span>
 
-                {product.stock > 0 && (
-                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-600">
-                    In Stock
-                  </span>
-                )}
+                <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-black text-emerald-600">
+                  <BadgeCheck size={11} />
+                  Verified
+                </span>
               </div>
 
               {/* Title */}
 
-              <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight text-[var(--card-foreground)] sm:text-3xl lg:text-[34px]">
+              <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight sm:text-3xl">
                 {product.name}
               </h1>
 
-              {/* Short description */}
+              {/* Description */}
 
               {product.short_description && (
                 <p className="mt-3 text-sm leading-6 text-[var(--foreground)]/55">
@@ -893,19 +969,19 @@ export default function ProductDetailPage() {
               {/* Rating */}
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--gold)] px-2.5 py-1.5 text-xs font-black text-white">
+                <span className="flex items-center gap-1.5 rounded-lg bg-[var(--gold)] px-2.5 py-1.5 text-xs font-black text-white">
                   {Number(product.rating || 0).toFixed(1)}
                   <Star size={12} fill="currentColor" />
-                </div>
+                </span>
 
-                <span className="text-xs font-bold text-[var(--foreground)]/55">
-                  {product.reviews_count || 0} ratings & reviews
+                <span className="text-xs font-bold text-[var(--foreground)]/50">
+                  {product.reviews_count || 0} ratings
                 </span>
 
                 <span className="h-4 w-px bg-[var(--border)]" />
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--foreground)]/40">
-                  Verified Product
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--foreground)]/35">
+                  PrimeCart Verified
                 </span>
               </div>
 
@@ -915,20 +991,26 @@ export default function ProductDetailPage() {
 
               <div>
                 {discount > 0 && (
-                  <p className="mb-1 text-xs font-black uppercase tracking-wider text-emerald-600">
-                    Limited offer • Save {discount}%
-                  </p>
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">
+                      Limited time offer
+                    </span>
+
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black text-emerald-600">
+                      SAVE {discount}%
+                    </span>
+                  </div>
                 )}
 
                 <div className="flex flex-wrap items-end gap-3">
-                  <span className="text-3xl font-black tracking-tight text-[var(--card-foreground)] sm:text-4xl">
+                  <span className="text-3xl font-black tracking-tight sm:text-4xl">
                     {formatPrice(Number(product.price))}
                   </span>
 
                   {product.original_price &&
                     Number(product.original_price) >
                       Number(product.price) && (
-                      <span className="mb-1 text-sm text-[var(--foreground)]/40 line-through">
+                      <span className="mb-1 text-sm text-[var(--foreground)]/35 line-through">
                         {formatPrice(
                           Number(product.original_price),
                         )}
@@ -936,32 +1018,29 @@ export default function ProductDetailPage() {
                     )}
                 </div>
 
-                <p className="mt-1 text-[10px] font-medium text-[var(--foreground)]/40">
-                  Inclusive of all applicable taxes
+                <p className="mt-1 text-[10px] text-[var(--foreground)]/40">
+                  Inclusive of applicable taxes
                 </p>
               </div>
 
-              {/* Offer strip */}
+              {/* Savings */}
 
-              {discount > 0 && (
-                <div className="mt-5 flex items-center gap-3 rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)] text-white">
-                    <Zap size={18} fill="currentColor" />
-                  </div>
-
+              {savings > 0 && (
+                <div className="mt-5 flex items-center justify-between rounded-2xl border border-emerald-500/15 bg-emerald-500/5 p-4">
                   <div>
-                    <p className="text-xs font-black">
-                      Special PrimeCart Deal
+                    <p className="text-xs font-black text-emerald-600">
+                      You save {formatPrice(savings)}
                     </p>
 
-                    <p className="mt-0.5 text-[10px] text-[var(--foreground)]/50">
-                      Save {formatPrice(
-                        Number(product.original_price || 0) -
-                          Number(product.price),
-                      )}{" "}
-                      on this product.
+                    <p className="mt-1 text-[10px] text-[var(--foreground)]/45">
+                      Best price available on PrimeCart
                     </p>
                   </div>
+
+                  <Sparkles
+                    size={20}
+                    className="text-emerald-500"
+                  />
                 </div>
               )}
 
@@ -969,26 +1048,34 @@ export default function ProductDetailPage() {
 
               <div className="mt-5">
                 {product.stock > 0 ? (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-black text-emerald-600">
-                        In stock
-                      </p>
+                  <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                        <Check size={18} />
+                      </div>
 
-                      <p className="mt-1 text-[10px] text-[var(--foreground)]/45">
-                        {product.stock <= 5
-                          ? `Only ${product.stock} left — order soon`
-                          : "Ready to ship"}
-                      </p>
+                      <div>
+                        <p className="text-xs font-black text-emerald-600">
+                          In Stock
+                        </p>
+
+                        <p className="mt-0.5 text-[10px] text-[var(--foreground)]/45">
+                          {product.stock <= 5
+                            ? `Only ${product.stock} left`
+                            : "Ready to ship"}
+                        </p>
+                      </div>
                     </div>
 
-                    <Truck
-                      size={20}
-                      className="text-[var(--gold)]"
-                    />
+                    {product.stock <= 5 && (
+                      <span className="flex items-center gap-1 text-[9px] font-black text-orange-600">
+                        <Clock3 size={11} />
+                        Selling fast
+                      </span>
+                    )}
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-red-500/10 px-4 py-3 text-xs font-black text-red-600">
+                  <div className="rounded-2xl bg-red-500/10 p-4 text-xs font-black text-red-600">
                     Currently out of stock
                   </div>
                 )}
@@ -997,26 +1084,26 @@ export default function ProductDetailPage() {
               {/* Quantity */}
 
               {product.stock > 0 && (
-                <div className="mt-6 flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
+                <div className="mt-5 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-black">
                       Quantity
                     </p>
 
-                    <p className="mt-0.5 text-[10px] text-[var(--foreground)]/45">
-                      Max 10 per order
+                    <p className="mt-1 text-[10px] text-[var(--foreground)]/40">
+                      Maximum 10 per order
                     </p>
                   </div>
 
-                  <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--card)]">
+                  <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--muted)]">
                     <button
                       onClick={() =>
-                        setQuantity((current) =>
-                          Math.max(1, current - 1),
+                        setQuantity((value) =>
+                          Math.max(1, value - 1),
                         )
                       }
                       disabled={quantity <= 1}
-                      className="flex h-10 w-10 items-center justify-center text-[var(--foreground)]/60 transition hover:text-[var(--gold-dark)] disabled:opacity-30"
+                      className="flex h-10 w-10 items-center justify-center disabled:opacity-30"
                     >
                       <Minus size={15} />
                     </button>
@@ -1027,12 +1114,15 @@ export default function ProductDetailPage() {
 
                     <button
                       onClick={() =>
-                        setQuantity((current) =>
-                          Math.min(maxQuantity, current + 1),
+                        setQuantity((value) =>
+                          Math.min(
+                            maxQuantity,
+                            value + 1,
+                          ),
                         )
                       }
                       disabled={quantity >= maxQuantity}
-                      className="flex h-10 w-10 items-center justify-center text-[var(--foreground)]/60 transition hover:text-[var(--gold-dark)] disabled:opacity-30"
+                      className="flex h-10 w-10 items-center justify-center disabled:opacity-30"
                     >
                       <Plus size={15} />
                     </button>
@@ -1040,22 +1130,18 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Buttons */}
+              {/* Main actions */}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <button
-                  onClick={() => {
-                    if (product.stock > 0) {
-                      addToCart(product, quantity);
-                    }
-                  }}
+                  onClick={addToCart}
                   disabled={product.stock <= 0}
-                  className="flex h-13 items-center justify-center gap-2 rounded-2xl border border-[var(--gold)] bg-[var(--gold)]/10 px-5 text-sm font-black text-[var(--gold-dark)] transition hover:bg-[var(--gold)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-13 items-center justify-center gap-2 rounded-2xl border border-[var(--gold)] bg-[var(--gold)]/10 px-5 text-sm font-black text-[var(--gold-dark)] transition hover:bg-[var(--gold)] hover:text-white disabled:opacity-40"
                 >
-                  {cartAdded ? (
+                  {cartMessage ? (
                     <>
                       <Check size={18} />
-                      Added to Cart
+                      Added
                     </>
                   ) : (
                     <>
@@ -1066,12 +1152,12 @@ export default function ProductDetailPage() {
                 </button>
 
                 <button
-                  onClick={handleBuyNow}
-                  disabled={product.stock <= 0 || buying}
-                  className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-[var(--gold)] px-5 text-sm font-black text-white shadow-lg shadow-[var(--gold)]/15 transition hover:bg-[var(--gold-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={buyNow}
+                  disabled={product.stock <= 0}
+                  className="flex h-13 items-center justify-center gap-2 rounded-2xl bg-[var(--gold)] px-5 text-sm font-black text-white shadow-lg shadow-[var(--gold)]/20 transition hover:bg-[var(--gold-dark)] disabled:opacity-40"
                 >
                   <Zap size={17} fill="currentColor" />
-                  {buying ? "Opening..." : "Buy Now"}
+                  Buy Now
                 </button>
               </div>
 
@@ -1080,7 +1166,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={toggleWishlist}
                 disabled={wishlistLoading}
-                className={`mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border text-sm font-black transition ${
+                className={`mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border text-xs font-black transition ${
                   wishlist
                     ? "border-red-200 bg-red-50 text-red-500"
                     : "border-[var(--border)] hover:border-[var(--gold)] hover:text-[var(--gold-dark)]"
@@ -1088,7 +1174,11 @@ export default function ProductDetailPage() {
               >
                 <Heart
                   size={17}
-                  fill={wishlist ? "currentColor" : "none"}
+                  fill={
+                    wishlist
+                      ? "currentColor"
+                      : "none"
+                  }
                 />
 
                 {wishlist
@@ -1096,9 +1186,9 @@ export default function ProductDetailPage() {
                   : "Add to Wishlist"}
               </button>
 
-              {/* Service cards */}
+              {/* Trust row */}
 
-              <div className="mt-7 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-7 grid grid-cols-2 gap-2">
                 {[
                   {
                     icon: Truck,
@@ -1112,13 +1202,13 @@ export default function ProductDetailPage() {
                   },
                   {
                     icon: ShieldCheck,
-                    title: "Secure",
-                    text: "Safe shopping",
+                    title: "Secure Payment",
+                    text: "Protected checkout",
                   },
                   {
                     icon: BadgeCheck,
-                    title: "Verified",
-                    text: "Genuine product",
+                    title: "Genuine",
+                    text: "Verified product",
                   },
                 ].map((item) => {
                   const Icon = item.icon;
@@ -1126,18 +1216,18 @@ export default function ProductDetailPage() {
                   return (
                     <div
                       key={item.title}
-                      className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3 text-center"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3"
                     >
                       <Icon
                         size={17}
-                        className="mx-auto text-[var(--gold)]"
+                        className="text-[var(--gold)]"
                       />
 
-                      <p className="mt-2 text-[9px] font-black">
+                      <p className="mt-2 text-[10px] font-black">
                         {item.title}
                       </p>
 
-                      <p className="mt-0.5 text-[8px] text-[var(--foreground)]/40">
+                      <p className="mt-1 text-[9px] text-[var(--foreground)]/40">
                         {item.text}
                       </p>
                     </div>
@@ -1149,11 +1239,62 @@ export default function ProductDetailPage() {
         </section>
 
         {/* =================================================
-            PRODUCT INFORMATION
+            DELIVERY STRIP
         ================================================= */}
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-          {/* About */}
+        <section className="mt-7 grid gap-3 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/10 text-[var(--gold-dark)]">
+              <Truck size={18} />
+            </div>
+
+            <div>
+              <p className="text-xs font-black">
+                Fast Delivery
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--foreground)]/40">
+                Reliable shipping to your doorstep
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/10 text-[var(--gold-dark)]">
+              <RotateCcw size={18} />
+            </div>
+
+            <div>
+              <p className="text-xs font-black">
+                Easy Returns
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--foreground)]/40">
+                Simple 7-day return policy
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/10 text-[var(--gold-dark)]">
+              <ShieldCheck size={18} />
+            </div>
+
+            <div>
+              <p className="text-xs font-black">
+                Secure Shopping
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--foreground)]/40">
+                Safe and protected shopping
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* =================================================
+            DETAILS
+        ================================================= */}
+
+        <section className="mt-7 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+          {/* Description */}
 
           <div className="rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm sm:p-7">
             <div className="flex items-center gap-3">
@@ -1166,75 +1307,76 @@ export default function ProductDetailPage() {
                   Product information
                 </p>
 
-                <h2 className="mt-0.5 text-xl font-black">
+                <h2 className="mt-1 text-xl font-black">
                   About this item
                 </h2>
               </div>
             </div>
 
-            {product.description ? (
-              <div className="mt-6 whitespace-pre-line text-sm leading-7 text-[var(--foreground)]/65">
-                {product.description}
-              </div>
-            ) : product.short_description ? (
-              <p className="mt-6 text-sm leading-7 text-[var(--foreground)]/65">
-                {product.short_description}
-              </p>
-            ) : (
-              <p className="mt-6 text-sm text-[var(--foreground)]/45">
-                Detailed product information will be available soon.
-              </p>
-            )}
+            <div className="mt-6">
+              {product.description ? (
+                <p className="whitespace-pre-line text-sm leading-7 text-[var(--foreground)]/65">
+                  {product.description}
+                </p>
+              ) : product.short_description ? (
+                <p className="text-sm leading-7 text-[var(--foreground)]/65">
+                  {product.short_description}
+                </p>
+              ) : (
+                <p className="text-sm text-[var(--foreground)]/40">
+                  Detailed description is currently unavailable.
+                </p>
+              )}
+            </div>
 
             {/* Highlights */}
 
-            <div className="mt-7 border-t border-[var(--border)] pt-6">
+            <div className="mt-8 border-t border-[var(--border)] pt-6">
               <h3 className="text-sm font-black">
                 Product highlights
               </h3>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  {
-                    title: "Brand",
-                    value: product.brand || "PrimeCart",
-                  },
-                  {
-                    title: "Customer Rating",
-                    value: `${Number(product.rating || 0).toFixed(1)} / 5`,
-                  },
-                  {
-                    title: "Reviews",
-                    value: `${product.reviews_count || 0} reviews`,
-                  },
-                  {
-                    title: "Availability",
-                    value:
-                      product.stock > 0
-                        ? "In Stock"
-                        : "Out of Stock",
-                  },
-                  {
-                    title: "Product Type",
-                    value: category?.name || "General",
-                  },
-                  {
-                    title: "PrimeCart Status",
-                    value: product.is_featured
-                      ? "Featured Product"
-                      : "Standard Product",
-                  },
-                ].map((item) => (
+                  [
+                    "Brand",
+                    product.brand || "PrimeCart",
+                  ],
+                  [
+                    "Category",
+                    category?.name || "General",
+                  ],
+                  [
+                    "Rating",
+                    `${Number(product.rating || 0).toFixed(1)} / 5`,
+                  ],
+                  [
+                    "Reviews",
+                    `${product.reviews_count || 0}`,
+                  ],
+                  [
+                    "Availability",
+                    product.stock > 0
+                      ? "In Stock"
+                      : "Out of Stock",
+                  ],
+                  [
+                    "Product Status",
+                    product.is_featured
+                      ? "Featured"
+                      : "Standard",
+                  ],
+                ].map(([label, value]) => (
                   <div
-                    key={item.title}
+                    key={label}
                     className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3"
                   >
-                    <span className="text-xs font-bold text-[var(--foreground)]/45">
-                      {item.title}
+                    <span className="text-[10px] font-bold text-[var(--foreground)]/40">
+                      {label}
                     </span>
 
                     <span className="text-right text-xs font-black">
-                      {item.value}
+                      {value}
                     </span>
                   </div>
                 ))}
@@ -1242,7 +1384,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Shopping promise */}
+          {/* Why PrimeCart */}
 
           <div className="rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm sm:p-7">
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--gold-dark)]">
@@ -1253,7 +1395,7 @@ export default function ProductDetailPage() {
               Shop with confidence
             </h2>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-5">
               {[
                 {
                   icon: ShieldCheck,
@@ -1272,8 +1414,8 @@ export default function ProductDetailPage() {
                 },
                 {
                   icon: BadgeCheck,
-                  title: "Verified Products",
-                  text: "Products are listed with verified information.",
+                  title: "Verified Information",
+                  text: "Product information is presented clearly.",
                 },
               ].map((item) => {
                 const Icon = item.icon;
@@ -1309,30 +1451,30 @@ export default function ProductDetailPage() {
 
         {category && (
           <section className="mt-12">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--gold)]" />
 
-                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[var(--gold-dark)]">
+                  <span className="text-[9px] font-black uppercase tracking-[0.22em] text-[var(--gold-dark)]">
                     More from {category.name}
-                  </p>
+                  </span>
                 </div>
 
                 <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-                  Related products
+                  You may also like
                 </h2>
 
-                <p className="mt-1 text-xs text-[var(--foreground)]/45">
-                  More products from the same category.
+                <p className="mt-1 text-xs text-[var(--foreground)]/40">
+                  Discover more products from this category.
                 </p>
               </div>
 
               <Link
                 href={`/dashboard/categories/${category.slug}`}
-                className="group inline-flex items-center gap-1 text-xs font-black text-[var(--gold-dark)]"
+                className="group flex items-center gap-1 text-xs font-black text-[var(--gold-dark)]"
               >
-                View category
+                View all
                 <ArrowRight
                   size={14}
                   className="transition-transform group-hover:translate-x-1"
@@ -1345,7 +1487,7 @@ export default function ProductDetailPage() {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <div
                     key={index}
-                    className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]"
+                    className="overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--card)]"
                   >
                     <div className="aspect-square animate-pulse bg-[var(--muted)]" />
 
@@ -1359,33 +1501,33 @@ export default function ProductDetailPage() {
               </div>
             ) : relatedProducts.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-                {relatedProducts.map((relatedProduct) => (
+                {relatedProducts.map((item) => (
                   <RelatedProductCard
-                    key={relatedProduct.id}
-                    product={relatedProduct}
+                    key={item.id}
+                    product={item}
                   />
                 ))}
               </div>
             ) : (
-              <div className="rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-8 text-center">
+              <div className="rounded-[26px] border border-[var(--border)] bg-[var(--card)] p-10 text-center">
                 <ShoppingBag
                   size={30}
-                  className="mx-auto text-[var(--foreground)]/25"
+                  className="mx-auto text-[var(--foreground)]/20"
                 />
 
-                <p className="mt-3 text-sm font-black">
-                  No related products yet
-                </p>
+                <h3 className="mt-3 text-sm font-black">
+                  More products coming soon
+                </h3>
 
-                <p className="mt-1 text-xs text-[var(--foreground)]/45">
-                  Explore more products in {category.name}.
+                <p className="mt-1 text-xs text-[var(--foreground)]/40">
+                  Explore the complete {category.name} collection.
                 </p>
 
                 <Link
                   href={`/dashboard/categories/${category.slug}`}
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--gold)] px-4 py-2.5 text-xs font-black text-white"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--gold)] px-5 py-2.5 text-xs font-black text-white"
                 >
-                  Browse {category.name}
+                  Browse Category
                   <ArrowRight size={14} />
                 </Link>
               </div>
@@ -1397,8 +1539,10 @@ export default function ProductDetailPage() {
             FINAL CTA
         ================================================= */}
 
-        <section className="mt-12 overflow-hidden rounded-[28px] bg-[var(--foreground)] p-6 text-[var(--background)] sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <section className="relative mt-12 overflow-hidden rounded-[30px] bg-[var(--foreground)] p-6 text-[var(--background)] sm:p-9">
+          <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-[var(--gold)]/10 blur-3xl" />
+
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2 text-[var(--gold)]">
                 <Sparkles size={15} />
@@ -1409,12 +1553,12 @@ export default function ProductDetailPage() {
               </div>
 
               <h2 className="mt-2 text-xl font-black sm:text-2xl">
-                Find more products made for you.
+                Shop smarter. Discover better.
               </h2>
 
               <p className="mt-1 max-w-xl text-xs leading-5 opacity-50">
-                Explore categories, discover deals and make smarter shopping
-                decisions with PrimeCart.
+                Explore more products, discover better deals and find
+                products that match your shopping needs.
               </p>
             </div>
 
@@ -1430,14 +1574,14 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ===================================================
-          NATIVE ANIMATIONS
+          ANIMATION
       =================================================== */}
 
       <style jsx global>{`
-        @keyframes primecart-fade-up {
+        @keyframes primecart-detail-enter {
           from {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(10px);
           }
 
           to {
@@ -1446,8 +1590,8 @@ export default function ProductDetailPage() {
           }
         }
 
-        .primecart-fade-up {
-          animation: primecart-fade-up 0.45s ease both;
+        .primecart-detail-enter {
+          animation: primecart-detail-enter 0.45s ease both;
         }
       `}</style>
     </main>
