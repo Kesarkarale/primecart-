@@ -1,5 +1,5 @@
 @import "tailwindcss";
-
+@custom-variant dark (&:where(.dark, .dark *));
 /* =========================================================
    PRIME CART GLOBAL THEME
    Tailwind CSS v4
