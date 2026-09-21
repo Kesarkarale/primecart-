@@ -7,28 +7,30 @@ import {
   useState,
 } from "react";
 
-type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark" | "system";
 
 type ThemeContextType = {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
   resolvedTheme: "light" | "dark";
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 };
 
-const ThemeContext =
-  createContext<ThemeContextType | null>(null);
+const ThemeContext = createContext<ThemeContextType | undefined>(
+  undefined
+);
 
 export function ThemeProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setThemeState] =
-    useState<Theme>("light");
-
+  const [theme, setThemeState] = useState<Theme>("light");
   const [resolvedTheme, setResolvedTheme] =
     useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
 
+  // Load saved theme
   useEffect(() => {
     const savedTheme = localStorage.getItem(
       "primecart-theme"
@@ -41,63 +43,116 @@ export function ThemeProvider({
     ) {
       setThemeState(savedTheme);
     }
+
+    setMounted(true);
   }, []);
 
+  // Apply theme globally
   useEffect(() => {
-    const root = document.documentElement;
+    if (!mounted) return;
 
     const applyTheme = () => {
-      const systemDark = window.matchMedia(
+      const systemPrefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)"
       ).matches;
 
       const finalTheme =
         theme === "system"
-          ? systemDark
+          ? systemPrefersDark
             ? "dark"
             : "light"
           : theme;
 
-      root.classList.remove("light", "dark");
-      root.classList.add(finalTheme);
+      // Remove previous theme
+      document.documentElement.classList.remove(
+        "light",
+        "dark"
+      );
 
-      root.style.colorScheme = finalTheme;
+      // Add current theme
+      document.documentElement.classList.add(finalTheme);
+
+      // Browser native controls also follow theme
+      document.documentElement.style.colorScheme =
+        finalTheme;
 
       setResolvedTheme(finalTheme);
     };
 
     applyTheme();
 
+    // Listen for system theme changes
     if (theme === "system") {
-      const media = window.matchMedia(
+      const mediaQuery = window.matchMedia(
         "(prefers-color-scheme: dark)"
       );
 
-      media.addEventListener("change", applyTheme);
+      const handleChange = () => {
+        applyTheme();
+      };
+
+      mediaQuery.addEventListener(
+        "change",
+        handleChange
+      );
 
       return () => {
-        media.removeEventListener(
+        mediaQuery.removeEventListener(
           "change",
-          applyTheme
+          handleChange
         );
       };
     }
-  }, [theme]);
+  }, [theme, mounted]);
 
   function setTheme(themeValue: Theme) {
     setThemeState(themeValue);
+
     localStorage.setItem(
       "primecart-theme",
       themeValue
     );
+
+    // Apply immediately without waiting
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    const finalTheme =
+      themeValue === "system"
+        ? systemPrefersDark
+          ? "dark"
+          : "light"
+        : themeValue;
+
+    document.documentElement.classList.remove(
+      "light",
+      "dark"
+    );
+
+    document.documentElement.classList.add(finalTheme);
+
+    document.documentElement.style.colorScheme =
+      finalTheme;
+
+    setResolvedTheme(finalTheme);
+  }
+
+  function toggleTheme() {
+    if (resolvedTheme === "dark") {
+      setTheme("light");
+    } else {
+      setTheme("dark");
+    }
   }
 
   return (
     <ThemeContext.Provider
       value={{
         theme,
-        setTheme,
         resolvedTheme,
+        setTheme,
+        toggleTheme,
       }}
     >
       {children}
