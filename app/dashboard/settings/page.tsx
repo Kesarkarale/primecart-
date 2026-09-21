@@ -29,9 +29,10 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { useTheme } from "@/components/theme-provider";
-
-type Appearance = "light" | "dark" | "system";
+import {
+  useTheme,
+  type Theme,
+} from "@/components/theme-provider";
 
 type NotificationSettings = {
   orders: boolean;
@@ -67,7 +68,7 @@ type Profile = {
   full_name: string | null;
   phone: string | null;
   city: string | null;
-  appearance: Appearance | null;
+  appearance: Theme | null;
   notifications: NotificationSettings | null;
   shopping_preferences: ShoppingSettings | null;
   privacy_preferences: PrivacySettings | null;
@@ -157,14 +158,9 @@ const tabs: {
 export default function SettingsPage() {
   const supabase = createClient();
 
-  /*
-   * GLOBAL THEME
-   *
-   * This connects Settings with the actual
-   * PrimeCart website theme.
-   */
   const {
     theme: globalTheme,
+    resolvedTheme,
     setTheme: setGlobalTheme,
   } = useTheme();
 
@@ -182,7 +178,7 @@ export default function SettingsPage() {
   const [city, setCity] = useState("");
 
   const [appearance, setAppearance] =
-    useState<Appearance>("light");
+    useState<Theme>("light");
 
   const [notifications, setNotifications] =
     useState<NotificationSettings>(
@@ -198,26 +194,25 @@ export default function SettingsPage() {
   const [security, setSecurity] =
     useState<SecuritySettings>(defaultSecurity);
 
-  const [newPassword, setNewPassword] =
-    useState("");
-
+  const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
     useState("");
 
   const [passwordLoading, setPasswordLoading] =
     useState(false);
 
-  const [message, setMessage] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const [deleteModal, setDeleteModal] =
     useState(false);
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
   /*
-   * Keep Settings state synchronized
+   * Keep local appearance state synchronized
    * with the global theme provider.
    */
   useEffect(() => {
@@ -234,10 +229,6 @@ export default function SettingsPage() {
 
     return Math.round((completed / 4) * 100);
   }, [fullName, email, phone, city]);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
 
   async function loadSettings() {
     try {
@@ -275,15 +266,32 @@ export default function SettingsPage() {
         setPhone(profile.phone ?? "");
         setCity(profile.city ?? "");
 
+        /*
+         * Priority:
+         * 1. Local browser theme
+         * 2. Supabase profile theme
+         * 3. Light
+         */
+        const localTheme =
+          typeof window !== "undefined"
+            ? localStorage.getItem(
+                "primecart-theme"
+              )
+            : null;
+
+        const validLocalTheme =
+          localTheme === "light" ||
+          localTheme === "dark" ||
+          localTheme === "system"
+            ? (localTheme as Theme)
+            : null;
+
         const savedAppearance =
-          profile.appearance ?? "light";
+          validLocalTheme ??
+          profile.appearance ??
+          "light";
 
         setAppearance(savedAppearance);
-
-        /*
-         * Apply saved Supabase theme
-         * immediately to the entire application.
-         */
         setGlobalTheme(savedAppearance);
 
         setNotifications({
@@ -309,10 +317,13 @@ export default function SettingsPage() {
         const userFullName =
           user.user_metadata?.full_name ?? "";
 
+        const initialTheme: Theme =
+          globalTheme ?? "light";
+
         await supabase.from("profiles").insert({
           id: user.id,
           full_name: userFullName,
-          appearance: globalTheme,
+          appearance: initialTheme,
           notifications: defaultNotifications,
           shopping_preferences: defaultShopping,
           privacy_preferences: defaultPrivacy,
@@ -320,7 +331,8 @@ export default function SettingsPage() {
         });
 
         setFullName(userFullName);
-        setAppearance(globalTheme);
+        setAppearance(initialTheme);
+        setGlobalTheme(initialTheme);
       }
     } catch (err) {
       console.error(err);
@@ -345,6 +357,9 @@ export default function SettingsPage() {
        */
       setGlobalTheme(appearance);
 
+      /*
+       * Save everything to Supabase.
+       */
       const { error: updateError } =
         await supabase
           .from("profiles")
@@ -438,7 +453,7 @@ export default function SettingsPage() {
       console.error(err);
 
       setError(
-        "Unable to update password."
+        "Unable to update your password."
       );
     } finally {
       setPasswordLoading(false);
@@ -447,53 +462,49 @@ export default function SettingsPage() {
 
   async function logout() {
     await supabase.auth.signOut();
-
     window.location.href = "/auth/login";
   }
 
   function updateNotification(
     key: keyof NotificationSettings
   ) {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: !prev[key],
+    setNotifications((previous) => ({
+      ...previous,
+      [key]: !previous[key],
     }));
   }
 
   function updateShopping(
     key: keyof ShoppingSettings
   ) {
-    setShopping((prev) => ({
-      ...prev,
-      [key]: !prev[key],
+    setShopping((previous) => ({
+      ...previous,
+      [key]: !previous[key],
     }));
   }
 
   function updatePrivacy(
     key: keyof PrivacySettings
   ) {
-    setPrivacy((prev) => ({
-      ...prev,
-      [key]: !prev[key],
+    setPrivacy((previous) => ({
+      ...previous,
+      [key]: !previous[key],
     }));
   }
 
   function updateSecurity(
     key: keyof SecuritySettings
   ) {
-    setSecurity((prev) => ({
-      ...prev,
-      [key]: !prev[key],
+    setSecurity((previous) => ({
+      ...previous,
+      [key]: !previous[key],
     }));
   }
 
   /*
-   * Theme selection.
-   * It changes the whole website immediately.
+   * This is the important global theme function.
    */
-  function selectAppearance(
-    value: Appearance
-  ) {
+  function selectAppearance(value: Theme) {
     setAppearance(value);
     setGlobalTheme(value);
   }
@@ -518,10 +529,14 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-[#faf8f3] text-neutral-900 transition-colors dark:bg-[#0f0e0b] dark:text-[#f5f1e8]">
-      {/* HEADER */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <header className="sticky top-0 z-40 border-b border-[#eadfc9] bg-[#faf8f3]/95 backdrop-blur-xl dark:border-[#393126] dark:bg-[#0f0e0b]/95">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
@@ -542,6 +557,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="hidden items-center gap-3 sm:flex">
+            <div className="rounded-xl border border-[#eadfc9] bg-white px-4 py-2.5 text-xs font-bold dark:border-[#393126] dark:bg-[#181612]">
+              {resolvedTheme === "dark"
+                ? "Dark Mode"
+                : "Light Mode"}
+            </div>
+
             <Link
               href="/dashboard"
               className="rounded-xl border border-[#eadfc9] bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-[#b9975b] dark:border-[#393126] dark:bg-[#181612]"
@@ -551,7 +572,7 @@ export default function SettingsPage() {
 
             <button
               onClick={logout}
-              className="flex items-center gap-2 rounded-xl bg-[#17130d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+              className="flex items-center gap-2 rounded-xl bg-[#17130d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black dark:bg-[#f5f1e8] dark:text-[#17130d] dark:hover:bg-white"
             >
               <LogOut className="h-4 w-4" />
               Sign out
@@ -560,13 +581,20 @@ export default function SettingsPage() {
         </div>
       </header>
 
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
+
       <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+
         {/* HERO */}
 
         <section className="relative overflow-hidden rounded-[30px] border border-[#eadfc9] bg-white p-6 shadow-[0_20px_60px_rgba(92,68,24,0.07)] dark:border-[#393126] dark:bg-[#181612] sm:p-8 lg:p-10">
+
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#b9975b]/10 blur-3xl" />
 
           <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8d7b5] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#977538] dark:border-[#493e2e] dark:bg-[#211d15]">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -576,18 +604,19 @@ export default function SettingsPage() {
               <h2 className="max-w-3xl text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
                 Your account,
                 <span className="text-[#b08a4d]">
-                  {" "}
-                  your control.
+                  {" "}your control.
                 </span>
               </h2>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-500 dark:text-neutral-400 sm:text-base">
-                Manage your profile, security, shopping
-                preferences, notifications and privacy from
-                one place.
+                Manage your profile, security,
+                appearance, shopping preferences,
+                notifications and privacy from one
+                powerful account center.
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">
+
                 <div className="rounded-2xl border border-[#eadfc9] bg-[#faf8f3] px-4 py-3 dark:border-[#393126] dark:bg-[#211d15]">
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     Signed in as
@@ -607,6 +636,16 @@ export default function SettingsPage() {
                     {profileCompletion}%
                   </p>
                 </div>
+
+                <div className="rounded-2xl border border-[#eadfc9] bg-[#faf8f3] px-4 py-3 dark:border-[#393126] dark:bg-[#211d15]">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Theme
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold capitalize">
+                    {appearance}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -623,6 +662,7 @@ export default function SettingsPage() {
                     : "P"}
               </div>
             </div>
+
           </div>
         </section>
 
@@ -643,7 +683,7 @@ export default function SettingsPage() {
                   }
                   className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
                     active
-                      ? "bg-[#17130d] text-white"
+                      ? "bg-[#17130d] text-white dark:bg-[#f5f1e8] dark:text-[#17130d]"
                       : "border border-[#eadfc9] bg-white text-neutral-600 dark:border-[#393126] dark:bg-[#181612] dark:text-neutral-300"
                   }`}
                 >
@@ -655,11 +695,15 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* CONTENT */}
+
         <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
-          {/* SIDEBAR */}
+
+          {/* DESKTOP SIDEBAR */}
 
           <aside className="hidden lg:block">
             <div className="sticky top-28 rounded-[24px] border border-[#eadfc9] bg-white p-3 shadow-sm dark:border-[#393126] dark:bg-[#181612]">
+
               <p className="px-3 pb-3 pt-2 text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
                 Settings
               </p>
@@ -707,9 +751,12 @@ export default function SettingsPage() {
             </div>
           </aside>
 
-          {/* CONTENT */}
+          {/* RIGHT CONTENT */}
 
           <section className="min-w-0">
+
+            {/* SUCCESS */}
+
             {message && (
               <div className="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-400">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
@@ -720,6 +767,8 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* ERROR */}
+
             {error && (
               <div className="mb-5 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
@@ -729,6 +778,8 @@ export default function SettingsPage() {
                 {error}
               </div>
             )}
+
+            {/* OVERVIEW */}
 
             {activeTab === "overview" && (
               <OverviewTab
@@ -742,6 +793,8 @@ export default function SettingsPage() {
               />
             )}
 
+            {/* PROFILE */}
+
             {activeTab === "profile" && (
               <ProfileTab
                 fullName={fullName}
@@ -753,6 +806,8 @@ export default function SettingsPage() {
                 setCity={setCity}
               />
             )}
+
+            {/* SECURITY */}
 
             {activeTab === "security" && (
               <SecurityTab
@@ -779,6 +834,8 @@ export default function SettingsPage() {
               />
             )}
 
+            {/* APPEARANCE */}
+
             {activeTab === "appearance" && (
               <AppearanceTab
                 appearance={appearance}
@@ -788,12 +845,18 @@ export default function SettingsPage() {
               />
             )}
 
+            {/* NOTIFICATIONS */}
+
             {activeTab === "notifications" && (
               <NotificationsTab
                 settings={notifications}
-                update={updateNotification}
+                update={
+                  updateNotification
+                }
               />
             )}
+
+            {/* SHOPPING */}
 
             {activeTab === "shopping" && (
               <ShoppingTab
@@ -801,6 +864,8 @@ export default function SettingsPage() {
                 update={updateShopping}
               />
             )}
+
+            {/* PRIVACY */}
 
             {activeTab === "privacy" && (
               <PrivacyTab
@@ -812,6 +877,8 @@ export default function SettingsPage() {
               />
             )}
 
+            {/* SAVE */}
+
             {activeTab !== "overview" &&
               activeTab !== "security" &&
               activeTab !== "privacy" && (
@@ -819,7 +886,7 @@ export default function SettingsPage() {
                   <button
                     onClick={saveChanges}
                     disabled={saving}
-                    className="flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#f5f1e8] dark:text-[#17130d] dark:hover:bg-white"
                   >
                     {saving ? (
                       <>
@@ -841,7 +908,7 @@ export default function SettingsPage() {
                 <button
                   onClick={saveChanges}
                   disabled={saving}
-                  className="flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white transition hover:bg-black disabled:opacity-60"
+                  className="flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white transition hover:bg-black disabled:opacity-60 dark:bg-[#f5f1e8] dark:text-[#17130d] dark:hover:bg-white"
                 >
                   <Save className="h-4 w-4" />
 
@@ -859,7 +926,9 @@ export default function SettingsPage() {
 
       {deleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+
           <div className="w-full max-w-md rounded-[28px] border border-[#eadfc9] bg-white p-6 shadow-2xl dark:border-[#393126] dark:bg-[#181612]">
+
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/20">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
@@ -871,8 +940,8 @@ export default function SettingsPage() {
             <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
               Account deletion requires secure
               server-side handling. This button is
-              intentionally not connected to a
-              destructive action yet.
+              intentionally not connected to a destructive
+              action yet.
             </p>
 
             <div className="mt-6 flex gap-3">
@@ -894,6 +963,7 @@ export default function SettingsPage() {
                 Close
               </button>
             </div>
+
           </div>
         </div>
       )}
@@ -915,11 +985,12 @@ function OverviewTab({
   fullName: string;
   email: string;
   profileCompletion: number;
-  appearance: Appearance;
+  appearance: Theme;
   setActiveTab: (tab: Tab) => void;
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Account overview"
         title={`Welcome back${
@@ -931,6 +1002,7 @@ function OverviewTab({
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
         <QuickCard
           icon={CircleUserRound}
           title="Profile"
@@ -955,9 +1027,7 @@ function OverviewTab({
           icon={Palette}
           title="Appearance"
           value={
-            appearance
-              .charAt(0)
-              .toUpperCase() +
+            appearance.charAt(0).toUpperCase() +
             appearance.slice(1)
           }
           text="Choose how PrimeCart looks."
@@ -975,10 +1045,12 @@ function OverviewTab({
             setActiveTab("notifications")
           }
         />
+
       </div>
 
       <Panel>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a68145]">
               Profile health
@@ -989,12 +1061,14 @@ function OverviewTab({
             </h3>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-              Adding your basic details helps PrimeCart
-              personalize your shopping experience.
+              Adding your basic details helps
+              PrimeCart personalize your shopping
+              experience.
             </p>
           </div>
 
           <div className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-[8px] border-[#f2e9d8] dark:border-[#393126]">
+
             <svg
               className="absolute inset-0 h-full w-full -rotate-90"
               viewBox="0 0 100 100"
@@ -1014,13 +1088,16 @@ function OverviewTab({
             <span className="text-xl font-black">
               {profileCompletion}%
             </span>
+
           </div>
         </div>
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
+
         <Panel>
           <div className="flex items-center gap-3">
+
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff7e8] text-[#a68145] dark:bg-[#211d15]">
               <User className="h-5 w-5" />
             </div>
@@ -1034,6 +1111,7 @@ function OverviewTab({
                 Your current account information.
               </p>
             </div>
+
           </div>
 
           <div className="mt-6 space-y-4">
@@ -1055,6 +1133,7 @@ function OverviewTab({
 
         <Panel>
           <div className="flex items-center gap-3">
+
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff7e8] text-[#a68145] dark:bg-[#211d15]">
               <Sparkles className="h-5 w-5" />
             </div>
@@ -1068,9 +1147,11 @@ function OverviewTab({
                 Personalize your PrimeCart experience.
               </p>
             </div>
+
           </div>
 
           <div className="mt-6 space-y-3">
+
             <button
               onClick={() =>
                 setActiveTab("shopping")
@@ -1096,8 +1177,10 @@ function OverviewTab({
 
               <ChevronRight className="h-4 w-4" />
             </button>
+
           </div>
         </Panel>
+
       </div>
     </div>
   );
@@ -1126,6 +1209,7 @@ function ProfileTab({
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Personal information"
         title="Your profile"
@@ -1133,10 +1217,14 @@ function ProfileTab({
       />
 
       <Panel>
+
         <div className="flex items-center gap-4 border-b border-[#eee5d5] pb-6 dark:border-[#332d24]">
+
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#b9975b] text-2xl font-black text-white">
             {fullName
-              ? fullName.charAt(0).toUpperCase()
+              ? fullName
+                  .charAt(0)
+                  .toUpperCase()
               : "P"}
           </div>
 
@@ -1150,9 +1238,11 @@ function ProfileTab({
               {email}
             </p>
           </div>
+
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
+
           <Input
             label="Full name"
             value={fullName}
@@ -1180,6 +1270,7 @@ function ProfileTab({
             onChange={setCity}
             placeholder="Enter your city"
           />
+
         </div>
       </Panel>
 
@@ -1188,6 +1279,7 @@ function ProfileTab({
         title="Why we ask for this"
         text="Your profile information helps us provide a more relevant shopping experience and better account communication."
       />
+
     </div>
   );
 }
@@ -1213,12 +1305,15 @@ function SecurityTab({
   newPassword: string;
   setNewPassword: (value: string) => void;
   confirmPassword: string;
-  setConfirmPassword: (value: string) => void;
+  setConfirmPassword: (
+    value: string
+  ) => void;
   changePassword: () => void;
   passwordLoading: boolean;
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Account protection"
         title="Security"
@@ -1226,8 +1321,11 @@ function SecurityTab({
       />
 
       <Panel>
+
         <div className="flex items-center justify-between gap-4">
+
           <div className="flex items-center gap-4">
+
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/20">
               <Shield className="h-5 w-5 text-emerald-600" />
             </div>
@@ -1238,20 +1336,23 @@ function SecurityTab({
               </h3>
 
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Your account is protected by Supabase
-                authentication.
+                Your account is protected by Supabase authentication.
               </p>
             </div>
+
           </div>
 
           <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
             Protected
           </span>
+
         </div>
       </Panel>
 
       <Panel>
+
         <div className="flex items-center gap-3">
+
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff7e8] text-[#a68145] dark:bg-[#211d15]">
             <KeyRound className="h-5 w-5" />
           </div>
@@ -1265,9 +1366,11 @@ function SecurityTab({
               Update your Supabase authentication password.
             </p>
           </div>
+
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
+
           <Input
             label="New password"
             type="password"
@@ -1283,12 +1386,13 @@ function SecurityTab({
             onChange={setConfirmPassword}
             placeholder="Repeat your password"
           />
+
         </div>
 
         <button
           onClick={changePassword}
           disabled={passwordLoading}
-          className="mt-5 flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+          className="mt-5 flex items-center gap-2 rounded-xl bg-[#17130d] px-5 py-3 text-sm font-bold text-white disabled:opacity-60 dark:bg-[#f5f1e8] dark:text-[#17130d]"
         >
           {passwordLoading ? (
             <>
@@ -1302,23 +1406,24 @@ function SecurityTab({
             </>
           )}
         </button>
+
       </Panel>
 
       <Panel>
+
         <h3 className="font-black">
           Login protection
         </h3>
 
         <div className="mt-5 divide-y divide-[#eee5d5] dark:divide-[#332d24]">
+
           <ToggleRow
             icon={Shield}
             title="Two-factor authentication"
             description="Add an additional verification step to your account."
             checked={security.twoFactor}
             onChange={() =>
-              updateSecurity(
-                "twoFactor"
-              )
+              updateSecurity("twoFactor")
             }
           />
 
@@ -1328,11 +1433,10 @@ function SecurityTab({
             description="Receive alerts about important login activity."
             checked={security.loginAlerts}
             onChange={() =>
-              updateSecurity(
-                "loginAlerts"
-              )
+              updateSecurity("loginAlerts")
             }
           />
+
         </div>
       </Panel>
     </div>
@@ -1347,71 +1451,82 @@ function AppearanceTab({
   appearance,
   setAppearance,
 }: {
-  appearance: Appearance;
-  setAppearance: (
-    value: Appearance
-  ) => void;
+  appearance: Theme;
+  setAppearance: (value: Theme) => void;
 }) {
   const options: {
-    id: Appearance;
+    id: Theme;
     title: string;
-    text: string;
+    description: string;
     icon: React.ElementType;
   }[] = [
     {
       id: "light",
       title: "Light",
-      text: "Clean and bright PrimeCart experience.",
+      description:
+        "Clean white and gold PrimeCart experience.",
       icon: Sun,
     },
     {
       id: "dark",
       title: "Dark",
-      text: "A darker experience for low-light environments.",
+      description:
+        "Premium dark PrimeCart experience.",
       icon: Moon,
     },
     {
       id: "system",
       title: "System",
-      text: "Follow your device appearance setting.",
+      description:
+        "Automatically follow your device theme.",
       icon: Monitor,
     },
   ];
 
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Display"
         title="Appearance"
-        description="Choose how PrimeCart should appear on your device."
+        description="Choose how PrimeCart should look across the entire application."
       />
 
       <Panel>
+
         <div className="grid gap-4 md:grid-cols-3">
+
           {options.map((option) => {
             const Icon = option.icon;
+
             const active =
               appearance === option.id;
 
             return (
               <button
                 key={option.id}
+                type="button"
                 onClick={() =>
-                  setAppearance(
-                    option.id
-                  )
+                  setAppearance(option.id)
                 }
-                className={`rounded-2xl border p-5 text-left transition ${
+                className={`relative rounded-2xl border p-5 text-left transition-all duration-200 ${
                   active
-                    ? "border-[#b9975b] bg-[#fffaf0] shadow-sm dark:border-[#b9975b] dark:bg-[#211d15]"
-                    : "border-[#eadfc9] bg-white hover:bg-[#faf8f3] dark:border-[#393126] dark:bg-[#181612] dark:hover:bg-[#211d15]"
+                    ? "border-[#b9975b] bg-[#fffaf0] shadow-md dark:border-[#b9975b] dark:bg-[#211d15]"
+                    : "border-[#eadfc9] bg-white hover:border-[#b9975b]/50 hover:bg-[#faf8f3] dark:border-[#393126] dark:bg-[#181612] dark:hover:bg-[#211d15]"
                 }`}
               >
+
+                {active && (
+                  <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-[#b9975b] text-white">
+                    <Check className="h-3.5 w-3.5" />
+                  </div>
+                )}
+
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${
                     active
                       ? "bg-[#b9975b] text-white"
-                      : "bg-[#faf8f3] dark:bg-[#211d15]"
+                      : "bg-[#faf8f3] text-[#a68145] dark:bg-[#211d15]"
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -1422,26 +1537,29 @@ function AppearanceTab({
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-                  {option.text}
+                  {option.description}
                 </p>
 
                 {active && (
                   <div className="mt-4 flex items-center gap-2 text-xs font-bold text-[#977538]">
                     <Check className="h-4 w-4" />
-                    Selected
+                    Currently selected
                   </div>
                 )}
+
               </button>
             );
           })}
+
         </div>
       </Panel>
 
       <InfoBanner
-        icon={Eye}
-        title="Theme is applied instantly"
-        text="Light, Dark and System modes are applied across PrimeCart immediately. Your selected preference is also saved to your account."
+        icon={Palette}
+        title="Theme applies across PrimeCart"
+        text="Your selected theme is applied immediately to the dashboard, products, categories, orders, wishlist, Prime Match, Budget Builder, Setup Builder, PrimePoints and Settings."
       />
+
     </div>
   );
 }
@@ -1461,6 +1579,7 @@ function NotificationsTab({
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Stay informed"
         title="Notifications"
@@ -1468,7 +1587,9 @@ function NotificationsTab({
       />
 
       <Panel>
+
         <div className="divide-y divide-[#eee5d5] dark:divide-[#332d24]">
+
           <ToggleRow
             icon={ShoppingBag}
             title="Order updates"
@@ -1483,9 +1604,7 @@ function NotificationsTab({
             icon={Sparkles}
             title="Promotions"
             description="Special offers, campaigns and exclusive deals."
-            checked={
-              settings.promotions
-            }
+            checked={settings.promotions}
             onChange={() =>
               update("promotions")
             }
@@ -1495,9 +1614,7 @@ function NotificationsTab({
             icon={RefreshCw}
             title="Price drops"
             description="Know when products you're interested in become cheaper."
-            checked={
-              settings.priceDrops
-            }
+            checked={settings.priceDrops}
             onChange={() =>
               update("priceDrops")
             }
@@ -1507,9 +1624,7 @@ function NotificationsTab({
             icon={Eye}
             title="Wishlist updates"
             description="Updates about products saved to your wishlist."
-            checked={
-              settings.wishlist
-            }
+            checked={settings.wishlist}
             onChange={() =>
               update("wishlist")
             }
@@ -1519,22 +1634,23 @@ function NotificationsTab({
             icon={Sparkles}
             title="PrimePoints"
             description="Rewards, points and redemption updates."
-            checked={
-              settings.primePoints
-            }
+            checked={settings.primePoints}
             onChange={() =>
               update("primePoints")
             }
           />
+
         </div>
       </Panel>
 
       <Panel>
+
         <h3 className="font-black">
           Delivery channels
         </h3>
 
         <div className="mt-4 divide-y divide-[#eee5d5] dark:divide-[#332d24]">
+
           <ToggleRow
             icon={Globe2}
             title="Email notifications"
@@ -1554,6 +1670,7 @@ function NotificationsTab({
               update("browser")
             }
           />
+
         </div>
       </Panel>
     </div>
@@ -1575,6 +1692,7 @@ function ShoppingTab({
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Personalized shopping"
         title="Shopping preferences"
@@ -1582,7 +1700,9 @@ function ShoppingTab({
       />
 
       <Panel>
+
         <div className="divide-y divide-[#eee5d5] dark:divide-[#332d24]">
+
           <ToggleRow
             icon={Sparkles}
             title="Smart recommendations"
@@ -1591,9 +1711,7 @@ function ShoppingTab({
               settings.recommendations
             }
             onChange={() =>
-              update(
-                "recommendations"
-              )
+              update("recommendations")
             }
           />
 
@@ -1605,9 +1723,7 @@ function ShoppingTab({
               settings.personalizedDeals
             }
             onChange={() =>
-              update(
-                "personalizedDeals"
-              )
+              update("personalizedDeals")
             }
           />
 
@@ -1619,9 +1735,7 @@ function ShoppingTab({
               settings.recentlyViewed
             }
             onChange={() =>
-              update(
-                "recentlyViewed"
-              )
+              update("recentlyViewed")
             }
           />
 
@@ -1643,11 +1757,10 @@ function ShoppingTab({
               settings.similarProducts
             }
             onChange={() =>
-              update(
-                "similarProducts"
-              )
+              update("similarProducts")
             }
           />
+
         </div>
       </Panel>
     </div>
@@ -1671,6 +1784,7 @@ function PrivacyTab({
 }) {
   return (
     <div className="space-y-6">
+
       <SectionHeading
         eyebrow="Your data"
         title="Privacy"
@@ -1678,7 +1792,9 @@ function PrivacyTab({
       />
 
       <Panel>
+
         <div className="divide-y divide-[#eee5d5] dark:divide-[#332d24]">
+
           <ToggleRow
             icon={Sparkles}
             title="Personalization"
@@ -1687,9 +1803,7 @@ function PrivacyTab({
               settings.personalization
             }
             onChange={() =>
-              update(
-                "personalization"
-              )
+              update("personalization")
             }
           />
 
@@ -1701,9 +1815,7 @@ function PrivacyTab({
               settings.activityHistory
             }
             onChange={() =>
-              update(
-                "activityHistory"
-              )
+              update("activityHistory")
             }
           />
 
@@ -1716,11 +1828,14 @@ function PrivacyTab({
               update("analytics")
             }
           />
+
         </div>
       </Panel>
 
       <Panel>
+
         <div className="flex items-start gap-4">
+
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff7e8] text-[#a68145] dark:bg-[#211d15]">
             <Lock className="h-5 w-5" />
           </div>
@@ -1731,28 +1846,33 @@ function PrivacyTab({
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-              Your profile settings are stored in your
-              Supabase account and protected with row-level
-              security policies.
+              Your profile settings are stored in
+              your Supabase account and protected
+              with row-level security policies.
             </p>
           </div>
+
         </div>
       </Panel>
 
       <div className="rounded-[24px] border border-red-200 bg-red-50 p-5 dark:border-red-900/40 dark:bg-red-950/20">
+
         <div className="flex items-start gap-4">
+
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 dark:bg-[#181612]">
             <Trash2 className="h-5 w-5" />
           </div>
 
           <div className="flex-1">
+
             <h3 className="font-black text-red-800 dark:text-red-400">
               Danger zone
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-red-700/70 dark:text-red-400/70">
-              Account deletion is a destructive action and
-              should be handled securely on the server.
+              Account deletion is a destructive
+              action and should be handled securely
+              on the server.
             </p>
 
             <button
@@ -1761,6 +1881,7 @@ function PrivacyTab({
             >
               Delete Account
             </button>
+
           </div>
         </div>
       </div>
@@ -1829,6 +1950,7 @@ function QuickCard({
       className="group rounded-[22px] border border-[#eadfc9] bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-[#393126] dark:bg-[#181612]"
     >
       <div className="flex items-start justify-between">
+
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff7e8] text-[#a68145] dark:bg-[#211d15]">
           <Icon className="h-5 w-5" />
         </div>
@@ -1860,6 +1982,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl bg-[#faf8f3] px-4 py-3 dark:bg-[#211d15]">
+
       <span className="text-sm text-neutral-500 dark:text-neutral-400">
         {label}
       </span>
@@ -1867,6 +1990,7 @@ function InfoRow({
       <span className="max-w-[65%] truncate text-right text-sm font-bold">
         {value}
       </span>
+
     </div>
   );
 }
@@ -1888,6 +2012,7 @@ function Input({
 }) {
   return (
     <label className="block">
+
       <span className="mb-2 block text-sm font-bold">
         {label}
       </span>
@@ -1895,8 +2020,8 @@ function Input({
       <input
         type={type}
         value={value}
-        onChange={(e) =>
-          onChange?.(e.target.value)
+        onChange={(event) =>
+          onChange?.(event.target.value)
         }
         placeholder={placeholder}
         disabled={disabled}
@@ -1906,6 +2031,7 @@ function Input({
             : "border-[#eadfc9] bg-white focus:border-[#b9975b] focus:ring-4 focus:ring-[#b9975b]/10 dark:border-[#393126] dark:bg-[#181612]"
         }`}
       />
+
     </label>
   );
 }
@@ -1925,12 +2051,15 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-5">
+
       <div className="flex min-w-0 items-start gap-3">
+
         <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf8f3] text-[#a68145] dark:bg-[#211d15]">
           <Icon className="h-4 w-4" />
         </div>
 
         <div className="min-w-0">
+
           <h4 className="text-sm font-bold">
             {title}
           </h4>
@@ -1938,6 +2067,7 @@ function ToggleRow({
           <p className="mt-1 max-w-xl text-xs leading-5 text-neutral-500 dark:text-neutral-400">
             {description}
           </p>
+
         </div>
       </div>
 
@@ -1958,6 +2088,7 @@ function ToggleRow({
           }`}
         />
       </button>
+
     </div>
   );
 }
@@ -1973,12 +2104,15 @@ function InfoBanner({
 }) {
   return (
     <div className="rounded-[22px] border border-[#eadfc9] bg-[#fffaf0] p-5 dark:border-[#493e2e] dark:bg-[#211d15]">
+
       <div className="flex items-start gap-4">
+
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#a68145] dark:bg-[#181612]">
           <Icon className="h-5 w-5" />
         </div>
 
         <div>
+
           <h3 className="font-black">
             {title}
           </h3>
@@ -1986,6 +2120,7 @@ function InfoBanner({
           <p className="mt-1 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
             {text}
           </p>
+
         </div>
       </div>
     </div>
