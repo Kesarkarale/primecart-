@@ -6,7 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronDown,
+  ChevronDown, 
   ChevronUp,
   Clock3,
   Heart,
