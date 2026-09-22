@@ -28,8 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
+import { motion, type Variants } from "framer-motion";
 const categories = [
   {
     name: "Mobile",
@@ -201,7 +200,7 @@ const products = [
   },
 ];
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: {
     opacity: 0,
     y: 30,
@@ -210,8 +209,8 @@ const fadeUp = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.65,
-      ease: [0.22, 1, 0.36, 1],
+      duration: 0.7,
+      ease: "easeOut",
     },
   },
 };
