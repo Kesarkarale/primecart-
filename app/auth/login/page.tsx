@@ -1,12 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
-  AlertCircle,
   ArrowRight,
-  Check,
+  AlertCircle,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -14,97 +12,12 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
-  Truck,
-  Gift,
-  RotateCcw,
+  Zap,
 } from "lucide-react";
-import { motion, Variants } from "framer-motion";
 
 import { createClient } from "@/lib/supabase/client";
-
-/* =========================================================
-   ANIMATION VARIANTS
-========================================================= */
-
-const pageContainer: Variants = {
-  hidden: {
-    opacity: 0,
-  },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.45,
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const fadeUp: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 24,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.65,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-const fadeLeft: Variants = {
-  hidden: {
-    opacity: 0,
-    x: -35,
-  },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.7,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-const cardAnimation: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 35,
-    scale: 0.97,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.7,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-const itemAnimation: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 14,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.45,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-/* =========================================================
-   LOGIN PAGE
-========================================================= */
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -117,86 +30,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [shake, setShake] = useState(false);
-
-  /* =======================================================
-     LOAD SAVED EMAIL
-  ======================================================= */
-
-  useEffect(() => {
-    try {
-      const savedEmail = localStorage.getItem(
-        "primecart_remembered_email"
-      );
-
-      if (savedEmail) {
-        setEmail(savedEmail);
-        setRememberMe(true);
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
-
-  /* =======================================================
-     CLEAR MESSAGE
-  ======================================================= */
-
-  function clearMessages() {
-    setError("");
-    setSuccess("");
-  }
-
-  /* =======================================================
-     TRIGGER ERROR SHAKE
-  ======================================================= */
-
-  function showError(message: string) {
-    setError(message);
-    setSuccess("");
-    setShake(false);
-
-    requestAnimationFrame(() => {
-      setShake(true);
-    });
-  }
-
-  /* =======================================================
-     LOGIN
-  ======================================================= */
-
-  async function handleLogin(
-    e: FormEvent<HTMLFormElement>
-  ) {
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    clearMessages();
+    setError("");
+    setSuccess("");
 
     const cleanEmail = email.trim().toLowerCase();
 
-    /* Email validation */
-
     if (!cleanEmail) {
-      showError("Please enter your email address.");
+      setError("Please enter your email address.");
       return;
     }
-
-    if (!cleanEmail.includes("@")) {
-      showError("Please enter a valid email address.");
-      return;
-    }
-
-    /* Password validation */
 
     if (!password) {
-      showError("Please enter your password.");
-      return;
-    }
-
-    if (password.length < 6) {
-      showError(
-        "Password must contain at least 6 characters."
-      );
+      setError("Please enter your password.");
       return;
     }
 
@@ -212,67 +60,39 @@ export default function LoginPage() {
         });
 
       if (loginError) {
-        const message =
-          loginError.message.toLowerCase();
+        const message = loginError.message.toLowerCase();
 
         if (
           message.includes("email not confirmed") ||
           message.includes("email not verified") ||
           message.includes("confirm")
         ) {
-          showError(
-            "Please verify your email before logging in."
-          );
-        } else if (
-          message.includes("invalid login credentials")
-        ) {
-          showError("Invalid email or password.");
+          setError("Please verify your email before logging in.");
+        } else if (message.includes("invalid login credentials")) {
+          setError("Invalid email or password.");
         } else {
-          showError(loginError.message);
+          setError(loginError.message);
         }
 
         return;
       }
 
       if (!data.session) {
-        showError(
+        setError(
           "Unable to create a login session. Please try again."
         );
         return;
       }
 
-      /* Remember email */
-
-      try {
-        if (rememberMe) {
-          localStorage.setItem(
-            "primecart_remembered_email",
-            cleanEmail
-          );
-        } else {
-          localStorage.removeItem(
-            "primecart_remembered_email"
-          );
-        }
-      } catch {
-        // Ignore localStorage errors
-      }
-
-      setSuccess(
-        "Login successful! Taking you to your dashboard..."
-      );
-
-      /*
-       * Small delay so user can see success animation.
-       */
+      setSuccess("Login successful! Redirecting...");
 
       setTimeout(() => {
         window.location.href = "/dashboard";
-      }, 900);
+      }, 700);
     } catch (err) {
       console.error("Login error:", err);
 
-      showError(
+      setError(
         "Something went wrong while logging in. Please try again."
       );
     } finally {
@@ -282,450 +102,253 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      {/* ===================================================
-          BACKGROUND
-      =================================================== */}
+      {/* Decorative background */}
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <div className="ambient ambient-three" />
 
-      <div className="background-grid" />
+      <div className="floating-shape shape-one" />
+      <div className="floating-shape shape-two" />
+      <div className="floating-shape shape-three" />
 
-      <motion.div
-        className="background-orb orb-one"
-        animate={{
-          x: [0, 25, 0],
-          y: [0, -20, 0],
-          scale: [1, 1.08, 1],
-        }}
-        transition={{
-          duration: 9,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-
-      <motion.div
-        className="background-orb orb-two"
-        animate={{
-          x: [0, -25, 0],
-          y: [0, 20, 0],
-          scale: [1, 1.06, 1],
-        }}
-        transition={{
-          duration: 11,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-
-      <div className="gold-line line-one" />
-      <div className="gold-line line-two" />
-
-      {/* ===================================================
-          MAIN WRAPPER
-      =================================================== */}
-
-      <motion.div
-        className="login-wrapper"
-        variants={pageContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* =================================================
+      <div className="login-container">
+        {/* =====================================================
             LEFT SHOWCASE
-        ================================================= */}
+        ====================================================== */}
 
-        <motion.section
-          className="login-showcase"
-          variants={fadeLeft}
-        >
-          {/* BRAND */}
+        <section className="showcase">
+          <Link href="/" className="brand">
+            <div className="brand-logo">
+              <ShoppingBag size={21} strokeWidth={2.4} />
+            </div>
 
-          <motion.div
-            className="showcase-brand"
-            variants={itemAnimation}
-          >
-            <Link href="/" className="brand">
-              <div className="brand-logo">
-                <Image
-                  src="/logo.png"
-                  alt="PrimeCart"
-                  width={52}
-                  height={52}
-                  priority
-                />
-              </div>
+            <span className="brand-name">
+              Prime<span>Cart</span>
+            </span>
+          </Link>
 
-              <div className="brand-name">
-                Prime<span>Cart</span>
-              </div>
-            </Link>
-          </motion.div>
-
-          {/* SHOWCASE CONTENT */}
-
-          <div className="showcase-content">
-            <motion.div
-              className="mini-badge"
-              variants={itemAnimation}
-            >
+          <div className="showcase-main">
+            <div className="premium-badge">
               <span className="badge-icon">
-                <Sparkles size={14} />
+                <Sparkles size={13} />
               </span>
 
               <span>Smart shopping starts here</span>
 
               <span className="live-dot" />
-            </motion.div>
+            </div>
 
-            <motion.h1 variants={itemAnimation}>
+            <h1>
               Shop smarter.
               <br />
               <span>Live better.</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p variants={itemAnimation}>
-              Discover products you love, enjoy better
-              deals, and experience a smarter way to shop
-              with PrimeCart.
-            </motion.p>
+            <p className="showcase-description">
+              Discover products you'll love, explore smarter deals,
+              and enjoy a seamless shopping experience designed
+              around you.
+            </p>
 
-            {/* BENEFITS */}
-
-            <motion.div
-              className="benefits"
-              variants={pageContainer}
-            >
-              <motion.div
-                className="benefit"
-                variants={itemAnimation}
-                whileHover={{
-                  x: 5,
-                }}
-              >
-                <div className="benefit-icon">
-                  <Truck size={18} />
+            <div className="feature-list">
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <Zap size={18} />
                 </div>
 
-                <div className="benefit-content">
-                  <strong>Fast & easy delivery</strong>
+                <div>
+                  <strong>Smart shopping</strong>
                   <span>
-                    Get your favourite products delivered
-                    to your doorstep.
+                    Discover products that fit your lifestyle.
                   </span>
                 </div>
-              </motion.div>
-
-              <motion.div
-                className="benefit"
-                variants={itemAnimation}
-                whileHover={{
-                  x: 5,
-                }}
-              >
-                <div className="benefit-icon">
-                  <Gift size={18} />
-                </div>
-
-                <div className="benefit-content">
-                  <strong>Smart deals & rewards</strong>
-                  <span>
-                    Discover great offers and earn
-                    PrimePoints while shopping.
-                  </span>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="benefit"
-                variants={itemAnimation}
-                whileHover={{
-                  x: 5,
-                }}
-              >
-                <div className="benefit-icon">
-                  <RotateCcw size={18} />
-                </div>
-
-                <div className="benefit-content">
-                  <strong>Easy returns</strong>
-                  <span>
-                    Shop confidently with a simple return
-                    experience.
-                  </span>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-
-          {/* SHOWCASE FOOTER */}
-
-          <motion.div
-            className="showcase-footer"
-            variants={itemAnimation}
-          >
-            <span>© 2026 PrimeCart</span>
-
-            <span className="footer-separator">
-              •
-            </span>
-
-            <span>Smart shopping platform</span>
-
-            <span className="footer-separator">
-              •
-            </span>
-
-            <span>Secure & trusted</span>
-          </motion.div>
-        </motion.section>
-
-        {/* =================================================
-            RIGHT LOGIN SECTION
-        ================================================= */}
-
-        <motion.section
-          className="login-section"
-          variants={cardAnimation}
-        >
-          <motion.div
-            className="login-card"
-            animate={
-              shake
-                ? {
-                    x: [0, -7, 7, -5, 5, 0],
-                  }
-                : {
-                    x: 0,
-                  }
-            }
-            transition={{
-              duration: 0.4,
-            }}
-          >
-            {/* CARD TOP DECORATION */}
-
-            <div className="card-top-glow" />
-
-            {/* MOBILE BRAND */}
-
-            <motion.div
-              className="mobile-brand"
-              variants={itemAnimation}
-            >
-              <Link href="/" className="brand">
-                <div className="brand-logo">
-                  <Image
-                    src="/logo.png"
-                    alt="PrimeCart"
-                    width={48}
-                    height={48}
-                    priority
-                  />
-                </div>
-
-                <div className="brand-name">
-                  Prime<span>Cart</span>
-                </div>
-              </Link>
-            </motion.div>
-
-            {/* HEADER */}
-
-            <motion.div
-              className="card-header"
-              variants={itemAnimation}
-            >
-              <motion.div
-                className="welcome-icon"
-                whileHover={{
-                  rotate: -5,
-                  scale: 1.05,
-                }}
-              >
-                <LockKeyhole size={22} />
-              </motion.div>
-
-              <div className="welcome-label">
-                <span>WELCOME BACK</span>
               </div>
 
-              <h2>Sign in to PrimeCart</h2>
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <ShoppingBag size={18} />
+                </div>
 
-              <p>
-                Continue your shopping journey and access
-                your personalized dashboard.
-              </p>
-            </motion.div>
+                <div>
+                  <strong>Curated products</strong>
+                  <span>
+                    Quality products across your favorite categories.
+                  </span>
+                </div>
+              </div>
 
-            {/* MESSAGE */}
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <ShieldCheck size={18} />
+                </div>
 
+                <div>
+                  <strong>Secure experience</strong>
+                  <span>
+                    Your account and shopping experience stay protected.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mini-stats">
+              <div>
+                <strong>10K+</strong>
+                <span>Products</span>
+              </div>
+
+              <div className="stat-divider" />
+
+              <div>
+                <strong>50+</strong>
+                <span>Categories</span>
+              </div>
+
+              <div className="stat-divider" />
+
+              <div>
+                <strong>24/7</strong>
+                <span>Support</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="showcase-footer">
+            <span>© 2026 PrimeCart</span>
+
+            <span className="footer-status">
+              <span className="status-dot" />
+              Shopping platform
+            </span>
+          </div>
+        </section>
+
+        {/* =====================================================
+            RIGHT LOGIN
+        ====================================================== */}
+
+        <section className="login-area">
+          <div className="login-card">
+            {/* Mobile brand */}
+            <div className="mobile-brand">
+              <Link href="/" className="brand">
+                <div className="brand-logo">
+                  <ShoppingBag size={20} />
+                </div>
+
+                <span className="brand-name">
+                  Prime<span>Cart</span>
+                </span>
+              </Link>
+            </div>
+
+            {/* Card top */}
+            <div className="card-top">
+              <div className="login-icon-wrapper">
+                <div className="login-icon">
+                  <LockKeyhole size={22} />
+                </div>
+
+                <span className="icon-glow" />
+              </div>
+
+              <div>
+                <div className="welcome-label">
+                  <span>WELCOME BACK</span>
+                  <Sparkles size={12} />
+                </div>
+
+                <h2>Sign in to PrimeCart</h2>
+
+                <p>
+                  Access your account and continue your shopping
+                  journey.
+                </p>
+              </div>
+            </div>
+
+            {/* Messages */}
             {error && (
-              <motion.div
-                className="message error-message"
-                initial={{
-                  opacity: 0,
-                  height: 0,
-                  y: -8,
-                }}
-                animate={{
-                  opacity: 1,
-                  height: "auto",
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                }}
-              >
+              <div className="message error-message">
                 <div className="message-icon">
                   <AlertCircle size={17} />
                 </div>
 
                 <span>{error}</span>
-              </motion.div>
+              </div>
             )}
 
             {success && (
-              <motion.div
-                className="message success-message"
-                initial={{
-                  opacity: 0,
-                  height: 0,
-                  y: -8,
-                }}
-                animate={{
-                  opacity: 1,
-                  height: "auto",
-                  y: 0,
-                }}
-              >
-                <motion.div
-                  className="message-icon"
-                  initial={{
-                    scale: 0,
-                  }}
-                  animate={{
-                    scale: 1,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 18,
-                  }}
-                >
+              <div className="message success-message">
+                <div className="message-icon">
                   <CheckCircle2 size={17} />
-                </motion.div>
+                </div>
 
                 <span>{success}</span>
-              </motion.div>
+              </div>
             )}
 
-            {/* FORM */}
-
-            <motion.form
-              onSubmit={handleLogin}
-              className="login-form"
-              variants={pageContainer}
-              initial="hidden"
-              animate="visible"
-            >
-              {/* EMAIL */}
-
-              <motion.div
-                className="field"
-                variants={itemAnimation}
-              >
-                <label htmlFor="email">
-                  Email address
-                </label>
+            {/* Form */}
+            <form onSubmit={handleLogin} className="login-form">
+              {/* Email */}
+              <div className="field">
+                <label htmlFor="email">Email address</label>
 
                 <div className="input-wrapper">
-                  <Mail
-                    className="input-icon"
-                    size={18}
-                  />
+                  <div className="input-leading">
+                    <Mail size={18} />
+                  </div>
 
                   <input
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (error) setError("");
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
                     disabled={loading}
                     required
                   />
 
-                  {email.length > 0 &&
-                    email.includes("@") && (
-                      <motion.div
-                        className="valid-icon"
-                        initial={{
-                          opacity: 0,
-                          scale: 0.5,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          scale: 1,
-                        }}
-                      >
-                        <Check size={15} />
-                      </motion.div>
-                    )}
+                  {email && (
+                    <div className="input-check">
+                      <CheckCircle2 size={16} />
+                    </div>
+                  )}
                 </div>
-              </motion.div>
+              </div>
 
-              {/* PASSWORD */}
+              {/* Password */}
+              <div className="field">
+                <div className="password-label-row">
+                  <label htmlFor="password">Password</label>
 
-              <motion.div
-                className="field"
-                variants={itemAnimation}
-              >
-                <div className="password-header">
-                  <label htmlFor="password">
-                    Password
-                  </label>
-
-                  <Link
-                    href="/auth/forgot-password"
-                    className="forgot-link"
-                  >
+                  <Link href="/auth/forgot-password">
                     Forgot password?
                   </Link>
                 </div>
 
                 <div className="input-wrapper">
-                  <LockKeyhole
-                    className="input-icon"
-                    size={18}
-                  />
+                  <div className="input-leading">
+                    <LockKeyhole size={18} />
+                  </div>
 
                   <input
                     id="password"
-                    type={
-                      showPassword
-                        ? "text"
-                        : "password"
-                    }
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (error) setError("");
-                    }}
+                    onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
                     disabled={loading}
                     required
                   />
 
-                  <motion.button
+                  <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(
-                        (value) => !value
-                      )
+                      setShowPassword((value) => !value)
                     }
                     disabled={loading}
                     aria-label={
@@ -733,182 +356,103 @@ export default function LoginPage() {
                         ? "Hide password"
                         : "Show password"
                     }
-                    whileHover={{
-                      scale: 1.08,
-                    }}
-                    whileTap={{
-                      scale: 0.92,
-                    }}
                   >
                     {showPassword ? (
                       <EyeOff size={18} />
                     ) : (
                       <Eye size={18} />
                     )}
-                  </motion.button>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* REMEMBER */}
-
-              <motion.label
-                className="remember"
-                variants={itemAnimation}
-              >
+              {/* Remember */}
+              <label className="remember">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) =>
-                    setRememberMe(
-                      e.target.checked
-                    )
+                    setRememberMe(e.target.checked)
                   }
                   disabled={loading}
                 />
 
-                <motion.span
-                  className="custom-checkbox"
-                  animate={{
-                    scale: rememberMe ? 1 : 0.96,
-                  }}
-                >
-                  {rememberMe && (
-                    <motion.span
-                      initial={{
-                        opacity: 0,
-                        scale: 0.4,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                    >
-                      <Check size={12} />
-                    </motion.span>
-                  )}
-                </motion.span>
+                <span className="checkbox">
+                  {rememberMe && <CheckCircle2 size={12} />}
+                </span>
 
                 <span>Remember me</span>
-              </motion.label>
+              </label>
 
-              {/* SIGN IN BUTTON */}
-
-              <motion.button
+              {/* Login button */}
+              <button
                 type="submit"
-                className="primary-button"
+                className="login-button"
                 disabled={loading}
-                variants={itemAnimation}
-                whileHover={
-                  !loading
-                    ? {
-                        y: -2,
-                        scale: 1.005,
-                      }
-                    : undefined
-                }
-                whileTap={
-                  !loading
-                    ? {
-                        scale: 0.985,
-                      }
-                    : undefined
-                }
               >
                 <span className="button-shine" />
 
                 {loading ? (
                   <>
-                    <Loader2
-                      size={19}
-                      className="spin"
-                    />
-
-                    <span>Signing in...</span>
+                    <Loader2 size={19} className="spin" />
+                    <span>Signing you in...</span>
                   </>
                 ) : (
                   <>
                     <span>Sign in to PrimeCart</span>
-
-                    <motion.span
-                      className="button-arrow"
-                      whileHover={{
-                        x: 4,
-                      }}
-                    >
-                      <ArrowRight size={18} />
-                    </motion.span>
+                    <ArrowRight size={19} />
                   </>
                 )}
-              </motion.button>
-            </motion.form>
+              </button>
+            </form>
 
-            {/* DIVIDER */}
-
-            <motion.div
-              className="divider"
-              variants={itemAnimation}
-              initial="hidden"
-              animate="visible"
-            >
+            {/* Divider */}
+            <div className="divider">
               <span>New to PrimeCart?</span>
-            </motion.div>
+            </div>
 
-            {/* CREATE ACCOUNT */}
+            {/* Register */}
+            <Link href="/auth/register" className="create-account">
+              <span>Create your account</span>
 
-            <motion.div
-              className="account-link"
-              variants={itemAnimation}
-              initial="hidden"
-              animate="visible"
-            >
-              <span>Don't have an account?</span>
+              <ArrowRight size={17} />
+            </Link>
 
-              <Link href="/auth/register">
-                Create account
-                <ArrowRight size={14} />
-              </Link>
-            </motion.div>
-
-            {/* SECURITY */}
-
-            <motion.div
-              className="security-note"
-              variants={itemAnimation}
-              initial="hidden"
-              animate="visible"
-            >
+            {/* Security */}
+            <div className="security-card">
               <div className="security-icon">
                 <ShieldCheck size={15} />
               </div>
 
               <div>
                 <strong>Secure sign in</strong>
-
                 <span>
-                  Your account information is encrypted
-                  and protected.
+                  Your account information is protected with secure
+                  authentication.
                 </span>
               </div>
-            </motion.div>
-          </motion.div>
-        </motion.section>
-      </motion.div>
+            </div>
 
-      {/* ===================================================
-          GLOBAL STYLES
-      =================================================== */}
+            <div className="legal-text">
+              By continuing, you agree to PrimeCart&apos;s{" "}
+              <span>Terms</span> and <span>Privacy Policy</span>.
+            </div>
+          </div>
+        </section>
+      </div>
 
       <style jsx global>{`
         * {
           box-sizing: border-box;
         }
 
-        html {
-          scroll-behavior: smooth;
+        html,
+        body {
+          margin: 0;
+          padding: 0;
         }
 
         body {
-          margin: 0;
           background: #faf8f3;
         }
 
@@ -917,9 +461,9 @@ export default function LoginPage() {
           font: inherit;
         }
 
-        /* =================================================
+        /* =====================================================
            PAGE
-        ================================================= */
+        ====================================================== */
 
         .login-page {
           min-height: 100vh;
@@ -927,17 +471,17 @@ export default function LoginPage() {
           overflow: hidden;
           background:
             radial-gradient(
-              circle at 78% 18%,
-              rgba(214, 167, 54, 0.08),
+              circle at 8% 15%,
+              rgba(211, 169, 66, 0.1),
               transparent 28%
             ),
             radial-gradient(
-              circle at 8% 90%,
-              rgba(214, 167, 54, 0.055),
-              transparent 30%
+              circle at 90% 85%,
+              rgba(211, 169, 66, 0.08),
+              transparent 28%
             ),
             #faf8f3;
-          color: #191713;
+          color: #1c1a16;
           font-family:
             Inter,
             ui-sans-serif,
@@ -948,474 +492,522 @@ export default function LoginPage() {
             sans-serif;
         }
 
-        /* =================================================
-           BACKGROUND
-        ================================================= */
+        /* =====================================================
+           AMBIENT
+        ====================================================== */
 
-        .background-grid {
-          position: absolute;
-          inset: 0;
+        .ambient {
+          position: fixed;
+          border-radius: 50%;
           pointer-events: none;
-          opacity: 0.35;
-          background-image:
-            linear-gradient(
-              rgba(190, 150, 55, 0.045) 1px,
-              transparent 1px
-            ),
-            linear-gradient(
-              90deg,
-              rgba(190, 150, 55, 0.045) 1px,
-              transparent 1px
-            );
-          background-size: 55px 55px;
-          mask-image: linear-gradient(
-            to bottom,
-            black,
-            transparent 85%
-          );
-        }
-
-        .background-orb {
-          position: absolute;
-          width: 390px;
-          height: 390px;
-          border-radius: 999px;
           filter: blur(90px);
+          animation: ambientFloat 8s ease-in-out infinite;
+        }
+
+        .ambient-one {
+          width: 360px;
+          height: 360px;
+          top: -190px;
+          right: -100px;
+          background: rgba(214, 167, 54, 0.16);
+        }
+
+        .ambient-two {
+          width: 300px;
+          height: 300px;
+          bottom: -180px;
+          left: -100px;
+          background: rgba(214, 167, 54, 0.12);
+          animation-delay: -3s;
+        }
+
+        .ambient-three {
+          width: 180px;
+          height: 180px;
+          top: 45%;
+          left: 45%;
+          background: rgba(244, 207, 115, 0.07);
+          animation-delay: -5s;
+        }
+
+        @keyframes ambientFloat {
+          0%,
+          100% {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+
+          50% {
+            transform: translate3d(0, -18px, 0) scale(1.05);
+          }
+        }
+
+        .floating-shape {
+          position: fixed;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #d4a638;
+          opacity: 0.25;
           pointer-events: none;
-          opacity: 0.34;
+          animation: particleFloat 7s ease-in-out infinite;
         }
 
-        .orb-one {
-          top: -210px;
-          right: -90px;
-          background: rgba(218, 173, 64, 0.22);
-        }
-
-        .orb-two {
-          bottom: -230px;
-          left: -110px;
-          background: rgba(216, 169, 55, 0.15);
-        }
-
-        .gold-line {
-          position: absolute;
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(198, 150, 36, 0.2),
-            transparent
-          );
-          pointer-events: none;
-        }
-
-        .line-one {
+        .shape-one {
           top: 18%;
-          left: 0;
-          right: 0;
+          left: 7%;
         }
 
-        .line-two {
-          bottom: 15%;
-          left: 0;
-          right: 0;
+        .shape-two {
+          top: 72%;
+          left: 48%;
+          width: 5px;
+          height: 5px;
+          animation-delay: -2s;
         }
 
-        /* =================================================
-           WRAPPER
-        ================================================= */
+        .shape-three {
+          top: 30%;
+          right: 8%;
+          width: 6px;
+          height: 6px;
+          animation-delay: -4s;
+        }
 
-        .login-wrapper {
+        @keyframes particleFloat {
+          0%,
+          100% {
+            transform: translateY(0);
+            opacity: 0.2;
+          }
+
+          50% {
+            transform: translateY(-25px);
+            opacity: 0.5;
+          }
+        }
+
+        /* =====================================================
+           CONTAINER
+        ====================================================== */
+
+        .login-container {
           position: relative;
           z-index: 2;
-          width: min(1240px, calc(100% - 56px));
+          width: min(1220px, calc(100% - 48px));
           min-height: 100vh;
           margin: auto;
-          padding: 34px 0;
+          padding: 30px 0;
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(
-              390px,
-              0.82fr
-            );
-          gap: 85px;
+          grid-template-columns: minmax(0, 1fr) minmax(430px, 500px);
+          gap: 80px;
           align-items: center;
         }
 
-        /* =================================================
+        /* =====================================================
            BRAND
-        ================================================= */
+        ====================================================== */
 
         .brand {
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          color: #171512;
-          text-decoration: none;
-        }
-
-        .brand-logo {
-          width: 48px;
-          height: 48px;
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-          border-radius: 14px;
-          background: #ffffff;
-          border: 1px solid #eadfca;
-          box-shadow:
-            0 10px 30px rgba(82, 61, 19, 0.1);
-        }
-
-        .brand-logo img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          padding: 5px;
-        }
-
-        .brand-name {
-          font-size: 25px;
-          line-height: 1;
-          font-weight: 850;
-          letter-spacing: -1px;
-        }
-
-        .brand-name span {
-          color: #c69624;
-        }
-
-        /* =================================================
-           SHOWCASE
-        ================================================= */
-
-        .login-showcase {
-          min-height: 680px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 20px 5px;
-        }
-
-        .showcase-content {
-          max-width: 600px;
-        }
-
-        .mini-badge {
           width: fit-content;
           display: inline-flex;
           align-items: center;
-          gap: 9px;
-          padding: 9px 13px;
-          border-radius: 999px;
-          border: 1px solid rgba(
-            198,
-            150,
-            36,
-            0.2
+          gap: 11px;
+          text-decoration: none;
+          color: #1b1915;
+          transition: transform 0.25s ease;
+        }
+
+        .brand:hover {
+          transform: translateY(-2px);
+        }
+
+        .brand-logo {
+          width: 43px;
+          height: 43px;
+          display: grid;
+          place-items: center;
+          border-radius: 14px;
+          color: #fff;
+          background: linear-gradient(
+            145deg,
+            #e3bd65,
+            #c49325
           );
-          background: rgba(255, 255, 255, 0.68);
           box-shadow:
-            0 8px 25px rgba(81, 62, 24, 0.04);
-          color: #795b16;
+            0 10px 25px rgba(194, 145, 34, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .brand-name {
+          font-size: 24px;
+          font-weight: 850;
+          letter-spacing: -0.8px;
+        }
+
+        .brand-name span {
+          color: #c39326;
+        }
+
+        /* =====================================================
+           SHOWCASE
+        ====================================================== */
+
+        .showcase {
+          min-height: 700px;
+          padding: 22px 8px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          animation: showcaseIn 0.8s ease both;
+        }
+
+        @keyframes showcaseIn {
+          from {
+            opacity: 0;
+            transform: translateX(-24px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .showcase-main {
+          max-width: 610px;
+        }
+
+        .premium-badge {
+          width: fit-content;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 13px 8px 8px;
+          border: 1px solid rgba(198, 150, 36, 0.2);
+          background: rgba(255, 255, 255, 0.72);
+          border-radius: 999px;
+          color: #765914;
           font-size: 12px;
           font-weight: 750;
-          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 25px rgba(87, 66, 24, 0.04);
         }
 
         .badge-icon {
-          width: 24px;
-          height: 24px;
+          width: 25px;
+          height: 25px;
           display: grid;
           place-items: center;
           border-radius: 50%;
-          background: #f4e6c2;
-          color: #a47718;
+          background: #f3e3b9;
+          color: #a2781e;
         }
 
         .live-dot {
           width: 6px;
           height: 6px;
+          margin-left: 2px;
           border-radius: 50%;
-          background: #c69624;
-          box-shadow:
-            0 0 0 4px rgba(198, 150, 36, 0.1);
+          background: #72a05f;
+          box-shadow: 0 0 0 4px rgba(114, 160, 95, 0.1);
         }
 
-        .showcase-content h1 {
+        .showcase h1 {
           margin: 26px 0 0;
-          font-size: clamp(
-            48px,
-            5.6vw,
-            76px
-          );
+          font-size: clamp(52px, 6vw, 78px);
           line-height: 0.96;
           letter-spacing: -5px;
           font-weight: 900;
-          color: #191713;
+          color: #171511;
         }
 
-        .showcase-content h1 span {
-          color: #c69624;
+        .showcase h1 span {
+          color: #c39428;
         }
 
-        .showcase-content > p {
-          max-width: 550px;
-          margin: 28px 0 38px;
-          color: #746e63;
+        .showcase-description {
+          max-width: 535px;
+          margin: 28px 0 36px;
+          color: #716b61;
           font-size: 16px;
           line-height: 1.75;
         }
 
-        /* =================================================
-           BENEFITS
-        ================================================= */
+        /* =====================================================
+           FEATURES
+        ====================================================== */
 
-        .benefits {
+        .feature-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 15px;
         }
 
-        .benefit {
+        .feature-item {
+          width: fit-content;
           display: flex;
           align-items: center;
-          gap: 14px;
-          width: fit-content;
-          padding: 5px 12px 5px 5px;
-          border-radius: 16px;
-          transition:
-            background 0.2s ease,
-            box-shadow 0.2s ease;
+          gap: 13px;
+          padding: 5px 10px 5px 5px;
+          border-radius: 15px;
+          transition: 0.25s ease;
         }
 
-        .benefit:hover {
+        .feature-item:hover {
           background: rgba(255, 255, 255, 0.65);
-          box-shadow:
-            0 10px 30px rgba(70, 53, 21, 0.05);
+          transform: translateX(4px);
         }
 
-        .benefit-icon {
-          width: 42px;
-          height: 42px;
+        .feature-icon {
+          width: 39px;
+          height: 39px;
           flex-shrink: 0;
           display: grid;
           place-items: center;
-          border-radius: 13px;
-          background: linear-gradient(
-            145deg,
-            #f8edcf,
-            #f0ddb0
-          );
-          color: #966d15;
-          border: 1px solid #ead6a6;
+          border-radius: 12px;
+          color: #96701d;
+          background: #f2e3ba;
         }
 
-        .benefit-content strong {
+        .feature-item strong {
           display: block;
-          margin-bottom: 3px;
-          color: #28241d;
+          margin-bottom: 2px;
+          color: #29261f;
           font-size: 13px;
           font-weight: 800;
         }
 
-        .benefit-content span {
+        .feature-item span {
           display: block;
-          color: #898276;
+          color: #8b8478;
           font-size: 12px;
-          line-height: 1.5;
         }
 
-        .showcase-footer {
+        /* =====================================================
+           STATS
+        ====================================================== */
+
+        .mini-stats {
           display: flex;
           align-items: center;
-          gap: 10px;
-          color: #9c958a;
+          gap: 23px;
+          margin-top: 38px;
+        }
+
+        .mini-stats strong {
+          display: block;
+          color: #28241d;
+          font-size: 19px;
+          letter-spacing: -0.5px;
+        }
+
+        .mini-stats span {
+          display: block;
+          margin-top: 2px;
+          color: #999184;
           font-size: 11px;
         }
 
-        .footer-separator {
-          color: #d2c5a7;
+        .stat-divider {
+          width: 1px;
+          height: 28px;
+          background: #e2ddd3;
         }
 
-        /* =================================================
-           LOGIN SECTION
-        ================================================= */
+        .showcase-footer {
+          max-width: 610px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          color: #aaa398;
+          font-size: 11px;
+        }
 
-        .login-section {
+        .footer-status {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #78a264;
+        }
+
+        /* =====================================================
+           LOGIN AREA
+        ====================================================== */
+
+        .login-area {
           display: flex;
           justify-content: center;
-          align-items: center;
+          animation: cardIn 0.8s 0.1s ease both;
         }
 
-        /* =================================================
-           CARD
-        ================================================= */
+        @keyframes cardIn {
+          from {
+            opacity: 0;
+            transform: translateY(25px) scale(0.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
 
         .login-card {
-          position: relative;
-          width: min(475px, 100%);
-          padding: 42px;
-          overflow: hidden;
+          width: 100%;
+          padding: 40px;
+          border: 1px solid rgba(224, 217, 203, 0.95);
           border-radius: 30px;
-          border: 1px solid rgba(
-            221,
-            211,
-            191,
-            0.95
-          );
-          background: rgba(
-            255,
-            255,
-            255,
-            0.94
-          );
+          background: rgba(255, 255, 255, 0.91);
           box-shadow:
-            0 35px 90px rgba(64, 48, 20, 0.1),
-            0 8px 25px rgba(64, 48, 20, 0.04);
-          backdrop-filter: blur(20px);
-        }
-
-        .login-card::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 8%;
-          right: 8%;
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(198, 150, 36, 0.6),
-            transparent
-          );
-        }
-
-        .card-top-glow {
-          position: absolute;
-          width: 170px;
-          height: 170px;
-          right: -100px;
-          top: -100px;
-          border-radius: 50%;
-          background: rgba(214, 167, 54, 0.13);
-          filter: blur(30px);
-          pointer-events: none;
+            0 30px 80px rgba(63, 51, 25, 0.1),
+            0 8px 25px rgba(63, 51, 25, 0.045);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
         }
 
         .mobile-brand {
           display: none;
         }
 
-        /* =================================================
-           HEADER
-        ================================================= */
+        /* =====================================================
+           CARD HEADER
+        ====================================================== */
 
-        .card-header {
-          position: relative;
-          z-index: 1;
-          margin-bottom: 27px;
+        .card-top {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+          margin-bottom: 28px;
         }
 
-        .welcome-icon {
-          width: 48px;
-          height: 48px;
+        .login-icon-wrapper {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .login-icon {
+          position: relative;
+          z-index: 1;
+          width: 50px;
+          height: 50px;
           display: grid;
           place-items: center;
-          margin-bottom: 16px;
-          border-radius: 15px;
+          border-radius: 16px;
+          color: #9a731e;
           background: linear-gradient(
             145deg,
-            #f9efd8,
-            #f1dfb6
+            #fbf1d7,
+            #f1dfb1
           );
-          color: #9b731b;
-          border: 1px solid #ead8ad;
           box-shadow:
-            0 8px 20px rgba(
-              174,
-              127,
-              29,
-              0.08
-            );
+            inset 0 1px 0 rgba(255, 255, 255, 0.8),
+            0 8px 18px rgba(176, 132, 35, 0.1);
+        }
+
+        .icon-glow {
+          position: absolute;
+          width: 35px;
+          height: 35px;
+          top: 8px;
+          left: 8px;
+          border-radius: 50%;
+          background: rgba(218, 172, 62, 0.35);
+          filter: blur(15px);
+          animation: iconPulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+          0%,
+          100% {
+            opacity: 0.4;
+            transform: scale(0.8);
+          }
+
+          50% {
+            opacity: 0.8;
+            transform: scale(1.15);
+          }
         }
 
         .welcome-label {
-          margin-bottom: 7px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin: 1px 0 5px;
+          color: #b08a32;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 1.3px;
         }
 
-        .welcome-label span {
-          color: #a27a24;
-          font-size: 10px;
-          letter-spacing: 1.5px;
-          font-weight: 850;
-        }
-
-        .card-header h2 {
+        .card-top h2 {
           margin: 0;
-          color: #1d1a15;
-          font-size: 30px;
+          color: #201e19;
+          font-size: 27px;
           line-height: 1.15;
-          letter-spacing: -1.2px;
-          font-weight: 850;
+          letter-spacing: -1px;
         }
 
-        .card-header p {
-          max-width: 380px;
-          margin: 9px 0 0;
-          color: #827b70;
-          font-size: 13px;
-          line-height: 1.65;
+        .card-top p {
+          margin: 7px 0 0;
+          color: #858075;
+          font-size: 12px;
+          line-height: 1.55;
         }
 
-        /* =================================================
+        /* =====================================================
            MESSAGES
-        ================================================= */
+        ====================================================== */
 
         .message {
-          position: relative;
-          z-index: 2;
           display: flex;
           align-items: flex-start;
           gap: 10px;
           padding: 12px 13px;
-          margin-bottom: 18px;
+          margin-bottom: 17px;
           border-radius: 13px;
           font-size: 12px;
-          line-height: 1.5;
+          line-height: 1.45;
+          animation: messageIn 0.3s ease both;
+        }
+
+        @keyframes messageIn {
+          from {
+            opacity: 0;
+            transform: translateY(-6px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .message-icon {
           flex-shrink: 0;
-          width: 28px;
-          height: 28px;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
+          margin-top: 1px;
         }
 
         .error-message {
           color: #963e3e;
+          border: 1px solid #f0cece;
           background: #fff4f4;
-          border: 1px solid #f2d5d5;
-        }
-
-        .error-message .message-icon {
-          background: #ffe2e2;
         }
 
         .success-message {
-          color: #487449;
-          background: #f2f9ef;
-          border: 1px solid #d5ead0;
+          color: #487548;
+          border: 1px solid #d5e8d0;
+          background: #f2faf0;
         }
 
-        .success-message .message-icon {
-          background: #dfefd9;
-        }
-
-        /* =================================================
+        /* =====================================================
            FORM
-        ================================================= */
+        ====================================================== */
 
         .login-form {
           display: flex;
@@ -1430,34 +1022,34 @@ export default function LoginPage() {
         }
 
         .field label,
-        .password-header label {
-          color: #38342d;
+        .password-label-row label {
+          color: #36322b;
           font-size: 12px;
           font-weight: 800;
         }
 
-        .password-header {
+        .password-label-row {
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
         }
 
-        .forgot-link {
-          color: #a2771d;
+        .password-label-row a {
+          color: #a1771e;
           font-size: 11px;
           font-weight: 800;
           text-decoration: none;
-          transition: color 0.2s ease;
+          transition: 0.2s ease;
         }
 
-        .forgot-link:hover {
-          color: #76530c;
+        .password-label-row a:hover {
+          color: #805d14;
           text-decoration: underline;
         }
 
-        /* =================================================
+        /* =====================================================
            INPUT
-        ================================================= */
+        ====================================================== */
 
         .input-wrapper {
           position: relative;
@@ -1465,115 +1057,103 @@ export default function LoginPage() {
           align-items: center;
         }
 
-        .input-icon {
+        .input-leading {
           position: absolute;
           left: 15px;
           z-index: 2;
-          color: #a8a094;
+          display: grid;
+          place-items: center;
+          color: #a9a196;
           pointer-events: none;
-          transition: color 0.2s ease;
-        }
-
-        .input-wrapper:focus-within
-          .input-icon {
-          color: #b28220;
+          transition: 0.2s ease;
         }
 
         .input-wrapper input {
           width: 100%;
           height: 53px;
-          padding: 0 45px;
-          border: 1px solid #e4dfd5;
-          border-radius: 14px;
+          padding: 0 43px 0 45px;
+          border: 1px solid #e3ded4;
           outline: none;
-          background: #ffffff;
-          color: #29251f;
+          border-radius: 14px;
+          background: #fff;
+          color: #29261f;
           font-size: 13px;
           transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease,
-            background 0.2s ease;
-        }
-
-        .input-wrapper input:hover {
-          border-color: #d9d0c1;
-        }
-
-        .input-wrapper input:focus {
-          border-color: #cda03c;
-          background: #fffefa;
-          box-shadow:
-            0 0 0 4px rgba(
-              205,
-              160,
-              60,
-              0.1
-            );
+            transform 0.2s ease;
         }
 
         .input-wrapper input::placeholder {
-          color: #b5afa5;
+          color: #b5aea4;
         }
 
-        .input-wrapper input:disabled {
-          cursor: not-allowed;
-          opacity: 0.65;
-          background: #f8f7f4;
+        .input-wrapper input:hover:not(:disabled) {
+          border-color: #d6cec0;
         }
 
-        .valid-icon {
+        .input-wrapper input:focus {
+          border-color: #d0a13c;
+          box-shadow:
+            0 0 0 4px rgba(208, 161, 60, 0.1),
+            0 7px 18px rgba(87, 67, 25, 0.04);
+        }
+
+        .input-wrapper:focus-within .input-leading {
+          color: #b28320;
+        }
+
+        .input-check {
           position: absolute;
-          right: 15px;
-          width: 22px;
-          height: 22px;
+          right: 14px;
           display: grid;
           place-items: center;
-          border-radius: 50%;
-          background: #e8f4e4;
-          color: #4c8048;
+          color: #78a25e;
+          animation: checkIn 0.2s ease both;
         }
 
-        /* =================================================
-           PASSWORD
-        ================================================= */
+        @keyframes checkIn {
+          from {
+            opacity: 0;
+            transform: scale(0.6);
+          }
+
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
 
         .password-toggle {
           position: absolute;
-          right: 10px;
-          width: 34px;
-          height: 34px;
+          right: 11px;
+          width: 31px;
+          height: 31px;
           display: grid;
           place-items: center;
           border: 0;
           border-radius: 9px;
           background: transparent;
-          color: #969086;
+          color: #9b948a;
           cursor: pointer;
-          transition:
-            color 0.2s ease,
-            background 0.2s ease;
+          transition: 0.2s ease;
         }
 
         .password-toggle:hover {
-          color: #9f741c;
-          background: #f9f3e5;
+          background: #f7f2e8;
+          color: #a1771e;
         }
 
-        .password-toggle:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-
-        /* =================================================
+        /* =====================================================
            REMEMBER
-        ================================================= */
+        ====================================================== */
 
         .remember {
+          width: fit-content;
           display: inline-flex;
           align-items: center;
           gap: 9px;
-          width: fit-content;
-          color: #777168;
+          color: #777067;
           font-size: 12px;
           cursor: pointer;
           user-select: none;
@@ -1585,123 +1165,101 @@ export default function LoginPage() {
           pointer-events: none;
         }
 
-        .custom-checkbox {
+        .checkbox {
           width: 18px;
           height: 18px;
           display: grid;
           place-items: center;
-          border: 1px solid #d7d0c4;
+          border: 1px solid #d5cfc4;
           border-radius: 6px;
-          background: #ffffff;
-          color: #ffffff;
-          transition:
-            background 0.2s ease,
-            border-color 0.2s ease;
+          background: #fff;
+          color: #fff;
+          transition: 0.2s ease;
         }
 
-        .remember input:checked
-          + .custom-checkbox {
-          border-color: #c69624;
-          background: #c69624;
-          box-shadow:
-            0 4px 10px rgba(
-              198,
-              150,
-              36,
-              0.18
-            );
+        .remember:hover .checkbox {
+          border-color: #c59a35;
         }
 
-        /* =================================================
+        .remember input:checked + .checkbox {
+          border-color: #c49529;
+          background: #c49529;
+          box-shadow: 0 4px 10px rgba(196, 149, 41, 0.2);
+        }
+
+        /* =====================================================
            BUTTON
-        ================================================= */
+        ====================================================== */
 
-        .primary-button {
+        .login-button {
           position: relative;
-          width: 100%;
-          height: 55px;
           overflow: hidden;
-          border: 1px solid #b98619;
-          border-radius: 14px;
+          width: 100%;
+          height: 54px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 9px;
+          margin-top: 2px;
+          border: 0;
+          border-radius: 14px;
+          color: #fff;
           background: linear-gradient(
             135deg,
-            #d7aa42,
-            #bd8c21
+            #d3a43c,
+            #bd8e23
           );
-          color: #ffffff;
+          box-shadow:
+            0 14px 28px rgba(181, 136, 31, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
           font-size: 13px;
           font-weight: 850;
           cursor: pointer;
-          box-shadow:
-            0 13px 25px rgba(
-              177,
-              130,
-              28,
-              0.2
-            );
           transition:
-            box-shadow 0.25s ease,
-            filter 0.25s ease;
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            filter 0.2s ease;
         }
 
-        .primary-button:hover:not(:disabled) {
-          box-shadow:
-            0 17px 32px rgba(
-              177,
-              130,
-              28,
-              0.28
-            );
+        .login-button:hover:not(:disabled) {
+          transform: translateY(-2px);
           filter: brightness(1.03);
+          box-shadow:
+            0 18px 35px rgba(181, 136, 31, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
 
-        .primary-button:disabled {
+        .login-button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .login-button:disabled {
           cursor: not-allowed;
-          opacity: 0.72;
+          opacity: 0.75;
         }
 
         .button-shine {
           position: absolute;
           top: 0;
-          bottom: 0;
           left: -80%;
           width: 45%;
+          height: 100%;
           transform: skewX(-20deg);
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
-          transition: left 0.7s ease;
+          background: rgba(255, 255, 255, 0.18);
+          animation: shine 4s ease-in-out infinite;
         }
 
-        .primary-button:hover
-          .button-shine {
-          left: 135%;
-        }
+        @keyframes shine {
+          0%,
+          65% {
+            left: -80%;
+          }
 
-        .button-arrow {
-          width: 27px;
-          height: 27px;
-          display: grid;
-          place-items: center;
-          border-radius: 8px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.15
-          );
+          85%,
+          100% {
+            left: 130%;
+          }
         }
-
-        /* =================================================
-           SPINNER
-        ================================================= */
 
         .spin {
           animation: spin 0.85s linear infinite;
@@ -1713,19 +1271,18 @@ export default function LoginPage() {
           }
         }
 
-        /* =================================================
-           DIVIDER
-        ================================================= */
+        /* =====================================================
+           BOTTOM
+        ====================================================== */
 
         .divider {
+          position: relative;
           display: flex;
           align-items: center;
-          gap: 13px;
-          margin: 24px 0 17px;
-          color: #aaa398;
+          gap: 12px;
+          margin: 25px 0 17px;
+          color: #aaa298;
           font-size: 10px;
-          font-weight: 650;
-          white-space: nowrap;
         }
 
         .divider::before,
@@ -1736,158 +1293,204 @@ export default function LoginPage() {
           background: #eee9e0;
         }
 
-        /* =================================================
-           ACCOUNT LINK
-        ================================================= */
-
-        .account-link {
+        .create-account {
+          width: 100%;
+          height: 48px;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 5px;
-          color: #827b70;
-          font-size: 12px;
-        }
-
-        .account-link a {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          color: #9d741d;
-          font-weight: 850;
+          justify-content: space-between;
+          padding: 0 15px;
+          border: 1px solid #e6dfd3;
+          border-radius: 13px;
+          color: #6f675c;
+          background: #fff;
           text-decoration: none;
-          transition:
-            color 0.2s ease,
-            gap 0.2s ease;
+          font-size: 12px;
+          font-weight: 750;
+          transition: 0.25s ease;
         }
 
-        .account-link a:hover {
-          color: #74510b;
-          gap: 7px;
+        .create-account svg {
+          color: #b08322;
+          transition: transform 0.25s ease;
         }
 
-        /* =================================================
+        .create-account:hover {
+          border-color: #d4b56d;
+          background: #fffdf8;
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(79, 61, 25, 0.06);
+        }
+
+        .create-account:hover svg {
+          transform: translateX(4px);
+        }
+
+        /* =====================================================
            SECURITY
-        ================================================= */
+        ====================================================== */
 
-        .security-note {
+        .security-card {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 10px;
-          margin-top: 23px;
-          padding-top: 18px;
-          border-top: 1px solid #eee9e0;
+          margin-top: 19px;
+          padding: 12px;
+          border: 1px solid #eee8dd;
+          border-radius: 12px;
+          background: #fcfaf6;
         }
 
         .security-icon {
-          width: 30px;
-          height: 30px;
+          width: 27px;
+          height: 27px;
           flex-shrink: 0;
           display: grid;
           place-items: center;
-          border-radius: 9px;
-          background: #f3f7ef;
-          color: #618259;
+          border-radius: 8px;
+          color: #77975e;
+          background: #edf5e9;
         }
 
-        .security-note strong {
+        .security-card strong {
           display: block;
           margin-bottom: 2px;
-          color: #686257;
+          color: #555046;
           font-size: 10px;
-          font-weight: 800;
+          font-weight: 850;
         }
 
-        .security-note span {
+        .security-card span {
           display: block;
-          color: #a29b91;
+          color: #999187;
           font-size: 9px;
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
-        /* =================================================
-           TABLET
-        ================================================= */
+        .legal-text {
+          margin-top: 15px;
+          text-align: center;
+          color: #aaa298;
+          font-size: 9px;
+          line-height: 1.5;
+        }
 
-        @media (max-width: 1000px) {
-          .login-wrapper {
-            width: min(
-              650px,
-              calc(100% - 36px)
-            );
-            grid-template-columns: 1fr;
-            gap: 0;
-            padding: 25px 0;
+        .legal-text span {
+          color: #96701e;
+        }
+
+        /* =====================================================
+           TABLET
+        ====================================================== */
+
+        @media (max-width: 1050px) {
+          .login-container {
+            grid-template-columns: minmax(0, 0.9fr) minmax(400px, 470px);
+            gap: 45px;
           }
 
-          .login-showcase {
+          .showcase h1 {
+            font-size: 58px;
+          }
+        }
+
+        /* =====================================================
+           MOBILE / TABLET
+        ====================================================== */
+
+        @media (max-width: 850px) {
+          .login-container {
+            width: min(570px, calc(100% - 32px));
+            min-height: auto;
+            padding: 25px 0;
+            display: block;
+          }
+
+          .showcase {
             display: none;
           }
 
-          .login-section {
+          .login-area {
             min-height: calc(100vh - 50px);
+            display: flex;
+            align-items: center;
           }
 
           .login-card {
-            width: min(480px, 100%);
+            padding: 35px;
           }
 
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 28px;
-          }
-
-          .mobile-brand .brand-logo {
-            width: 45px;
-            height: 45px;
-          }
-
-          .mobile-brand .brand-name {
-            font-size: 23px;
+            margin-bottom: 29px;
           }
         }
 
-        /* =================================================
-           MOBILE
-        ================================================= */
+        /* =====================================================
+           SMALL MOBILE
+        ====================================================== */
 
-        @media (max-width: 560px) {
-          .login-wrapper {
-            width: calc(100% - 22px);
-            padding: 12px 0;
+        @media (max-width: 520px) {
+          .login-page {
+            background:
+              radial-gradient(
+                circle at 50% 0%,
+                rgba(214, 167, 54, 0.12),
+                transparent 35%
+              ),
+              #faf8f3;
           }
 
-          .login-section {
-            min-height: calc(100vh - 24px);
+          .login-container {
+            width: calc(100% - 20px);
+            padding: 10px 0;
+          }
+
+          .login-area {
+            min-height: calc(100vh - 20px);
           }
 
           .login-card {
-            padding: 27px 19px;
+            padding: 25px 18px;
             border-radius: 23px;
           }
 
           .mobile-brand {
+            margin-bottom: 25px;
+          }
+
+          .brand-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+          }
+
+          .brand-name {
+            font-size: 22px;
+          }
+
+          .card-top {
+            gap: 12px;
             margin-bottom: 24px;
           }
 
-          .card-header {
-            margin-bottom: 23px;
+          .login-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 14px;
           }
 
-          .welcome-icon {
-            width: 44px;
-            height: 44px;
-            margin-bottom: 14px;
+          .card-top h2 {
+            font-size: 23px;
           }
 
-          .card-header h2 {
-            font-size: 26px;
-            letter-spacing: -0.9px;
+          .card-top p {
+            font-size: 11px;
           }
 
-          .card-header p {
-            font-size: 12px;
+          .welcome-label {
+            font-size: 8px;
           }
 
           .login-form {
@@ -1898,54 +1501,49 @@ export default function LoginPage() {
             height: 51px;
           }
 
-          .primary-button {
-            height: 53px;
+          .login-button {
+            height: 52px;
           }
 
-          .security-note {
-            margin-top: 20px;
-          }
-
-          .account-link {
-            font-size: 11px;
+          .security-card {
+            padding: 10px;
           }
         }
 
-        /* =================================================
-           SMALL MOBILE
-        ================================================= */
+        /* =====================================================
+           VERY SMALL
+        ====================================================== */
 
-        @media (max-width: 380px) {
+        @media (max-width: 360px) {
+          .login-container {
+            width: calc(100% - 14px);
+          }
+
           .login-card {
-            padding: 24px 16px;
+            padding: 22px 15px;
           }
 
-          .card-header h2 {
-            font-size: 24px;
+          .card-top h2 {
+            font-size: 21px;
           }
 
-          .card-header p {
-            font-size: 11px;
+          .card-top p {
+            font-size: 10px;
           }
 
-          .input-wrapper input {
-            font-size: 12px;
-          }
-
-          .primary-button {
+          .login-button {
             font-size: 12px;
           }
         }
 
-        /* =================================================
+        /* =====================================================
            REDUCED MOTION
-        ================================================= */
+        ====================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           *,
           *::before,
           *::after {
-            scroll-behavior: auto !important;
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
