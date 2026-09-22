@@ -1,28 +1,32 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   ArrowRight,
   AlertCircle,
   CheckCircle2,
   Eye,
   EyeOff,
+  Loader2,
   LockKeyhole,
   Mail,
-  ShieldCheck,
-  Sparkles,
-  Loader2,
   ShoppingBag,
-  UserRound,
-  RotateCcw,
+  Sparkles,
+  ShieldCheck,
+  Zap,
+  Gift,
+  Star,
+  ArrowUpRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -32,19 +36,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    try {
-      const savedEmail = localStorage.getItem("primecart_saved_email");
-
-      if (savedEmail) {
-        setEmail(savedEmail);
-        setRememberMe(true);
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,32 +50,12 @@ export default function LoginPage() {
       return;
     }
 
-    if (!cleanEmail.includes("@")) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
     if (!password) {
       setError("Please enter your password.");
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must contain at least 6 characters.");
-      return;
-    }
-
     setLoading(true);
-
-    try {
-      if (rememberMe) {
-        localStorage.setItem("primecart_saved_email", cleanEmail);
-      } else {
-        localStorage.removeItem("primecart_saved_email");
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
 
     try {
       const supabase = createClient();
@@ -103,21 +74,9 @@ export default function LoginPage() {
           message.includes("email not verified") ||
           message.includes("confirm")
         ) {
-          setError(
-            "Please verify your email before logging in. Check your inbox for the verification email."
-          );
-        } else if (
-          message.includes("invalid login credentials")
-        ) {
+          setError("Please verify your email before logging in.");
+        } else if (message.includes("invalid login credentials")) {
           setError("Invalid email or password.");
-        } else if (message.includes("too many requests")) {
-          setError(
-            "Too many login attempts. Please wait a moment and try again."
-          );
-        } else if (message.includes("network")) {
-          setError(
-            "Network error. Please check your internet connection and try again."
-          );
         } else {
           setError(loginError.message);
         }
@@ -132,11 +91,11 @@ export default function LoginPage() {
         return;
       }
 
-      setSuccess("Login successful! Taking you to your dashboard...");
+      setSuccess("Login successful! Redirecting...");
 
       setTimeout(() => {
-        window.location.replace("/dashboard");
-      }, 650);
+        window.location.href = "/dashboard";
+      }, 700);
     } catch (err) {
       console.error("Login error:", err);
 
@@ -148,410 +107,556 @@ export default function LoginPage() {
     }
   }
 
-  function clearForm() {
-    setEmail("");
-    setPassword("");
-    setError("");
-    setSuccess("");
-  }
-
   return (
     <main className="login-page">
-      {/* Background decoration */}
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
-      <div className="grid-overlay" />
+      {/* =========================
+          BACKGROUND
+      ========================== */}
 
-      <div className="page-shell">
-        {/* TOP NAV */}
-        <header className="top-nav">
-          <Link href="/" className="logo-link">
-            <div className="logo-box">
-              <Image
-                src="/logo.png"
-                alt="PrimeCart"
-                width={42}
-                height={42}
-                priority
-                className="logo-image"
-              />
+      <div className="background-grid" />
+
+      <motion.div
+        className="orb orb-one"
+        animate={{
+          x: [0, 30, 0],
+          y: [0, -25, 0],
+          scale: [1, 1.08, 1],
+        }}
+        transition={{
+          duration: 9,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+      <motion.div
+        className="orb orb-two"
+        animate={{
+          x: [0, -25, 0],
+          y: [0, 30, 0],
+          scale: [1, 1.12, 1],
+        }}
+        transition={{
+          duration: 11,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+      <motion.div
+        className="floating-star star-one"
+        animate={{
+          y: [0, -10, 0],
+          rotate: [0, 10, 0],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        <Sparkles size={20} />
+      </motion.div>
+
+      <motion.div
+        className="floating-star star-two"
+        animate={{
+          y: [0, 12, 0],
+          rotate: [0, -12, 0],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        <Sparkles size={16} />
+      </motion.div>
+
+      <div className="login-wrapper">
+        {/* =========================
+            LEFT SHOWCASE
+        ========================== */}
+
+        <motion.section
+          className="login-showcase"
+          initial={{ opacity: 0, x: -45 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.8,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          {/* BRAND */}
+
+          <motion.div
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.6 }}
+          >
+            <Link href="/" className="brand">
+              <motion.div
+                className="brand-icon"
+                whileHover={{
+                  scale: 1.08,
+                  rotate: -5,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                }}
+              >
+                <ShoppingBag size={21} />
+              </motion.div>
+
+              <span>
+                Prime<span>Cart</span>
+              </span>
+            </Link>
+          </motion.div>
+
+          <div className="showcase-content">
+            {/* BADGE */}
+
+            <motion.div
+              className="mini-badge"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.6 }}
+            >
+              <span className="badge-dot" />
+              <span>Smart shopping starts here</span>
+              <Sparkles size={14} />
+            </motion.div>
+
+            {/* HEADING */}
+
+            <motion.h1
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.7 }}
+            >
+              Shop smarter.
+              <br />
+              <span>Live better.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.7 }}
+            >
+              Discover products that match your needs, budget
+              and lifestyle — all in one beautiful shopping
+              experience.
+            </motion.p>
+
+            {/* FEATURE CARDS */}
+
+            <div className="benefits">
+              {[
+                {
+                  icon: <Zap size={18} />,
+                  title: "Smart shopping",
+                  text: "Discover products faster and easier.",
+                },
+                {
+                  icon: <Gift size={18} />,
+                  title: "Exclusive deals",
+                  text: "Unlock better value and special offers.",
+                },
+                {
+                  icon: <Star size={18} />,
+                  title: "PrimePoints rewards",
+                  text: "Earn rewards while you shop.",
+                },
+              ].map((item, index) => (
+                <motion.div
+                  className="benefit"
+                  key={item.title}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{
+                    delay: 0.55 + index * 0.1,
+                    duration: 0.5,
+                  }}
+                  whileHover={{
+                    x: 7,
+                    transition: { duration: 0.2 },
+                  }}
+                >
+                  <div className="benefit-icon">
+                    {item.icon}
+                  </div>
+
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>{item.text}</span>
+                  </div>
+
+                  <ArrowUpRight
+                    className="benefit-arrow"
+                    size={16}
+                  />
+                </motion.div>
+              ))}
             </div>
 
-            <span className="logo-text">
-              Prime<span>Cart</span>
-            </span>
-          </Link>
+            {/* TRUST */}
 
-          <Link href="/" className="back-home">
-            <ArrowLeft size={16} />
-            <span>Back to home</span>
-          </Link>
-        </header>
+            <motion.div
+              className="trust-row"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <div className="avatars">
+                <span>A</span>
+                <span>R</span>
+                <span>S</span>
+                <span>+</span>
+              </div>
 
-        {/* MAIN */}
-        <div className="login-layout">
-          {/* LEFT SHOWCASE */}
-          <section className="showcase">
-            <div className="showcase-inner">
+              <div>
+                <div className="stars">
+                  ★ ★ ★ ★ ★
+                </div>
+                <p>Loved by smart shoppers</p>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* FOOTER */}
+
+          <div className="showcase-footer">
+            <span>© 2026 PrimeCart</span>
+            <span>Secure • Simple • Smart</span>
+          </div>
+        </motion.section>
+
+        {/* =========================
+            RIGHT LOGIN
+        ========================== */}
+
+        <motion.section
+          className="login-section"
+          initial={{ opacity: 0, x: 45, scale: 0.97 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{
+            duration: 0.8,
+            delay: 0.1,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <motion.div
+            className="login-card"
+            whileHover={{
+              y: -3,
+              transition: { duration: 0.25 },
+            }}
+          >
+            {/* MOBILE BRAND */}
+
+            <div className="mobile-brand">
+              <Link href="/" className="brand">
+                <div className="brand-icon">
+                  <ShoppingBag size={20} />
+                </div>
+
+                <span>
+                  Prime<span>Cart</span>
+                </span>
+              </Link>
+            </div>
+
+            {/* HEADER */}
+
+            <motion.div
+              className="card-header"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <motion.div
+                className="welcome-icon"
+                animate={{
+                  y: [0, -4, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <LockKeyhole size={22} />
+              </motion.div>
+
               <div className="eyebrow">
-                <span className="eyebrow-icon">
-                  <Sparkles size={14} />
+                <span />
+                SECURE ACCESS
+              </div>
+
+              <h2>Welcome back</h2>
+
+              <p>
+                Sign in to continue your PrimeCart journey.
+              </p>
+            </motion.div>
+
+            {/* MESSAGES */}
+
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  className="message error-message"
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                    y: -8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                    y: 0,
+                  }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                >
+                  <AlertCircle size={18} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+
+              {success && (
+                <motion.div
+                  className="message success-message"
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                    y: -8,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                    y: 0,
+                  }}
+                >
+                  <CheckCircle2 size={18} />
+                  <span>{success}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* FORM */}
+
+            <form
+              onSubmit={handleLogin}
+              className="login-form"
+            >
+              {/* EMAIL */}
+
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label htmlFor="email">
+                  Email address
+                </label>
+
+                <div className="input-wrapper">
+                  <Mail
+                    className="input-icon"
+                    size={19}
+                  />
+
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
+                    autoComplete="email"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </motion.div>
+
+              {/* PASSWORD */}
+
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.48 }}
+              >
+                <div className="password-header">
+                  <label htmlFor="password">
+                    Password
+                  </label>
+
+                  <Link href="/auth/forgot-password">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <div className="input-wrapper">
+                  <LockKeyhole
+                    className="input-icon"
+                    size={19}
+                  />
+
+                  <input
+                    id="password"
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) =>
+                      setPassword(e.target.value)
+                    }
+                    autoComplete="current-password"
+                    disabled={loading}
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() =>
+                      setShowPassword((value) => !value)
+                    }
+                    disabled={loading}
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    <AnimatePresence mode="wait">
+                      {showPassword ? (
+                        <motion.span
+                          key="hide"
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.7 }}
+                        >
+                          <EyeOff size={19} />
+                        </motion.span>
+                      ) : (
+                        <motion.span
+                          key="show"
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.7 }}
+                        >
+                          <Eye size={19} />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* REMEMBER */}
+
+              <motion.label
+                className="remember"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.55 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) =>
+                    setRememberMe(e.target.checked)
+                  }
+                  disabled={loading}
+                />
+
+                <span className="custom-checkbox">
+                  {rememberMe ? "✓" : ""}
                 </span>
 
-                <span>Welcome to smarter shopping</span>
-              </div>
+                <span>Remember me</span>
+              </motion.label>
 
-              <h1>
-                Your shopping.
-                <br />
-                <span>Made simpler.</span>
-              </h1>
+              {/* BUTTON */}
 
-              <p className="showcase-description">
-                Sign in to discover products, manage your orders,
-                save your favourites and enjoy a smoother PrimeCart
-                experience.
-              </p>
-
-              {/* FEATURE CARDS */}
-              <div className="feature-list">
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <ShoppingBag size={19} />
-                  </div>
-
-                  <div>
-                    <strong>Everything in one place</strong>
-                    <span>
-                      Browse products and categories without the hassle.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <ShieldCheck size={19} />
-                  </div>
-
-                  <div>
-                    <strong>Secure shopping experience</strong>
-                    <span>
-                      Your account and shopping information stay protected.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <UserRound size={19} />
-                  </div>
-
-                  <div>
-                    <strong>Your personalised account</strong>
-                    <span>
-                      Keep track of orders, wishlist and shopping activity.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* TRUST STRIP */}
-              <div className="trust-strip">
-                <div className="trust-item">
-                  <ShieldCheck size={17} />
-                  <span>Secure account</span>
-                </div>
-
-                <div className="trust-divider" />
-
-                <div className="trust-item">
-                  <LockKeyhole size={17} />
-                  <span>Protected login</span>
-                </div>
-
-                <div className="trust-divider" />
-
-                <div className="trust-item">
-                  <CheckCircle2 size={17} />
-                  <span>Easy shopping</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="showcase-footer">
-              <span>© 2026 PrimeCart</span>
-              <span>Smart shopping platform</span>
-            </div>
-          </section>
-
-          {/* LOGIN SIDE */}
-          <section className="login-area">
-            <div className="login-card">
-              {/* MOBILE LOGO */}
-              <div className="mobile-logo">
-                <Link href="/" className="logo-link">
-                  <div className="logo-box">
-                    <Image
-                      src="/logo.png"
-                      alt="PrimeCart"
-                      width={40}
-                      height={40}
-                      priority
-                      className="logo-image"
-                    />
-                  </div>
-
-                  <span className="logo-text">
-                    Prime<span>Cart</span>
-                  </span>
-                </Link>
-              </div>
-
-              {/* CARD HEADER */}
-              <div className="card-header">
-                <div className="login-icon">
-                  <LockKeyhole size={22} />
-                </div>
-
-                <div className="header-copy">
-                  <span className="small-label">
-                    MEMBER LOGIN
-                  </span>
-
-                  <h2>Welcome back</h2>
-
-                  <p>
-                    Sign in to continue your PrimeCart journey.
-                  </p>
-                </div>
-              </div>
-
-              {/* ERROR */}
-              {error && (
-                <div
-                  className="message error-message"
-                  role="alert"
-                >
-                  <div className="message-icon">
-                    <AlertCircle size={17} />
-                  </div>
-
-                  <div className="message-content">
-                    <strong>Login unsuccessful</strong>
-                    <span>{error}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="message-close"
-                    onClick={() => setError("")}
-                    aria-label="Close error"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-
-              {/* SUCCESS */}
-              {success && (
-                <div
-                  className="message success-message"
-                  role="status"
-                >
-                  <div className="message-icon">
-                    <CheckCircle2 size={17} />
-                  </div>
-
-                  <div className="message-content">
-                    <strong>Welcome back!</strong>
-                    <span>{success}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* FORM */}
-              <form
-                onSubmit={handleLogin}
-                className="login-form"
+              <motion.button
+                type="submit"
+                className="primary-button"
+                disabled={loading}
+                whileHover={
+                  !loading
+                    ? {
+                        y: -2,
+                        scale: 1.01,
+                      }
+                    : {}
+                }
+                whileTap={
+                  !loading
+                    ? {
+                        scale: 0.98,
+                      }
+                    : {}
+                }
               >
-                {/* EMAIL */}
-                <div className="field">
-                  <label htmlFor="email">
-                    Email address
-                  </label>
-
-                  <div className="input-wrapper">
-                    <Mail
-                      className="input-icon"
-                      size={18}
+                {loading ? (
+                  <>
+                    <Loader2
+                      size={20}
+                      className="spin"
                     />
-
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (error) setError("");
-                      }}
-                      autoComplete="email"
-                      disabled={loading}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* PASSWORD */}
-                <div className="field">
-                  <div className="field-top">
-                    <label htmlFor="password">
-                      Password
-                    </label>
-
-                    <Link
-                      href="/auth/forgot-password"
-                      className="forgot-link"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-
-                  <div className="input-wrapper">
-                    <LockKeyhole
-                      className="input-icon"
-                      size={18}
-                    />
-
-                    <input
-                      id="password"
-                      type={
-                        showPassword
-                          ? "text"
-                          : "password"
-                      }
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (error) setError("");
-                      }}
-                      autoComplete="current-password"
-                      disabled={loading}
-                      required
-                    />
-
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() =>
-                        setShowPassword((value) => !value)
-                      }
-                      disabled={loading}
-                      aria-label={
-                        showPassword
-                          ? "Hide password"
-                          : "Show password"
-                      }
-                    >
-                      {showPassword ? (
-                        <EyeOff size={18} />
-                      ) : (
-                        <Eye size={18} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* OPTIONS */}
-                <div className="form-options">
-                  <label className="remember">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) =>
-                        setRememberMe(e.target.checked)
-                      }
-                      disabled={loading}
-                    />
-
-                    <span className="custom-checkbox">
-                      {rememberMe && "✓"}
-                    </span>
-
-                    <span>Remember me</span>
-                  </label>
-                </div>
-
-                {/* SUBMIT */}
-                <button
-                  type="submit"
-                  className="login-button"
-                  disabled={loading}
-                >
-                  <span className="button-content">
-                    {loading ? (
-                      <>
-                        <Loader2
-                          size={19}
-                          className="spin"
-                        />
-                        <span>Signing in...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Sign in to PrimeCart</span>
-                        <ArrowRight size={19} />
-                      </>
-                    )}
-                  </span>
-                </button>
-              </form>
-
-              {/* RESET */}
-              {!loading &&
-                (email || password) && (
-                  <button
-                    type="button"
-                    className="clear-button"
-                    onClick={clearForm}
-                  >
-                    <RotateCcw size={13} />
-                    Clear form
-                  </button>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight size={19} />
+                  </>
                 )}
+              </motion.button>
+            </form>
 
-              {/* DIVIDER */}
-              <div className="divider">
-                <span>New to PrimeCart?</span>
-              </div>
+            {/* DIVIDER */}
 
-              {/* REGISTER */}
-              <Link
-                href="/auth/register"
-                className="create-account"
-              >
-                <span>Create your account</span>
-                <ArrowRight size={17} />
-              </Link>
-
-              {/* SECURITY */}
-              <div className="security-box">
-                <div className="security-icon">
-                  <ShieldCheck size={16} />
-                </div>
-
-                <div>
-                  <strong>Secure & private</strong>
-                  <span>
-                    Your login details are protected with secure
-                    authentication.
-                  </span>
-                </div>
-              </div>
+            <div className="divider">
+              <span>OR</span>
             </div>
-          </section>
-        </div>
+
+            {/* REGISTER */}
+
+            <div className="account-link">
+              Don&apos;t have an account?{" "}
+              <Link href="/auth/register">
+                Create account
+              </Link>
+            </div>
+
+            {/* SECURITY */}
+
+            <div className="security-note">
+              <ShieldCheck size={15} />
+
+              <span>
+                Your account information is encrypted and
+                securely protected.
+              </span>
+            </div>
+          </motion.div>
+        </motion.section>
       </div>
 
       <style jsx global>{`
@@ -563,25 +668,15 @@ export default function LoginPage() {
         body {
           margin: 0;
           padding: 0;
-          min-height: 100%;
         }
 
         body {
           background: #faf8f3;
         }
 
-        button,
-        input {
-          font: inherit;
-        }
-
-        a {
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        /* ================================
+        /* =========================
            PAGE
-        ================================= */
+        ========================== */
 
         .login-page {
           min-height: 100vh;
@@ -589,17 +684,12 @@ export default function LoginPage() {
           overflow: hidden;
           background:
             radial-gradient(
-              circle at 10% 15%,
-              rgba(220, 177, 72, 0.08),
-              transparent 28%
-            ),
-            radial-gradient(
-              circle at 92% 85%,
-              rgba(220, 177, 72, 0.07),
+              circle at 75% 15%,
+              rgba(218, 174, 72, 0.08),
               transparent 28%
             ),
             #faf8f3;
-          color: #1b1915;
+          color: #171717;
           font-family:
             Inter,
             ui-sans-serif,
@@ -610,420 +700,427 @@ export default function LoginPage() {
             sans-serif;
         }
 
-        .ambient {
-          position: absolute;
-          width: 420px;
-          height: 420px;
-          border-radius: 50%;
-          filter: blur(100px);
-          pointer-events: none;
-        }
+        /* =========================
+           BACKGROUND
+        ========================== */
 
-        .ambient-one {
-          top: -250px;
-          right: -160px;
-          background: rgba(205, 157, 42, 0.14);
-        }
-
-        .ambient-two {
-          bottom: -270px;
-          left: -180px;
-          background: rgba(205, 157, 42, 0.1);
-        }
-
-        .grid-overlay {
-          position: absolute;
+        .background-grid {
+          position: fixed;
           inset: 0;
-          opacity: 0.25;
           pointer-events: none;
+          opacity: 0.3;
           background-image:
             linear-gradient(
-              rgba(40, 35, 25, 0.025) 1px,
+              rgba(190, 150, 55, 0.035) 1px,
               transparent 1px
             ),
             linear-gradient(
               90deg,
-              rgba(40, 35, 25, 0.025) 1px,
+              rgba(190, 150, 55, 0.035) 1px,
               transparent 1px
             );
-          background-size: 48px 48px;
-          mask-image: linear-gradient(
-            to bottom,
-            black,
-            transparent 80%
-          );
+          background-size: 42px 42px;
         }
 
-        .page-shell {
-          position: relative;
-          z-index: 2;
-          width: min(1240px, calc(100% - 48px));
-          min-height: 100vh;
-          margin: 0 auto;
-          padding: 24px 0;
+        .orb {
+          position: fixed;
+          width: 330px;
+          height: 330px;
+          border-radius: 50%;
+          filter: blur(90px);
+          pointer-events: none;
         }
 
-        /* ================================
-           NAV
-        ================================= */
-
-        .top-nav {
-          height: 62px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+        .orb-one {
+          top: -170px;
+          right: -100px;
+          background: rgba(213, 166, 55, 0.17);
         }
 
-        .logo-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          color: #191713;
-          text-decoration: none;
+        .orb-two {
+          bottom: -190px;
+          left: -120px;
+          background: rgba(213, 166, 55, 0.11);
         }
 
-        .logo-box {
-          width: 42px;
-          height: 42px;
+        .floating-star {
+          position: fixed;
           display: grid;
           place-items: center;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #fff;
-          border: 1px solid #e8dfce;
-          box-shadow:
-            0 8px 20px rgba(54, 44, 23, 0.08);
+          color: #c69727;
+          opacity: 0.5;
+          pointer-events: none;
         }
 
-        .logo-image {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
+        .star-one {
+          top: 18%;
+          right: 5%;
         }
 
-        .logo-text {
-          font-size: 23px;
+        .star-two {
+          bottom: 17%;
+          left: 5%;
+        }
+
+        /* =========================
+           WRAPPER
+        ========================== */
+
+        .login-wrapper {
+          position: relative;
+          z-index: 2;
+          width: min(1200px, calc(100% - 48px));
+          min-height: 100vh;
+          margin: auto;
+          padding: 34px 0;
+          display: grid;
+          grid-template-columns: 1fr 0.88fr;
+          gap: 75px;
+          align-items: center;
+        }
+
+        /* =========================
+           BRAND
+        ========================== */
+
+        .brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 11px;
+          color: #171717;
+          text-decoration: none;
+          font-size: 25px;
           font-weight: 850;
           letter-spacing: -0.8px;
         }
 
-        .logo-text span {
+        .brand > span > span {
           color: #c69624;
         }
 
-        .back-home {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 9px 13px;
-          color: #746e63;
-          font-size: 12px;
-          font-weight: 700;
-          text-decoration: none;
-          border-radius: 10px;
-          transition: 0.2s ease;
-        }
-
-        .back-home:hover {
-          color: #9b741e;
-          background: rgba(255, 255, 255, 0.7);
-        }
-
-        /* ================================
-           LAYOUT
-        ================================= */
-
-        .login-layout {
-          min-height: calc(100vh - 110px);
+        .brand-icon {
+          width: 43px;
+          height: 43px;
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 500px;
-          gap: 90px;
-          align-items: center;
+          place-items: center;
+          border-radius: 14px;
+          background: linear-gradient(
+            145deg,
+            #e0b84d,
+            #c69624
+          );
+          color: white;
+          box-shadow:
+            0 12px 28px rgba(198, 150, 36, 0.25);
         }
 
-        /* ================================
-           SHOWCASE
-        ================================= */
+        /* =========================
+           LEFT
+        ========================== */
 
-        .showcase {
-          min-height: 650px;
+        .login-showcase {
+          min-height: 690px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 60px 0 28px;
+          padding: 24px 10px;
         }
 
-        .showcase-inner {
-          max-width: 600px;
+        .showcase-content {
+          max-width: 580px;
         }
 
-        .eyebrow {
+        .mini-badge {
           width: fit-content;
-          display: inline-flex;
+          display: flex;
           align-items: center;
           gap: 9px;
-          padding: 8px 13px;
-          margin-bottom: 25px;
-          border: 1px solid rgba(198, 150, 36, 0.2);
+          padding: 9px 14px;
+          border: 1px solid rgba(198, 150, 36, 0.22);
+          background: rgba(255, 255, 255, 0.76);
+          backdrop-filter: blur(12px);
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.72);
-          color: #84651c;
+          color: #806117;
           font-size: 12px;
-          font-weight: 800;
+          font-weight: 750;
+          margin-bottom: 25px;
         }
 
-        .eyebrow-icon {
-          width: 22px;
-          height: 22px;
-          display: grid;
-          place-items: center;
-          border-radius: 7px;
-          background: #f3e4bd;
-          color: #a77b19;
+        .badge-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #d2a132;
+          box-shadow:
+            0 0 0 5px rgba(210, 161, 50, 0.11);
         }
 
-        .showcase h1 {
+        .showcase-content h1 {
           margin: 0;
-          font-size: clamp(50px, 5.6vw, 78px);
+          font-size: clamp(50px, 5.2vw, 75px);
           line-height: 0.98;
-          letter-spacing: -5px;
+          letter-spacing: -4.5px;
           font-weight: 900;
         }
 
-        .showcase h1 span {
-          color: #c69624;
+        .showcase-content h1 span {
+          background: linear-gradient(
+            100deg,
+            #bd8b19,
+            #d9aa3c
+          );
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
 
-        .showcase-description {
-          max-width: 550px;
-          margin: 28px 0 34px;
-          color: #777167;
+        .showcase-content > p {
+          max-width: 520px;
+          margin: 28px 0 32px;
+          color: #706b62;
           font-size: 16px;
-          line-height: 1.8;
+          line-height: 1.75;
         }
 
-        .feature-list {
+        /* =========================
+           BENEFITS
+        ========================== */
+
+        .benefits {
           display: flex;
           flex-direction: column;
-          gap: 11px;
-          max-width: 550px;
+          gap: 9px;
         }
 
-        .feature-card {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          padding: 13px 14px;
-          border: 1px solid rgba(227, 219, 204, 0.8);
-          background: rgba(255, 255, 255, 0.54);
-          border-radius: 15px;
-          transition: 0.2s ease;
-        }
-
-        .feature-card:hover {
-          transform: translateX(3px);
-          border-color: #ddca9e;
-          background: rgba(255, 255, 255, 0.8);
-        }
-
-        .feature-icon {
-          width: 38px;
-          height: 38px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 11px;
-          background: #f5e8c8;
-          color: #9a711b;
-        }
-
-        .feature-card strong {
-          display: block;
-          margin-bottom: 2px;
-          color: #302c24;
-          font-size: 13px;
-          font-weight: 800;
-        }
-
-        .feature-card span {
-          color: #8d877d;
-          font-size: 12px;
-          line-height: 1.4;
-        }
-
-        .trust-strip {
+        .benefit {
+          position: relative;
           display: flex;
           align-items: center;
           gap: 14px;
-          margin-top: 34px;
-          color: #8a8479;
-          font-size: 11px;
-          font-weight: 700;
+          width: 100%;
+          max-width: 530px;
+          padding: 12px 14px;
+          border: 1px solid transparent;
+          border-radius: 16px;
+          transition:
+            background 0.25s ease,
+            border-color 0.25s ease;
         }
 
-        .trust-item {
-          display: inline-flex;
+        .benefit:hover {
+          background: rgba(255, 255, 255, 0.68);
+          border-color: #ece5d7;
+        }
+
+        .benefit-icon {
+          width: 40px;
+          height: 40px;
+          flex-shrink: 0;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          background: #f2e4bd;
+          color: #866316;
+        }
+
+        .benefit strong {
+          display: block;
+          margin-bottom: 3px;
+          color: #27231c;
+          font-size: 14px;
+        }
+
+        .benefit span {
+          display: block;
+          color: #898277;
+          font-size: 12px;
+        }
+
+        .benefit-arrow {
+          margin-left: auto;
+          color: #c4a35f;
+          opacity: 0;
+          transition: 0.2s ease;
+        }
+
+        .benefit:hover .benefit-arrow {
+          opacity: 1;
+        }
+
+        /* =========================
+           TRUST
+        ========================== */
+
+        .trust-row {
+          display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 12px;
+          margin-top: 30px;
         }
 
-        .trust-item svg {
-          color: #b58a27;
+        .avatars {
+          display: flex;
         }
 
-        .trust-divider {
-          width: 1px;
-          height: 15px;
-          background: #ded7cb;
+        .avatars span {
+          width: 28px;
+          height: 28px;
+          display: grid;
+          place-items: center;
+          margin-right: -7px;
+          border: 2px solid #faf8f3;
+          border-radius: 50%;
+          background: #e8d6a7;
+          color: #6d5319;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .stars {
+          color: #c89727;
+          font-size: 11px;
+          letter-spacing: 1px;
+        }
+
+        .trust-row p {
+          margin: 2px 0 0;
+          color: #8b857b;
+          font-size: 11px;
         }
 
         .showcase-footer {
           display: flex;
           justify-content: space-between;
-          max-width: 600px;
-          color: #a19b91;
+          max-width: 570px;
+          color: #999286;
           font-size: 11px;
         }
 
-        /* ================================
-           LOGIN CARD
-        ================================= */
+        /* =========================
+           LOGIN SECTION
+        ========================== */
 
-        .login-area {
+        .login-section {
           display: flex;
           justify-content: center;
         }
 
         .login-card {
-          width: 100%;
-          padding: 40px;
-          border: 1px solid #e9e1d4;
-          border-radius: 28px;
-          background: rgba(255, 255, 255, 0.96);
+          position: relative;
+          width: min(470px, 100%);
+          padding: 43px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.94);
+          backdrop-filter: blur(18px);
+          border: 1px solid #ebe4d6;
+          border-radius: 30px;
           box-shadow:
-            0 35px 90px rgba(52, 43, 23, 0.1),
-            0 8px 25px rgba(52, 43, 23, 0.045);
+            0 35px 90px rgba(60, 48, 20, 0.1),
+            0 8px 25px rgba(60, 48, 20, 0.045);
         }
 
-        .mobile-logo {
+        .login-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 10%;
+          right: 10%;
+          height: 2px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            #d3a63c,
+            transparent
+          );
+        }
+
+        .mobile-brand {
           display: none;
         }
 
+        /* =========================
+           HEADER
+        ========================== */
+
         .card-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 15px;
           margin-bottom: 28px;
         }
 
-        .login-icon {
-          width: 49px;
-          height: 49px;
-          flex-shrink: 0;
+        .welcome-icon {
+          width: 50px;
+          height: 50px;
           display: grid;
           place-items: center;
-          border-radius: 15px;
-          background: #f5e8c8;
+          margin-bottom: 17px;
+          border-radius: 16px;
+          background: #f7ecd1;
           color: #9c741d;
         }
 
-        .small-label {
-          display: block;
-          margin-bottom: 5px;
-          color: #ad8a3c;
+        .eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 7px;
+          color: #b08a32;
           font-size: 9px;
-          font-weight: 900;
+          font-weight: 850;
           letter-spacing: 1.5px;
+        }
+
+        .eyebrow span {
+          width: 20px;
+          height: 2px;
+          background: #d1a239;
+          border-radius: 999px;
         }
 
         .card-header h2 {
           margin: 0;
-          color: #211e18;
-          font-size: 30px;
-          line-height: 1.1;
+          color: #1d1a15;
+          font-size: 32px;
           letter-spacing: -1.2px;
+          font-weight: 850;
         }
 
         .card-header p {
-          margin: 7px 0 0;
-          color: #817a6f;
+          margin: 9px 0 0;
+          color: #817b70;
           font-size: 13px;
-          line-height: 1.55;
+          line-height: 1.6;
         }
 
-        /* ================================
+        /* =========================
            MESSAGES
-        ================================= */
+        ========================== */
 
         .message {
           display: flex;
           align-items: flex-start;
           gap: 10px;
-          padding: 12px;
-          margin-bottom: 18px;
+          padding: 12px 14px;
+          margin-bottom: 17px;
           border-radius: 13px;
           font-size: 12px;
-        }
-
-        .message-icon {
-          width: 29px;
-          height: 29px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-        }
-
-        .message-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          line-height: 1.45;
-        }
-
-        .message-content strong {
-          font-size: 12px;
-        }
-
-        .message-content span {
-          font-size: 11px;
+          line-height: 1.5;
+          overflow: hidden;
         }
 
         .error-message {
-          color: #8d3d3d;
-          background: #fff4f3;
-          border: 1px solid #f0d7d4;
-        }
-
-        .error-message .message-icon {
-          background: #f8dfdc;
+          color: #973d3d;
+          background: #fff2f2;
+          border: 1px solid #f2d4d4;
         }
 
         .success-message {
-          color: #3f7243;
-          background: #f2f9ef;
-          border: 1px solid #d7ead3;
+          color: #477349;
+          background: #f0f8ed;
+          border: 1px solid #d5e8d1;
         }
 
-        .success-message .message-icon {
-          background: #dfefdb;
-        }
-
-        .message-close {
-          border: 0;
-          padding: 2px 4px;
-          background: transparent;
-          color: inherit;
-          font-size: 17px;
-          line-height: 1;
-          cursor: pointer;
-          opacity: 0.65;
-        }
-
-        /* ================================
+        /* =========================
            FORM
-        ================================= */
+        ========================== */
 
         .login-form {
           display: flex;
@@ -1037,26 +1134,27 @@ export default function LoginPage() {
           gap: 8px;
         }
 
-        .field label {
-          color: #38342c;
+        .field label,
+        .password-header label {
+          color: #353129;
           font-size: 12px;
-          font-weight: 800;
+          font-weight: 750;
         }
 
-        .field-top {
+        .password-header {
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
         }
 
-        .forgot-link {
+        .password-header a {
           color: #a2771d;
           font-size: 11px;
-          font-weight: 800;
+          font-weight: 750;
           text-decoration: none;
         }
 
-        .forgot-link:hover {
+        .password-header a:hover {
           text-decoration: underline;
         }
 
@@ -1071,15 +1169,19 @@ export default function LoginPage() {
           left: 15px;
           color: #aaa296;
           pointer-events: none;
-          transition: 0.2s ease;
+          transition: color 0.2s ease;
+        }
+
+        .input-wrapper:focus-within .input-icon {
+          color: #b48725;
         }
 
         .input-wrapper input {
           width: 100%;
-          height: 52px;
-          padding: 0 45px;
-          border: 1px solid #e4ded4;
-          border-radius: 13px;
+          height: 53px;
+          padding: 0 46px;
+          border: 1px solid #e4dfd5;
+          border-radius: 14px;
           outline: none;
           background: #fff;
           color: #28251f;
@@ -1087,82 +1189,57 @@ export default function LoginPage() {
           transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease,
-            background 0.2s ease;
+            transform 0.2s ease;
         }
 
         .input-wrapper input:hover {
-          border-color: #d8cdbb;
+          border-color: #d8cdb8;
         }
 
         .input-wrapper input:focus {
           border-color: #d0a039;
-          background: #fffdfa;
           box-shadow:
             0 0 0 4px rgba(208, 160, 57, 0.1);
-        }
-
-        .input-wrapper:focus-within .input-icon {
-          color: #b0821f;
+          transform: translateY(-1px);
         }
 
         .input-wrapper input::placeholder {
-          color: #b6afa5;
-        }
-
-        .input-wrapper input:disabled {
-          cursor: not-allowed;
-          opacity: 0.65;
+          color: #b2aca2;
         }
 
         .password-toggle {
           position: absolute;
-          right: 11px;
-          width: 32px;
-          height: 32px;
+          right: 12px;
+          border: 0;
+          padding: 6px;
           display: grid;
           place-items: center;
-          border: 0;
-          border-radius: 9px;
           background: transparent;
-          color: #999187;
+          color: #999286;
           cursor: pointer;
         }
 
         .password-toggle:hover {
-          color: #a4791e;
-          background: #f8f2e6;
+          color: #a87c1b;
         }
 
-        .password-toggle:disabled {
-          cursor: not-allowed;
-        }
-
-        /* ================================
+        /* =========================
            REMEMBER
-        ================================= */
-
-        .form-options {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: -2px;
-        }
+        ========================== */
 
         .remember {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          color: #777067;
+          gap: 9px;
+          width: fit-content;
+          color: #777168;
           font-size: 12px;
-          font-weight: 600;
           cursor: pointer;
           user-select: none;
         }
 
         .remember input {
-          position: absolute;
-          opacity: 0;
-          pointer-events: none;
+          display: none;
         }
 
         .custom-checkbox {
@@ -1170,95 +1247,89 @@ export default function LoginPage() {
           height: 17px;
           display: grid;
           place-items: center;
-          border: 1px solid #d7d0c4;
+          border: 1px solid #d8d1c4;
           border-radius: 5px;
-          background: #fff;
-          color: #fff;
+          background: white;
+          color: white;
           font-size: 10px;
           font-weight: 900;
-          transition: 0.18s ease;
+          transition: 0.2s ease;
+        }
+
+        .remember:hover .custom-checkbox {
+          border-color: #c69624;
         }
 
         .remember input:checked + .custom-checkbox {
           border-color: #c69624;
           background: #c69624;
+          transform: scale(1.05);
         }
 
-        /* ================================
+        /* =========================
            BUTTON
-        ================================= */
+        ========================== */
 
-        .login-button {
+        .primary-button {
           position: relative;
           width: 100%;
           height: 54px;
-          margin-top: 2px;
-          overflow: hidden;
           border: 0;
           border-radius: 14px;
-          background:
-            linear-gradient(
-              135deg,
-              #d2a53b 0%,
-              #c18e20 100%
-            );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          overflow: hidden;
+          background: linear-gradient(
+            135deg,
+            #d7aa3d,
+            #bf8e20
+          );
           color: white;
+          font-size: 13px;
+          font-weight: 850;
           cursor: pointer;
           box-shadow:
-            0 13px 26px rgba(181, 133, 31, 0.2);
+            0 13px 28px rgba(198, 150, 36, 0.22);
           transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            filter 0.2s ease;
+            box-shadow 0.25s ease,
+            opacity 0.2s ease;
         }
 
-        .login-button::before {
+        .primary-button::before {
           content: "";
           position: absolute;
-          inset: 0;
+          top: 0;
+          left: -100%;
+          width: 60%;
+          height: 100%;
           background: linear-gradient(
-            100deg,
-            transparent 20%,
-            rgba(255, 255, 255, 0.17),
-            transparent 80%
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.28),
+            transparent
           );
-          transform: translateX(-100%);
-          transition: transform 0.6s ease;
+          transform: skewX(-20deg);
+          transition: left 0.6s ease;
         }
 
-        .login-button:hover:not(:disabled)::before {
-          transform: translateX(100%);
+        .primary-button:hover::before {
+          left: 150%;
         }
 
-        .login-button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          filter: brightness(1.03);
+        .primary-button:hover:not(:disabled) {
           box-shadow:
-            0 17px 32px rgba(181, 133, 31, 0.27);
+            0 17px 34px rgba(198, 150, 36, 0.29);
         }
 
-        .login-button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .login-button:disabled {
-          opacity: 0.72;
+        .primary-button:disabled {
+          opacity: 0.7;
           cursor: not-allowed;
         }
 
-        .button-content {
-          position: relative;
-          z-index: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 9px;
-          font-size: 13px;
-          font-weight: 850;
-        }
-
         .spin {
-          animation: spin 0.85s linear infinite;
+          animation: spin 0.9s linear infinite;
         }
 
         @keyframes spin {
@@ -1267,41 +1338,19 @@ export default function LoginPage() {
           }
         }
 
-        /* ================================
-           CLEAR
-        ================================= */
-
-        .clear-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          width: 100%;
-          margin-top: 12px;
-          border: 0;
-          background: transparent;
-          color: #a19a8e;
-          font-size: 10px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .clear-button:hover {
-          color: #a07820;
-        }
-
-        /* ================================
-           ACCOUNT
-        ================================= */
+        /* =========================
+           BOTTOM
+        ========================== */
 
         .divider {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin: 25px 0 15px;
-          color: #aaa298;
-          font-size: 10px;
-          font-weight: 600;
+          gap: 14px;
+          margin: 25px 0 20px;
+          color: #b2aca2;
+          font-size: 9px;
+          font-weight: 750;
+          letter-spacing: 1px;
         }
 
         .divider::before,
@@ -1309,193 +1358,109 @@ export default function LoginPage() {
           content: "";
           height: 1px;
           flex: 1;
-          background: #eee9e1;
+          background: #eee9e0;
         }
 
-        .create-account {
-          width: 100%;
-          min-height: 47px;
+        .account-link {
+          text-align: center;
+          color: #817b70;
+          font-size: 12px;
+        }
+
+        .account-link a {
+          color: #a2771d;
+          font-weight: 800;
+          text-decoration: none;
+        }
+
+        .account-link a:hover {
+          text-decoration: underline;
+        }
+
+        .security-note {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          border: 1px solid #e4d9c5;
-          border-radius: 12px;
-          background: #fffdf9;
-          color: #80601c;
-          font-size: 12px;
-          font-weight: 800;
-          text-decoration: none;
-          transition: 0.2s ease;
-        }
-
-        .create-account:hover {
-          border-color: #d6bd86;
-          background: #fbf6ea;
-          color: #9a721e;
-        }
-
-        /* ================================
-           SECURITY
-        ================================= */
-
-        .security-box {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: 22px;
-          padding: 12px;
-          border: 1px solid #eee9e0;
-          border-radius: 12px;
-          background: #fcfbf8;
-        }
-
-        .security-icon {
-          width: 30px;
-          height: 30px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-          background: #f1e5c8;
-          color: #99721f;
-        }
-
-        .security-box strong {
-          display: block;
-          margin-bottom: 2px;
-          color: #514b40;
+          gap: 7px;
+          margin-top: 25px;
+          padding-top: 18px;
+          border-top: 1px solid #eee9e0;
+          color: #aaa398;
           font-size: 10px;
-          font-weight: 850;
-        }
-
-        .security-box span {
-          display: block;
-          color: #999186;
-          font-size: 9px;
           line-height: 1.4;
+          text-align: center;
         }
 
-        /* ================================
+        /* =========================
            TABLET
-        ================================= */
+        ========================== */
 
-        @media (max-width: 1050px) {
-          .page-shell {
-            width: min(920px, calc(100% - 36px));
-          }
-
-          .login-layout {
-            grid-template-columns: minmax(0, 1fr) 430px;
-            gap: 45px;
-          }
-
-          .showcase h1 {
-            font-size: clamp(45px, 6vw, 65px);
-          }
-        }
-
-        /* ================================
-           MOBILE/TABLET
-        ================================= */
-
-        @media (max-width: 850px) {
-          .page-shell {
-            width: min(600px, calc(100% - 28px));
-            padding: 15px 0 25px;
-          }
-
-          .top-nav {
-            height: 55px;
-          }
-
-          .back-home span {
-            display: none;
-          }
-
-          .back-home {
-            width: 36px;
-            height: 36px;
-            justify-content: center;
-            padding: 0;
-            border: 1px solid #e9e1d4;
-            background: rgba(255, 255, 255, 0.7);
-          }
-
-          .login-layout {
-            min-height: calc(100vh - 70px);
+        @media (max-width: 950px) {
+          .login-wrapper {
+            width: min(650px, calc(100% - 32px));
             grid-template-columns: 1fr;
             gap: 0;
+            padding: 25px 0;
           }
 
-          .showcase {
+          .login-showcase {
             display: none;
           }
 
-          .login-area {
-            width: 100%;
-            min-height: calc(100vh - 70px);
+          .login-section {
+            min-height: calc(100vh - 50px);
             align-items: center;
           }
 
           .login-card {
-            padding: 34px;
+            width: 100%;
           }
 
-          .mobile-logo {
+          .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 27px;
+            margin-bottom: 28px;
+          }
+
+          .star-one {
+            right: 8%;
+          }
+
+          .star-two {
+            left: 8%;
           }
         }
 
-        /* ================================
-           SMALL MOBILE
-        ================================= */
+        /* =========================
+           MOBILE
+        ========================== */
 
         @media (max-width: 520px) {
-          .page-shell {
+          .login-wrapper {
             width: calc(100% - 20px);
-            padding-top: 10px;
+            padding: 10px 0;
           }
 
-          .logo-box {
-            width: 38px;
-            height: 38px;
-            border-radius: 11px;
-          }
-
-          .logo-text {
-            font-size: 20px;
-          }
-
-          .top-nav {
-            height: 50px;
-          }
-
-          .login-layout,
-          .login-area {
-            min-height: calc(100vh - 60px);
+          .login-section {
+            min-height: calc(100vh - 20px);
           }
 
           .login-card {
-            padding: 27px 19px;
-            border-radius: 22px;
+            padding: 29px 20px;
+            border-radius: 23px;
           }
 
-          .mobile-logo {
+          .mobile-brand {
             margin-bottom: 24px;
           }
 
-          .card-header {
-            gap: 12px;
-            margin-bottom: 23px;
+          .brand {
+            font-size: 22px;
           }
 
-          .login-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 13px;
+          .brand-icon {
+            width: 39px;
+            height: 39px;
           }
 
           .card-header h2 {
@@ -1506,54 +1471,43 @@ export default function LoginPage() {
             font-size: 12px;
           }
 
-          .input-wrapper input {
-            height: 50px;
+          .welcome-icon {
+            width: 45px;
+            height: 45px;
+            margin-bottom: 15px;
           }
 
-          .login-button {
+          .input-wrapper input {
+            height: 51px;
+          }
+
+          .primary-button {
             height: 52px;
           }
 
-          .security-box {
-            margin-top: 19px;
+          .security-note {
+            font-size: 9px;
+          }
+
+          .orb {
+            width: 230px;
+            height: 230px;
+            filter: blur(70px);
+          }
+
+          .floating-star {
+            display: none;
           }
         }
-
-        /* ================================
-           VERY SMALL DEVICES
-        ================================= */
-
-        @media (max-width: 360px) {
-          .login-card {
-            padding: 24px 15px;
-          }
-
-          .card-header h2 {
-            font-size: 24px;
-          }
-
-          .field-top {
-            align-items: flex-start;
-            gap: 8px;
-          }
-
-          .forgot-link {
-            white-space: nowrap;
-          }
-        }
-
-        /* ================================
-           REDUCED MOTION
-        ================================= */
 
         @media (prefers-reduced-motion: reduce) {
           *,
           *::before,
           *::after {
-            scroll-behavior: auto !important;
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
