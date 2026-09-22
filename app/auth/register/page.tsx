@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,13 +8,16 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Check,
   Eye,
   EyeOff,
   Loader2,
   LockKeyhole,
   Mail,
-  ShoppingBag,
   User,
+  ShieldCheck,
+  Sparkles,
+  ShoppingBag,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -24,8 +28,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
@@ -35,9 +38,25 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function handleRegister(
-    e: FormEvent<HTMLFormElement>
-  ) {
+  const passwordChecks = {
+    length: password.length >= 6,
+    letter: /[A-Za-z]/.test(password),
+    number: /\d/.test(password),
+  };
+
+  const passwordScore = Object.values(passwordChecks).filter(Boolean)
+    .length;
+
+  const passwordStrength =
+    passwordScore === 0
+      ? ""
+      : passwordScore === 1
+        ? "Weak"
+        : passwordScore === 2
+          ? "Good"
+          : "Strong";
+
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setError("");
@@ -52,9 +71,7 @@ export default function RegisterPage() {
     }
 
     if (cleanName.length < 2) {
-      setError(
-        "Full name must contain at least 2 characters."
-      );
+      setError("Full name must contain at least 2 characters.");
       return;
     }
 
@@ -69,9 +86,7 @@ export default function RegisterPage() {
     }
 
     if (password.length < 6) {
-      setError(
-        "Password must be at least 6 characters long."
-      );
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
@@ -102,8 +117,7 @@ export default function RegisterPage() {
         });
 
       if (signupError) {
-        const message =
-          signupError.message.toLowerCase();
+        const message = signupError.message.toLowerCase();
 
         if (
           message.includes("already registered") ||
@@ -113,10 +127,6 @@ export default function RegisterPage() {
           setError(
             "An account with this email already exists. Please sign in."
           );
-        } else if (message.includes("password")) {
-          setError(signupError.message);
-        } else if (message.includes("email")) {
-          setError(signupError.message);
         } else {
           setError(signupError.message);
         }
@@ -130,15 +140,6 @@ export default function RegisterPage() {
         );
         return;
       }
-
-      /*
-       * Supabase may either:
-       * 1. Return a user without a session when email
-       *    confirmation is enabled.
-       * 2. Return a session when confirmation is disabled.
-       *
-       * In both cases we send the user to login.
-       */
 
       setSuccess(
         "Account created successfully! Please verify your email before logging in."
@@ -165,145 +166,183 @@ export default function RegisterPage() {
 
   return (
     <main className="register-page">
-      <div className="background-glow glow-one" />
-      <div className="background-glow glow-two" />
+      {/* Decorative background */}
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <div className="ambient ambient-three" />
+
+      <div className="grid-pattern" />
 
       <div className="register-wrapper">
-        {/* LEFT */}
+        {/* =====================================================
+            LEFT SHOWCASE
+        ====================================================== */}
 
         <section className="register-showcase">
-          <Link href="/" className="brand">
-            <div className="brand-icon">
-              <ShoppingBag size={21} />
+          <Link href="/" className="logo-link">
+            <div className="logo-box">
+              <Image
+                src="/logo.png"
+                alt="PrimeCart"
+                width={145}
+                height={45}
+                priority
+              />
             </div>
-
-            <span>
-              Prime<span>Cart</span>
-            </span>
           </Link>
 
           <div className="showcase-content">
-            <div className="mini-badge">
-              <span className="badge-dot" />
-              Your smarter shopping journey
+            <div className="eyebrow">
+              <Sparkles size={14} />
+              <span>WELCOME TO PRIMECART</span>
             </div>
 
             <h1>
-              One account.
+              Your shopping.
               <br />
-              <span>Endless possibilities.</span>
+              <span>One smart account.</span>
             </h1>
 
             <p>
-              Create your PrimeCart account and discover
-              smarter ways to shop, save and earn rewards.
+              Create your PrimeCart account and unlock a
+              smoother, smarter and more personalized
+              shopping experience.
             </p>
 
             <div className="benefits">
               <div className="benefit">
-                <div className="benefit-icon">✓</div>
+                <div className="benefit-icon">
+                  <Check size={17} />
+                </div>
 
                 <div>
-                  <strong>
-                    Personalized recommendations
-                  </strong>
-
+                  <strong>Personalized experience</strong>
                   <span>
-                    Discover products that fit your needs.
+                    Keep your shopping experience organized
+                    and tailored to you.
                   </span>
                 </div>
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">✓</div>
+                <div className="benefit-icon">
+                  <Check size={17} />
+                </div>
 
                 <div>
-                  <strong>Exclusive deals</strong>
-
+                  <strong>Exclusive shopping deals</strong>
                   <span>
-                    Find smart offers and special deals.
+                    Discover offers and products selected
+                    for PrimeCart shoppers.
                   </span>
                 </div>
               </div>
 
               <div className="benefit">
-                <div className="benefit-icon">✓</div>
+                <div className="benefit-icon">
+                  <Check size={17} />
+                </div>
 
                 <div>
-                  <strong>Earn PrimePoints</strong>
-
+                  <strong>Secure account</strong>
                   <span>
-                    Get rewarded for your shopping activity.
+                    Your account and authentication are
+                    protected through Supabase Auth.
                   </span>
                 </div>
+              </div>
+            </div>
+
+            <div className="trust-row">
+              <div className="trust-icon">
+                <ShieldCheck size={19} />
+              </div>
+
+              <div>
+                <strong>Secure & private</strong>
+                <span>Your information stays protected.</span>
               </div>
             </div>
           </div>
 
           <div className="showcase-footer">
             <span>© 2026 PrimeCart</span>
+
+            <span className="footer-dot" />
+
             <span>Smart shopping platform</span>
           </div>
         </section>
 
-        {/* RIGHT */}
+        {/* =====================================================
+            REGISTER CARD
+        ====================================================== */}
 
         <section className="register-section">
           <div className="register-card">
-            {/* MOBILE BRAND */}
-
+            {/* Mobile logo */}
             <div className="mobile-brand">
-              <Link href="/" className="brand">
-                <div className="brand-icon">
-                  <ShoppingBag size={20} />
-                </div>
-
-                <span>
-                  Prime<span>Cart</span>
-                </span>
+              <Link href="/" className="logo-link">
+                <Image
+                  src="/logo.png"
+                  alt="PrimeCart"
+                  width={150}
+                  height={46}
+                  priority
+                />
               </Link>
             </div>
 
-            {/* HEADER */}
-
+            {/* Header */}
             <div className="card-header">
-              <div className="welcome-icon">
+              <div className="header-icon">
                 <User size={22} />
               </div>
 
-              <h2>Create your account</h2>
+              <div>
+                <div className="small-label">
+                  GET STARTED
+                </div>
 
-              <p>
-                Join PrimeCart and start shopping smarter.
-              </p>
+                <h2>Create your account</h2>
+
+                <p>
+                  Join PrimeCart and start shopping smarter.
+                </p>
+              </div>
             </div>
 
-            {/* ERROR */}
-
+            {/* Error */}
             {error && (
               <div className="message error-message">
-                <AlertCircle size={18} />
+                <div className="message-icon">
+                  <AlertCircle size={17} />
+                </div>
+
                 <span>{error}</span>
               </div>
             )}
 
-            {/* SUCCESS */}
-
+            {/* Success */}
             {success && (
               <div className="message success-message">
-                <CheckCircle2 size={18} />
-                <span>{success}</span>
+                <div className="message-icon">
+                  <CheckCircle2 size={17} />
+                </div>
+
+                <div>
+                  <strong>Account created</strong>
+                  <span>{success}</span>
+                </div>
               </div>
             )}
 
-            {/* FORM */}
-
+            {/* Form */}
             <form
               onSubmit={handleRegister}
               className="register-form"
             >
-              {/* FULL NAME */}
-
+              {/* Name */}
               <div className="field">
                 <label htmlFor="fullName">
                   Full name
@@ -312,7 +351,7 @@ export default function RegisterPage() {
                 <div className="input-wrapper">
                   <User
                     className="input-icon"
-                    size={19}
+                    size={18}
                   />
 
                   <input
@@ -327,11 +366,17 @@ export default function RegisterPage() {
                     disabled={loading}
                     required
                   />
+
+                  {fullName.trim().length >= 2 && (
+                    <Check
+                      className="valid-icon"
+                      size={17}
+                    />
+                  )}
                 </div>
               </div>
 
-              {/* EMAIL */}
-
+              {/* Email */}
               <div className="field">
                 <label htmlFor="email">
                   Email address
@@ -340,7 +385,7 @@ export default function RegisterPage() {
                 <div className="input-wrapper">
                   <Mail
                     className="input-icon"
-                    size={19}
+                    size={18}
                   />
 
                   <input
@@ -355,28 +400,44 @@ export default function RegisterPage() {
                     disabled={loading}
                     required
                   />
+
+                  {email.includes("@") && (
+                    <Check
+                      className="valid-icon"
+                      size={17}
+                    />
+                  )}
                 </div>
               </div>
 
-              {/* PASSWORD */}
-
+              {/* Password */}
               <div className="field">
-                <label htmlFor="password">
-                  Password
-                </label>
+                <div className="label-row">
+                  <label htmlFor="password">
+                    Password
+                  </label>
+
+                  {passwordStrength && (
+                    <span
+                      className={`strength ${passwordStrength
+                        .toLowerCase()
+                        .replace(" ", "-")}`}
+                    >
+                      {passwordStrength}
+                    </span>
+                  )}
+                </div>
 
                 <div className="input-wrapper">
                   <LockKeyhole
                     className="input-icon"
-                    size={19}
+                    size={18}
                   />
 
                   <input
                     id="password"
                     type={
-                      showPassword
-                        ? "text"
-                        : "password"
+                      showPassword ? "text" : "password"
                     }
                     placeholder="Create a password"
                     value={password}
@@ -392,25 +453,79 @@ export default function RegisterPage() {
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword((value) => !value)
+                      setShowPassword(
+                        (value) => !value
+                      )
                     }
                     disabled={loading}
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
                   >
                     {showPassword ? (
-                      <EyeOff size={19} />
+                      <EyeOff size={18} />
                     ) : (
-                      <Eye size={19} />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
 
-                <span className="field-hint">
-                  Use at least 6 characters.
-                </span>
+                {password && (
+                  <div className="password-strength">
+                    <div className="strength-bars">
+                      {[1, 2, 3].map((bar) => (
+                        <span
+                          key={bar}
+                          className={
+                            bar <= passwordScore
+                              ? "active"
+                              : ""
+                          }
+                        />
+                      ))}
+                    </div>
+
+                    <div className="password-rules">
+                      <span
+                        className={
+                          passwordChecks.length
+                            ? "valid"
+                            : ""
+                        }
+                      >
+                        <Check size={11} />
+                        6+ characters
+                      </span>
+
+                      <span
+                        className={
+                          passwordChecks.letter
+                            ? "valid"
+                            : ""
+                        }
+                      >
+                        <Check size={11} />
+                        One letter
+                      </span>
+
+                      <span
+                        className={
+                          passwordChecks.number
+                            ? "valid"
+                            : ""
+                        }
+                      >
+                        <Check size={11} />
+                        One number
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* CONFIRM PASSWORD */}
-
+              {/* Confirm password */}
               <div className="field">
                 <label htmlFor="confirmPassword">
                   Confirm password
@@ -419,7 +534,7 @@ export default function RegisterPage() {
                 <div className="input-wrapper">
                   <LockKeyhole
                     className="input-icon"
-                    size={19}
+                    size={18}
                   />
 
                   <input
@@ -432,7 +547,9 @@ export default function RegisterPage() {
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) =>
-                      setConfirmPassword(e.target.value)
+                      setConfirmPassword(
+                        e.target.value
+                      )
                     }
                     autoComplete="new-password"
                     disabled={loading}
@@ -448,18 +565,41 @@ export default function RegisterPage() {
                       )
                     }
                     disabled={loading}
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
                   >
                     {showConfirmPassword ? (
-                      <EyeOff size={19} />
+                      <EyeOff size={18} />
                     ) : (
-                      <Eye size={19} />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
+
+                {confirmPassword && (
+                  <div
+                    className={`match-status ${
+                      password === confirmPassword
+                        ? "matched"
+                        : "not-matched"
+                    }`}
+                  >
+                    {password === confirmPassword ? (
+                      <>
+                        <Check size={13} />
+                        Passwords match
+                      </>
+                    ) : (
+                      "Passwords do not match"
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* TERMS */}
-
+              {/* Terms */}
               <p className="terms">
                 By creating an account, you agree to
                 PrimeCart&apos;s{" "}
@@ -473,17 +613,18 @@ export default function RegisterPage() {
                 .
               </p>
 
-              {/* BUTTON */}
-
+              {/* Submit */}
               <button
                 type="submit"
                 className="primary-button"
                 disabled={loading}
               >
+                <span className="button-shine" />
+
                 {loading ? (
                   <>
                     <Loader2
-                      size={20}
+                      size={19}
                       className="spin"
                     />
                     Creating account...
@@ -491,29 +632,34 @@ export default function RegisterPage() {
                 ) : (
                   <>
                     Create account
-                    <ArrowRight size={19} />
+                    <ArrowRight size={18} />
                   </>
                 )}
               </button>
             </form>
 
+            {/* Divider */}
             <div className="divider">
-              <span>or</span>
+              <span>Already a member?</span>
             </div>
 
+            {/* Login */}
             <div className="account-link">
-              Already have an account?{" "}
+              <span>Already have an account?</span>
+
               <Link href="/auth/login">
                 Sign in
+                <ArrowRight size={14} />
               </Link>
             </div>
 
+            {/* Security */}
             <div className="security-note">
-              <LockKeyhole size={14} />
+              <LockKeyhole size={13} />
 
               <span>
-                Your account information is securely
-                protected.
+                Secure authentication powered by
+                PrimeCart & Supabase
               </span>
             </div>
           </div>
@@ -525,16 +671,31 @@ export default function RegisterPage() {
           box-sizing: border-box;
         }
 
+        html {
+          scroll-behavior: smooth;
+        }
+
         body {
           margin: 0;
           background: #faf8f3;
+        }
+
+        button,
+        input {
+          font: inherit;
         }
 
         .register-page {
           min-height: 100vh;
           position: relative;
           overflow: hidden;
-          background: #faf8f3;
+          background:
+            radial-gradient(
+              circle at 75% 10%,
+              rgba(214, 167, 54, 0.08),
+              transparent 30%
+            ),
+            #faf8f3;
           color: #171717;
           font-family:
             Inter,
@@ -546,27 +707,82 @@ export default function RegisterPage() {
             sans-serif;
         }
 
-        .background-glow {
+        /* =====================================================
+           BACKGROUND
+        ====================================================== */
+
+        .ambient {
           position: fixed;
-          width: 350px;
-          height: 350px;
           border-radius: 999px;
-          filter: blur(90px);
           pointer-events: none;
-          opacity: 0.4;
+          filter: blur(90px);
+          z-index: 0;
+          animation: floatAmbient 9s ease-in-out infinite;
         }
 
-        .glow-one {
-          top: -170px;
+        .ambient-one {
+          width: 340px;
+          height: 340px;
+          top: -180px;
           right: -80px;
-          background: rgba(214, 167, 54, 0.2);
+          background: rgba(214, 167, 54, 0.18);
         }
 
-        .glow-two {
-          bottom: -170px;
+        .ambient-two {
+          width: 300px;
+          height: 300px;
+          bottom: -180px;
           left: -100px;
-          background: rgba(214, 167, 54, 0.13);
+          background: rgba(214, 167, 54, 0.12);
+          animation-delay: -3s;
         }
+
+        .ambient-three {
+          width: 170px;
+          height: 170px;
+          top: 38%;
+          left: 44%;
+          background: rgba(220, 183, 92, 0.07);
+          animation-delay: -6s;
+        }
+
+        @keyframes floatAmbient {
+          0%,
+          100% {
+            transform: translate3d(0, 0, 0);
+          }
+
+          50% {
+            transform: translate3d(0, 20px, 0);
+          }
+        }
+
+        .grid-pattern {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          opacity: 0.18;
+          background-image:
+            linear-gradient(
+              rgba(180, 150, 90, 0.05) 1px,
+              transparent 1px
+            ),
+            linear-gradient(
+              90deg,
+              rgba(180, 150, 90, 0.05) 1px,
+              transparent 1px
+            );
+          background-size: 55px 55px;
+          mask-image: linear-gradient(
+            to bottom,
+            black,
+            transparent 75%
+          );
+        }
+
+        /* =====================================================
+           MAIN LAYOUT
+        ====================================================== */
 
         .register-wrapper {
           position: relative;
@@ -574,79 +790,84 @@ export default function RegisterPage() {
           width: min(1180px, calc(100% - 40px));
           min-height: 100vh;
           margin: auto;
-          padding: 32px 0;
+          padding: 35px 0;
           display: grid;
-          grid-template-columns: 1fr 0.9fr;
-          gap: 70px;
+          grid-template-columns: 1fr 0.86fr;
+          gap: 75px;
           align-items: center;
         }
 
-        /* BRAND */
+        /* =====================================================
+           LOGO
+        ====================================================== */
 
-        .brand {
+        .logo-link {
           display: inline-flex;
           align-items: center;
-          gap: 11px;
           width: fit-content;
-          color: #171717;
           text-decoration: none;
-          font-size: 24px;
-          font-weight: 800;
-          letter-spacing: -0.7px;
         }
 
-        .brand > span > span {
-          color: #c69624;
+        .logo-box {
+          display: flex;
+          align-items: center;
+          min-height: 46px;
         }
 
-        .brand-icon {
-          width: 42px;
-          height: 42px;
-          display: grid;
-          place-items: center;
-          border-radius: 13px;
-          background: #d8a735;
-          color: white;
-          box-shadow:
-            0 10px 25px rgba(198, 150, 36, 0.22);
+        .logo-box img {
+          width: auto;
+          height: 44px;
+          object-fit: contain;
         }
 
-        /* LEFT */
+        /* =====================================================
+           LEFT SHOWCASE
+        ====================================================== */
 
         .register-showcase {
-          min-height: 680px;
+          min-height: 690px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 28px 10px;
+          padding: 20px 10px;
+          animation: showcaseIn 0.8s ease both;
+        }
+
+        @keyframes showcaseIn {
+          from {
+            opacity: 0;
+            transform: translateX(-25px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
 
         .showcase-content {
-          max-width: 570px;
+          max-width: 590px;
         }
 
-        .mini-badge {
+        .eyebrow {
           width: fit-content;
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 9px;
-          padding: 9px 14px;
-          border: 1px solid rgba(198, 150, 36, 0.22);
-          background: rgba(255, 255, 255, 0.7);
+          gap: 8px;
+          padding: 9px 13px;
+          border: 1px solid rgba(198, 150, 36, 0.2);
           border-radius: 999px;
-          color: #7b5c15;
-          font-size: 13px;
-          font-weight: 700;
-          margin-bottom: 24px;
+          background: rgba(255, 255, 255, 0.7);
+          color: #89691d;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.8px;
+          box-shadow: 0 8px 25px rgba(90, 70, 20, 0.04);
+          margin-bottom: 23px;
         }
 
-        .badge-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #d2a132;
-          box-shadow:
-            0 0 0 5px rgba(210, 161, 50, 0.12);
+        .eyebrow svg {
+          color: #c69624;
         }
 
         .showcase-content h1 {
@@ -665,132 +886,290 @@ export default function RegisterPage() {
           max-width: 510px;
           margin: 27px 0 38px;
           color: #6e6a61;
-          font-size: 17px;
+          font-size: 16px;
           line-height: 1.75;
         }
 
         .benefits {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 17px;
         }
 
         .benefit {
           display: flex;
           align-items: center;
           gap: 14px;
+          animation: benefitIn 0.7s ease both;
+        }
+
+        .benefit:nth-child(2) {
+          animation-delay: 0.1s;
+        }
+
+        .benefit:nth-child(3) {
+          animation-delay: 0.2s;
+        }
+
+        @keyframes benefitIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .benefit-icon {
-          width: 38px;
-          height: 38px;
+          width: 39px;
+          height: 39px;
           flex-shrink: 0;
           display: grid;
           place-items: center;
           border-radius: 12px;
-          background: #f0dfb4;
-          color: #866316;
-          font-weight: 900;
+          background: linear-gradient(
+            145deg,
+            #f7e9c3,
+            #ead49d
+          );
+          color: #8b691b;
+          box-shadow:
+            inset 0 1px rgba(255, 255, 255, 0.7),
+            0 8px 18px rgba(170, 130, 40, 0.08);
         }
 
         .benefit strong {
           display: block;
           margin-bottom: 3px;
+          color: #29261f;
           font-size: 14px;
-          color: #26231d;
         }
 
         .benefit span {
           display: block;
-          color: #888276;
-          font-size: 13px;
+          color: #898277;
+          font-size: 12.5px;
+          line-height: 1.5;
+        }
+
+        .trust-row {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          width: fit-content;
+          margin-top: 35px;
+          padding: 11px 14px;
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.55);
+          border: 1px solid rgba(218, 207, 184, 0.7);
+        }
+
+        .trust-icon {
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          border-radius: 10px;
+          background: #f4e7c4;
+          color: #98731e;
+        }
+
+        .trust-row strong {
+          display: block;
+          color: #4b463c;
+          font-size: 12px;
+        }
+
+        .trust-row span {
+          display: block;
+          margin-top: 2px;
+          color: #969085;
+          font-size: 10px;
         }
 
         .showcase-footer {
           display: flex;
-          justify-content: space-between;
-          max-width: 570px;
+          align-items: center;
+          gap: 10px;
           color: #999286;
-          font-size: 12px;
+          font-size: 11px;
         }
 
-        /* CARD */
+        .footer-dot {
+          width: 3px;
+          height: 3px;
+          border-radius: 50%;
+          background: #c7bda9;
+        }
+
+        /* =====================================================
+           REGISTER CARD
+        ====================================================== */
 
         .register-section {
           display: flex;
           justify-content: center;
+          animation: cardIn 0.85s cubic-bezier(0.22, 1, 0.36, 1)
+            both;
+        }
+
+        @keyframes cardIn {
+          from {
+            opacity: 0;
+            transform: translateY(28px) scale(0.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .register-card {
-          width: min(470px, 100%);
-          padding: 40px 42px;
+          width: min(480px, 100%);
+          padding: 39px 42px;
+          position: relative;
+          overflow: hidden;
           background: rgba(255, 255, 255, 0.96);
-          border: 1px solid #ebe5d8;
-          border-radius: 28px;
+          border: 1px solid #e9e2d5;
+          border-radius: 29px;
           box-shadow:
-            0 25px 70px rgba(51, 42, 22, 0.09),
-            0 5px 18px rgba(51, 42, 22, 0.04);
+            0 35px 90px rgba(57, 46, 21, 0.09),
+            0 10px 30px rgba(57, 46, 21, 0.045);
+          backdrop-filter: blur(18px);
+        }
+
+        .register-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 8%;
+          right: 8%;
+          height: 2px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            #d7ad4d,
+            transparent
+          );
+          opacity: 0.8;
         }
 
         .mobile-brand {
           display: none;
         }
 
+        /* HEADER */
+
         .card-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 15px;
           margin-bottom: 25px;
         }
 
-        .welcome-icon {
+        .header-icon {
           width: 48px;
           height: 48px;
+          flex-shrink: 0;
           display: grid;
           place-items: center;
-          margin-bottom: 18px;
           border-radius: 15px;
-          background: #f7edd4;
-          color: #9b741e;
+          background: linear-gradient(
+            145deg,
+            #f8efd9,
+            #f2dfae
+          );
+          color: #9a741d;
+          box-shadow:
+            inset 0 1px rgba(255, 255, 255, 0.8),
+            0 8px 20px rgba(150, 110, 20, 0.08);
+        }
+
+        .small-label {
+          margin-bottom: 4px;
+          color: #b18a31;
+          font-size: 9px;
+          font-weight: 850;
+          letter-spacing: 1.2px;
         }
 
         .card-header h2 {
           margin: 0;
-          font-size: 30px;
-          letter-spacing: -1px;
           color: #1d1b17;
+          font-size: 28px;
+          line-height: 1.15;
+          letter-spacing: -1px;
         }
 
         .card-header p {
-          margin: 9px 0 0;
+          margin: 7px 0 0;
           color: #817b70;
-          font-size: 14px;
-          line-height: 1.6;
+          font-size: 13px;
+          line-height: 1.55;
         }
 
-        /* MESSAGES */
+        /* =====================================================
+           MESSAGES
+        ====================================================== */
 
         .message {
           display: flex;
           align-items: flex-start;
           gap: 10px;
-          padding: 12px 14px;
+          padding: 12px 13px;
           margin-bottom: 18px;
-          border-radius: 12px;
-          font-size: 13px;
+          border-radius: 13px;
+          font-size: 12px;
           line-height: 1.5;
+          animation: messageIn 0.3s ease both;
+        }
+
+        @keyframes messageIn {
+          from {
+            opacity: 0;
+            transform: translateY(-6px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .message-icon {
+          flex-shrink: 0;
+          margin-top: 1px;
         }
 
         .error-message {
           color: #9a3d3d;
-          background: #fff1f1;
-          border: 1px solid #f4d1d1;
+          background: #fff4f4;
+          border: 1px solid #f1d5d5;
         }
 
         .success-message {
-          color: #487548;
-          background: #f0f8ee;
-          border: 1px solid #d6ead1;
+          color: #4b754a;
+          background: #f2f9f0;
+          border: 1px solid #d6e9d2;
         }
 
-        /* FORM */
+        .success-message strong {
+          display: block;
+          margin-bottom: 2px;
+          font-size: 12px;
+        }
+
+        .success-message span {
+          display: block;
+        }
+
+        /* =====================================================
+           FORM
+        ====================================================== */
 
         .register-form {
           display: flex;
@@ -801,13 +1180,20 @@ export default function RegisterPage() {
         .field {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 7px;
         }
 
-        .field label {
+        .field label,
+        .label-row label {
           color: #353129;
-          font-size: 13px;
-          font-weight: 700;
+          font-size: 12.5px;
+          font-weight: 750;
+        }
+
+        .label-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
 
         .input-wrapper {
@@ -821,62 +1207,182 @@ export default function RegisterPage() {
           left: 15px;
           color: #aaa296;
           pointer-events: none;
+          transition: 0.2s ease;
+          z-index: 1;
         }
 
         .input-wrapper input {
           width: 100%;
-          height: 51px;
+          height: 52px;
           padding: 0 46px;
-          border: 1px solid #e4dfd5;
+          border: 1px solid #e3ddd2;
           border-radius: 13px;
           outline: none;
           background: #fff;
           color: #28251f;
-          font-size: 14px;
-          transition: 0.2s ease;
+          font-size: 13px;
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
         }
 
         .input-wrapper input::placeholder {
           color: #b2aca2;
         }
 
+        .input-wrapper input:hover:not(:disabled) {
+          border-color: #d8cdbb;
+        }
+
         .input-wrapper input:focus {
           border-color: #d0a039;
           box-shadow:
-            0 0 0 4px rgba(208, 160, 57, 0.1);
+            0 0 0 4px rgba(208, 160, 57, 0.09),
+            0 4px 12px rgba(80, 60, 20, 0.03);
+        }
+
+        .input-wrapper input:focus ~ .input-icon {
+          color: #b88a22;
+        }
+
+        .input-wrapper input:disabled {
+          background: #faf9f6;
+          cursor: not-allowed;
+        }
+
+        .valid-icon {
+          position: absolute;
+          right: 15px;
+          color: #60935e;
+          pointer-events: none;
+          animation: checkPop 0.2s ease both;
+        }
+
+        @keyframes checkPop {
+          from {
+            opacity: 0;
+            transform: scale(0.7);
+          }
+
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
 
         .password-toggle {
           position: absolute;
-          right: 13px;
+          right: 11px;
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
           border: 0;
-          padding: 5px;
+          border-radius: 8px;
+          padding: 0;
           background: transparent;
           color: #999286;
           cursor: pointer;
-          display: grid;
-          place-items: center;
+          transition: 0.2s ease;
         }
 
-        .password-toggle:hover {
-          color: #a87c1b;
+        .password-toggle:hover:not(:disabled) {
+          background: #f8f2e5;
+          color: #9d761e;
         }
 
-        .field-hint {
+        /* =====================================================
+           PASSWORD STRENGTH
+        ====================================================== */
+
+        .strength {
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .strength.weak {
+          color: #b65b5b;
+        }
+
+        .strength.good {
+          color: #ad7c21;
+        }
+
+        .strength.strong {
+          color: #588754;
+        }
+
+        .password-strength {
+          margin-top: 2px;
+        }
+
+        .strength-bars {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 7px;
+        }
+
+        .strength-bars span {
+          height: 3px;
+          flex: 1;
+          border-radius: 999px;
+          background: #e9e4da;
+          transition: 0.25s ease;
+        }
+
+        .strength-bars span.active {
+          background: #c69624;
+        }
+
+        .password-rules {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 12px;
+        }
+
+        .password-rules span {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
           color: #aaa398;
-          font-size: 11px;
+          font-size: 9.5px;
+          transition: 0.2s ease;
         }
+
+        .password-rules span.valid {
+          color: #63875e;
+        }
+
+        .match-status {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 10px;
+        }
+
+        .match-status.matched {
+          color: #60885c;
+        }
+
+        .match-status.not-matched {
+          color: #a35a5a;
+        }
+
+        /* =====================================================
+           TERMS
+        ====================================================== */
 
         .terms {
-          margin: 1px 0 0;
+          margin: -1px 0 0;
           color: #938c81;
-          font-size: 11px;
+          font-size: 10.5px;
           line-height: 1.6;
         }
 
         .terms a {
-          color: #a2771d;
-          font-weight: 700;
+          color: #9e771e;
+          font-weight: 750;
           text-decoration: none;
         }
 
@@ -884,33 +1390,68 @@ export default function RegisterPage() {
           text-decoration: underline;
         }
 
-        /* BUTTON */
+        /* =====================================================
+           BUTTON
+        ====================================================== */
 
         .primary-button {
           width: 100%;
-          height: 53px;
+          height: 54px;
+          position: relative;
+          overflow: hidden;
           border: 0;
           border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
-          margin-top: 2px;
-          background: #c69624;
-          color: white;
-          font-size: 14px;
+          gap: 9px;
+          background: linear-gradient(
+            135deg,
+            #d3a238,
+            #bd8c20
+          );
+          color: #fff;
+          font-size: 13.5px;
           font-weight: 800;
           cursor: pointer;
           box-shadow:
-            0 12px 24px rgba(198, 150, 36, 0.2);
-          transition: 0.2s ease;
+            0 13px 28px rgba(198, 150, 36, 0.22);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            filter 0.2s ease;
+        }
+
+        .button-shine {
+          position: absolute;
+          top: 0;
+          left: -80%;
+          width: 45%;
+          height: 100%;
+          transform: skewX(-20deg);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          transition: left 0.6s ease;
         }
 
         .primary-button:hover:not(:disabled) {
-          transform: translateY(-1px);
-          background: #b8881e;
+          transform: translateY(-2px);
+          filter: brightness(1.03);
           box-shadow:
-            0 15px 30px rgba(198, 150, 36, 0.25);
+            0 17px 34px rgba(198, 150, 36, 0.28);
+        }
+
+        .primary-button:hover:not(:disabled)
+          .button-shine {
+          left: 130%;
+        }
+
+        .primary-button:active:not(:disabled) {
+          transform: translateY(0);
         }
 
         .primary-button:disabled {
@@ -928,15 +1469,17 @@ export default function RegisterPage() {
           }
         }
 
-        /* BOTTOM */
+        /* =====================================================
+           BOTTOM
+        ====================================================== */
 
         .divider {
           display: flex;
           align-items: center;
-          gap: 14px;
-          margin: 22px 0 19px;
+          gap: 13px;
+          margin: 23px 0 17px;
           color: #b2aca2;
-          font-size: 12px;
+          font-size: 10px;
         }
 
         .divider::before,
@@ -948,41 +1491,51 @@ export default function RegisterPage() {
         }
 
         .account-link {
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
           color: #817b70;
-          font-size: 13px;
+          font-size: 12.5px;
         }
 
         .account-link a {
-          color: #a2771d;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          color: #9d761e;
           font-weight: 800;
           text-decoration: none;
+          transition: 0.2s ease;
         }
 
         .account-link a:hover {
-          text-decoration: underline;
+          color: #795a13;
+          gap: 6px;
         }
 
         .security-note {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 7px;
-          margin-top: 24px;
-          padding-top: 19px;
+          gap: 6px;
+          margin-top: 22px;
+          padding-top: 18px;
           border-top: 1px solid #eee9e0;
           color: #aaa398;
-          font-size: 11px;
+          font-size: 9.5px;
         }
 
-        /* TABLET */
+        /* =====================================================
+           TABLET
+        ====================================================== */
 
-        @media (max-width: 900px) {
+        @media (max-width: 950px) {
           .register-wrapper {
             width: min(650px, calc(100% - 32px));
             grid-template-columns: 1fr;
             gap: 0;
-            padding: 24px 0;
+            padding: 25px 0;
           }
 
           .register-showcase {
@@ -990,7 +1543,7 @@ export default function RegisterPage() {
           }
 
           .register-section {
-            min-height: calc(100vh - 48px);
+            min-height: calc(100vh - 50px);
             align-items: center;
           }
 
@@ -1001,55 +1554,89 @@ export default function RegisterPage() {
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 28px;
+            margin-bottom: 27px;
           }
         }
 
-        /* MOBILE */
+        /* =====================================================
+           MOBILE
+        ====================================================== */
 
         @media (max-width: 520px) {
           .register-wrapper {
-            width: calc(100% - 24px);
-            padding: 12px 0;
+            width: calc(100% - 20px);
+            padding: 10px 0;
           }
 
           .register-section {
-            min-height: calc(100vh - 24px);
+            min-height: calc(100vh - 20px);
           }
 
           .register-card {
-            padding: 27px 20px;
-            border-radius: 22px;
+            padding: 27px 19px;
+            border-radius: 23px;
           }
 
           .mobile-brand {
-            margin-bottom: 24px;
+            margin-bottom: 23px;
+          }
+
+          .mobile-brand img {
+            width: 135px;
+            height: auto;
+          }
+
+          .card-header {
+            gap: 12px;
+          }
+
+          .header-icon {
+            width: 43px;
+            height: 43px;
+            border-radius: 13px;
           }
 
           .card-header h2 {
-            font-size: 26px;
+            font-size: 24px;
           }
 
           .card-header p {
-            font-size: 13px;
+            font-size: 12px;
           }
 
-          .welcome-icon {
-            width: 44px;
-            height: 44px;
-            margin-bottom: 15px;
+          .register-form {
+            gap: 15px;
           }
 
           .input-wrapper input {
             height: 50px;
+            font-size: 13px;
           }
 
           .primary-button {
             height: 52px;
           }
 
+          .password-rules {
+            gap: 6px 9px;
+          }
+
           .terms {
-            font-size: 10.5px;
+            font-size: 10px;
+          }
+        }
+
+        /* =====================================================
+           REDUCED MOTION
+        ====================================================== */
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
           }
         }
       `}</style>
