@@ -398,7 +398,7 @@ export default function HomePage() {
             <nav className="ml-3 hidden items-center gap-1 xl:flex">
 
               <Link
-                href="/categories"
+                href="#categories"
                 className="rounded-lg px-3 py-2 text-xs font-bold text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
               >
                 Categories
@@ -412,7 +412,7 @@ export default function HomePage() {
               </a>
 
               <Link
-                href="/primematch"
+                href="#primematch"
                 className="rounded-lg px-3 py-2 text-xs font-bold text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
               >
                 PrimeMatch
