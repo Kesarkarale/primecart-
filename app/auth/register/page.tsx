@@ -1,23 +1,30 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Check,
   Eye,
   EyeOff,
   Loader2,
   LockKeyhole,
   Mail,
-  ShoppingBag,
   User,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +38,30 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+  const passwordLength = password.length >= 6;
+  const passwordUppercase = /[A-Z]/.test(password);
+  const passwordNumber = /\d/.test(password);
+  const passwordSpecial = /[^A-Za-z0-9]/.test(password);
+
+  const passwordScore = [
+    passwordLength,
+    passwordUppercase,
+    passwordNumber,
+    passwordSpecial,
+  ].filter(Boolean).length;
+
+  const passwordLabel =
+    passwordScore <= 1
+      ? "Weak password"
+      : passwordScore === 2
+        ? "Fair password"
+        : passwordScore === 3
+          ? "Good password"
+          : "Strong password";
+
+  async function handleRegister(
+    e: FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setError("");
@@ -126,8 +156,8 @@ export default function RegisterPage() {
       setConfirmPassword("");
 
       setTimeout(() => {
-        window.location.href = "/auth/login";
-      }, 2600);
+        router.replace("/auth/login");
+      }, 2800);
     } catch (err) {
       console.error("Registration error:", err);
 
@@ -141,141 +171,248 @@ export default function RegisterPage() {
 
   return (
     <main className="register-page">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
+      <div className="page-grid" />
 
-      <div className="register-container">
-        {/* LEFT SIDE */}
+      <div className="register-shell">
+        {/* LEFT SHOWCASE */}
 
-        <section className="showcase">
-          <Link href="/" className="brand">
-            <div className="brand-mark">
-              <ShoppingBag size={20} strokeWidth={2.4} />
-            </div>
+        <motion.section
+          className="showcase"
+          initial={{ opacity: 0, x: -35 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.7,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          {/* BRAND */}
 
-            <span className="brand-name">
-              Prime<span>Cart</span>
-            </span>
-          </Link>
+          <motion.div
+            className="brand-area"
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+          >
+            <Link href="/" className="brand">
+              <div className="logo-box">
+                <Image
+                  src="/logo.png"
+                  alt="PrimeCart"
+                  width={44}
+                  height={44}
+                  priority
+                />
+              </div>
+
+              <div className="brand-name">
+                Prime<span>Cart</span>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* SHOWCASE CONTENT */}
 
           <div className="showcase-content">
-            <div className="eyebrow">
-              <span />
-              THE SMARTER WAY TO SHOP
-            </div>
+            <motion.div
+              className="eyebrow"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+            >
+              <Sparkles size={14} />
+              <span>THE SMARTER WAY TO SHOP</span>
+            </motion.div>
 
-            <h1>
-              Your shopping
+            <motion.h1
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.7 }}
+            >
+              Your shopping.
               <br />
-              <strong>starts here.</strong>
-            </h1>
+              <span>Your way.</span>
+            </motion.h1>
 
-            <p>
-              Create your PrimeCart account and enjoy a
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.6 }}
+            >
+              Create your PrimeCart account and unlock a
               simpler, smarter and more personalized shopping
               experience.
-            </p>
+            </motion.p>
+
+            {/* FEATURE CARDS */}
 
             <div className="feature-list">
-              <div className="feature">
-                <div className="feature-number">01</div>
+              {[
+                {
+                  title: "Personalized experience",
+                  text: "Discover products that match your style and needs.",
+                  icon: "01",
+                },
+                {
+                  title: "Exclusive savings",
+                  text: "Find better deals and smarter ways to save.",
+                  icon: "02",
+                },
+                {
+                  title: "PrimePoints rewards",
+                  text: "Shop more and unlock exciting rewards.",
+                  icon: "03",
+                },
+              ].map((item, index) => (
+                <motion.div
+                  className="feature"
+                  key={item.icon}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{
+                    delay: 0.55 + index * 0.1,
+                    duration: 0.5,
+                  }}
+                  whileHover={{ x: 5 }}
+                >
+                  <div className="feature-number">
+                    {item.icon}
+                  </div>
 
-                <div>
-                  <h3>Discover better products</h3>
-                  <p>
-                    Explore products selected to make
-                    shopping easier.
-                  </p>
-                </div>
-              </div>
-
-              <div className="feature">
-                <div className="feature-number">02</div>
-
-                <div>
-                  <h3>Save more every time</h3>
-                  <p>
-                    Find useful deals and better value in one
-                    place.
-                  </p>
-                </div>
-              </div>
-
-              <div className="feature">
-                <div className="feature-number">03</div>
-
-                <div>
-                  <h3>One account, everything ready</h3>
-                  <p>
-                    Keep your orders, wishlist and shopping
-                    journey together.
-                  </p>
-                </div>
-              </div>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>{item.text}</span>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
 
+          {/* SHOWCASE FOOTER */}
+
           <div className="showcase-bottom">
-            <span>© 2026 PrimeCart</span>
-            <span>Smart shopping platform</span>
+            <div className="trusted">
+              <ShieldCheck size={15} />
+              <span>Secure & protected account</span>
+            </div>
+
+            <span className="copyright">
+              © 2026 PrimeCart
+            </span>
           </div>
-        </section>
+        </motion.section>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT REGISTER */}
 
-        <section className="form-area">
+        <motion.section
+          className="register-area"
+          initial={{ opacity: 0, x: 35 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.7,
+            delay: 0.1,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
           <div className="register-card">
             {/* MOBILE BRAND */}
 
-            <div className="mobile-brand">
+            <motion.div
+              className="mobile-brand"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
               <Link href="/" className="brand">
-                <div className="brand-mark">
-                  <ShoppingBag
-                    size={19}
-                    strokeWidth={2.4}
+                <div className="logo-box">
+                  <Image
+                    src="/logo.png"
+                    alt="PrimeCart"
+                    width={40}
+                    height={40}
                   />
                 </div>
 
-                <span className="brand-name">
+                <div className="brand-name">
                   Prime<span>Cart</span>
-                </span>
+                </div>
               </Link>
-            </div>
+            </motion.div>
 
             {/* HEADER */}
 
-            <div className="form-header">
-              <span className="form-label">
-                CREATE ACCOUNT
-              </span>
-
-              <h2>Welcome to PrimeCart</h2>
-
-              <p>
-                Create your account to start your smarter
-                shopping journey.
-              </p>
-            </div>
-
-            {/* ERROR */}
-
-            {error && (
-              <div className="message error-message">
-                <AlertCircle size={17} />
-
-                <span>{error}</span>
+            <motion.div
+              className="form-header"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="header-icon">
+                <User size={21} />
               </div>
-            )}
 
-            {/* SUCCESS */}
+              <div>
+                <div className="header-label">
+                  PRIME CART ACCOUNT
+                </div>
 
-            {success && (
-              <div className="message success-message">
-                <CheckCircle2 size={17} />
+                <h2>Create your account</h2>
 
-                <span>{success}</span>
+                <p>
+                  Join PrimeCart and start shopping smarter.
+                </p>
               </div>
-            )}
+            </motion.div>
+
+            {/* MESSAGES */}
+
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  className="message error-message"
+                  initial={{
+                    opacity: 0,
+                    y: -8,
+                    height: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    height: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: -8,
+                    height: 0,
+                  }}
+                >
+                  <AlertCircle size={18} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+
+              {success && (
+                <motion.div
+                  className="message success-message"
+                  initial={{
+                    opacity: 0,
+                    y: -8,
+                    height: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    height: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: -8,
+                    height: 0,
+                  }}
+                >
+                  <CheckCircle2 size={18} />
+                  <span>{success}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* FORM */}
 
@@ -285,11 +422,21 @@ export default function RegisterPage() {
             >
               {/* NAME */}
 
-              <div className="field">
-                <label htmlFor="fullName">Full name</label>
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <label htmlFor="fullName">
+                  Full name
+                </label>
 
-                <div className="input-box">
-                  <User size={18} className="input-icon" />
+                <div className="input-wrapper">
+                  <User
+                    size={18}
+                    className="input-icon"
+                  />
 
                   <input
                     id="fullName"
@@ -303,18 +450,33 @@ export default function RegisterPage() {
                     disabled={loading}
                     required
                   />
+
+                  {fullName.trim().length >= 2 && (
+                    <Check
+                      size={17}
+                      className="valid-icon"
+                    />
+                  )}
                 </div>
-              </div>
+              </motion.div>
 
               {/* EMAIL */}
 
-              <div className="field">
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
                 <label htmlFor="email">
                   Email address
                 </label>
 
-                <div className="input-box">
-                  <Mail size={18} className="input-icon" />
+                <div className="input-wrapper">
+                  <Mail
+                    size={18}
+                    className="input-icon"
+                  />
 
                   <input
                     id="email"
@@ -328,15 +490,39 @@ export default function RegisterPage() {
                     disabled={loading}
                     required
                   />
+
+                  {email.includes("@") && (
+                    <Check
+                      size={17}
+                      className="valid-icon"
+                    />
+                  )}
                 </div>
-              </div>
+              </motion.div>
 
               {/* PASSWORD */}
 
-              <div className="field">
-                <label htmlFor="password">Password</label>
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+              >
+                <div className="label-row">
+                  <label htmlFor="password">
+                    Password
+                  </label>
 
-                <div className="input-box">
+                  {password.length > 0 && (
+                    <span
+                      className={`password-status strength-${passwordScore}`}
+                    >
+                      {passwordLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="input-wrapper">
                   <LockKeyhole
                     size={18}
                     className="input-icon"
@@ -359,7 +545,7 @@ export default function RegisterPage() {
 
                   <button
                     type="button"
-                    className="eye-button"
+                    className="password-toggle"
                     onClick={() =>
                       setShowPassword((value) => !value)
                     }
@@ -378,19 +564,79 @@ export default function RegisterPage() {
                   </button>
                 </div>
 
-                <span className="hint">
-                  Minimum 6 characters
-                </span>
-              </div>
+                {/* PASSWORD STRENGTH */}
+
+                {password.length > 0 && (
+                  <motion.div
+                    className="strength-area"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <div className="strength-bars">
+                      {[1, 2, 3, 4].map((bar) => (
+                        <span
+                          key={bar}
+                          className={
+                            bar <= passwordScore
+                              ? "active"
+                              : ""
+                          }
+                        />
+                      ))}
+                    </div>
+
+                    <div className="password-rules">
+                      <span
+                        className={
+                          passwordLength ? "passed" : ""
+                        }
+                      >
+                        6+ characters
+                      </span>
+
+                      <span
+                        className={
+                          passwordUppercase
+                            ? "passed"
+                            : ""
+                        }
+                      >
+                        Uppercase
+                      </span>
+
+                      <span
+                        className={
+                          passwordNumber ? "passed" : ""
+                        }
+                      >
+                        Number
+                      </span>
+
+                      <span
+                        className={
+                          passwordSpecial ? "passed" : ""
+                        }
+                      >
+                        Symbol
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
 
               {/* CONFIRM PASSWORD */}
 
-              <div className="field">
+              <motion.div
+                className="field"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
                 <label htmlFor="confirmPassword">
                   Confirm password
                 </label>
 
-                <div className="input-box">
+                <div className="input-wrapper">
                   <LockKeyhole
                     size={18}
                     className="input-icon"
@@ -415,7 +661,7 @@ export default function RegisterPage() {
 
                   <button
                     type="button"
-                    className="eye-button"
+                    className="password-toggle"
                     onClick={() =>
                       setShowConfirmPassword(
                         (value) => !value
@@ -434,12 +680,39 @@ export default function RegisterPage() {
                       <Eye size={18} />
                     )}
                   </button>
+
+                  {confirmPassword.length > 0 &&
+                    password === confirmPassword && (
+                      <Check
+                        size={17}
+                        className="valid-icon"
+                      />
+                    )}
                 </div>
-              </div>
+
+                {confirmPassword.length > 0 && (
+                  <span
+                    className={`match-text ${
+                      password === confirmPassword
+                        ? "matched"
+                        : "not-matched"
+                    }`}
+                  >
+                    {password === confirmPassword
+                      ? "Passwords match"
+                      : "Passwords do not match"}
+                  </span>
+                )}
+              </motion.div>
 
               {/* TERMS */}
 
-              <p className="terms">
+              <motion.p
+                className="terms"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.45 }}
+              >
                 By creating an account, you agree to
                 PrimeCart&apos;s{" "}
                 <Link href="/terms">
@@ -450,14 +723,29 @@ export default function RegisterPage() {
                   Privacy Policy
                 </Link>
                 .
-              </p>
+              </motion.p>
 
-              {/* SUBMIT */}
+              {/* BUTTON */}
 
-              <button
+              <motion.button
                 type="submit"
-                className="submit-button"
+                className="primary-button"
                 disabled={loading}
+                whileHover={
+                  !loading
+                    ? {
+                        y: -2,
+                        scale: 1.005,
+                      }
+                    : {}
+                }
+                whileTap={
+                  !loading
+                    ? {
+                        scale: 0.985,
+                      }
+                    : {}
+                }
               >
                 {loading ? (
                   <>
@@ -473,12 +761,18 @@ export default function RegisterPage() {
                     <ArrowRight size={18} />
                   </>
                 )}
-              </button>
+              </motion.button>
             </form>
+
+            {/* DIVIDER */}
+
+            <div className="divider">
+              <span>ALREADY A MEMBER?</span>
+            </div>
 
             {/* LOGIN */}
 
-            <div className="login-link">
+            <div className="account-link">
               <span>Already have an account?</span>
 
               <Link href="/auth/login">
@@ -489,15 +783,16 @@ export default function RegisterPage() {
 
             {/* SECURITY */}
 
-            <div className="security">
-              <LockKeyhole size={13} />
+            <div className="security-note">
+              <ShieldCheck size={15} />
 
               <span>
-                Your information is securely protected.
+                Your information is protected with secure
+                authentication.
               </span>
             </div>
           </div>
-        </section>
+        </motion.section>
       </div>
 
       <style jsx global>{`
@@ -517,16 +812,14 @@ export default function RegisterPage() {
 
         .register-page {
           min-height: 100vh;
-          position: relative;
-          overflow: hidden;
           background:
             linear-gradient(
               135deg,
-              #faf8f3 0%,
-              #fffdf9 52%,
-              #f8f3e8 100%
+              #fffdf9 0%,
+              #faf8f3 48%,
+              #f7f1e5 100%
             );
-          color: #1c1a16;
+          color: #1d1b17;
           font-family:
             Inter,
             ui-sans-serif,
@@ -535,60 +828,60 @@ export default function RegisterPage() {
             BlinkMacSystemFont,
             "Segoe UI",
             sans-serif;
+          overflow-x: hidden;
         }
 
-        /* AMBIENT */
+        /* BACKGROUND GRID */
 
-        .ambient {
+        .page-grid {
           position: fixed;
+          inset: 0;
           pointer-events: none;
-          border-radius: 50%;
-          filter: blur(90px);
-          opacity: 0.45;
-          animation: ambientFloat 9s ease-in-out infinite;
-        }
-
-        .ambient-one {
-          width: 330px;
-          height: 330px;
-          top: -190px;
-          right: -100px;
-          background: rgba(211, 166, 61, 0.17);
-        }
-
-        .ambient-two {
-          width: 300px;
-          height: 300px;
-          bottom: -180px;
-          left: -120px;
-          background: rgba(211, 166, 61, 0.1);
-          animation-delay: -4s;
-        }
-
-        @keyframes ambientFloat {
-          0%,
-          100% {
-            transform: translate3d(0, 0, 0);
-          }
-
-          50% {
-            transform: translate3d(0, 18px, 0);
-          }
+          opacity: 0.38;
+          background-image:
+            linear-gradient(
+              rgba(198, 150, 36, 0.035) 1px,
+              transparent 1px
+            ),
+            linear-gradient(
+              90deg,
+              rgba(198, 150, 36, 0.035) 1px,
+              transparent 1px
+            );
+          background-size: 42px 42px;
+          mask-image: linear-gradient(
+            to bottom,
+            black,
+            transparent 90%
+          );
         }
 
         /* LAYOUT */
 
-        .register-container {
+        .register-shell {
           position: relative;
           z-index: 1;
-          width: min(1180px, calc(100% - 48px));
+          width: min(1240px, calc(100% - 64px));
           min-height: 100vh;
-          margin: auto;
-          padding: 35px 0;
+          margin: 0 auto;
+          padding: 42px 0;
           display: grid;
-          grid-template-columns: 1fr 0.86fr;
+          grid-template-columns: minmax(0, 1fr) minmax(
+              420px,
+              500px
+            );
           gap: 80px;
           align-items: center;
+        }
+
+        /* SHOWCASE */
+
+        .showcase {
+          min-height: 680px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 15px 0;
         }
 
         /* BRAND */
@@ -596,111 +889,92 @@ export default function RegisterPage() {
         .brand {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
-          text-decoration: none;
+          gap: 12px;
           width: fit-content;
+          text-decoration: none;
+          color: #171612;
         }
 
-        .brand-mark {
-          width: 42px;
-          height: 42px;
+        .logo-box {
+          width: 45px;
+          height: 45px;
           display: grid;
           place-items: center;
-          border-radius: 12px;
-          background: linear-gradient(
-            135deg,
-            #dcb24f,
-            #c69624
-          );
-          color: #fff;
+          overflow: hidden;
+          border-radius: 13px;
+          background: #fff;
+          border: 1px solid #eadfc9;
           box-shadow:
-            0 10px 25px rgba(198, 150, 36, 0.2);
+            0 8px 25px rgba(73, 56, 20, 0.08);
           transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease;
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
         }
 
-        .brand:hover .brand-mark {
-          transform: translateY(-2px) rotate(-3deg);
+        .logo-box img {
+          object-fit: contain;
+        }
+
+        .brand:hover .logo-box {
+          transform: translateY(-2px) rotate(-2deg);
           box-shadow:
-            0 14px 30px rgba(198, 150, 36, 0.28);
+            0 12px 30px rgba(73, 56, 20, 0.13);
         }
 
         .brand-name {
-          color: #171612;
           font-size: 24px;
+          line-height: 1;
           font-weight: 850;
-          letter-spacing: -0.8px;
+          letter-spacing: -1px;
         }
 
         .brand-name span {
           color: #c69624;
         }
 
-        /* LEFT */
-
-        .showcase {
-          min-height: 670px;
-          padding: 22px 8px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          animation: revealLeft 0.75s ease both;
-        }
-
-        @keyframes revealLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-25px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
+        /* CONTENT */
 
         .showcase-content {
-          max-width: 580px;
+          max-width: 650px;
         }
 
         .eyebrow {
+          width: fit-content;
           display: flex;
           align-items: center;
-          gap: 9px;
-          margin-bottom: 24px;
-          color: #92701d;
-          font-size: 11px;
+          gap: 8px;
+          padding: 8px 12px;
+          border: 1px solid #eadfc8;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.7);
+          color: #96701c;
+          font-size: 10px;
           font-weight: 850;
-          letter-spacing: 1.5px;
-        }
-
-        .eyebrow span {
-          width: 24px;
-          height: 1px;
-          background: #c69624;
+          letter-spacing: 1.4px;
+          margin-bottom: 25px;
+          box-shadow:
+            0 5px 20px rgba(78, 60, 23, 0.04);
         }
 
         .showcase h1 {
           margin: 0;
-          color: #1a1814;
-          font-size: clamp(48px, 5.2vw, 72px);
-          line-height: 0.99;
-          letter-spacing: -4.5px;
-          font-weight: 850;
+          font-size: clamp(52px, 6vw, 82px);
+          line-height: 0.96;
+          letter-spacing: -5px;
+          font-weight: 900;
+          color: #171612;
         }
 
-        .showcase h1 strong {
+        .showcase h1 span {
           color: #c69624;
-          font-weight: 850;
         }
 
         .showcase-content > p {
-          max-width: 510px;
-          margin: 27px 0 38px;
-          color: #777168;
+          max-width: 570px;
+          margin: 27px 0 42px;
+          color: #777166;
           font-size: 16px;
-          line-height: 1.75;
+          line-height: 1.8;
         }
 
         /* FEATURES */
@@ -708,89 +982,99 @@ export default function RegisterPage() {
         .feature-list {
           display: flex;
           flex-direction: column;
-          gap: 21px;
+          gap: 13px;
+          max-width: 570px;
         }
 
         .feature {
-          display: grid;
-          grid-template-columns: 42px 1fr;
-          gap: 14px;
-          align-items: start;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding: 12px 14px;
+          border: 1px solid transparent;
+          border-radius: 15px;
+          transition:
+            background 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease;
+        }
+
+        .feature:hover {
+          background: rgba(255, 255, 255, 0.72);
+          border-color: #eee4d2;
+          box-shadow:
+            0 8px 30px rgba(73, 56, 20, 0.05);
         }
 
         .feature-number {
-          width: 38px;
-          height: 38px;
+          width: 39px;
+          height: 39px;
+          flex-shrink: 0;
           display: grid;
           place-items: center;
-          border: 1px solid #e5d6ad;
           border-radius: 11px;
-          background: rgba(255, 255, 255, 0.65);
-          color: #a67c20;
+          background: #f5ead0;
+          color: #97721f;
           font-size: 10px;
-          font-weight: 850;
-          transition:
-            transform 0.25s ease,
-            background 0.25s ease;
+          font-weight: 900;
+          letter-spacing: 0.5px;
         }
 
-        .feature:hover .feature-number {
-          transform: translateX(4px);
-          background: #f8efd9;
-        }
-
-        .feature h3 {
-          margin: 1px 0 4px;
-          color: #28251f;
-          font-size: 14px;
+        .feature strong {
+          display: block;
+          margin-bottom: 3px;
+          color: #29261f;
+          font-size: 13px;
           font-weight: 800;
         }
 
-        .feature p {
-          margin: 0;
-          color: #928b80;
+        .feature span {
+          display: block;
+          color: #928b7f;
           font-size: 12px;
-          line-height: 1.55;
+          line-height: 1.5;
         }
 
+        /* BOTTOM */
+
         .showcase-bottom {
-          max-width: 580px;
+          max-width: 650px;
           display: flex;
+          align-items: center;
           justify-content: space-between;
-          color: #a19a8e;
+          color: #aaa296;
           font-size: 11px;
         }
 
-        /* FORM AREA */
+        .trusted {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
 
-        .form-area {
+        .trusted svg {
+          color: #b38a2c;
+        }
+
+        /* REGISTER AREA */
+
+        .register-area {
           display: flex;
           justify-content: center;
-          animation: revealRight 0.75s 0.08s ease both;
         }
 
-        @keyframes revealRight {
-          from {
-            opacity: 0;
-            transform: translateX(25px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
+        /* CARD */
 
         .register-card {
-          width: min(465px, 100%);
-          padding: 39px 40px 31px;
-          border: 1px solid rgba(224, 216, 201, 0.9);
-          border-radius: 26px;
+          width: 100%;
+          padding: 38px 40px;
           background: rgba(255, 255, 255, 0.94);
+          border: 1px solid #e9e1d3;
+          border-radius: 25px;
           box-shadow:
-            0 30px 80px rgba(55, 45, 26, 0.09),
-            0 5px 20px rgba(55, 45, 26, 0.035);
-          backdrop-filter: blur(14px);
+            0 35px 90px rgba(56, 45, 24, 0.1),
+            0 8px 25px rgba(56, 45, 24, 0.045);
+          backdrop-filter: blur(18px);
         }
 
         .mobile-brand {
@@ -800,32 +1084,44 @@ export default function RegisterPage() {
         /* HEADER */
 
         .form-header {
-          margin-bottom: 25px;
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          margin-bottom: 27px;
         }
 
-        .form-label {
-          display: block;
-          margin-bottom: 9px;
-          color: #b08320;
-          font-size: 10px;
-          font-weight: 850;
-          letter-spacing: 1.5px;
+        .header-icon {
+          width: 45px;
+          height: 45px;
+          flex-shrink: 0;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          background: #f7edd6;
+          color: #9a741f;
+        }
+
+        .header-label {
+          margin-bottom: 5px;
+          color: #b18a31;
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 1.4px;
         }
 
         .form-header h2 {
           margin: 0;
-          color: #211f1a;
-          font-size: 29px;
+          color: #1d1b17;
+          font-size: 28px;
           line-height: 1.15;
-          letter-spacing: -1.1px;
+          letter-spacing: -1px;
         }
 
         .form-header p {
-          max-width: 360px;
-          margin: 9px 0 0;
+          margin: 7px 0 0;
           color: #888176;
-          font-size: 13px;
-          line-height: 1.6;
+          font-size: 12px;
+          line-height: 1.5;
         }
 
         /* MESSAGES */
@@ -839,31 +1135,19 @@ export default function RegisterPage() {
           border-radius: 11px;
           font-size: 12px;
           line-height: 1.5;
-          animation: messageIn 0.3s ease both;
-        }
-
-        @keyframes messageIn {
-          from {
-            opacity: 0;
-            transform: translateY(-5px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          overflow: hidden;
         }
 
         .error-message {
-          color: #974343;
-          background: #fff5f5;
-          border: 1px solid #efd7d7;
+          color: #9a4141;
+          background: #fff3f3;
+          border: 1px solid #f2d4d4;
         }
 
         .success-message {
-          color: #4c754c;
-          background: #f3f9f0;
-          border: 1px solid #d8ead2;
+          color: #477249;
+          background: #f1f9ef;
+          border: 1px solid #d6e9d1;
         }
 
         /* FORM */
@@ -881,12 +1165,20 @@ export default function RegisterPage() {
         }
 
         .field label {
-          color: #39352e;
-          font-size: 12px;
-          font-weight: 750;
+          color: #3b372f;
+          font-size: 11px;
+          font-weight: 800;
         }
 
-        .input-box {
+        .label-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        /* INPUT */
+
+        .input-wrapper {
           position: relative;
           display: flex;
           align-items: center;
@@ -900,15 +1192,19 @@ export default function RegisterPage() {
           transition: color 0.2s ease;
         }
 
-        .input-box input {
+        .input-wrapper:focus-within .input-icon {
+          color: #bd8d20;
+        }
+
+        .input-wrapper input {
           width: 100%;
-          height: 50px;
-          padding: 0 45px;
-          border: 1px solid #e4dfd5;
+          height: 49px;
+          padding: 0 43px;
+          border: 1px solid #e3ddd2;
           border-radius: 12px;
           outline: none;
           background: #fff;
-          color: #29261f;
+          color: #28251f;
           font-size: 13px;
           transition:
             border-color 0.22s ease,
@@ -916,60 +1212,146 @@ export default function RegisterPage() {
             transform 0.22s ease;
         }
 
-        .input-box input::placeholder {
-          color: #b5afa5;
+        .input-wrapper input::placeholder {
+          color: #b4aea4;
         }
 
-        .input-box:focus-within .input-icon {
-          color: #b18321;
+        .input-wrapper input:hover:not(:disabled) {
+          border-color: #d5c8ad;
         }
 
-        .input-box:focus-within input {
-          border-color: #d2a43d;
+        .input-wrapper input:focus {
+          border-color: #cba03d;
           box-shadow:
-            0 0 0 4px rgba(210, 164, 61, 0.09);
-          transform: translateY(-1px);
+            0 0 0 3px rgba(203, 160, 61, 0.1);
         }
 
-        .eye-button {
+        .input-wrapper input:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+
+        .valid-icon {
           position: absolute;
-          right: 11px;
-          width: 30px;
-          height: 30px;
+          right: 14px;
+          color: #5f9160;
+          pointer-events: none;
+        }
+
+        .password-toggle {
+          position: absolute;
+          right: 10px;
+          width: 31px;
+          height: 31px;
           display: grid;
           place-items: center;
           border: 0;
           border-radius: 8px;
           background: transparent;
-          color: #999187;
+          color: #999186;
           cursor: pointer;
           transition:
             color 0.2s ease,
             background 0.2s ease;
         }
 
-        .eye-button:hover {
-          color: #9d751d;
-          background: #faf4e6;
+        .password-toggle:hover {
+          background: #f7f2e9;
+          color: #9f771f;
         }
 
-        .hint {
-          color: #aaa398;
+        /* PASSWORD STRENGTH */
+
+        .password-status {
           font-size: 10px;
+          font-weight: 800;
+        }
+
+        .strength-1 {
+          color: #bd5656;
+        }
+
+        .strength-2 {
+          color: #b78627;
+        }
+
+        .strength-3,
+        .strength-4 {
+          color: #56805a;
+        }
+
+        .strength-area {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .strength-bars {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 4px;
+        }
+
+        .strength-bars span {
+          height: 3px;
+          border-radius: 99px;
+          background: #e8e2d8;
+          transition: background 0.25s ease;
+        }
+
+        .strength-bars span.active {
+          background: #c69624;
+        }
+
+        .password-rules {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px 12px;
+        }
+
+        .password-rules span {
+          color: #aaa398;
+          font-size: 9px;
+        }
+
+        .password-rules span::before {
+          content: "○";
+          margin-right: 4px;
+        }
+
+        .password-rules span.passed {
+          color: #5d855e;
+        }
+
+        .password-rules span.passed::before {
+          content: "✓";
+        }
+
+        .match-text {
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .matched {
+          color: #5c885f;
+        }
+
+        .not-matched {
+          color: #b65a5a;
         }
 
         /* TERMS */
 
         .terms {
-          margin: -1px 0 0;
+          margin: 0;
           color: #999187;
-          font-size: 10.5px;
-          line-height: 1.65;
+          font-size: 10px;
+          line-height: 1.6;
         }
 
         .terms a {
-          color: #9e751c;
-          font-weight: 750;
+          color: #9f771f;
+          font-weight: 800;
           text-decoration: none;
         }
 
@@ -979,51 +1361,67 @@ export default function RegisterPage() {
 
         /* BUTTON */
 
-        .submit-button {
+        .primary-button {
+          position: relative;
           width: 100%;
           height: 52px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 9px;
-          margin-top: 2px;
           border: 0;
-          border-radius: 12px;
+          border-radius: 13px;
           background: linear-gradient(
             135deg,
-            #d5aa43,
-            #c18f20
+            #d2a536,
+            #b98419
           );
           color: #fff;
           font-size: 13px;
-          font-weight: 800;
+          font-weight: 850;
           cursor: pointer;
           box-shadow:
-            0 11px 25px rgba(193, 143, 32, 0.2);
+            0 12px 25px rgba(181, 135, 29, 0.2);
           transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            filter 0.2s ease;
+            box-shadow 0.25s ease,
+            filter 0.25s ease;
+          overflow: hidden;
         }
 
-        .submit-button:hover:not(:disabled) {
-          transform: translateY(-2px);
-          filter: brightness(1.03);
+        .primary-button::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -120%;
+          width: 70%;
+          height: 100%;
+          transform: skewX(-20deg);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.24),
+            transparent
+          );
+          transition: left 0.6s ease;
+        }
+
+        .primary-button:hover:not(:disabled)::before {
+          left: 140%;
+        }
+
+        .primary-button:hover:not(:disabled) {
           box-shadow:
-            0 15px 30px rgba(193, 143, 32, 0.27);
+            0 16px 32px rgba(181, 135, 29, 0.28);
+          filter: brightness(1.03);
         }
 
-        .submit-button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .submit-button:disabled {
-          opacity: 0.68;
+        .primary-button:disabled {
+          opacity: 0.7;
           cursor: not-allowed;
         }
 
         .spin {
-          animation: spin 0.8s linear infinite;
+          animation: spin 0.85s linear infinite;
         }
 
         @keyframes spin {
@@ -1032,91 +1430,118 @@ export default function RegisterPage() {
           }
         }
 
-        /* LOGIN */
+        /* DIVIDER */
 
-        .login-link {
+        .divider {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 21px 0 17px;
+          color: #c0b9ad;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 1.2px;
+        }
+
+        .divider::before,
+        .divider::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: #eee9e1;
+        }
+
+        /* ACCOUNT */
+
+        .account-link {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
-          margin-top: 21px;
-          color: #888176;
+          color: #817a70;
           font-size: 12px;
         }
 
-        .login-link a {
+        .account-link a {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          color: #a1771c;
-          font-weight: 800;
+          color: #9d741b;
+          font-weight: 850;
           text-decoration: none;
-          transition: gap 0.2s ease;
+          transition:
+            gap 0.2s ease,
+            color 0.2s ease;
         }
 
-        .login-link a:hover {
+        .account-link a:hover {
           gap: 7px;
+          color: #795a12;
         }
 
         /* SECURITY */
 
-        .security {
+        .security-note {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
-          margin-top: 21px;
-          padding-top: 18px;
-          border-top: 1px solid #eee9e0;
-          color: #aaa399;
-          font-size: 10px;
+          margin-top: 20px;
+          padding-top: 16px;
+          border-top: 1px solid #eee9e1;
+          color: #aaa398;
+          font-size: 9px;
+        }
+
+        .security-note svg {
+          color: #a7853d;
         }
 
         /* TABLET */
 
-        @media (max-width: 900px) {
-          .register-container {
-            width: min(650px, calc(100% - 32px));
+        @media (max-width: 1050px) {
+          .register-shell {
+            width: min(850px, calc(100% - 40px));
             grid-template-columns: 1fr;
-            gap: 0;
-            padding: 25px 0;
+            gap: 30px;
+            padding: 35px 0;
           }
 
           .showcase {
             display: none;
           }
 
-          .form-area {
-            min-height: calc(100vh - 50px);
+          .register-area {
+            min-height: calc(100vh - 70px);
             align-items: center;
           }
 
           .register-card {
-            width: 100%;
+            width: min(500px, 100%);
           }
 
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 28px;
+            margin-bottom: 27px;
           }
         }
 
         /* MOBILE */
 
-        @media (max-width: 520px) {
-          .register-container {
+        @media (max-width: 560px) {
+          .register-shell {
             width: calc(100% - 22px);
-            padding: 11px 0;
+            padding: 12px 0;
           }
 
-          .form-area {
-            min-height: calc(100vh - 22px);
+          .register-area {
+            min-height: calc(100vh - 24px);
           }
 
           .register-card {
-            padding: 27px 19px 23px;
-            border-radius: 21px;
+            padding: 27px 20px;
+            border-radius: 20px;
           }
 
           .mobile-brand {
@@ -1127,30 +1552,44 @@ export default function RegisterPage() {
             font-size: 22px;
           }
 
-          .brand-mark {
-            width: 39px;
-            height: 39px;
-            border-radius: 11px;
+          .logo-box {
+            width: 41px;
+            height: 41px;
+          }
+
+          .form-header {
+            gap: 11px;
+            margin-bottom: 23px;
+          }
+
+          .header-icon {
+            width: 42px;
+            height: 42px;
           }
 
           .form-header h2 {
-            font-size: 25px;
+            font-size: 24px;
           }
 
           .form-header p {
-            font-size: 12px;
+            font-size: 11px;
           }
 
-          .input-box input {
+          .register-form {
+            gap: 14px;
+          }
+
+          .input-wrapper input {
             height: 49px;
           }
 
-          .submit-button {
+          .primary-button {
             height: 51px;
           }
 
-          .login-link {
-            font-size: 11.5px;
+          .account-link {
+            flex-direction: column;
+            gap: 5px;
           }
         }
 
@@ -1161,6 +1600,7 @@ export default function RegisterPage() {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
