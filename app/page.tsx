@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -340,25 +341,30 @@ export default function HomePage() {
           <div className="flex h-[72px] items-center gap-4">
 
             {/* LOGO */}
+<Link
+  href="/"
+  className="group flex shrink-0 items-center gap-2.5"
+  aria-label="PrimeCart Home"
+>
+  <motion.div
+    whileHover={{ scale: 1.04 }}
+    transition={{ duration: 0.2 }}
+    className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-[0_6px_18px_rgba(184,135,45,0.14)] ring-1 ring-[#eadfc9]"
+  >
+    <Image
+      src="/logo.png"
+      alt="PrimeCart"
+      width={44}
+      height={44}
+      priority
+      className="h-full w-full object-contain p-1"
+    />
+  </motion.div>
 
-            <Link
-              href="/logo.png"
-              className="group flex shrink-0 items-center gap-2.5"
-            >
-              <motion.div
-                whileHover={{
-                  rotate: 5,
-                  scale: 1.04,
-                }}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c79a3b] text-white shadow-[0_8px_20px_rgba(184,135,45,0.2)]"
-              >
-                <Sparkles size={19} />
-              </motion.div>
-
-              <div className="text-[21px] font-black tracking-[-0.9px]">
-                Prime<span className="text-[#b8872d]">Cart</span>
-              </div>
-            </Link>
+  <div className="text-[21px] font-black tracking-[-0.9px] text-[#17140e]">
+    Prime<span className="text-[#b8872d]">Cart</span>
+  </div>
+</Link>
 
             {/* DESKTOP SEARCH */}
 
