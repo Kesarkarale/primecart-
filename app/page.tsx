@@ -25,7 +25,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 
 /* =========================================================
@@ -105,7 +105,7 @@ const products = [
     discount: "22% OFF",
     rating: "4.8",
     reviews: "1.2k",
-    emoji: "📱",
+    image: "/products/smartphone-x-pro.png",
     tag: "Best Seller",
   },
   {
@@ -117,7 +117,7 @@ const products = [
     discount: "50% OFF",
     rating: "4.7",
     reviews: "864",
-    emoji: "🎧",
+    image: "/products/wireless-headphones.png",
     tag: "Trending",
   },
   {
@@ -129,7 +129,7 @@ const products = [
     discount: "40% OFF",
     rating: "4.6",
     reviews: "532",
-    emoji: "🧥",
+    image: "/products/denim-jacket.png",
     tag: "Popular",
   },
   {
@@ -141,7 +141,7 @@ const products = [
     discount: "40% OFF",
     rating: "4.8",
     reviews: "421",
-    emoji: "✨",
+    image: "/products/face-serum.png",
     tag: "Top Rated",
   },
 ];
@@ -199,24 +199,28 @@ const smartFeatures = [
     title: "PrimeMatch",
     tag: "Smart Discovery",
     text: "Tell us your needs, budget and priorities and discover products that fit you better.",
+    href: "/primematch",
   },
   {
     icon: Target,
     title: "Budget Builder",
     tag: "Budget Smart",
     text: "Set your spending limit and build your shopping list without losing control.",
+    href: "/products",
   },
   {
     icon: Layers3,
     title: "Build My Setup",
     tag: "Complete Setup",
     text: "Create complete setups for gaming, college, work, fitness and home.",
+    href: "/categories",
   },
   {
     icon: Gift,
     title: "Mystery Deal",
     tag: "Surprise",
     text: "Discover surprise offers and special deals selected for PrimeCart shoppers.",
+    href: "/products",
   },
 ];
 
@@ -319,15 +323,37 @@ export default function HomePage() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [search, setSearch] = useState("");
 
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const value = search.trim();
+
+    if (!value) {
+      window.location.href = "/products";
+      return;
+    }
+
+    window.location.href = `/products?search=${encodeURIComponent(value)}`;
+  };
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#fffdf9] text-[#211b12]">
 
       {/* =====================================================
-          TOP ANNOUNCEMENT BAR
+          ANNOUNCEMENT BAR
       ===================================================== */}
 
-      <div className="bg-[#b8872d] px-4 py-2 text-center text-[10px] font-bold tracking-wide text-white sm:text-[11px]">
-        Free shipping on selected orders • Easy returns • Secure shopping
+      <div className="relative overflow-hidden bg-[#b8872d] px-4 py-2.5 text-center text-[10px] font-bold tracking-wide text-white sm:text-[11px]">
+        <div className="flex items-center justify-center gap-2">
+          <Zap size={12} fill="currentColor" />
+          <span>
+            Free shipping on selected orders
+          </span>
+          <span className="hidden sm:inline">•</span>
+          <span className="hidden sm:inline">Easy returns</span>
+          <span className="hidden sm:inline">•</span>
+          <span className="hidden sm:inline">Secure shopping</span>
+        </div>
       </div>
 
       {/* =====================================================
@@ -341,37 +367,66 @@ export default function HomePage() {
           <div className="flex h-[72px] items-center gap-4">
 
             {/* LOGO */}
-<Link
-  href="/"
-  className="group flex shrink-0 items-center gap-2.5"
-  aria-label="PrimeCart Home"
->
-  <motion.div
-    whileHover={{ scale: 1.04 }}
-    transition={{ duration: 0.2 }}
-    className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-[0_6px_18px_rgba(184,135,45,0.14)] ring-1 ring-[#eadfc9]"
-  >
-    <Image
-      src="/logo.png"
-      alt="PrimeCart"
-      width={44}
-      height={44}
-      priority
-      className="h-full w-full object-contain p-1"
-    />
-  </motion.div>
 
-  <div className="text-[21px] font-black tracking-[-0.9px] text-[#17140e]">
-    Prime<span className="text-[#b8872d]">Cart</span>
-  </div>
-</Link>
+            <Link
+              href="/"
+              className="group flex shrink-0 items-center gap-2.5"
+              aria-label="PrimeCart Home"
+            >
+              <motion.div
+                whileHover={{ scale: 1.04 }}
+                transition={{ duration: 0.2 }}
+                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-[0_6px_18px_rgba(184,135,45,0.14)] ring-1 ring-[#eadfc9]"
+              >
+                <Image
+                  src="/logo.png"
+                  alt="PrimeCart"
+                  width={44}
+                  height={44}
+                  priority
+                  className="h-full w-full object-contain p-1"
+                />
+              </motion.div>
 
-            {/* DESKTOP SEARCH */}
+              <div className="text-[21px] font-black tracking-[-0.9px] text-[#17140e]">
+                Prime<span className="text-[#b8872d]">Cart</span>
+              </div>
+            </Link>
+
+            {/* DESKTOP NAV */}
+
+            <nav className="ml-3 hidden items-center gap-1 xl:flex">
+
+              <Link
+                href="/categories"
+                className="rounded-lg px-3 py-2 text-xs font-bold text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+              >
+                Categories
+              </Link>
+
+              <a
+                href="#deals"
+                className="rounded-lg px-3 py-2 text-xs font-bold text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+              >
+                Deals
+              </a>
+
+              <Link
+                href="/primematch"
+                className="rounded-lg px-3 py-2 text-xs font-bold text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+              >
+                PrimeMatch
+              </Link>
+
+            </nav>
+
+            {/* SEARCH */}
 
             <div className="hidden flex-1 md:block">
+
               <form
-                onSubmit={(e) => e.preventDefault()}
-                className="mx-auto flex h-11 max-w-[560px] items-center overflow-hidden rounded-xl border border-[#e4d9c7] bg-white transition focus-within:border-[#c79a3b] focus-within:ring-4 focus-within:ring-[#c79a3b]/10"
+                onSubmit={handleSearch}
+                className="mx-auto flex h-11 max-w-[520px] items-center overflow-hidden rounded-xl border border-[#e4d9c7] bg-white transition focus-within:border-[#c79a3b] focus-within:ring-4 focus-within:ring-[#c79a3b]/10"
               >
                 <Search
                   size={18}
@@ -381,8 +436,8 @@ export default function HomePage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search for products, brands and more..."
-                  className="h-full flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a69d90]"
+                  placeholder="Search products, brands and more..."
+                  className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a69d90]"
                 />
 
                 <button
@@ -392,9 +447,10 @@ export default function HomePage() {
                   Search
                 </button>
               </form>
+
             </div>
 
-            {/* NAV ACTIONS */}
+            {/* DESKTOP ACTIONS */}
 
             <div className="ml-auto hidden items-center gap-1 lg:flex">
 
@@ -403,7 +459,6 @@ export default function HomePage() {
                 className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
               >
                 <UserRound size={18} />
-
                 <span className="text-xs font-bold">
                   Account
                 </span>
@@ -439,10 +494,11 @@ export default function HomePage() {
 
             </div>
 
-            {/* MOBILE MENU */}
+            {/* MOBILE MENU BUTTON */}
 
             <button
-              onClick={() => setMobileMenu(!mobileMenu)}
+              type="button"
+              onClick={() => setMobileMenu((prev) => !prev)}
               className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-[#e4d9c7] bg-white text-[#554c40] md:hidden"
               aria-label="Toggle menu"
             >
@@ -458,21 +514,31 @@ export default function HomePage() {
           {/* MOBILE SEARCH */}
 
           <div className="pb-3 md:hidden">
-            <div className="flex h-10 items-center rounded-xl border border-[#e4d9c7] bg-white">
+
+            <form
+              onSubmit={handleSearch}
+              className="flex h-10 items-center rounded-xl border border-[#e4d9c7] bg-white"
+            >
               <Search
                 size={16}
-                className="ml-3 text-[#9b9182]"
+                className="ml-3 shrink-0 text-[#9b9182]"
               />
 
               <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products..."
                 className="min-w-0 flex-1 bg-transparent px-2 text-xs outline-none"
               />
 
-              <button className="mr-1 rounded-lg bg-[#c79a3b] px-3 py-2 text-[10px] font-black text-white">
+              <button
+                type="submit"
+                className="mr-1 rounded-lg bg-[#c79a3b] px-3 py-2 text-[10px] font-black text-white"
+              >
                 Search
               </button>
-            </div>
+            </form>
+
           </div>
 
         </div>
@@ -491,6 +557,7 @@ export default function HomePage() {
             }}
             className="border-t border-[#eee5d6] bg-white md:hidden"
           >
+
             <div className="mx-auto max-w-[1400px] space-y-1 px-4 py-4">
 
               <Link
@@ -511,17 +578,27 @@ export default function HomePage() {
                 <ChevronRight size={16} />
               </a>
 
-              <a
-                href="#features"
+              <Link
+                href="/primematch"
                 onClick={() => setMobileMenu(false)}
                 className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
               >
-                PrimeCart Features
+                PrimeMatch
                 <ChevronRight size={16} />
-              </a>
+              </Link>
+
+              <Link
+                href="/products"
+                onClick={() => setMobileMenu(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
+              >
+                All Products
+                <ChevronRight size={16} />
+              </Link>
 
               <Link
                 href="/auth/login"
+                onClick={() => setMobileMenu(false)}
                 className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
               >
                 <UserRound size={17} />
@@ -530,6 +607,7 @@ export default function HomePage() {
 
               <Link
                 href="/auth/register"
+                onClick={() => setMobileMenu(false)}
                 className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#c79a3b] px-4 py-3 text-sm font-black text-white"
               >
                 Start Shopping
@@ -537,6 +615,7 @@ export default function HomePage() {
               </Link>
 
             </div>
+
           </motion.div>
         )}
 
@@ -551,7 +630,7 @@ export default function HomePage() {
         <div className="absolute -left-40 top-20 h-[450px] w-[450px] rounded-full bg-[#ead7a9]/25 blur-3xl" />
         <div className="absolute -right-40 top-0 h-[500px] w-[500px] rounded-full bg-[#f1dfb7]/30 blur-3xl" />
 
-        <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:grid-cols-[0.95fr_1.05fr] lg:px-8 lg:pb-24 lg:pt-20">
+        <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:pb-24 lg:pt-20">
 
           {/* HERO COPY */}
 
@@ -584,7 +663,7 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
 
               <Link
-                href="/categories"
+                href="/products"
                 className="group flex items-center gap-2 rounded-xl bg-[#c79a3b] px-5 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(184,135,45,0.2)] transition hover:-translate-y-1 hover:bg-[#ae7d25] hover:shadow-[0_16px_32px_rgba(184,135,45,0.25)]"
               >
                 Shop Now
@@ -629,18 +708,18 @@ export default function HomePage() {
 
           </motion.div>
 
-          {/* HERO SHOPPING CARD */}
+          {/* HERO PRODUCT EXPERIENCE */}
 
           <motion.div
             variants={fadeRight}
             initial="hidden"
             animate="visible"
-            className="relative mx-auto w-full max-w-[620px]"
+            className="relative mx-auto w-full max-w-[650px]"
           >
 
             <motion.div
               animate={{
-                y: [0, -8, 0],
+                y: [0, -7, 0],
               }}
               transition={{
                 duration: 4,
@@ -655,13 +734,19 @@ export default function HomePage() {
               <div className="flex items-center justify-between border-b border-[#eee7da] pb-4">
 
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#b8872d]">
-                    PrimeCart Picks
-                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#c79a3b]" />
+
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#b8872d]">
+                      PrimeCart Picks
+                    </p>
+                  </div>
 
                   <h3 className="mt-1 text-lg font-black tracking-tight">
                     Products made for you
                   </h3>
+
                 </div>
 
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbf2df] text-[#a37826]">
@@ -674,7 +759,7 @@ export default function HomePage() {
 
               <div className="mt-4 grid grid-cols-2 gap-3">
 
-                {products.slice(0, 4).map((product, index) => (
+                {products.map((product, index) => (
                   <Link
                     key={product.slug}
                     href={`/products/${product.slug}`}
@@ -693,17 +778,22 @@ export default function HomePage() {
                       }`}
                     >
 
-                      <span className="text-[65px] transition duration-300 group-hover:scale-110">
-                        {product.emoji}
-                      </span>
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 45vw, 260px"
+                        className="object-contain p-5 transition duration-500 group-hover:scale-110"
+                      />
 
                       <span className="absolute left-2 top-2 rounded-md bg-[#c79a3b] px-2 py-1 text-[7px] font-black text-white">
                         {product.tag}
                       </span>
 
                       <button
+                        type="button"
                         onClick={(e) => e.preventDefault()}
-                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#7d7467] shadow-sm"
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#7d7467] shadow-sm transition hover:text-[#b8872d]"
                         aria-label="Wishlist"
                       >
                         <Heart size={13} />
@@ -720,6 +810,7 @@ export default function HomePage() {
                     </h4>
 
                     <div className="mt-2 flex items-center gap-1">
+
                       <Star
                         size={11}
                         fill="currentColor"
@@ -733,9 +824,11 @@ export default function HomePage() {
                       <span className="text-[8px] text-[#999083]">
                         ({product.reviews})
                       </span>
+
                     </div>
 
                     <div className="mt-2 flex items-end gap-2">
+
                       <span className="text-sm font-black">
                         {product.price}
                       </span>
@@ -743,6 +836,7 @@ export default function HomePage() {
                       <span className="text-[9px] text-[#aaa194] line-through">
                         {product.originalPrice}
                       </span>
+
                     </div>
 
                   </Link>
@@ -750,7 +844,7 @@ export default function HomePage() {
 
               </div>
 
-              {/* MATCH STRIP */}
+              {/* SMART MATCH STRIP */}
 
               <div className="mt-4 flex items-center justify-between rounded-xl bg-[#f8f1e4] px-4 py-3">
 
@@ -774,7 +868,7 @@ export default function HomePage() {
 
                 <Link
                   href="/primematch"
-                  className="flex h-8 items-center gap-1 rounded-lg bg-white px-3 text-[9px] font-black text-[#9a7127] shadow-sm"
+                  className="flex h-8 items-center gap-1 rounded-lg bg-white px-3 text-[9px] font-black text-[#9a7127] shadow-sm transition hover:-translate-y-0.5"
                 >
                   Try it
                   <ArrowRight size={12} />
@@ -784,7 +878,7 @@ export default function HomePage() {
 
             </motion.div>
 
-            {/* FLOATING BADGE */}
+            {/* FLOATING BUDGET */}
 
             <motion.div
               animate={{ y: [0, -7, 0] }}
@@ -812,6 +906,8 @@ export default function HomePage() {
 
             </motion.div>
 
+            {/* FLOATING MATCH */}
+
             <motion.div
               animate={{ y: [0, 7, 0] }}
               transition={{
@@ -828,11 +924,11 @@ export default function HomePage() {
 
               <div>
                 <p className="text-[8px] text-[#93897b]">
-                  PrimePoints
+                  PrimeMatch
                 </p>
 
                 <p className="text-xs font-black text-[#a27727]">
-                  +120 earned
+                  96% Match
                 </p>
               </div>
 
@@ -845,7 +941,7 @@ export default function HomePage() {
       </section>
 
       {/* =====================================================
-          SHOPPING BENEFITS
+          BENEFITS
       ===================================================== */}
 
       <section className="border-b border-[#eee5d6] bg-white">
@@ -876,6 +972,7 @@ export default function HomePage() {
                 </div>
 
                 <div>
+
                   <h3 className="text-[12px] font-black">
                     {item.title}
                   </h3>
@@ -883,6 +980,7 @@ export default function HomePage() {
                   <p className="mt-1 text-[9px] leading-4 text-[#8b8276]">
                     {item.text}
                   </p>
+
                 </div>
 
               </motion.div>
@@ -1027,6 +1125,10 @@ export default function HomePage() {
                 </span>
               </h2>
 
+              <p className="mt-3 max-w-xl text-sm text-[#807668]">
+                Discover products shoppers are loving right now.
+              </p>
+
             </div>
 
             <Link
@@ -1063,25 +1165,37 @@ export default function HomePage() {
                 className="group overflow-hidden rounded-[22px] border border-[#e8dfd1] bg-white transition hover:border-[#d4b46b] hover:shadow-[0_20px_45px_rgba(69,49,18,0.09)]"
               >
 
-                <div className="relative flex h-[230px] items-center justify-center bg-[#f7f1e6]">
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="relative flex h-[240px] items-center justify-center overflow-hidden bg-[#f7f1e6]"
+                >
 
-                  <span className="text-[105px] transition duration-500 group-hover:scale-110">
-                    {product.emoji}
-                  </span>
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-contain p-8 transition duration-500 group-hover:scale-110"
+                  />
 
                   <span className="absolute left-3 top-3 rounded-lg bg-[#c79a3b] px-2.5 py-1.5 text-[8px] font-black text-white">
                     {product.discount}
                   </span>
 
+                  <span className="absolute bottom-3 left-3 rounded-lg bg-white/90 px-2.5 py-1.5 text-[8px] font-black text-[#8e6b2c] backdrop-blur">
+                    {product.tag}
+                  </span>
+
                   <button
                     type="button"
+                    onClick={(e) => e.preventDefault()}
                     className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#7f7669] shadow-sm transition hover:bg-[#fbf0d9] hover:text-[#b8872d]"
                     aria-label="Add to wishlist"
                   >
                     <Heart size={16} />
                   </button>
 
-                </div>
+                </Link>
 
                 <div className="p-4">
 
@@ -1092,19 +1206,24 @@ export default function HomePage() {
                     </span>
 
                     <div className="flex items-center gap-1 text-[9px] font-bold">
+
                       <Star
                         size={11}
                         fill="currentColor"
                         className="text-[#d09c35]"
                       />
+
                       {product.rating}
+
                     </div>
 
                   </div>
 
-                  <h3 className="mt-2 truncate text-sm font-black">
-                    {product.name}
-                  </h3>
+                  <Link href={`/products/${product.slug}`}>
+                    <h3 className="mt-2 truncate text-sm font-black transition hover:text-[#a37826]">
+                      {product.name}
+                    </h3>
+                  </Link>
 
                   <div className="mt-3 flex items-end gap-2">
 
@@ -1149,7 +1268,7 @@ export default function HomePage() {
       </section>
 
       {/* =====================================================
-          DEAL BANNERS
+          DEALS
       ===================================================== */}
 
       <section
@@ -1501,8 +1620,8 @@ export default function HomePage() {
                   </p>
 
                   <Link
-                    href="/auth/register"
-                    className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-black text-[#a37826]"
+                    href={feature.href}
+                    className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-black text-[#a37826] transition hover:text-[#805d1d]"
                   >
                     Explore
                     <ArrowRight size={13} />
@@ -1714,8 +1833,14 @@ export default function HomePage() {
                 className="flex items-center gap-2.5"
               >
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c79a3b] text-white">
-                  <Sparkles size={18} />
+                <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-[#e5d8c3]">
+                  <Image
+                    src="/logo.png"
+                    alt="PrimeCart"
+                    width={40}
+                    height={40}
+                    className="h-full w-full object-contain p-1"
+                  />
                 </div>
 
                 <div className="text-xl font-black tracking-tight">
@@ -1764,7 +1889,7 @@ export default function HomePage() {
               title="PrimeCart"
               links={[
                 ["PrimeMatch", "/primematch"],
-                ["Budget Builder", "/auth/register"],
+                ["Budget Builder", "/products"],
                 ["PrimePoints", "/auth/register"],
                 ["How It Works", "#how"],
               ]}
