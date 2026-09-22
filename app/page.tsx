@@ -5,7 +5,9 @@ import {
   ArrowRight,
   BadgeCheck,
   Brain,
+  Check,
   ChevronRight,
+  Clock3,
   Gift,
   Heart,
   Layers3,
@@ -13,10 +15,10 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
   Sparkles,
   Star,
   Target,
-  Trophy,
   Truck,
   UserRound,
   X,
@@ -25,104 +27,230 @@ import {
 import { useState } from "react";
 import { motion } from "framer-motion";
 
+/* =========================================================
+   DATA
+========================================================= */
+
 const categories = [
-  { name: "Mobile", icon: "📱", count: "Smartphones & accessories" },
-  { name: "Home & Living", icon: "🏠", count: "Make your space better" },
-  { name: "Appliance", icon: "⚡", count: "Everyday essentials" },
-  { name: "Footwear", icon: "👟", count: "Style meets comfort" },
-  { name: "Watch", icon: "⌚", count: "Time in your style" },
-  { name: "Bag", icon: "👜", count: "Carry it your way" },
-  { name: "Toy & Baby", icon: "🧸", count: "For little moments" },
-  { name: "Automotive", icon: "🚗", count: "Drive better" },
-  { name: "Fashion", icon: "👕", count: "Your everyday style" },
-  { name: "Gaming", icon: "🎮", count: "Level up your setup" },
+  {
+    name: "Mobile",
+    slug: "mobile",
+    icon: "📱",
+    subtitle: "Smartphones & accessories",
+  },
+  {
+    name: "Home & Living",
+    slug: "home-living",
+    icon: "🏠",
+    subtitle: "Make your space better",
+  },
+  {
+    name: "Appliance",
+    slug: "appliance",
+    icon: "⚡",
+    subtitle: "Everyday essentials",
+  },
+  {
+    name: "Footwear",
+    slug: "footwear",
+    icon: "👟",
+    subtitle: "Style meets comfort",
+  },
+  {
+    name: "Watch",
+    slug: "watch",
+    icon: "⌚",
+    subtitle: "Time in your style",
+  },
+  {
+    name: "Bag",
+    slug: "bag",
+    icon: "👜",
+    subtitle: "Carry it your way",
+  },
+  {
+    name: "Toy & Baby",
+    slug: "toy-baby",
+    icon: "🧸",
+    subtitle: "For little moments",
+  },
+  {
+    name: "Automotive",
+    slug: "automotive",
+    icon: "🚗",
+    subtitle: "Drive better",
+  },
+  {
+    name: "Fashion",
+    slug: "fashion",
+    icon: "👕",
+    subtitle: "Your everyday style",
+  },
+  {
+    name: "Gaming",
+    slug: "gaming",
+    icon: "🎮",
+    subtitle: "Level up your setup",
+  },
 ];
 
-const features = [
+const products = [
+  {
+    name: "Smartphone Pro Max",
+    slug: "smartphone-pro-max",
+    category: "Mobile",
+    price: "₹24,999",
+    originalPrice: "₹31,999",
+    discount: "22% OFF",
+    rating: "4.8",
+    reviews: "1.2k",
+    emoji: "📱",
+    tag: "Best Seller",
+  },
+  {
+    name: "Wireless Bluetooth Headphones",
+    slug: "wireless-bluetooth-headphones",
+    category: "Electronics",
+    price: "₹2,499",
+    originalPrice: "₹4,999",
+    discount: "50% OFF",
+    rating: "4.7",
+    reviews: "864",
+    emoji: "🎧",
+    tag: "Trending",
+  },
+  {
+    name: "Classic Denim Jacket",
+    slug: "classic-denim-jacket",
+    category: "Fashion",
+    price: "₹1,799",
+    originalPrice: "₹2,999",
+    discount: "40% OFF",
+    rating: "4.6",
+    reviews: "532",
+    emoji: "🧥",
+    tag: "Popular",
+  },
+  {
+    name: "Luxury Face Serum",
+    slug: "luxury-face-serum",
+    category: "Beauty",
+    price: "₹899",
+    originalPrice: "₹1,499",
+    discount: "40% OFF",
+    rating: "4.8",
+    reviews: "421",
+    emoji: "✨",
+    tag: "Top Rated",
+  },
+];
+
+const deals = [
+  {
+    title: "Upgrade Your Tech",
+    subtitle: "Smartphones, audio & accessories",
+    button: "Shop Electronics",
+    href: "/categories/mobile",
+    icon: "📱",
+  },
+  {
+    title: "Style Refresh",
+    subtitle: "Fresh looks for every day",
+    button: "Explore Fashion",
+    href: "/categories/fashion",
+    icon: "👕",
+  },
+  {
+    title: "Make Home Better",
+    subtitle: "Useful products for your space",
+    button: "Shop Home",
+    href: "/categories/home-living",
+    icon: "🏠",
+  },
+];
+
+const benefits = [
+  {
+    icon: Truck,
+    title: "Fast Delivery",
+    text: "Get your orders delivered quickly and safely.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Secure Shopping",
+    text: "Your account and shopping experience stay protected.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Quality Products",
+    text: "Discover products selected for a better experience.",
+  },
+  {
+    icon: Gift,
+    title: "Great Deals",
+    text: "Find useful offers and value-packed products.",
+  },
+];
+
+const smartFeatures = [
   {
     icon: Brain,
     title: "PrimeMatch",
-    text: "Tell us what you need, your budget and priorities. PrimeCart helps you discover products that actually fit.",
     tag: "Smart Discovery",
+    text: "Tell us your needs, budget and priorities and discover products that fit you better.",
   },
   {
     icon: Target,
     title: "Budget Builder",
-    text: "Set your spending limit and build a useful shopping list without losing control of your budget.",
     tag: "Budget Smart",
+    text: "Set your spending limit and build your shopping list without losing control.",
   },
   {
     icon: Layers3,
     title: "Build My Setup",
-    text: "Create complete setups for gaming, college, work, fitness, home and more.",
     tag: "Complete Setup",
-  },
-  {
-    icon: Trophy,
-    title: "PrimePoints",
-    text: "Shop, explore and engage with PrimeCart to collect points and unlock rewards.",
-    tag: "Rewards",
+    text: "Create complete setups for gaming, college, work, fitness and home.",
   },
   {
     icon: Gift,
     title: "Mystery Deal",
-    text: "Open surprise offers and discover deals selected for PrimeCart shoppers.",
     tag: "Surprise",
-  },
-  {
-    icon: Zap,
-    title: "Flash Deals",
-    text: "Catch limited-time offers before they disappear and make every purchase count.",
-    tag: "Limited Time",
+    text: "Discover surprise offers and special deals selected for PrimeCart shoppers.",
   },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Tell us what you need",
-    text: "Choose a category, shopping goal or situation.",
+    title: "Explore",
+    text: "Browse categories and discover products that match your needs.",
   },
   {
     number: "02",
-    title: "Set your preferences",
-    text: "Add your budget, priorities and product preferences.",
+    title: "Compare",
+    text: "Check prices, ratings and product details before deciding.",
   },
   {
     number: "03",
-    title: "Discover better products",
-    text: "Explore relevant choices instead of endlessly scrolling.",
+    title: "Shop",
+    text: "Add your favourites to cart and enjoy a simple shopping experience.",
   },
 ];
 
-const trustPoints = [
-  {
-    icon: ShieldCheck,
-    title: "Secure",
-    text: "Protected account experience",
-  },
-  {
-    icon: Truck,
-    title: "Reliable",
-    text: "Easy shopping & delivery",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Relevant",
-    text: "Smarter product discovery",
-  },
-];
+/* =========================================================
+   ANIMATIONS
+========================================================= */
 
 const fadeUp = {
   hidden: {
     opacity: 0,
-    y: 35,
+    y: 30,
   },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.7,
+      duration: 0.65,
       ease: "easeOut" as const,
     },
   },
@@ -137,7 +265,7 @@ const fadeLeft = {
     opacity: 1,
     x: 0,
     transition: {
-      duration: 0.75,
+      duration: 0.7,
       ease: "easeOut" as const,
     },
   },
@@ -152,13 +280,13 @@ const fadeRight = {
     opacity: 1,
     x: 0,
     transition: {
-      duration: 0.75,
+      duration: 0.7,
       ease: "easeOut" as const,
     },
   },
 };
 
-const staggerContainer = {
+const stagger = {
   hidden: {},
   visible: {
     transition: {
@@ -170,189 +298,290 @@ const staggerContainer = {
 const scaleIn = {
   hidden: {
     opacity: 0,
-    scale: 0.94,
+    scale: 0.96,
   },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
-      duration: 0.65,
+      duration: 0.6,
       ease: "easeOut" as const,
     },
   },
 };
 
+/* =========================================================
+   HOME PAGE
+========================================================= */
+
 export default function HomePage() {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [search, setSearch] = useState("");
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fcfaf6] text-[#17140e]">
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-[100] border-b border-[#ebe3d5] bg-[#fcfaf6]/90 backdrop-blur-2xl">
-        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            className="group flex items-center gap-2.5"
-          >
-            <motion.div
-              whileHover={{ rotate: 8, scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-              className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#17140e] text-[#dcb75f] shadow-sm"
-            >
-              <Sparkles size={19} />
-            </motion.div>
+    <main className="min-h-screen overflow-hidden bg-[#fffdf9] text-[#211b12]">
 
-            <div className="text-[21px] font-black tracking-[-0.9px]">
-              Prime<span className="text-[#b8872d]">Cart</span>
+      {/* =====================================================
+          TOP ANNOUNCEMENT BAR
+      ===================================================== */}
+
+      <div className="bg-[#b8872d] px-4 py-2 text-center text-[10px] font-bold tracking-wide text-white sm:text-[11px]">
+        Free shipping on selected orders • Easy returns • Secure shopping
+      </div>
+
+      {/* =====================================================
+          NAVBAR
+      ===================================================== */}
+
+      <header className="sticky top-0 z-[100] border-b border-[#eee5d6] bg-[#fffdf9]/95 backdrop-blur-xl">
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
+          <div className="flex h-[72px] items-center gap-4">
+
+            {/* LOGO */}
+
+            <Link
+              href="/"
+              className="group flex shrink-0 items-center gap-2.5"
+            >
+              <motion.div
+                whileHover={{
+                  rotate: 5,
+                  scale: 1.04,
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c79a3b] text-white shadow-[0_8px_20px_rgba(184,135,45,0.2)]"
+              >
+                <Sparkles size={19} />
+              </motion.div>
+
+              <div className="text-[21px] font-black tracking-[-0.9px]">
+                Prime<span className="text-[#b8872d]">Cart</span>
+              </div>
+            </Link>
+
+            {/* DESKTOP SEARCH */}
+
+            <div className="hidden flex-1 md:block">
+              <form
+                onSubmit={(e) => e.preventDefault()}
+                className="mx-auto flex h-11 max-w-[560px] items-center overflow-hidden rounded-xl border border-[#e4d9c7] bg-white transition focus-within:border-[#c79a3b] focus-within:ring-4 focus-within:ring-[#c79a3b]/10"
+              >
+                <Search
+                  size={18}
+                  className="ml-4 shrink-0 text-[#9b9182]"
+                />
+
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search for products, brands and more..."
+                  className="h-full flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a69d90]"
+                />
+
+                <button
+                  type="submit"
+                  className="mr-1 flex h-9 items-center rounded-lg bg-[#c79a3b] px-5 text-xs font-black text-white transition hover:bg-[#ae7d25]"
+                >
+                  Search
+                </button>
+              </form>
             </div>
-          </Link>
 
-          <nav className="hidden items-center gap-8 lg:flex">
-            <a
-              href="#features"
-              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
-            >
-              Why PrimeCart
-            </a>
+            {/* NAV ACTIONS */}
 
-            <a
-              href="#categories"
-              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
-            >
-              Categories
-            </a>
+            <div className="ml-auto hidden items-center gap-1 lg:flex">
 
-            <a
-              href="#how"
-              className="text-[13px] font-semibold text-[#71695d] transition hover:text-[#17140e]"
-            >
-              How It Works
-            </a>
-          </nav>
+              <Link
+                href="/auth/login"
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+              >
+                <UserRound size={18} />
 
-          <div className="hidden items-center gap-2 sm:flex">
-            <Link
-              href="/auth/login"
-              className="rounded-xl px-4 py-2.5 text-[13px] font-bold text-[#5e564b] transition hover:bg-[#f5efe4] hover:text-[#17140e]"
-            >
-              Login
-            </Link>
+                <span className="text-xs font-bold">
+                  Account
+                </span>
+              </Link>
 
-            <Link
-              href="/auth/register"
-              className="group flex items-center gap-2 rounded-xl border border-[#17140e] bg-[#17140e] px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_8px_20px_rgba(23,20,14,0.12)] transition hover:-translate-y-0.5 hover:bg-[#2b261d] hover:shadow-[0_12px_25px_rgba(23,20,14,0.18)]"
+              <Link
+                href="/wishlist"
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+                aria-label="Wishlist"
+              >
+                <Heart size={19} />
+              </Link>
+
+              <Link
+                href="/cart"
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[#62594d] transition hover:bg-[#f8f2e8] hover:text-[#9a7127]"
+                aria-label="Cart"
+              >
+                <ShoppingCart size={19} />
+
+                <span className="absolute right-1 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c79a3b] px-1 text-[8px] font-black text-white">
+                  0
+                </span>
+              </Link>
+
+              <Link
+                href="/auth/register"
+                className="ml-2 flex items-center gap-2 rounded-xl bg-[#c79a3b] px-4 py-2.5 text-xs font-black text-white shadow-[0_8px_20px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ae7d25]"
+              >
+                Start Shopping
+                <ArrowRight size={14} />
+              </Link>
+
+            </div>
+
+            {/* MOBILE MENU */}
+
+            <button
+              onClick={() => setMobileMenu(!mobileMenu)}
+              className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-[#e4d9c7] bg-white text-[#554c40] md:hidden"
+              aria-label="Toggle menu"
             >
-              Get Started
-              <ArrowRight
-                size={15}
-                className="transition group-hover:translate-x-1"
-              />
-            </Link>
+              {mobileMenu ? (
+                <X size={19} />
+              ) : (
+                <Menu size={19} />
+              )}
+            </button>
+
           </div>
 
-          <button
-            onClick={() => setMobileMenu(!mobileMenu)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-[#3c352b] transition hover:border-[#cdb783] sm:hidden"
-            aria-label="Toggle menu"
-          >
-            {mobileMenu ? <X size={19} /> : <Menu size={19} />}
-          </button>
+          {/* MOBILE SEARCH */}
+
+          <div className="pb-3 md:hidden">
+            <div className="flex h-10 items-center rounded-xl border border-[#e4d9c7] bg-white">
+              <Search
+                size={16}
+                className="ml-3 text-[#9b9182]"
+              />
+
+              <input
+                placeholder="Search products..."
+                className="min-w-0 flex-1 bg-transparent px-2 text-xs outline-none"
+              />
+
+              <button className="mr-1 rounded-lg bg-[#c79a3b] px-3 py-2 text-[10px] font-black text-white">
+                Search
+              </button>
+            </div>
+          </div>
+
         </div>
+
+        {/* MOBILE MENU */}
 
         {mobileMenu && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="border-t border-[#ebe3d5] bg-white px-4 py-4 sm:hidden"
+            initial={{
+              opacity: 0,
+              height: 0,
+            }}
+            animate={{
+              opacity: 1,
+              height: "auto",
+            }}
+            className="border-t border-[#eee5d6] bg-white md:hidden"
           >
-            <div className="mx-auto flex max-w-[1280px] flex-col gap-1">
+            <div className="mx-auto max-w-[1400px] space-y-1 px-4 py-4">
+
+              <Link
+                href="/categories"
+                onClick={() => setMobileMenu(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
+              >
+                Categories
+                <ChevronRight size={16} />
+              </Link>
+
+              <a
+                href="#deals"
+                onClick={() => setMobileMenu(false)}
+                className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
+              >
+                Today's Deals
+                <ChevronRight size={16} />
+              </a>
+
               <a
                 href="#features"
                 onClick={() => setMobileMenu(false)}
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+                className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
               >
-                Why PrimeCart
+                PrimeCart Features
+                <ChevronRight size={16} />
               </a>
 
-              <a
-                href="#categories"
-                onClick={() => setMobileMenu(false)}
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+              <Link
+                href="/auth/login"
+                className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold hover:bg-[#faf5ec]"
               >
-                Categories
-              </a>
+                <UserRound size={17} />
+                Login
+              </Link>
 
-              <a
-                href="#how"
-                onClick={() => setMobileMenu(false)}
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-[#625a4e] hover:bg-[#faf7f1]"
+              <Link
+                href="/auth/register"
+                className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#c79a3b] px-4 py-3 text-sm font-black text-white"
               >
-                How It Works
-              </a>
+                Start Shopping
+                <ArrowRight size={16} />
+              </Link>
 
-              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#eee7da] pt-3">
-                <Link
-                  href="/auth/login"
-                  className="rounded-xl border border-[#e5dccb] px-4 py-3 text-center text-sm font-bold transition hover:bg-[#faf7f1]"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  href="/auth/register"
-                  className="rounded-xl bg-[#17140e] px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-[#2b261d]"
-                >
-                  Get Started
-                </Link>
-              </div>
             </div>
           </motion.div>
         )}
+
       </header>
 
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -left-40 top-20 h-[500px] w-[500px] rounded-full bg-[#ead6a7]/20 blur-3xl" />
-        <div className="pointer-events-none absolute -right-40 top-0 h-[500px] w-[500px] rounded-full bg-[#d8bd7d]/15 blur-3xl" />
+      {/* =====================================================
+          HERO
+      ===================================================== */}
 
-        <div className="relative mx-auto grid max-w-[1280px] items-center gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pt-20 lg:grid-cols-[1fr_0.92fr] lg:px-8 lg:pb-28 lg:pt-24">
+      <section className="relative overflow-hidden border-b border-[#eee5d6]">
+
+        <div className="absolute -left-40 top-20 h-[450px] w-[450px] rounded-full bg-[#ead7a9]/25 blur-3xl" />
+        <div className="absolute -right-40 top-0 h-[500px] w-[500px] rounded-full bg-[#f1dfb7]/30 blur-3xl" />
+
+        <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:grid-cols-[0.95fr_1.05fr] lg:px-8 lg:pb-24 lg:pt-20">
+
+          {/* HERO COPY */}
+
           <motion.div
             variants={fadeLeft}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
+            animate="visible"
             className="text-center lg:text-left"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#e8d8b7] bg-[#f9f1df] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#8c6826]"
-            >
-              <Sparkles size={13} />
-              A smarter way to shop
-            </motion.div>
 
-            <h1 className="mt-7 text-[50px] font-black leading-[0.98] tracking-[-3px] sm:text-[64px] lg:text-[76px]">
-              Don&apos;t just shop.
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e6d2a6] bg-[#fbf2df] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.13em] text-[#956d24]">
+              <Sparkles size={13} />
+              A smarter shopping experience
+            </div>
+
+            <h1 className="mt-6 text-[47px] font-black leading-[0.98] tracking-[-3px] sm:text-[63px] lg:text-[76px]">
+              Everything you want.
               <br />
               <span className="text-[#b8872d]">
-                Shop smarter.
+                One smarter cart.
               </span>
             </h1>
 
-            <p className="mx-auto mt-7 max-w-[590px] text-[15px] leading-7 text-[#71695e] sm:text-base lg:mx-0">
-              PrimeCart helps you discover the right products based on your
-              needs, budget and lifestyle — giving you a simpler way to
-              decide what is actually worth buying.
+            <p className="mx-auto mt-6 max-w-[590px] text-[15px] leading-7 text-[#756d61] sm:text-base lg:mx-0">
+              Discover products, compare your choices, find better deals
+              and shop according to your budget — all in one beautiful
+              shopping experience.
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+
               <Link
-                href="/auth/register"
-                className="group flex items-center gap-2 rounded-xl border border-[#17140e] bg-[#17140e] px-5 py-3.5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(20,18,12,0.12)] transition hover:-translate-y-1 hover:bg-[#2b261d] hover:shadow-[0_18px_35px_rgba(20,18,12,0.18)]"
+                href="/categories"
+                className="group flex items-center gap-2 rounded-xl bg-[#c79a3b] px-5 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(184,135,45,0.2)] transition hover:-translate-y-1 hover:bg-[#ae7d25] hover:shadow-[0_16px_32px_rgba(184,135,45,0.25)]"
               >
-                Start Shopping
+                Shop Now
                 <ArrowRight
                   size={17}
                   className="transition group-hover:translate-x-1"
@@ -360,182 +589,196 @@ export default function HomePage() {
               </Link>
 
               <a
-                href="#features"
-                className="group flex items-center gap-1.5 rounded-xl border border-[#e0d5c2] bg-white px-5 py-3.5 text-sm font-bold text-[#51493e] shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdb783] hover:bg-[#fffdf9]"
+                href="#deals"
+                className="group flex items-center gap-2 rounded-xl border border-[#ded2bf] bg-white px-5 py-3.5 text-sm font-black text-[#5d554a] transition hover:-translate-y-0.5 hover:border-[#c79a3b] hover:text-[#9a7127]"
               >
-                Explore PrimeCart
+                Explore Deals
                 <ChevronRight
                   size={16}
                   className="transition group-hover:translate-x-1"
                 />
               </a>
+
             </div>
 
-            <div className="mt-9 flex flex-wrap justify-center gap-x-5 gap-y-3 lg:justify-start">
-              {trustPoints.map((item) => {
-                const Icon = item.icon;
+            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 lg:justify-start">
 
-                return (
-                  <div
-                    key={item.title}
-                    className="flex items-center gap-2 text-left"
-                  >
-                    <Icon size={17} className="text-[#b8872d]" />
+              {[
+                ["✓", "Secure payments"],
+                ["✓", "Easy returns"],
+                ["✓", "Smart discovery"],
+              ].map(([icon, text]) => (
+                <div
+                  key={text}
+                  className="flex items-center gap-2 text-[11px] font-semibold text-[#756c5e]"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f3e6ca] text-[9px] font-black text-[#a27727]">
+                    {icon}
+                  </span>
+                  {text}
+                </div>
+              ))}
 
-                    <div>
-                      <p className="text-[11px] font-bold text-[#4f483e]">
-                        {item.title}
-                      </p>
-
-                      <p className="text-[9px] text-[#91887b]">
-                        {item.text}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
+
           </motion.div>
 
-          {/* HERO VISUAL */}
+          {/* HERO SHOPPING CARD */}
+
           <motion.div
             variants={fadeRight}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="relative mx-auto min-h-[500px] w-full max-w-[560px]"
+            animate="visible"
+            className="relative mx-auto w-full max-w-[620px]"
           >
-            <motion.div
-              animate={{
-                scale: [1, 1.04, 1],
-                opacity: [0.35, 0.5, 0.35],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute left-1/2 top-1/2 h-[390px] w-[390px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ead8ad]/35 blur-3xl"
-            />
 
             <motion.div
-              animate={{ y: [0, -8, 0] }}
+              animate={{
+                y: [0, -8, 0],
+              }}
               transition={{
                 duration: 4,
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute left-1/2 top-1/2 z-10 w-[94%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[28px] border border-[#e7dcc7] bg-white p-4 shadow-[0_35px_90px_rgba(70,50,18,0.15)] sm:p-5"
+              className="relative overflow-hidden rounded-[30px] border border-[#e7dcc9] bg-white p-4 shadow-[0_30px_80px_rgba(75,54,20,0.13)] sm:p-5"
             >
+
+              {/* CARD HEADER */}
+
               <div className="flex items-center justify-between border-b border-[#eee7da] pb-4">
+
                 <div>
-                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#b8872d]">
-                    PrimeMatch
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#b8872d]">
+                    PrimeCart Picks
                   </p>
 
-                  <h3 className="mt-1 text-lg font-black tracking-tight sm:text-xl">
-                    Your perfect match
+                  <h3 className="mt-1 text-lg font-black tracking-tight">
+                    Products made for you
                   </h3>
                 </div>
 
-                <motion.div
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                  }}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6ecd8] text-sm font-black text-[#8c6826]"
-                >
-                  92%
-                </motion.div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbf2df] text-[#a37826]">
+                  <ShoppingBag size={19} />
+                </div>
+
               </div>
 
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ece5d9] bg-[#fbfaf7] px-3 py-2.5">
-                <Search size={15} className="text-[#9c9385]" />
-                <span className="text-[10px] text-[#948a7b]">
-                  Looking for something special?
-                </span>
-              </div>
+              {/* PRODUCT GRID */}
 
-              <div className="mt-4 rounded-2xl border border-[#eee7da] bg-[#faf8f3] p-3.5 sm:p-4">
-                <div className="flex gap-3">
-                  <div className="flex h-[82px] w-[82px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#eee3cf] to-[#dfcfad] text-4xl">
-                    📱
-                  </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-[8px] font-black uppercase tracking-wider text-[#ad8029]">
-                          Mobile
-                        </span>
+                {products.slice(0, 4).map((product, index) => (
+                  <Link
+                    key={product.slug}
+                    href={`/products/${product.slug}`}
+                    className="group rounded-2xl border border-[#eee7da] bg-[#fffdfa] p-3 transition hover:-translate-y-1 hover:border-[#d8bd7d] hover:shadow-[0_15px_30px_rgba(73,52,19,0.08)]"
+                  >
 
-                        <h4 className="mt-1 truncate text-sm font-black">
-                          Smartphone Pro Max
-                        </h4>
-                      </div>
+                    <div
+                      className={`relative flex h-[145px] items-center justify-center overflow-hidden rounded-xl ${
+                        index === 0
+                          ? "bg-[#f4e8cc]"
+                          : index === 1
+                            ? "bg-[#eee9e0]"
+                            : index === 2
+                              ? "bg-[#eee1d4]"
+                              : "bg-[#f1e8da]"
+                      }`}
+                    >
 
-                      <Heart
-                        size={16}
-                        className="shrink-0 text-[#9e9486]"
-                      />
+                      <span className="text-[65px] transition duration-300 group-hover:scale-110">
+                        {product.emoji}
+                      </span>
+
+                      <span className="absolute left-2 top-2 rounded-md bg-[#c79a3b] px-2 py-1 text-[7px] font-black text-white">
+                        {product.tag}
+                      </span>
+
+                      <button
+                        onClick={(e) => e.preventDefault()}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#7d7467] shadow-sm"
+                        aria-label="Wishlist"
+                      >
+                        <Heart size={13} />
+                      </button>
+
                     </div>
 
-                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-[#9a7126]">
-                      <Star size={11} fill="currentColor" />
-                      4.8
-                      <span className="font-medium text-[#958c80]">
-                        · 1.2k reviews
+                    <p className="mt-3 text-[9px] font-bold uppercase tracking-wide text-[#a47a29]">
+                      {product.category}
+                    </p>
+
+                    <h4 className="mt-1 truncate text-[12px] font-black">
+                      {product.name}
+                    </h4>
+
+                    <div className="mt-2 flex items-center gap-1">
+                      <Star
+                        size={11}
+                        fill="currentColor"
+                        className="text-[#d19e37]"
+                      />
+
+                      <span className="text-[9px] font-bold">
+                        {product.rating}
+                      </span>
+
+                      <span className="text-[8px] text-[#999083]">
+                        ({product.reviews})
                       </span>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between">
-                      <strong className="text-base">
-                        ₹24,999
-                      </strong>
+                    <div className="mt-2 flex items-end gap-2">
+                      <span className="text-sm font-black">
+                        {product.price}
+                      </span>
 
-                      <motion.button
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.94 }}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#17140e] bg-[#17140e] text-white"
-                      >
-                        <ShoppingBag size={14} />
-                      </motion.button>
+                      <span className="text-[9px] text-[#aaa194] line-through">
+                        {product.originalPrice}
+                      </span>
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {[
-                    "Within budget",
-                    "Highly rated",
-                    "Matches your needs",
-                  ].map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-lg bg-white px-2.5 py-1.5 text-[8px] font-bold text-[#766d60] shadow-sm"
-                    >
-                      ✓ {tag}
-                    </span>
-                  ))}
-                </div>
+                  </Link>
+                ))}
+
               </div>
 
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-[#17140e] px-4 py-3 text-white">
+              {/* MATCH STRIP */}
+
+              <div className="mt-4 flex items-center justify-between rounded-xl bg-[#f8f1e4] px-4 py-3">
+
                 <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-[#d8b45f]" />
 
-                  <span className="text-[9px] font-semibold text-white/70">
-                    3 more products match your preferences
-                  </span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#c79a3b] text-white">
+                    <Sparkles size={14} />
+                  </div>
+
+                  <div>
+                    <p className="text-[8px] font-bold text-[#968a78]">
+                      Smart recommendation
+                    </p>
+
+                    <p className="text-[10px] font-black text-[#51483b]">
+                      Find products that match you
+                    </p>
+                  </div>
+
                 </div>
 
-                <ChevronRight
-                  size={14}
-                  className="text-[#d8b45f]"
-                />
+                <Link
+                  href="/primematch"
+                  className="flex h-8 items-center gap-1 rounded-lg bg-white px-3 text-[9px] font-black text-[#9a7127] shadow-sm"
+                >
+                  Try it
+                  <ArrowRight size={12} />
+                </Link>
+
               </div>
+
             </motion.div>
+
+            {/* FLOATING BADGE */}
 
             <motion.div
               animate={{ y: [0, -7, 0] }}
@@ -544,20 +787,23 @@ export default function HomePage() {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute left-0 top-[60px] z-20 flex items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:left-[-8px]"
+              className="absolute -left-2 top-10 hidden items-center gap-2 rounded-2xl border border-[#e7dccb] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:flex lg:-left-8"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5ead2] text-lg">
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fbf0d7] text-lg">
                 💰
               </div>
 
               <div>
                 <p className="text-[8px] text-[#93897b]">
-                  Your budget
+                  Smart Budget
                 </p>
-                <p className="mt-0.5 text-xs font-black">
+
+                <p className="text-xs font-black">
                   ₹30,000
                 </p>
               </div>
+
             </motion.div>
 
             <motion.div
@@ -567,9 +813,10 @@ export default function HomePage() {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute bottom-[65px] right-0 z-20 flex items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:right-[-8px]"
+              className="absolute -right-2 bottom-10 hidden items-center gap-2 rounded-2xl border border-[#e7dccb] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:flex lg:-right-8"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5ead2] text-lg">
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fbf0d7] text-lg">
                 ⭐
               </div>
 
@@ -578,298 +825,772 @@ export default function HomePage() {
                   PrimePoints
                 </p>
 
-                <p className="mt-0.5 text-xs font-black text-[#9b7227]">
+                <p className="text-xs font-black text-[#a27727]">
                   +120 earned
                 </p>
               </div>
+
             </motion.div>
 
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{
-                duration: 4.2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute bottom-0 left-[18%] z-20 hidden items-center gap-2 rounded-2xl border border-[#e8dfd0] bg-white px-3 py-2.5 shadow-[0_15px_35px_rgba(60,44,19,0.12)] sm:flex"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#17140e] text-white">
-                <UserRound size={14} />
-              </div>
-
-              <div>
-                <p className="text-[8px] text-[#93897b]">
-                  Personalised for you
-                </p>
-
-                <p className="text-[10px] font-black">
-                  Shopping profile ready
-                </p>
-              </div>
-            </motion.div>
           </motion.div>
+
         </div>
+
       </section>
 
-      {/* VALUE STRIP */}
-      <section className="border-y border-[#ebe3d5] bg-white">
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="mx-auto grid max-w-[1280px] grid-cols-2 sm:grid-cols-4"
-        >
-          {[
-            ["Smart", "Product discovery"],
-            ["10+", "Shopping categories"],
-            ["6", "Smart shopping tools"],
-            ["1", "Simple experience"],
-          ].map(([number, label], index) => (
-            <motion.div
-              key={label}
-              variants={fadeUp}
-              className={`px-4 py-6 text-center ${
-                index !== 3 ? "border-r border-[#eee7da]" : ""
-              } ${index === 1 ? "max-sm:border-r-0" : ""}`}
-            >
-              <p className="text-xl font-black tracking-tight sm:text-2xl">
-                {number}
-              </p>
+      {/* =====================================================
+          SHOPPING BENEFITS
+      ===================================================== */}
 
-              <p className="mt-1 text-[10px] font-medium text-[#8a8175] sm:text-[11px]">
-                {label}
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
+      <section className="border-b border-[#eee5d6] bg-white">
+
+        <div className="mx-auto grid max-w-[1400px] grid-cols-2 md:grid-cols-4">
+
+          {benefits.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <motion.div
+                key={item.title}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{
+                  once: true,
+                }}
+                className={`flex gap-3 px-5 py-6 sm:px-8 ${
+                  index < 3
+                    ? "border-r border-[#eee7da]"
+                    : ""
+                }`}
+              >
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf1dc] text-[#a37826]">
+                  <Icon size={19} />
+                </div>
+
+                <div>
+                  <h3 className="text-[12px] font-black">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-1 text-[9px] leading-4 text-[#8b8276]">
+                    {item.text}
+                  </p>
+                </div>
+
+              </motion.div>
+            );
+          })}
+
+        </div>
+
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="py-24 sm:py-28">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      {/* =====================================================
+          CATEGORIES
+      ===================================================== */}
+
+      <section
+        id="categories"
+        className="py-20 sm:py-24"
+      >
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
           <motion.div
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="mx-auto max-w-2xl text-center"
+            viewport={{
+              once: true,
+            }}
+            className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"
           >
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
-              WHY PRIMECART
-            </span>
 
-            <h2 className="mt-4 text-[40px] font-black leading-[1.03] tracking-[-2.3px] sm:text-[54px]">
-              Shopping should feel
-              <br />
-              <span className="text-[#b8872d]">personal.</span>
-            </h2>
+            <div>
 
-            <p className="mt-5 text-sm leading-7 text-[#7c7468] sm:text-[15px]">
-              PrimeCart is designed around your shopping goals, budget and
-              preferences — not just a never-ending product catalogue.
-            </p>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
+                SHOP BY CATEGORY
+              </span>
+
+              <h2 className="mt-3 text-[38px] font-black leading-[1.04] tracking-[-2px] sm:text-[52px]">
+                Find what
+                <br />
+                <span className="text-[#b8872d]">
+                  you need.
+                </span>
+              </h2>
+
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[#7d7468]">
+                Explore popular categories and discover products for
+                everyday life, work, entertainment and more.
+              </p>
+
+            </div>
+
+            <Link
+              href="/categories"
+              className="group flex w-fit items-center gap-2 rounded-xl border border-[#ded2bf] bg-white px-4 py-3 text-xs font-black text-[#5e5549] transition hover:border-[#c79a3b] hover:text-[#9a7127]"
+            >
+              View all categories
+              <ArrowRight
+                size={14}
+                className="transition group-hover:translate-x-1"
+              />
+            </Link>
+
           </motion.div>
 
           <motion.div
-            variants={staggerContainer}
+            variants={stagger}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, amount: 0.1 }}
-            className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            viewport={{
+              once: true,
+              amount: 0.05,
+            }}
+            className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
           >
-            {features.map((feature) => {
+
+            {categories.map((category) => (
+              <motion.div
+                key={category.slug}
+                variants={scaleIn}
+                whileHover={{
+                  y: -5,
+                }}
+              >
+
+                <Link
+                  href={`/categories/${category.slug}`}
+                  className="group block overflow-hidden rounded-[20px] border border-[#e9dfcf] bg-white p-4 transition duration-300 hover:border-[#d5b66d] hover:shadow-[0_18px_40px_rgba(70,51,18,0.08)]"
+                >
+
+                  <div className="flex items-start justify-between">
+
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf4e7] text-[32px] transition duration-300 group-hover:scale-105 group-hover:bg-[#f6ead0]">
+                      {category.icon}
+                    </div>
+
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#faf7f1] text-[#a37826] transition group-hover:bg-[#c79a3b] group-hover:text-white">
+                      <ArrowRight size={13} />
+                    </div>
+
+                  </div>
+
+                  <h3 className="mt-5 text-[13px] font-black">
+                    {category.name}
+                  </h3>
+
+                  <p className="mt-1 text-[9px] leading-4 text-[#92897c]">
+                    {category.subtitle}
+                  </p>
+
+                </Link>
+
+              </motion.div>
+            ))}
+
+          </motion.div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          FEATURED PRODUCTS
+      ===================================================== */}
+
+      <section className="border-y border-[#eee5d6] bg-[#faf6ef] py-20 sm:py-24">
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+
+            <div>
+
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
+                FEATURED PRODUCTS
+              </span>
+
+              <h2 className="mt-3 text-[38px] font-black tracking-[-2px] sm:text-[50px]">
+                Trending
+                <span className="text-[#b8872d]">
+                  {" "}right now.
+                </span>
+              </h2>
+
+            </div>
+
+            <Link
+              href="/products"
+              className="group flex w-fit items-center gap-2 rounded-xl border border-[#ded2bf] bg-white px-4 py-3 text-xs font-black text-[#5e5549] transition hover:border-[#c79a3b] hover:text-[#9a7127]"
+            >
+              View all products
+              <ArrowRight
+                size={14}
+                className="transition group-hover:translate-x-1"
+              />
+            </Link>
+
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{
+              once: true,
+              amount: 0.05,
+            }}
+            className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+
+            {products.map((product) => (
+              <motion.div
+                key={product.slug}
+                variants={fadeUp}
+                whileHover={{
+                  y: -6,
+                }}
+                className="group overflow-hidden rounded-[22px] border border-[#e8dfd1] bg-white transition hover:border-[#d4b46b] hover:shadow-[0_20px_45px_rgba(69,49,18,0.09)]"
+              >
+
+                <div className="relative flex h-[230px] items-center justify-center bg-[#f7f1e6]">
+
+                  <span className="text-[105px] transition duration-500 group-hover:scale-110">
+                    {product.emoji}
+                  </span>
+
+                  <span className="absolute left-3 top-3 rounded-lg bg-[#c79a3b] px-2.5 py-1.5 text-[8px] font-black text-white">
+                    {product.discount}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#7f7669] shadow-sm transition hover:bg-[#fbf0d9] hover:text-[#b8872d]"
+                    aria-label="Add to wishlist"
+                  >
+                    <Heart size={16} />
+                  </button>
+
+                </div>
+
+                <div className="p-4">
+
+                  <div className="flex items-center justify-between gap-2">
+
+                    <span className="text-[9px] font-black uppercase tracking-wide text-[#a37826]">
+                      {product.category}
+                    </span>
+
+                    <div className="flex items-center gap-1 text-[9px] font-bold">
+                      <Star
+                        size={11}
+                        fill="currentColor"
+                        className="text-[#d09c35]"
+                      />
+                      {product.rating}
+                    </div>
+
+                  </div>
+
+                  <h3 className="mt-2 truncate text-sm font-black">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-3 flex items-end gap-2">
+
+                    <span className="text-lg font-black">
+                      {product.price}
+                    </span>
+
+                    <span className="text-[10px] text-[#a49a8d] line-through">
+                      {product.originalPrice}
+                    </span>
+
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#dfd3c0] px-3 py-2.5 text-[10px] font-black text-[#62594c] transition hover:border-[#c79a3b] hover:text-[#9a7127]"
+                    >
+                      View Details
+                    </Link>
+
+                    <Link
+                      href="/cart"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c79a3b] text-white transition hover:bg-[#ae7d25]"
+                      aria-label="Add to cart"
+                    >
+                      <ShoppingCart size={15} />
+                    </Link>
+
+                  </div>
+
+                </div>
+
+              </motion.div>
+            ))}
+
+          </motion.div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          DEAL BANNERS
+      ===================================================== */}
+
+      <section
+        id="deals"
+        className="py-20 sm:py-24"
+      >
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
+          <div className="flex items-end justify-between gap-4">
+
+            <div>
+
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
+                SPECIAL OFFERS
+              </span>
+
+              <h2 className="mt-3 text-[38px] font-black tracking-[-2px] sm:text-[50px]">
+                Deals made
+                <span className="text-[#b8872d]">
+                  {" "}for you.
+                </span>
+              </h2>
+
+            </div>
+
+            <div className="hidden items-center gap-2 rounded-xl bg-[#fbf1dc] px-3 py-2 text-[10px] font-black text-[#956d24] sm:flex">
+              <Clock3 size={14} />
+              Limited time offers
+            </div>
+
+          </div>
+
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+
+            {deals.map((deal, index) => (
+              <motion.div
+                key={deal.title}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{
+                  once: true,
+                }}
+                whileHover={{
+                  y: -5,
+                }}
+                className={`relative overflow-hidden rounded-[25px] border p-7 ${
+                  index === 1
+                    ? "border-[#e3cf9f] bg-[#f4e5c3]"
+                    : index === 2
+                      ? "border-[#e7dccb] bg-[#f3eee5]"
+                      : "border-[#e7d6b3] bg-[#f8efd9]"
+                }`}
+              >
+
+                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border border-[#b8872d]/10" />
+
+                <div className="relative">
+
+                  <div className="flex items-start justify-between">
+
+                    <span className="text-5xl">
+                      {deal.icon}
+                    </span>
+
+                    <span className="rounded-lg bg-white/70 px-2.5 py-1.5 text-[8px] font-black uppercase text-[#9b7227]">
+                      Special
+                    </span>
+
+                  </div>
+
+                  <h3 className="mt-7 text-[23px] font-black tracking-tight">
+                    {deal.title}
+                  </h3>
+
+                  <p className="mt-2 max-w-[280px] text-xs leading-5 text-[#766c5d]">
+                    {deal.subtitle}
+                  </p>
+
+                  <Link
+                    href={deal.href}
+                    className="group mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c79a3b] px-4 py-3 text-xs font-black text-white transition hover:bg-[#ae7d25]"
+                  >
+                    {deal.button}
+                    <ArrowRight
+                      size={14}
+                      className="transition group-hover:translate-x-1"
+                    />
+                  </Link>
+
+                </div>
+
+              </motion.div>
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          PRIMEMATCH
+      ===================================================== */}
+
+      <section
+        id="features"
+        className="px-4 pb-20 sm:px-6 sm:pb-24 lg:px-8"
+      >
+
+        <div className="mx-auto max-w-[1400px]">
+
+          <motion.div
+            variants={scaleIn}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{
+              once: true,
+            }}
+            className="relative overflow-hidden rounded-[30px] border border-[#dfca9a] bg-gradient-to-br from-[#f7ecd5] via-[#f1dfb9] to-[#e7cf9b]"
+          >
+
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full border border-[#a47b2b]/10" />
+            <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full border border-[#a47b2b]/10" />
+
+            <div className="relative grid items-center gap-10 p-7 sm:p-10 lg:grid-cols-[1fr_0.9fr] lg:p-14">
+
+              <div>
+
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-[#916b28]">
+                  <Sparkles size={12} />
+                  Smart shopping
+                </span>
+
+                <h2 className="mt-5 text-[40px] font-black leading-[1.02] tracking-[-2px] sm:text-[54px]">
+                  Meet
+                  <br />
+                  <span className="text-[#a87824]">
+                    PrimeMatch.
+                  </span>
+                </h2>
+
+                <p className="mt-5 max-w-xl text-sm leading-7 text-[#6f624e]">
+                  Not sure what to buy? Tell PrimeMatch your requirements,
+                  budget and priorities. Get a simpler way to discover
+                  products that fit your shopping goal.
+                </p>
+
+                <div className="mt-7 grid gap-2 sm:grid-cols-2">
+
+                  {[
+                    "Budget-aware discovery",
+                    "Need-based suggestions",
+                    "Compare relevant products",
+                    "Save time while shopping",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 text-xs font-bold text-[#675a48]"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#b8872d]">
+                        <Check size={12} />
+                      </span>
+                      {item}
+                    </div>
+                  ))}
+
+                </div>
+
+                <Link
+                  href="/primematch"
+                  className="group mt-8 inline-flex items-center gap-2 rounded-xl bg-[#c79a3b] px-5 py-3.5 text-sm font-black text-white shadow-[0_10px_25px_rgba(145,103,31,0.18)] transition hover:-translate-y-1 hover:bg-[#ae7d25]"
+                >
+                  Try PrimeMatch
+                  <ArrowRight
+                    size={16}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </Link>
+
+              </div>
+
+              {/* PRIMEMATCH VISUAL */}
+
+              <div className="relative flex min-h-[360px] items-center justify-center">
+
+                <motion.div
+                  animate={{
+                    rotate: 360,
+                  }}
+                  transition={{
+                    duration: 28,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="absolute h-[300px] w-[300px] rounded-full border border-[#9f772c]/15"
+                />
+
+                <motion.div
+                  animate={{
+                    rotate: -360,
+                  }}
+                  transition={{
+                    duration: 38,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="absolute h-[230px] w-[230px] rounded-full border border-[#9f772c]/15"
+                />
+
+                <motion.div
+                  animate={{
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                  }}
+                  className="relative z-10 flex h-36 w-36 items-center justify-center rounded-full border border-[#c49b4b] bg-white text-[#b8872d] shadow-[0_25px_60px_rgba(100,72,20,0.16)]"
+                >
+                  <Brain size={52} />
+                </motion.div>
+
+                <div className="absolute left-2 top-12 rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm backdrop-blur-md sm:left-8">
+
+                  <p className="text-[8px] text-[#928573]">
+                    Shopping goal
+                  </p>
+
+                  <p className="mt-1 text-xs font-black">
+                    Gaming Setup
+                  </p>
+
+                </div>
+
+                <div className="absolute right-0 top-[42%] rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm backdrop-blur-md sm:right-4">
+
+                  <p className="text-[8px] text-[#928573]">
+                    Budget
+                  </p>
+
+                  <p className="mt-1 text-xs font-black">
+                    ₹50,000
+                  </p>
+
+                </div>
+
+                <div className="absolute bottom-7 left-10 rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm backdrop-blur-md sm:left-16">
+
+                  <p className="text-[8px] text-[#928573]">
+                    Match score
+                  </p>
+
+                  <p className="mt-1 text-xs font-black text-[#a87824]">
+                    96%
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </motion.div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          SMART FEATURES
+      ===================================================== */}
+
+      <section className="border-y border-[#eee5d6] bg-[#faf7f1] py-20 sm:py-24">
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{
+              once: true,
+            }}
+            className="mx-auto max-w-2xl text-center"
+          >
+
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
+              MORE THAN A STORE
+            </span>
+
+            <h2 className="mt-3 text-[38px] font-black tracking-[-2px] sm:text-[52px]">
+              Shopping tools
+              <br />
+              <span className="text-[#b8872d]">
+                built for you.
+              </span>
+            </h2>
+
+            <p className="mt-4 text-sm leading-7 text-[#7c7468]">
+              PrimeCart brings useful tools together so your shopping
+              experience feels simpler and more personal.
+            </p>
+
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{
+              once: true,
+            }}
+            className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+          >
+
+            {smartFeatures.map((feature) => {
               const Icon = feature.icon;
 
               return (
                 <motion.div
                   key={feature.title}
                   variants={fadeUp}
-                  whileHover={{ y: -7 }}
-                  className="group relative overflow-hidden rounded-[24px] border border-[#e8dfd1] bg-white p-6 transition-shadow duration-300 hover:border-[#d5be88] hover:shadow-[0_22px_55px_rgba(66,49,19,0.08)]"
+                  whileHover={{
+                    y: -6,
+                  }}
+                  className="group rounded-[23px] border border-[#e7ddce] bg-white p-6 transition hover:border-[#d4b56b] hover:shadow-[0_20px_45px_rgba(68,49,18,0.08)]"
                 >
-                  <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#f5ead3] opacity-0 blur-2xl transition group-hover:opacity-70" />
 
-                  <div className="relative">
-                    <div className="flex items-start justify-between gap-4">
-                      <motion.div
-                        whileHover={{ rotate: -5, scale: 1.05 }}
-                        className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f5ecd9] text-[#95702b] transition group-hover:bg-[#17140e] group-hover:text-[#dcb75f]"
-                      >
-                        <Icon size={22} />
-                      </motion.div>
+                  <div className="flex items-start justify-between">
 
-                      <span className="rounded-lg bg-[#faf7f1] px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wide text-[#8d8375]">
-                        {feature.tag}
-                      </span>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fbf0d9] text-[#a37826] transition group-hover:bg-[#c79a3b] group-hover:text-white">
+                      <Icon size={21} />
                     </div>
 
-                    <h3 className="mt-7 text-[19px] font-black">
-                      {feature.title}
-                    </h3>
+                    <span className="rounded-lg bg-[#faf7f1] px-2 py-1.5 text-[7px] font-black uppercase tracking-wide text-[#958a7b]">
+                      {feature.tag}
+                    </span>
 
-                    <p className="mt-2.5 min-h-[66px] text-[12px] leading-6 text-[#7c7469]">
-                      {feature.text}
-                    </p>
-
-                    <div className="mt-6 flex items-center gap-1.5 text-[11px] font-black text-[#9b7227]">
-                      Explore feature
-                      <ArrowRight
-                        size={14}
-                        className="transition group-hover:translate-x-1"
-                      />
-                    </div>
                   </div>
+
+                  <h3 className="mt-6 text-[18px] font-black">
+                    {feature.title}
+                  </h3>
+
+                  <p className="mt-2.5 text-[11px] leading-6 text-[#7e7569]">
+                    {feature.text}
+                  </p>
+
+                  <Link
+                    href="/auth/register"
+                    className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-black text-[#a37826]"
+                  >
+                    Explore
+                    <ArrowRight size={13} />
+                  </Link>
+
                 </motion.div>
               );
             })}
+
           </motion.div>
+
         </div>
+
       </section>
 
-      {/* CATEGORIES */}
+      {/* =====================================================
+          HOW IT WORKS
+      ===================================================== */}
+
       <section
-        id="categories"
-        className="border-y border-[#e9e0d2] bg-[#f5f0e7] py-24 sm:py-28"
+        id="how"
+        className="py-20 sm:py-24"
       >
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"
-          >
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
-                EXPLORE
-              </span>
 
-              <h2 className="mt-3 text-[40px] font-black leading-[1.03] tracking-[-2px] sm:text-[52px]">
-                Find your
-                <br />
-                <span className="text-[#b8872d]">category.</span>
-              </h2>
+        <div className="mx-auto grid max-w-[1400px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
 
-              <p className="mt-4 max-w-lg text-sm leading-6 text-[#7c7468]">
-                From everyday essentials to your next big upgrade, explore
-                everything in one place.
-              </p>
-            </div>
-
-            <Link
-              href="/auth/register"
-              className="group flex w-fit items-center gap-2 rounded-xl border border-[#ddcfb5] bg-white px-4 py-3 text-xs font-black text-[#5b5144] shadow-sm transition hover:-translate-y-0.5 hover:border-[#b9975b]"
-            >
-              Explore all categories
-              <ArrowRight
-                size={15}
-                className="transition group-hover:translate-x-1"
-              />
-            </Link>
-          </motion.div>
-
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.08 }}
-            className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-          >
-            {categories.map((category) => (
-              <motion.div
-                key={category.name}
-                variants={scaleIn}
-                whileHover={{ y: -6 }}
-              >
-                <Link
-                  href="/auth/register"
-                  className="group block min-h-[155px] rounded-[21px] border border-[#e6ddcf] bg-white p-5 transition duration-300 hover:border-[#d1b779] hover:shadow-[0_18px_40px_rgba(70,51,18,0.07)]"
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="text-[34px] transition duration-300 group-hover:scale-110">
-                      {category.icon}
-                    </span>
-
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#faf7f1] text-[#9c752c] transition group-hover:bg-[#17140e] group-hover:text-white">
-                      <ArrowRight size={13} />
-                    </div>
-                  </div>
-
-                  <div className="mt-8">
-                    <h3 className="text-[13px] font-black">
-                      {category.name}
-                    </h3>
-
-                    <p className="mt-1 text-[9px] leading-4 text-[#938a7d]">
-                      {category.count}
-                    </p>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how" className="py-24 sm:py-28">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-16 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
           <motion.div
             variants={fadeLeft}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true }}
+            viewport={{
+              once: true,
+            }}
           >
+
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a37826]">
               HOW IT WORKS
             </span>
 
             <h2 className="mt-4 text-[40px] font-black leading-[1.03] tracking-[-2px] sm:text-[54px]">
-              Less scrolling.
+              Simple shopping.
               <br />
-              <span className="text-[#b8872d]">Better choices.</span>
+              <span className="text-[#b8872d]">
+                Better decisions.
+              </span>
             </h2>
 
-            <p className="mt-5 max-w-md text-sm leading-7 text-[#7c7468]">
-              PrimeCart turns your shopping goal into a simpler,
-              personalized journey so you can spend less time searching and
-              more time choosing.
+            <p className="mt-5 max-w-md text-sm leading-7 text-[#7b7266]">
+              From discovering products to placing your order, PrimeCart
+              keeps your shopping journey simple and easy to understand.
             </p>
 
             <Link
               href="/auth/register"
-              className="group mt-7 inline-flex items-center gap-2 rounded-xl border border-[#17140e] bg-[#17140e] px-5 py-3.5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(23,20,14,0.12)] transition hover:-translate-y-1 hover:bg-[#2b261d]"
+              className="group mt-7 inline-flex items-center gap-2 rounded-xl bg-[#c79a3b] px-5 py-3.5 text-sm font-black text-white shadow-[0_10px_25px_rgba(184,135,45,0.18)] transition hover:-translate-y-1 hover:bg-[#ae7d25]"
             >
-              Try PrimeCart
+              Get Started
               <ArrowRight
                 size={16}
                 className="transition group-hover:translate-x-1"
               />
             </Link>
+
           </motion.div>
 
           <motion.div
             variants={fadeRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true }}
+            viewport={{
+              once: true,
+            }}
             className="relative"
           >
-            <div className="absolute bottom-0 left-[30px] top-0 w-px bg-[#e3d9c7]" />
 
-            <div className="space-y-2">
+            <div className="absolute bottom-8 left-[25px] top-8 w-px bg-[#dfd2bd]" />
+
+            <div className="space-y-3">
+
               {steps.map((step) => (
                 <motion.div
                   key={step.number}
-                  whileHover={{ x: 6 }}
-                  className="group relative flex gap-5 rounded-[22px] p-5 transition hover:bg-[#faf7f1] sm:gap-7 sm:p-7"
+                  whileHover={{
+                    x: 5,
+                  }}
+                  className="relative flex gap-5 rounded-[22px] border border-transparent p-5 transition hover:border-[#eadfcd] hover:bg-[#fcfaf6] sm:gap-7 sm:p-7"
                 >
-                  <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#dfd0b3] bg-[#f7eedc] text-[10px] font-black text-[#916c28]">
+
+                  <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#ddcba6] bg-[#fbf0d9] text-[10px] font-black text-[#987127]">
                     {step.number}
                   </div>
 
                   <div className="pt-1">
+
                     <h3 className="text-lg font-black">
                       {step.title}
                     </h3>
@@ -877,222 +1598,168 @@ export default function HomePage() {
                     <p className="mt-2 max-w-md text-[12px] leading-6 text-[#81786b]">
                       {step.text}
                     </p>
+
                   </div>
 
                   <ChevronRight
                     size={18}
                     className="ml-auto mt-2 hidden text-[#b9975b] sm:block"
                   />
+
                 </motion.div>
               ))}
+
             </div>
+
           </motion.div>
+
         </div>
+
       </section>
 
-      {/* DIFFERENCE */}
-      <section className="pb-24 sm:pb-28">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      {/* =====================================================
+          FINAL CTA
+      ===================================================== */}
+
+      <section className="pb-20 sm:pb-24">
+
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+
           <motion.div
             variants={scaleIn}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            className="grid overflow-hidden rounded-[30px] bg-[#17140e] text-white lg:grid-cols-[1fr_0.9fr]"
+            viewport={{
+              once: true,
+            }}
+            className="relative overflow-hidden rounded-[30px] border border-[#dfc891] bg-gradient-to-br from-[#f8edda] via-[#f1dfb9] to-[#e6cb91] px-6 py-16 text-center sm:px-10 sm:py-20"
           >
-            <div className="p-7 sm:p-10 lg:p-16">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d2aa54]">
-                THE PRIMECART DIFFERENCE
+
+            <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full border border-[#a37826]/10" />
+            <div className="absolute -bottom-36 -right-24 h-80 w-80 rounded-full border border-[#a37826]/10" />
+
+            <div className="relative mx-auto max-w-2xl">
+
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-[#916b28]">
+                <Sparkles size={12} />
+                Your next shopping experience
               </span>
 
-              <h2 className="mt-4 text-[40px] font-black leading-[1.02] tracking-[-2px] sm:text-[55px]">
-                Stop searching
+              <h2 className="mt-5 text-[39px] font-black leading-[1.03] tracking-[-2px] sm:text-[57px]">
+                Ready to shop
                 <br />
-                for <span className="text-[#d7b25d]">hours.</span>
-              </h2>
-
-              <p className="mt-6 max-w-xl text-sm leading-7 text-white/55">
-                Whether you need a new phone, gaming setup, college
-                essentials or something for your home, PrimeCart helps you
-                narrow down the choices.
-              </p>
-
-              <div className="mt-8 space-y-3">
-                {[
-                  "Personalized product discovery",
-                  "Budget-aware recommendations",
-                  "Situation-based shopping",
-                ].map((item, index) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 text-xs font-semibold text-white/80"
-                  >
-                    <span className="text-[9px] font-black text-[#d4ad58]">
-                      0{index + 1}
-                    </span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href="/auth/register"
-                className="group mt-9 inline-flex items-center gap-2 rounded-xl border border-white bg-white px-5 py-3.5 text-sm font-black text-[#17140e] transition hover:-translate-y-1 hover:bg-[#f3ead9]"
-              >
-                Create Your Account
-                <ArrowRight
-                  size={16}
-                  className="transition group-hover:translate-x-1"
-                />
-              </Link>
-            </div>
-
-            <div className="relative flex min-h-[420px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#4a3b20_0%,#282116_38%,#17140e_72%)]">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{
-                  duration: 25,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-                className="absolute h-[280px] w-[280px] rounded-full border border-[#cba85c]/15"
-              />
-
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{
-                  duration: 35,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-                className="absolute h-[390px] w-[390px] rounded-full border border-[#cba85c]/10"
-              />
-
-              <motion.div
-                animate={{
-                  scale: [1, 1.05, 1],
-                  boxShadow: [
-                    "0 0 50px rgba(205,168,83,0.08)",
-                    "0 0 90px rgba(205,168,83,0.18)",
-                    "0 0 50px rgba(205,168,83,0.08)",
-                  ],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                }}
-                className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[#705b31] bg-[#2e2617] text-[#d7b15d]"
-              >
-                <Brain size={54} />
-              </motion.div>
-
-              <div className="absolute left-6 top-14 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:left-10">
-                <p className="text-[8px] text-white/45">
-                  Shopping goal
-                </p>
-
-                <p className="mt-1 text-xs font-black">
-                  Gaming Setup
-                </p>
-              </div>
-
-              <div className="absolute right-5 top-[45%] rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:right-10">
-                <p className="text-[8px] text-white/45">
-                  Budget
-                </p>
-
-                <p className="mt-1 text-xs font-black">
-                  ₹50,000
-                </p>
-              </div>
-
-              <div className="absolute bottom-12 left-12 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-md sm:left-20">
-                <p className="text-[8px] text-white/45">
-                  Match score
-                </p>
-
-                <p className="mt-1 text-xs font-black text-[#d8b45f]">
-                  96%
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="pb-24 sm:pb-28">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={scaleIn}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            className="relative overflow-hidden rounded-[30px] border border-[#e1cfa7] bg-[#efdfba] px-6 py-20 text-center shadow-[0_20px_60px_rgba(120,90,30,0.08)] sm:px-10"
-          >
-            <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full border border-[#a98238]/10" />
-            <div className="absolute -bottom-48 -right-24 h-96 w-96 rounded-full border border-[#a98238]/10" />
-
-            <div className="relative z-10 mx-auto max-w-2xl">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#92702e]">
-                READY TO SHOP DIFFERENTLY?
-              </span>
-
-              <h2 className="mt-4 text-[40px] font-black leading-[1.02] tracking-[-2px] sm:text-[58px]">
-                Your smarter shopping
-                <br />
-                journey starts here.
+                <span className="text-[#a87824]">
+                  smarter?
+                </span>
               </h2>
 
               <p className="mx-auto mt-5 max-w-lg text-sm leading-7 text-[#74684f]">
-                Create your PrimeCart account and discover a more
-                personalized way to shop.
+                Discover products, explore deals and find a shopping
+                experience designed around you.
               </p>
 
-              <Link
-                href="/auth/register"
-                className="group mt-8 inline-flex items-center gap-2 rounded-xl border border-[#17140e] bg-[#17140e] px-6 py-3.5 text-sm font-black text-white shadow-[0_12px_30px_rgba(23,20,14,0.14)] transition hover:-translate-y-1 hover:bg-[#2b261d] hover:shadow-[0_18px_35px_rgba(23,20,14,0.2)]"
-              >
-                Get Started
-                <ArrowRight
-                  size={17}
-                  className="transition group-hover:translate-x-1"
-                />
-              </Link>
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
+
+                <Link
+                  href="/auth/register"
+                  className="group flex items-center gap-2 rounded-xl bg-[#c79a3b] px-6 py-3.5 text-sm font-black text-white shadow-[0_12px_30px_rgba(120,86,25,0.18)] transition hover:-translate-y-1 hover:bg-[#ae7d25]"
+                >
+                  Create Account
+                  <ArrowRight
+                    size={17}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </Link>
+
+                <Link
+                  href="/products"
+                  className="flex items-center gap-2 rounded-xl border border-[#cdb887] bg-white/70 px-6 py-3.5 text-sm font-black text-[#645744] transition hover:bg-white"
+                >
+                  Browse Products
+                  <ShoppingBag size={16} />
+                </Link>
+
+              </div>
+
             </div>
+
           </motion.div>
+
         </div>
+
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-[#17140e] text-white">
-        <div className="mx-auto max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8">
-          <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <footer className="border-t border-[#e7ddce] bg-[#faf6ef]">
+
+        <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8">
+
+          <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+
+            {/* BRAND */}
+
             <div>
+
               <Link
                 href="/"
                 className="flex items-center gap-2.5"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#29251d] text-[#dcb75f]">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c79a3b] text-white">
                   <Sparkles size={18} />
                 </div>
 
                 <div className="text-xl font-black tracking-tight">
-                  Prime<span className="text-[#d0a74e]">Cart</span>
+                  Prime<span className="text-[#b8872d]">
+                    Cart
+                  </span>
                 </div>
+
               </Link>
 
-              <p className="mt-5 max-w-xs text-xs leading-6 text-white/45">
-                A smarter shopping experience built around your needs,
-                budget and preferences.
+              <p className="mt-5 max-w-sm text-xs leading-6 text-[#807668]">
+                A modern shopping experience built around better product
+                discovery, useful deals and smarter choices.
               </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+
+                {[
+                  "Secure Shopping",
+                  "Easy Returns",
+                  "Smart Discovery",
+                ].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-lg border border-[#e3d8c6] bg-white px-2.5 py-1.5 text-[8px] font-bold text-[#756b5d]"
+                  >
+                    ✓ {item}
+                  </span>
+                ))}
+
+              </div>
+
             </div>
 
             <FooterColumn
-              title="Explore"
+              title="Shop"
               links={[
-                ["Why PrimeCart", "#features"],
-                ["Categories", "#categories"],
+                ["All Products", "/products"],
+                ["Categories", "/categories"],
+                ["Today's Deals", "#deals"],
+                ["Featured", "/products"],
+              ]}
+            />
+
+            <FooterColumn
+              title="PrimeCart"
+              links={[
+                ["PrimeMatch", "/primematch"],
+                ["Budget Builder", "/auth/register"],
+                ["PrimePoints", "/auth/register"],
                 ["How It Works", "#how"],
               ]}
             />
@@ -1101,21 +1768,16 @@ export default function HomePage() {
               title="Account"
               links={[
                 ["Login", "/auth/login"],
-                ["Register", "/auth/register"],
+                ["Create Account", "/auth/register"],
+                ["Wishlist", "/wishlist"],
+                ["Cart", "/cart"],
               ]}
             />
 
-            <FooterColumn
-              title="PrimeCart"
-              links={[
-                ["PrimeMatch", "/auth/register"],
-                ["Budget Builder", "/auth/register"],
-                ["PrimePoints", "/auth/register"],
-              ]}
-            />
           </div>
 
-          <div className="mt-12 flex flex-col justify-between gap-3 border-t border-white/10 pt-5 text-[10px] text-white/35 sm:flex-row">
+          <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#e3d8c7] pt-6 text-[10px] text-[#958a7c] sm:flex-row">
+
             <span>
               © 2026 PrimeCart. All rights reserved.
             </span>
@@ -1123,12 +1785,20 @@ export default function HomePage() {
             <span>
               Shop smarter. Discover better.
             </span>
+
           </div>
+
         </div>
+
       </footer>
+
     </main>
   );
 }
+
+/* =========================================================
+   FOOTER COLUMN
+========================================================= */
 
 function FooterColumn({
   title,
@@ -1139,21 +1809,25 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <h4 className="text-[10px] font-black uppercase tracking-[0.16em] text-[#d1aa56]">
+
+      <h4 className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a37826]">
         {title}
       </h4>
 
       <div className="mt-5 flex flex-col gap-3">
+
         {links.map(([label, href]) => (
           <Link
             key={label}
             href={href}
-            className="w-fit text-xs text-white/45 transition hover:text-white"
+            className="w-fit text-xs text-[#756b5d] transition hover:text-[#b8872d]"
           >
             {label}
           </Link>
         ))}
+
       </div>
+
     </div>
   );
 }
