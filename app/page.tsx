@@ -342,7 +342,7 @@ export default function HomePage() {
             {/* LOGO */}
 
             <Link
-              href="/"
+              href="/logo.png"
               className="group flex shrink-0 items-center gap-2.5"
             >
               <motion.div
