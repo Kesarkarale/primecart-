@@ -28,7 +28,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
 const categories = [
   {
     name: "Mobile",
