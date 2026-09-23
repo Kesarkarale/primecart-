@@ -142,7 +142,7 @@ const categories: Category[] = [
     description:
       "Useful car and bike accessories for safer and smarter journeys.",
     icon: Car,
-    image: "/automotive.png",
+    image: "/automative.png",
     keywords: ["car", "bike", "automotive", "vehicle"],
   },
   {
