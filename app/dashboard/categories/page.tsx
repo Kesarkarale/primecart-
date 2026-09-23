@@ -106,7 +106,7 @@ const categories: Category[] = [
     description:
       "Sneakers, running shoes, sandals and footwear for every occasion.",
     icon: Footprints,
-    image: "/sports-running-shoes.png",
+    image: "/footware.png",
     keywords: ["footwear", "shoes", "sneakers", "running"],
   },
   {
