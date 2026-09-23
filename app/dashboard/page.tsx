@@ -151,6 +151,7 @@ function getImageUrl(value: string | null) {
 
   if (!image) return null;
 
+  // Full URLs and absolute public paths are already usable.
   if (
     image.startsWith("http://") ||
     image.startsWith("https://") ||
@@ -159,8 +160,48 @@ function getImageUrl(value: string | null) {
     return image;
   }
 
-  return `/${image}`;
+  // Supabase/local DB values are commonly stored as just a filename.
+  // Keep the filename at the public root so values such as
+  // "sports-running-shoes.png" resolve to "/sports-running-shoes.png".
+  return `/${image.replace(/^\/+/, "")}`;
 }
+
+function ProductImage({
+  src,
+  alt,
+  sizes,
+  className = "",
+}: {
+  src: string | null;
+  alt: string;
+  sizes: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return (
+      <div
+        className={`flex h-full w-full items-center justify-center bg-[#f8f4eb] ${className}`}
+      >
+        <ShoppingBag size={28} className="text-[#b7aa96]" />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      className={className}
+      style={{ objectFit: "contain", padding: "10px" }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -1267,8 +1308,12 @@ export default function DashboardPage() {
           background: #f8f4eb;
         }
 
+        .pc-product-image > img {
+          display: block;
+        }
+
         .pc-product-image img {
-          object-fit: cover;
+          object-fit: contain !important;
           transition: transform 0.5s ease;
         }
 
@@ -1430,7 +1475,7 @@ export default function DashboardPage() {
         }
 
         .pc-deal-image img {
-          object-fit: cover;
+          object-fit: contain !important;
           transition: transform 0.35s ease;
         }
 
@@ -2046,15 +2091,11 @@ export default function DashboardPage() {
                         }
                       >
                         <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-[#f6f0e5]">
-                          {image && (
-                            <Image
-                              src={image}
-                              alt={product.name}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          )}
+                          <ProductImage
+                            src={image}
+                            alt={product.name}
+                            sizes="40px"
+                          />
                         </div>
 
                         <div className="min-w-0 flex-1">
@@ -2462,18 +2503,11 @@ export default function DashboardPage() {
                       }}
                     >
                       <div className="pc-product-image">
-                        {image ? (
-                          <Image
-                            src={image}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 700px) 50vw, 180px"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[#b7aa96]">
-                            <ShoppingBag size={28} />
-                          </div>
-                        )}
+                        <ProductImage
+                          src={image}
+                          alt={product.name}
+                          sizes="(max-width: 700px) 50vw, 180px"
+                        />
 
                         {discount > 0 && (
                           <span className="pc-discount">
@@ -2604,14 +2638,11 @@ export default function DashboardPage() {
                       className="pc-deal"
                     >
                       <div className="pc-deal-image">
-                        {image && (
-                          <Image
-                            src={image}
-                            alt={product.name}
-                            fill
-                            sizes="68px"
-                          />
-                        )}
+                        <ProductImage
+                          src={image}
+                          alt={product.name}
+                          sizes="68px"
+                        />
                       </div>
 
                       <div className="min-w-0">
