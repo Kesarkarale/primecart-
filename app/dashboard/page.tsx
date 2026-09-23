@@ -9,10 +9,13 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
+  Clock3,
   Crown,
+  Flame,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -26,6 +29,7 @@ import {
   Sparkles,
   Star,
   Target,
+  TicketPercent,
   Truck,
   User,
   WalletCards,
@@ -54,6 +58,7 @@ type Product = {
   is_flash_sale: boolean;
   is_active: boolean;
   category_id: string | null;
+  created_at?: string;
 };
 
 type Category = {
@@ -73,6 +78,11 @@ type Profile = {
   full_name: string | null;
   email: string | null;
   avatar_url?: string | null;
+};
+
+type RecentProduct = {
+  id: string;
+  viewedAt: number;
 };
 
 /* =========================================================
@@ -106,12 +116,12 @@ const sidebarItems = [
   {
     label: "Categories",
     href: "/dashboard/categories",
-    icon: BarChart3,
+    icon: Package,
   },
   {
     label: "My Orders",
     href: "/dashboard/orders",
-    icon: Package,
+    icon: Truck,
   },
   {
     label: "Wishlist",
@@ -122,32 +132,32 @@ const sidebarItems = [
 
 const smartTools = [
   {
-    title: "PrimeMatch",
-    description: "Find products matched to your needs.",
+    label: "PrimeMatch",
     href: "/dashboard/prime-match",
+    description: "Find products matched to your needs.",
+    badge: "SMART MATCH",
     icon: Target,
-    label: "SMART MATCH",
   },
   {
-    title: "Budget Builder",
-    description: "Plan your shopping without overspending.",
+    label: "Budget Builder",
     href: "/dashboard/budget-builder",
+    description: "Plan your shopping without overspending.",
+    badge: "BUDGET",
     icon: WalletCards,
-    label: "BUDGET",
   },
   {
-    title: "Setup Builder",
-    description: "Create a complete setup from scratch.",
+    label: "Setup Builder",
     href: "/dashboard/setup-builder",
+    description: "Create a complete setup from scratch.",
+    badge: "CURATED",
     icon: Sparkles,
-    label: "CURATED",
   },
   {
-    title: "PrimePoints",
-    description: "Track your rewards and shopping points.",
+    label: "PrimePoints",
     href: "/dashboard/prime-points",
+    description: "Track your rewards and shopping points.",
+    badge: "REWARDS",
     icon: Crown,
-    label: "REWARDS",
   },
 ];
 
@@ -164,7 +174,8 @@ function getImageCandidates(value: string | null) {
 
   if (
     image.startsWith("http://") ||
-    image.startsWith("https://")
+    image.startsWith("https://") ||
+    image.startsWith("data:")
   ) {
     return [image];
   }
@@ -173,10 +184,7 @@ function getImageCandidates(value: string | null) {
     return [image];
   }
 
-  return [
-    `/${image}`,
-    `/products/${image}`,
-  ];
+  return [`/${image}`, `/products/${image}`];
 }
 
 function formatPrice(value: number) {
@@ -184,134 +192,131 @@ function formatPrice(value: number) {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value || 0);
 }
 
 function discountPercentage(
   price: number,
-  originalPrice: number | null,
+  originalPrice: number | null
 ) {
   if (!originalPrice || originalPrice <= price) return 0;
 
-  return Math.round(
-    ((originalPrice - price) / originalPrice) * 100,
-  );
+  return Math.round(((originalPrice - price) / originalPrice) * 100);
 }
 
 function getInitials(name: string) {
-  const parts = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2);
+  const clean = name.trim();
 
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+  if (!clean) return "PC";
+
+  const parts = clean.split(/\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-IN", {
+  if (!value) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  });
+  }).format(new Date(value));
+}
+
+function formatOrderStatus(status: string) {
+  if (!status) return "Processing";
+
+  return status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 /* =========================================================
    PRODUCT IMAGE
+   IMPORTANT:
+   object-contain => COMPLETE IMAGE VISIBLE
 ========================================================= */
 
 function ProductImage({
-  src,
-  alt,
+  product,
   className = "",
-  sizes = "200px",
 }: {
-  src: string | null;
-  alt: string;
+  product: Product;
   className?: string;
-  sizes?: string;
 }) {
-  const candidates = useMemo(
-    () => getImageCandidates(src),
-    [src],
-  );
+  const candidates = getImageCandidates(product.image_url);
 
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     setIndex(0);
-  }, [src]);
+  }, [product.image_url]);
 
-  const current = candidates[index];
-
-  if (!current) {
+  if (!candidates.length || index >= candidates.length) {
     return (
-      <div
-        className={`flex h-full w-full items-center justify-center bg-[#f7f1e6] text-[#b8aa94] ${className}`}
-      >
-        <ShoppingBag size={27} strokeWidth={1.6} />
+      <div className={`product-image-fallback ${className}`}>
+        <ShoppingBag size={38} strokeWidth={1.4} />
+        <span>No image</span>
       </div>
     );
   }
 
   return (
-    <Image
-      src={current}
-      alt={alt}
-      fill
-      sizes={sizes}
-      className={`object-cover ${className}`}
-      onError={() => {
-        if (index < candidates.length - 1) {
-          setIndex((value) => value + 1);
-        } else {
-          setIndex(candidates.length);
-        }
-      }}
-    />
+    <div className={`product-image-wrapper ${className}`}>
+      <Image
+        src={candidates[index]}
+        alt={product.name}
+        fill
+        priority={false}
+        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 260px"
+        className="product-image-full"
+        onError={() => {
+          setIndex((current) => current + 1);
+        }}
+      />
+    </div>
   );
 }
 
 /* =========================================================
-   DASHBOARD
+   MAIN DASHBOARD
 ========================================================= */
 
 export default function DashboardPage() {
-  /*
-   * IMPORTANT:
-   * Keep one browser Supabase client instance.
-   * This avoids unnecessary effect reruns.
-   */
   const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
+
   const [mobileMenu, setMobileMenu] = useState(false);
 
-  const [profile, setProfile] =
-    useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
-  const [products, setProducts] =
-    useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const [categories, setCategories] =
-    useState<Category[]>([]);
-
-  const [orders, setOrders] =
-    useState<Order[]>([]);
-
-  const [wishlistCount, setWishlistCount] =
-    useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const [search, setSearch] = useState("");
-  const [searchFocused, setSearchFocused] =
-    useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  const [notificationOpen, setNotificationOpen] =
-    useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentProduct[]>(
+    []
+  );
+
+  const [dealMessage, setDealMessage] = useState(
+    "Your mystery deal is waiting."
+  );
 
   /* =======================================================
      LOAD DASHBOARD
@@ -342,9 +347,7 @@ export default function DashboardPage() {
         ] = await Promise.all([
           supabase
             .from("profiles")
-            .select(
-              "full_name,email,avatar_url",
-            )
+            .select("full_name,email,avatar_url")
             .eq("id", user.id)
             .maybeSingle(),
 
@@ -352,45 +355,38 @@ export default function DashboardPage() {
             .from("products")
             .select(
               `
-              id,
-              name,
-              slug,
-              short_description,
-              description,
-              price,
-              original_price,
-              stock,
-              image_url,
-              brand,
-              rating,
-              reviews_count,
-              is_featured,
-              is_flash_sale,
-              is_active,
-              category_id
-            `,
+                id,
+                name,
+                slug,
+                short_description,
+                description,
+                price,
+                original_price,
+                stock,
+                image_url,
+                brand,
+                rating,
+                reviews_count,
+                is_featured,
+                is_flash_sale,
+                is_active,
+                category_id,
+                created_at
+              `
             )
             .eq("is_active", true)
-            .order("created_at", {
-              ascending: false,
-            }),
+            .order("created_at", { ascending: false }),
 
           supabase
             .from("categories")
             .select("id,name,slug")
-            .order("name", {
-              ascending: true,
-            }),
+            .order("name", { ascending: true }),
 
           supabase
             .from("orders")
-            .select(
-              "id,status,total_amount,created_at",
-            )
+            .select("id,status,total_amount,created_at")
             .eq("user_id", user.id)
-            .order("created_at", {
-              ascending: false,
-            }),
+            .order("created_at", { ascending: false }),
 
           supabase
             .from("wishlist")
@@ -400,39 +396,50 @@ export default function DashboardPage() {
 
         if (!mounted) return;
 
+        const metadataName =
+          typeof user.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name
+            : "";
+
+        const fallbackProfile: Profile = {
+          full_name:
+            metadataName ||
+            user.user_metadata?.name ||
+            user.email?.split("@")[0] ||
+            "PrimeCart User",
+          email: user.email || null,
+          avatar_url:
+            typeof user.user_metadata?.avatar_url === "string"
+              ? user.user_metadata.avatar_url
+              : null,
+        };
+
         setProfile(
-          profileResult.data ?? {
-            full_name:
-              user.user_metadata?.full_name ??
-              user.email?.split("@")[0] ??
-              "PrimeCart User",
-            email: user.email ?? "",
-          },
+          profileResult.data
+            ? {
+                ...fallbackProfile,
+                ...profileResult.data,
+              }
+            : fallbackProfile
         );
 
-        setProducts(
-          (productsResult.data ??
-            []) as Product[],
-        );
+        if (!productsResult.error && productsResult.data) {
+          setProducts(productsResult.data as Product[]);
+        }
 
-        setCategories(
-          (categoriesResult.data ??
-            []) as Category[],
-        );
+        if (!categoriesResult.error && categoriesResult.data) {
+          setCategories(categoriesResult.data as Category[]);
+        }
 
-        setOrders(
-          (ordersResult.data ??
-            []) as Order[],
-        );
+        if (!ordersResult.error && ordersResult.data) {
+          setOrders(ordersResult.data as Order[]);
+        }
 
-        setWishlistCount(
-          wishlistResult.data?.length ?? 0,
-        );
+        if (!wishlistResult.error && wishlistResult.data) {
+          setWishlistCount(wishlistResult.data.length);
+        }
       } catch (error) {
-        console.error(
-          "Dashboard error:",
-          error,
-        );
+        console.error("Dashboard loading error:", error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -448,81 +455,257 @@ export default function DashboardPage() {
   }, [supabase]);
 
   /* =======================================================
+     RECENTLY VIEWED
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(
+        "primecart_recently_viewed"
+      );
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+
+        if (Array.isArray(parsed)) {
+          setRecentlyViewed(parsed);
+        }
+      }
+    } catch {
+      setRecentlyViewed([]);
+    }
+  }, []);
+
+  /* =======================================================
      DERIVED DATA
   ======================================================= */
 
   const featuredProducts = useMemo(() => {
     const featured = products.filter(
-      (product) => product.is_featured,
+      (product) => product.is_featured
     );
 
-    return featured.length
-      ? featured.slice(0, 6)
-      : products.slice(0, 6);
+    return (featured.length ? featured : products).slice(0, 6);
   }, [products]);
 
   const flashProducts = useMemo(() => {
     const flash = products.filter(
-      (product) => product.is_flash_sale,
+      (product) => product.is_flash_sale
     );
 
-    return flash.length
-      ? flash.slice(0, 4)
-      : products.slice(0, 4);
+    return (flash.length ? flash : products).slice(0, 4);
   }, [products]);
 
-  const searchResults = useMemo(() => {
-    const value = search
-      .trim()
-      .toLowerCase();
+  const latestProducts = useMemo(() => {
+    return products.slice(0, 8);
+  }, [products]);
 
-    if (!value) return [];
+  const filteredCategoryProducts = useMemo(() => {
+    if (activeCategory === "all") {
+      return products.slice(0, 8);
+    }
 
     return products
       .filter(
-        (product) =>
-          product.name
-            .toLowerCase()
-            .includes(value) ||
-          product.brand
-            ?.toLowerCase()
-            .includes(value),
+        (product) => product.category_id === activeCategory
       )
+      .slice(0, 8);
+  }, [products, activeCategory]);
+
+  const searchResults = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return [];
+
+    return products
+      .filter((product) => {
+        const name = product.name?.toLowerCase() || "";
+        const brand = product.brand?.toLowerCase() || "";
+        const description =
+          product.short_description?.toLowerCase() || "";
+
+        return (
+          name.includes(query) ||
+          brand.includes(query) ||
+          description.includes(query)
+        );
+      })
       .slice(0, 6);
   }, [products, search]);
 
-  const totalSpent = useMemo(
-    () =>
-      orders.reduce(
-        (total, order) =>
-          total +
-          Number(order.total_amount || 0),
-        0,
-      ),
-    [orders],
-  );
+  const totalSpent = useMemo(() => {
+    return orders.reduce(
+      (sum, order) => sum + Number(order.total_amount || 0),
+      0
+    );
+  }, [orders]);
 
-  const primePoints = Math.floor(
-    totalSpent / 10,
-  );
+  const primePoints = Math.floor(totalSpent / 10);
 
   const userName =
-    profile?.full_name?.trim() ||
+    profile?.full_name ||
     profile?.email?.split("@")[0] ||
     "PrimeCart User";
 
-  const firstName =
-    userName.split(" ")[0];
+  const firstName = userName.split(" ")[0];
+
+  const recentProducts = useMemo(() => {
+    return recentlyViewed
+      .map((item) => products.find((product) => product.id === item.id))
+      .filter(Boolean) as Product[];
+  }, [recentlyViewed, products]);
+
+  const visibleRecentProducts =
+    recentProducts.length > 0
+      ? recentProducts.slice(0, 4)
+      : latestProducts.slice(0, 4);
+
+  const pointsProgress = Math.min(
+    100,
+    ((primePoints % 1000) / 1000) * 100
+  );
 
   /* =======================================================
-     LOGOUT
+     ACTIONS
   ======================================================= */
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    window.location.replace("/auth/login");
+  }
 
-    window.location.replace(
-      "/auth/login",
+  function openProduct(product: Product) {
+    try {
+      const current: RecentProduct[] = JSON.parse(
+        localStorage.getItem(
+          "primecart_recently_viewed"
+        ) || "[]"
+      );
+
+      const updated: RecentProduct[] = [
+        {
+          id: product.id,
+          viewedAt: Date.now(),
+        },
+        ...current.filter((item) => item.id !== product.id),
+      ].slice(0, 10);
+
+      localStorage.setItem(
+        "primecart_recently_viewed",
+        JSON.stringify(updated)
+      );
+    } catch {
+      // ignore local storage errors
+    }
+  }
+
+  function revealMysteryDeal() {
+    const deals = [
+      "You unlocked a surprise PrimeCart deal!",
+      "A special discount is waiting for you.",
+      "Your personalized deal has been revealed!",
+      "PrimeCart found something special for you.",
+    ];
+
+    const random =
+      deals[Math.floor(Math.random() * deals.length)];
+
+    setDealMessage(random);
+  }
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <div className="loading-logo">
+          <div className="loading-logo-mark">P</div>
+          <div>
+            <strong>PrimeCart</strong>
+            <span>Smart shopping</span>
+          </div>
+        </div>
+
+        <div className="loading-spinner" />
+
+        <p>Preparing your shopping dashboard...</p>
+
+        <style jsx>{`
+          .dashboard-loading {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            background:
+              radial-gradient(
+                circle at top left,
+                rgba(199, 154, 59, 0.1),
+                transparent 35%
+              ),
+              #fbf8f2;
+            color: #4a4034;
+          }
+
+          .loading-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .loading-logo-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(
+              135deg,
+              #d7b66a,
+              #9c7430
+            );
+            color: white;
+            font-size: 20px;
+            font-weight: 800;
+            box-shadow: 0 10px 30px rgba(155, 113, 46, 0.2);
+          }
+
+          .loading-logo strong {
+            display: block;
+            font-size: 19px;
+          }
+
+          .loading-logo span {
+            display: block;
+            color: #9b907f;
+            font-size: 11px;
+            margin-top: 2px;
+          }
+
+          .loading-spinner {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid #eadfcb;
+            border-top-color: #b9975b;
+            animation: spin 0.8s linear infinite;
+          }
+
+          .dashboard-loading p {
+            color: #9b907f;
+            font-size: 13px;
+          }
+
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+      </div>
     );
   }
 
@@ -532,11 +715,1547 @@ export default function DashboardPage() {
 
   return (
     <div className="prime-dashboard">
+      {/* ===================================================
+          MOBILE OVERLAY
+      =================================================== */}
+
+      {mobileMenu && (
+        <button
+          className="mobile-overlay"
+          onClick={() => setMobileMenu(false)}
+          aria-label="Close menu"
+        />
+      )}
+
+      {/* ===================================================
+          SIDEBAR
+      =================================================== */}
+
+      <aside
+        className={`dashboard-sidebar ${
+          mobileMenu ? "sidebar-open" : ""
+        }`}
+      >
+        <div className="sidebar-brand">
+          <Link
+            href="/dashboard"
+            className="brand-link"
+            onClick={() => setMobileMenu(false)}
+          >
+            <div className="brand-mark">
+              <span>P</span>
+            </div>
+
+            <div className="brand-copy">
+              <strong>PrimeCart</strong>
+              <span>Smart shopping</span>
+            </div>
+          </Link>
+
+          <button
+            className="mobile-close"
+            onClick={() => setMobileMenu(false)}
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="sidebar-scroll">
+          <div className="sidebar-label">MAIN MENU</div>
+
+          <nav className="sidebar-nav">
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`sidebar-link ${
+                    item.href === "/dashboard"
+                      ? "sidebar-link-active"
+                      : ""
+                  }`}
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <span className="sidebar-icon">
+                    <Icon size={18} />
+                  </span>
+
+                  <span>{item.label}</span>
+
+                  {item.label === "Wishlist" &&
+                    wishlistCount > 0 && (
+                      <span className="sidebar-count">
+                        {wishlistCount}
+                      </span>
+                    )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="sidebar-label smart-label">
+            SMART TOOLS
+          </div>
+
+          <div className="smart-sidebar">
+            {smartTools.map((tool) => {
+              const Icon = tool.icon;
+
+              return (
+                <Link
+                  href={tool.href}
+                  key={tool.href}
+                  className="smart-sidebar-item"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <span className="smart-sidebar-icon">
+                    <Icon size={16} />
+                  </span>
+
+                  <span className="smart-sidebar-content">
+                    <strong>{tool.label}</strong>
+                    <small>{tool.badge}</small>
+                  </span>
+
+                  <ChevronRight size={15} />
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="sidebar-help">
+            <div className="sidebar-help-icon">
+              <ShieldCheck size={20} />
+            </div>
+
+            <strong>Safe shopping</strong>
+
+            <p>
+              Secure checkout, protected payments and easy
+              returns.
+            </p>
+
+            <Link href="/dashboard/orders">
+              Learn more
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="sidebar-bottom">
+          <Link
+            href="/dashboard/settings"
+            className="sidebar-bottom-link"
+          >
+            <Settings size={18} />
+            Settings
+          </Link>
+
+          <button
+            className="sidebar-bottom-link logout-button"
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* ===================================================
+          MAIN
+      =================================================== */}
+
+      <main className="dashboard-main">
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <header className="dashboard-header">
+          <div className="header-left">
+            <button
+              className="mobile-menu-button"
+              onClick={() => setMobileMenu(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={21} />
+            </button>
+
+            <div className="header-search-wrap">
+              <Search
+                size={18}
+                className="header-search-icon"
+              />
+
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                onFocus={() => setSearchFocused(true)}
+                placeholder="Search products, brands & categories..."
+                className="header-search"
+              />
+
+              {search && (
+                <button
+                  className="search-clear"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                >
+                  <X size={15} />
+                </button>
+              )}
+
+              {searchFocused && search.trim() && (
+                <div className="search-results">
+                  <div className="search-results-head">
+                    <span>Search results</span>
+                    <small>
+                      {searchResults.length} found
+                    </small>
+                  </div>
+
+                  {searchResults.length > 0 ? (
+                    searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/dashboard/products/${product.id}`}
+                        className="search-result-item"
+                        onClick={() => {
+                          openProduct(product);
+                          setSearchFocused(false);
+                        }}
+                      >
+                        <div className="search-result-image">
+                          <ProductImage product={product} />
+                        </div>
+
+                        <div className="search-result-info">
+                          <strong>{product.name}</strong>
+
+                          <span>
+                            {product.brand || "PrimeCart"}
+                          </span>
+
+                          <b>
+                            {formatPrice(product.price)}
+                          </b>
+                        </div>
+
+                        <ChevronRight size={16} />
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="search-empty">
+                      <Search size={25} />
+                      <strong>No products found</strong>
+                      <span>
+                        Try another product or brand name.
+                      </span>
+                    </div>
+                  )}
+
+                  {searchResults.length > 0 && (
+                    <Link
+                      href="/dashboard/products"
+                      className="search-view-all"
+                      onClick={() =>
+                        setSearchFocused(false)
+                      }
+                    >
+                      View all products
+                      <ArrowRight size={15} />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="header-right">
+            <button
+              className="header-icon-button"
+              onClick={() =>
+                setNotificationOpen(!notificationOpen)
+              }
+              aria-label="Notifications"
+            >
+              <Bell size={19} />
+              <span className="notification-dot" />
+            </button>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="header-icon-button desktop-action"
+              aria-label="Wishlist"
+            >
+              <Heart size={19} />
+              {wishlistCount > 0 && (
+                <span className="header-count">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/orders"
+              className="header-icon-button desktop-action"
+              aria-label="Orders"
+            >
+              <ShoppingBag size={19} />
+            </Link>
+
+            <div className="header-profile-wrap">
+              <button
+                className="header-profile"
+                onClick={() =>
+                  setProfileOpen(!profileOpen)
+                }
+              >
+                {profile?.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={userName}
+                    width={38}
+                    height={38}
+                    className="avatar-image"
+                  />
+                ) : (
+                  <div className="avatar">
+                    {getInitials(userName)}
+                  </div>
+                )}
+
+                <span className="header-profile-copy">
+                  <strong>{firstName}</strong>
+                  <small>Prime member</small>
+                </span>
+
+                <ChevronDown size={15} />
+              </button>
+
+              {profileOpen && (
+                <div className="profile-dropdown">
+                  <div className="profile-dropdown-head">
+                    <div className="avatar large">
+                      {getInitials(userName)}
+                    </div>
+
+                    <div>
+                      <strong>{userName}</strong>
+                      <span>{profile?.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="profile-divider" />
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <User size={16} />
+                    My Profile
+                  </Link>
+
+                  <Link
+                    href="/dashboard/orders"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Package size={16} />
+                    My Orders
+                  </Link>
+
+                  <Link
+                    href="/dashboard/settings"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </Link>
+
+                  <button onClick={handleLogout}>
+                    <LogOut size={16} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {notificationOpen && (
+            <div className="notification-dropdown">
+              <div className="notification-head">
+                <strong>Notifications</strong>
+                <span>2 new</span>
+              </div>
+
+              <div className="notification-item">
+                <div className="notification-icon gold">
+                  <Zap size={15} />
+                </div>
+
+                <div>
+                  <strong>Flash deals are live</strong>
+                  <span>
+                    Discover limited-time offers.
+                  </span>
+                </div>
+              </div>
+
+              <div className="notification-item">
+                <div className="notification-icon green">
+                  <CheckCircle2 size={15} />
+                </div>
+
+                <div>
+                  <strong>PrimePoints updated</strong>
+                  <span>
+                    Your shopping rewards are ready.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </header>
+
+        <div className="dashboard-content">
+          {/* ===============================================
+              WELCOME HERO
+          =============================================== */}
+
+          <section className="welcome-hero">
+            <div className="hero-content">
+              <div className="hero-eyebrow">
+                <span className="hero-eyebrow-dot" />
+                YOUR PERSONAL SHOPPING SPACE
+              </div>
+
+              <h1>
+                Welcome back,
+                <br />
+                <span>{firstName}.</span>
+              </h1>
+
+              <p>
+                Discover products picked around your needs,
+                budget and shopping style.
+              </p>
+
+              <div className="hero-actions">
+                <Link
+                  href="/dashboard/products"
+                  className="hero-primary"
+                >
+                  <ShoppingBag size={17} />
+                  Start Shopping
+                  <ArrowRight size={15} />
+                </Link>
+
+                <Link
+                  href="/dashboard/prime-match"
+                  className="hero-secondary"
+                >
+                  <Sparkles size={16} />
+                  Try PrimeMatch
+                </Link>
+              </div>
+            </div>
+
+            <div className="hero-decoration">
+              <div className="hero-ring ring-one" />
+              <div className="hero-ring ring-two" />
+              <div className="hero-glow" />
+            </div>
+
+            <div className="hero-points-card">
+              <div className="points-card-top">
+                <div className="points-icon">
+                  <Crown size={20} />
+                </div>
+
+                <div>
+                  <span>PRIMEPOINTS</span>
+                  <strong>
+                    {primePoints.toLocaleString("en-IN")}
+                  </strong>
+                </div>
+
+                <Link href="/dashboard/prime-points">
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+
+              <div className="points-progress">
+                <span
+                  style={{
+                    width: `${pointsProgress}%`,
+                  }}
+                />
+              </div>
+
+              <div className="points-footer">
+                <span>
+                  {1000 - (primePoints % 1000)} points
+                  to next reward
+                </span>
+                <span>1000</span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===============================================
+              QUICK STATS
+          =============================================== */}
+
+          <section className="stats-grid">
+            <Link
+              href="/dashboard/orders"
+              className="stat-card"
+            >
+              <div className="stat-icon gold-icon">
+                <ShoppingBag size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Total Orders</span>
+                <strong>{orders.length}</strong>
+                <small>
+                  {orders.length
+                    ? "Your shopping history"
+                    : "Start your first order"}
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="stat-card"
+            >
+              <div className="stat-icon rose-icon">
+                <Heart size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Wishlist</span>
+                <strong>{wishlistCount}</strong>
+                <small>
+                  {wishlistCount
+                    ? "Items saved for later"
+                    : "Save products you love"}
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <div className="stat-card">
+              <div className="stat-icon green-icon">
+                <CircleDollarSign size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Total Spent</span>
+                <strong>{formatPrice(totalSpent)}</strong>
+                <small>Across all orders</small>
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/prime-points"
+              className="stat-card"
+            >
+              <div className="stat-icon purple-icon">
+                <Crown size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>PrimePoints</span>
+                <strong>{primePoints}</strong>
+                <small>Rewards earned</small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+          </section>
+
+          {/* ===============================================
+              SMART TOOLS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading">
+              <div>
+                <span className="section-kicker">
+                  SMART SHOPPING
+                </span>
+
+                <h2>
+                  Shop smarter with PrimeCart
+                </h2>
+
+                <p>
+                  Tools designed to make your shopping
+                  easier.
+                </p>
+              </div>
+
+              <Sparkles
+                className="heading-sparkle"
+                size={23}
+              />
+            </div>
+
+            <div className="smart-tools-grid">
+              {smartTools.map((tool, index) => {
+                const Icon = tool.icon;
+
+                return (
+                  <Link
+                    href={tool.href}
+                    key={tool.href}
+                    className="smart-tool-card"
+                    style={{
+                      animationDelay: `${index * 70}ms`,
+                    }}
+                  >
+                    <div className="smart-tool-top">
+                      <span className="smart-tool-badge">
+                        {tool.badge}
+                      </span>
+
+                      <span className="smart-tool-arrow">
+                        <ArrowRight size={15} />
+                      </span>
+                    </div>
+
+                    <div className="smart-tool-icon">
+                      <Icon size={22} />
+                    </div>
+
+                    <h3>{tool.label}</h3>
+
+                    <p>{tool.description}</p>
+
+                    <span className="smart-tool-link">
+                      Explore tool
+                      <ChevronRight size={14} />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              CATEGORIES
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  EXPLORE
+                </span>
+
+                <h2>Shop by category</h2>
+              </div>
+
+              <Link
+                href="/dashboard/categories"
+                className="view-all-link"
+              >
+                View all
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="category-strip">
+              <button
+                className={`category-card ${
+                  activeCategory === "all"
+                    ? "category-card-active"
+                    : ""
+                }`}
+                onClick={() => setActiveCategory("all")}
+              >
+                <span className="category-emoji">
+                  ✨
+                </span>
+
+                <strong>All</strong>
+
+                <small>{products.length} items</small>
+              </button>
+
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`category-card ${
+                    activeCategory === category.id
+                      ? "category-card-active"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    setActiveCategory(category.id)
+                  }
+                >
+                  <span className="category-emoji">
+                    {categoryIcons[category.slug] || "🛍️"}
+                  </span>
+
+                  <strong>{category.name}</strong>
+
+                  <small>
+                    {
+                      products.filter(
+                        (product) =>
+                          product.category_id ===
+                          category.id
+                      ).length
+                    }{" "}
+                    items
+                  </small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* ===============================================
+              FLASH DEALS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <div className="title-with-live">
+                  <span className="section-kicker red">
+                    LIMITED TIME
+                  </span>
+
+                  <span className="live-badge">
+                    <span />
+                    LIVE
+                  </span>
+                </div>
+
+                <h2>Flash Deals</h2>
+
+                <p>
+                  Grab selected deals before they disappear.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                View deals
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="flash-grid">
+              {flashProducts.map((product) => {
+                const discount = discountPercentage(
+                  product.price,
+                  product.original_price
+                );
+
+                return (
+                  <Link
+                    href={`/dashboard/products/${product.id}`}
+                    key={product.id}
+                    className="flash-card"
+                    onClick={() => openProduct(product)}
+                  >
+                    <div className="flash-image">
+                      <ProductImage product={product} />
+
+                      {discount > 0 && (
+                        <span className="discount-badge">
+                          -{discount}%
+                        </span>
+                      )}
+
+                      <span className="flash-label">
+                        <Flame size={12} />
+                        FLASH
+                      </span>
+                    </div>
+
+                    <div className="flash-info">
+                      <span className="product-brand">
+                        {product.brand ||
+                          "PrimeCart Exclusive"}
+                      </span>
+
+                      <h3>{product.name}</h3>
+
+                      <div className="rating-row">
+                        <Star
+                          size={13}
+                          fill="currentColor"
+                        />
+
+                        <span>
+                          {Number(product.rating || 0).toFixed(
+                            1
+                          )}
+                        </span>
+
+                        <small>
+                          ({product.reviews_count || 0})
+                        </small>
+                      </div>
+
+                      <div className="price-row">
+                        <strong>
+                          {formatPrice(product.price)}
+                        </strong>
+
+                        {product.original_price &&
+                          product.original_price >
+                            product.price && (
+                            <del>
+                              {formatPrice(
+                                product.original_price
+                              )}
+                            </del>
+                          )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              PRIME CART PICKS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  CURATED FOR YOU
+                </span>
+
+                <h2>PrimeCart Picks</h2>
+
+                <p>
+                  Popular products selected from our
+                  catalogue.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                View all products
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="product-grid">
+              {featuredProducts.map((product) => {
+                const discount = discountPercentage(
+                  product.price,
+                  product.original_price
+                );
+
+                return (
+                  <Link
+                    href={`/dashboard/products/${product.id}`}
+                    key={product.id}
+                    className="product-card"
+                    onClick={() => openProduct(product)}
+                  >
+                    <div className="product-card-image">
+                      <ProductImage product={product} />
+
+                      {discount > 0 && (
+                        <span className="product-discount">
+                          {discount}% OFF
+                        </span>
+                      )}
+
+                      <button
+                        className="product-heart"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          window.location.href =
+                            "/dashboard/wishlist";
+                        }}
+                        aria-label="Wishlist"
+                      >
+                        <Heart size={17} />
+                      </button>
+
+                      {product.stock <= 5 &&
+                        product.stock > 0 && (
+                          <span className="low-stock">
+                            Only {product.stock} left
+                          </span>
+                        )}
+
+                      {product.stock <= 0 && (
+                        <span className="out-stock">
+                          Out of stock
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="product-card-body">
+                      <span className="product-brand">
+                        {product.brand || "PrimeCart"}
+                      </span>
+
+                      <h3>{product.name}</h3>
+
+                      <p>
+                        {product.short_description ||
+                          product.description ||
+                          "Premium product selected for you."}
+                      </p>
+
+                      <div className="rating-row">
+                        <Star
+                          size={13}
+                          fill="currentColor"
+                        />
+
+                        <span>
+                          {Number(product.rating || 0).toFixed(
+                            1
+                          )}
+                        </span>
+
+                        <small>
+                          ({product.reviews_count || 0})
+                        </small>
+                      </div>
+
+                      <div className="product-bottom">
+                        <div className="product-price">
+                          <strong>
+                            {formatPrice(product.price)}
+                          </strong>
+
+                          {product.original_price &&
+                            product.original_price >
+                              product.price && (
+                              <del>
+                                {formatPrice(
+                                  product.original_price
+                                )}
+                              </del>
+                            )}
+                        </div>
+
+                        <span className="product-arrow">
+                          <ArrowRight size={15} />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              CATEGORY PRODUCT FILTER
+          =============================================== */}
+
+          {activeCategory !== "all" && (
+            <section className="section category-products-section">
+              <div className="section-heading compact">
+                <div>
+                  <span className="section-kicker">
+                    CATEGORY
+                  </span>
+
+                  <h2>
+                    {categories.find(
+                      (category) =>
+                        category.id === activeCategory
+                    )?.name || "Products"}
+                  </h2>
+
+                  <p>
+                    Products available in this category.
+                  </p>
+                </div>
+
+                <Link
+                  href={`/dashboard/categories/${categories.find(
+                    (category) =>
+                      category.id === activeCategory
+                  )?.slug || ""}`}
+                  className="view-all-link"
+                >
+                  Open category
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+
+              {filteredCategoryProducts.length > 0 ? (
+                <div className="mini-product-grid">
+                  {filteredCategoryProducts
+                    .slice(0, 4)
+                    .map((product) => (
+                      <Link
+                        href={`/dashboard/products/${product.id}`}
+                        key={product.id}
+                        className="mini-product-card"
+                        onClick={() => openProduct(product)}
+                      >
+                        <div className="mini-product-image">
+                          <ProductImage
+                            product={product}
+                          />
+                        </div>
+
+                        <div>
+                          <span>
+                            {product.brand ||
+                              "PrimeCart"}
+                          </span>
+
+                          <strong>{product.name}</strong>
+
+                          <b>
+                            {formatPrice(product.price)}
+                          </b>
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              ) : (
+                <div className="empty-category">
+                  <Package size={28} />
+                  <strong>No products in this category</strong>
+                  <span>
+                    Try another category.
+                  </span>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ===============================================
+              FEATURE GRID
+          =============================================== */}
+
+          <section className="feature-grid">
+            {/* PRIME MATCH */}
+            <Link
+              href="/dashboard/prime-match"
+              className="feature-panel prime-match-panel"
+            >
+              <div className="feature-panel-glow" />
+
+              <div className="feature-panel-content">
+                <span className="feature-kicker">
+                  AI-POWERED SHOPPING
+                </span>
+
+                <div className="feature-icon">
+                  <Target size={21} />
+                </div>
+
+                <h2>
+                  Find your
+                  <br />
+                  perfect match.
+                </h2>
+
+                <p>
+                  Tell PrimeMatch what you need, your
+                  budget and priorities. We&apos;ll help
+                  narrow your choices.
+                </p>
+
+                <span className="feature-cta">
+                  Start PrimeMatch
+                  <ArrowRight size={16} />
+                </span>
+              </div>
+
+              <div className="match-orbit">
+                <div className="orbit-dot one" />
+                <div className="orbit-dot two" />
+                <div className="orbit-dot three" />
+
+                <div className="orbit-center">
+                  <Sparkles size={23} />
+                </div>
+              </div>
+            </Link>
+
+            {/* BUDGET */}
+            <Link
+              href="/dashboard/budget-builder"
+              className="feature-panel budget-panel"
+            >
+              <div className="budget-panel-top">
+                <div className="feature-icon">
+                  <WalletCards size={21} />
+                </div>
+
+                <span className="feature-kicker">
+                  PLAN YOUR SPEND
+                </span>
+              </div>
+
+              <h2>
+                Build a smarter
+                <br />
+                shopping budget.
+              </h2>
+
+              <p>
+                Set a limit and plan exactly where your
+                money should go.
+              </p>
+
+              <div className="budget-visual">
+                <div className="budget-line">
+                  <span />
+                </div>
+
+                <div className="budget-labels">
+                  <span>₹0</span>
+                  <strong>₹25K</strong>
+                </div>
+              </div>
+
+              <span className="feature-cta">
+                Open Budget Builder
+                <ArrowRight size={16} />
+              </span>
+            </Link>
+          </section>
+
+          {/* ===============================================
+              SETUP + POINTS + MYSTERY
+          =============================================== */}
+
+          <section className="triple-feature-grid">
+            <Link
+              href="/dashboard/setup-builder"
+              className="small-feature-card setup-card"
+            >
+              <div className="small-feature-icon">
+                <Sparkles size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                CURATED SETUPS
+              </span>
+
+              <h3>Build My Setup</h3>
+
+              <p>
+                Gaming, college, work, fitness and more.
+              </p>
+
+              <span className="small-feature-arrow">
+                Explore
+                <ArrowRight size={15} />
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/prime-points"
+              className="small-feature-card points-card"
+            >
+              <div className="small-feature-icon">
+                <Crown size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                REWARDS
+              </span>
+
+              <h3>PrimePoints</h3>
+
+              <p>
+                You currently have{" "}
+                <strong>{primePoints}</strong> points.
+              </p>
+
+              <div className="points-mini-bar">
+                <span
+                  style={{
+                    width: `${pointsProgress}%`,
+                  }}
+                />
+              </div>
+
+              <span className="small-feature-arrow">
+                View rewards
+                <ArrowRight size={15} />
+              </span>
+            </Link>
+
+            <div className="small-feature-card mystery-card">
+              <div className="small-feature-icon">
+                <TicketPercent size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                JUST FOR YOU
+              </span>
+
+              <h3>Mystery Deal</h3>
+
+              <p>{dealMessage}</p>
+
+              <button
+                className="mystery-button"
+                onClick={revealMysteryDeal}
+              >
+                Reveal deal
+                <Sparkles size={14} />
+              </button>
+            </div>
+          </section>
+
+          {/* ===============================================
+              RECENTLY VIEWED
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  YOUR ACTIVITY
+                </span>
+
+                <h2>Recently viewed</h2>
+
+                <p>
+                  Continue exploring products you checked
+                  recently.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                Explore more
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="recent-grid">
+              {visibleRecentProducts.map((product) => (
+                <Link
+                  href={`/dashboard/products/${product.id}`}
+                  key={product.id}
+                  className="recent-card"
+                  onClick={() => openProduct(product)}
+                >
+                  <div className="recent-image">
+                    <ProductImage product={product} />
+                  </div>
+
+                  <div className="recent-info">
+                    <span>
+                      {product.brand || "PrimeCart"}
+                    </span>
+
+                    <strong>{product.name}</strong>
+
+                    <b>{formatPrice(product.price)}</b>
+                  </div>
+
+                  <ChevronRight size={16} />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* ===============================================
+              BOTTOM AREA
+          =============================================== */}
+
+          <section className="bottom-grid">
+            {/* ORDERS */}
+            <div className="dashboard-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">
+                    ACTIVITY
+                  </span>
+
+                  <h2>Recent orders</h2>
+                </div>
+
+                <Link
+                  href="/dashboard/orders"
+                  className="panel-link"
+                >
+                  View all
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              {orders.length > 0 ? (
+                <div className="orders-list">
+                  {orders.slice(0, 5).map((order) => (
+                    <Link
+                      href="/dashboard/orders"
+                      className="order-row"
+                      key={order.id}
+                    >
+                      <div className="order-icon">
+                        <Package size={17} />
+                      </div>
+
+                      <div className="order-info">
+                        <strong>
+                          Order #
+                          {order.id.slice(0, 8).toUpperCase()}
+                        </strong>
+
+                        <span>
+                          {formatDate(order.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="order-status">
+                        <span
+                          className={`status-dot ${order.status
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")}`}
+                        />
+
+                        {formatOrderStatus(order.status)}
+                      </div>
+
+                      <strong className="order-price">
+                        {formatPrice(order.total_amount)}
+                      </strong>
+
+                      <ChevronRight size={15} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-panel">
+                  <div className="empty-panel-icon">
+                    <ShoppingBag size={24} />
+                  </div>
+
+                  <strong>No orders yet</strong>
+
+                  <span>
+                    Your recent orders will appear here.
+                  </span>
+
+                  <Link href="/dashboard/products">
+                    Start shopping
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* SHOPPING INSIGHTS */}
+            <div className="dashboard-panel insights-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">
+                    YOUR SHOPPING
+                  </span>
+
+                  <h2>Quick insights</h2>
+                </div>
+
+                <BarChart3 size={19} />
+              </div>
+
+              <div className="insight-list">
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <ShoppingBag size={17} />
+                  </div>
+
+                  <div>
+                    <span>Orders placed</span>
+                    <strong>{orders.length}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Heart size={17} />
+                  </div>
+
+                  <div>
+                    <span>Saved products</span>
+                    <strong>{wishlistCount}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Crown size={17} />
+                  </div>
+
+                  <div>
+                    <span>Reward points</span>
+                    <strong>{primePoints}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Clock3 size={17} />
+                  </div>
+
+                  <div>
+                    <span>Products available</span>
+                    <strong>{products.length}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard/prime-match"
+                className="insight-cta"
+              >
+                Personalize your shopping
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </section>
+
+          {/* ===============================================
+              BENEFITS
+          =============================================== */}
+
+          <section className="benefits-strip">
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <Truck size={19} />
+              </div>
+
+              <div>
+                <strong>Fast delivery</strong>
+                <span>
+                  Reliable delivery on eligible orders
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <ShieldCheck size={19} />
+              </div>
+
+              <div>
+                <strong>Secure payments</strong>
+                <span>
+                  Your payment information stays protected
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <TicketPercent size={19} />
+              </div>
+
+              <div>
+                <strong>Exclusive deals</strong>
+                <span>
+                  Discover member-only shopping benefits
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <CircleDollarSign size={19} />
+              </div>
+
+              <div>
+                <strong>Easy returns</strong>
+                <span>
+                  Shop confidently with simple returns
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===============================================
+              FOOTER
+          =============================================== */}
+
+          <footer className="dashboard-footer">
+            <div className="footer-brand">
+              <div className="footer-logo">P</div>
+
+              <div>
+                <strong>PrimeCart</strong>
+                <span>
+                  Smart shopping, made personal.
+                </span>
+              </div>
+            </div>
+
+            <div className="footer-links">
+              <Link href="/dashboard/products">
+                Products
+              </Link>
+
+              <Link href="/dashboard/categories">
+                Categories
+              </Link>
+
+              <Link href="/dashboard/orders">
+                Orders
+              </Link>
+
+              <Link href="/dashboard/settings">
+                Settings
+              </Link>
+            </div>
+
+            <span className="footer-copy">
+              © {new Date().getFullYear()} PrimeCart
+            </span>
+          </footer>
+        </div>
+      </main>
+
+      {/* ===================================================
+          STYLES
+      =================================================== */}
+
       <style jsx global>{`
         :root {
           --pc-bg: #fbf8f2;
           --pc-surface: #ffffff;
-          --pc-soft: #f8f3e9;
+          --pc-surface-soft: #f8f3e9;
           --pc-gold: #b9975b;
           --pc-gold-dark: #96723b;
           --pc-gold-light: #dcc596;
@@ -546,20 +2265,8 @@ export default function DashboardPage() {
           --pc-muted: #9b907f;
           --pc-border: #eadfcb;
           --pc-border-light: #f0e8da;
-          --pc-shadow:
-            0 10px 30px rgba(
-              113,
-              91,
-              53,
-              0.07
-            );
-          --pc-shadow-hover:
-            0 20px 45px rgba(
-              113,
-              91,
-              53,
-              0.13
-            );
+          --pc-shadow: 0 14px 40px rgba(91, 69, 36, 0.08);
+          --pc-shadow-hover: 0 20px 55px rgba(91, 69, 36, 0.13);
         }
 
         * {
@@ -573,6 +2280,20 @@ export default function DashboardPage() {
         body {
           margin: 0;
           background: var(--pc-bg);
+          color: var(--pc-brown);
+          font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
         }
 
         button,
@@ -580,269 +2301,321 @@ export default function DashboardPage() {
           font: inherit;
         }
 
+        button {
+          border: 0;
+        }
+
         .prime-dashboard {
           min-height: 100vh;
-          color: var(--pc-brown);
           background:
             radial-gradient(
-              circle at 85% 0%,
-              rgba(216, 189, 134, 0.13),
+              circle at 5% 0%,
+              rgba(210, 174, 99, 0.1),
               transparent 25%
             ),
             radial-gradient(
-              circle at 10% 35%,
-              rgba(218, 193, 143, 0.07),
+              circle at 95% 15%,
+              rgba(210, 174, 99, 0.08),
               transparent 23%
             ),
             var(--pc-bg);
         }
 
         /* =================================================
-           REVEAL ANIMATION
-        ================================================= */
-
-        .pc-reveal {
-          animation:
-            pcReveal 0.65s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcReveal {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .pc-fade-in {
-          animation:
-            pcFade 0.7s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcFade {
-          from {
-            opacity: 0;
-          }
-
-          to {
-            opacity: 1;
-          }
-        }
-
-        /* =================================================
            SIDEBAR
         ================================================= */
 
-        .pc-sidebar {
+        .dashboard-sidebar {
           position: fixed;
-          inset: 0 auto 0 0;
-          z-index: 70;
+          z-index: 80;
+          left: 0;
+          top: 0;
+          bottom: 0;
           width: 260px;
           display: flex;
           flex-direction: column;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.94
-          );
-          border-right: 1px solid
-            var(--pc-border);
+          background: rgba(255, 255, 255, 0.92);
+          border-right: 1px solid var(--pc-border-light);
           backdrop-filter: blur(22px);
-          transition:
-            transform 0.35s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            );
         }
 
-        .pc-logo-area {
+        .sidebar-brand {
           height: 78px;
-          padding: 0 22px;
+          padding: 0 20px;
           display: flex;
           align-items: center;
-          border-bottom: 1px solid
-            var(--pc-border-light);
+          justify-content: space-between;
+          border-bottom: 1px solid var(--pc-border-light);
         }
 
-        .pc-logo {
+        .brand-link {
           display: flex;
           align-items: center;
           gap: 11px;
-          color: var(--pc-brown);
-          text-decoration: none;
         }
 
-        .pc-logo-mark {
-          width: 42px;
-          height: 42px;
+        .brand-mark {
+          width: 40px;
+          height: 40px;
+          border-radius: 13px;
           display: grid;
           place-items: center;
-          border-radius: 13px;
-          color: white;
           background:
             linear-gradient(
               145deg,
-              #d3b579,
-              #a88345
+              #e2c47f,
+              #aa7e34
             );
+          color: #fff;
           box-shadow:
-            0 9px 22px
-              rgba(
-                185,
-                151,
-                91,
-                0.24
-              );
-          animation:
-            pcLogoFloat 4s ease-in-out
-            infinite;
+            0 9px 20px rgba(168, 124, 48, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
 
-        @keyframes pcLogoFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-2px);
-          }
-        }
-
-        .pc-logo-name {
+        .brand-mark span {
           font-size: 19px;
           font-weight: 900;
-          letter-spacing: -0.7px;
         }
 
-        .pc-logo-name span {
-          color: var(--pc-gold);
+        .brand-copy strong {
+          display: block;
+          font-size: 17px;
+          letter-spacing: -0.4px;
         }
 
-        .pc-logo-subtitle {
+        .brand-copy span {
           display: block;
           margin-top: 1px;
           color: var(--pc-muted);
-          font-size: 8px;
-          font-weight: 800;
-          letter-spacing: 0.18em;
+          font-size: 9px;
+          letter-spacing: 1.2px;
           text-transform: uppercase;
         }
 
-        .pc-nav {
+        .mobile-close {
+          display: none;
+          background: transparent;
+          color: var(--pc-brown);
+          cursor: pointer;
+        }
+
+        .sidebar-scroll {
           flex: 1;
           overflow-y: auto;
-          padding: 24px 13px;
+          padding: 22px 13px;
         }
 
-        .pc-nav-label {
-          margin: 0 10px 10px;
-          color: #aa9d89;
+        .sidebar-label {
+          padding: 0 12px 9px;
+          color: #a69a88;
           font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 0.19em;
-          text-transform: uppercase;
+          font-weight: 800;
+          letter-spacing: 1.5px;
         }
 
-        .pc-nav-link {
+        .smart-label {
+          margin-top: 27px;
+        }
+
+        .sidebar-nav {
+          display: grid;
+          gap: 5px;
+        }
+
+        .sidebar-link {
           position: relative;
+          min-height: 45px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          width: 100%;
-          min-height: 46px;
-          margin-bottom: 4px;
-          padding: 0 13px;
-          border: 0;
-          border-radius: 14px;
-          background: transparent;
+          gap: 11px;
+          padding: 0 12px;
+          border-radius: 13px;
           color: var(--pc-brown-light);
-          text-decoration: none;
           font-size: 13px;
-          font-weight: 750;
-          cursor: pointer;
+          font-weight: 650;
           transition:
             background 0.2s ease,
             color 0.2s ease,
             transform 0.2s ease;
         }
 
-        .pc-nav-link:hover {
-          color: var(--pc-brown);
-          background: #faf6ed;
-          transform: translateX(3px);
+        .sidebar-link:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+          transform: translateX(2px);
         }
 
-        .pc-nav-link.active {
-          color: #8e6c35;
+        .sidebar-link-active {
+          color: var(--pc-gold-dark);
           background:
             linear-gradient(
-              100deg,
-              #f7eddb,
-              #fbf7ee
+              90deg,
+              rgba(201, 163, 92, 0.16),
+              rgba(201, 163, 92, 0.04)
             );
           box-shadow:
-            inset 0 0 0 1px
-              #eadab9;
+            inset 3px 0 0 var(--pc-gold);
         }
 
-        .pc-nav-link.active::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          width: 3px;
-          height: 23px;
-          border-radius: 0 4px 4px 0;
-          background: var(--pc-gold);
+        .sidebar-icon {
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
         }
 
-        .pc-nav-badge {
+        .sidebar-link-active .sidebar-icon {
+          background: #fff;
+          box-shadow: 0 4px 12px rgba(110, 78, 28, 0.08);
+        }
+
+        .sidebar-count {
           margin-left: auto;
-          min-width: 21px;
-          height: 21px;
-          padding: 0 6px;
+          min-width: 22px;
+          height: 22px;
           display: grid;
           place-items: center;
           border-radius: 999px;
           background: var(--pc-gold-pale);
-          color: #8f6e39;
-          font-size: 9px;
-          font-weight: 900;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 800;
         }
 
-        .pc-sidebar-bottom {
-          padding: 13px;
-          border-top: 1px solid
-            var(--pc-border-light);
+        .smart-sidebar {
+          display: grid;
+          gap: 6px;
+        }
+
+        .smart-sidebar-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 10px 9px;
+          border: 1px solid transparent;
+          border-radius: 12px;
+          transition: 0.2s ease;
+        }
+
+        .smart-sidebar-item:hover {
+          background: #fffaf1;
+          border-color: var(--pc-border);
+          transform: translateY(-1px);
+        }
+
+        .smart-sidebar-icon {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          color: var(--pc-gold-dark);
+          background: var(--pc-gold-pale);
+        }
+
+        .smart-sidebar-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .smart-sidebar-content strong {
+          display: block;
+          font-size: 11px;
+        }
+
+        .smart-sidebar-content small {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: 0.9px;
+        }
+
+        .smart-sidebar-item > svg {
+          color: #b5aa99;
+        }
+
+        .sidebar-help {
+          margin: 20px 3px 0;
+          padding: 15px;
+          border-radius: 16px;
+          background:
+            linear-gradient(
+              145deg,
+              #fffaf1,
+              #f8f0df
+            );
+          border: 1px solid var(--pc-border);
+        }
+
+        .sidebar-help-icon {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 10px;
+          border-radius: 10px;
+          background: #fff;
+          color: var(--pc-gold-dark);
+        }
+
+        .sidebar-help strong {
+          display: block;
+          font-size: 12px;
+        }
+
+        .sidebar-help p {
+          margin: 5px 0 10px;
+          color: var(--pc-brown-light);
+          font-size: 10px;
+          line-height: 1.55;
+        }
+
+        .sidebar-help a {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 750;
+        }
+
+        .sidebar-bottom {
+          padding: 12px;
+          border-top: 1px solid var(--pc-border-light);
+        }
+
+        .sidebar-bottom-link {
+          width: 100%;
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 11px;
+          border-radius: 10px;
+          background: transparent;
+          color: var(--pc-brown-light);
+          font-size: 12px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .sidebar-bottom-link:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+        }
+
+        .logout-button {
+          margin-top: 3px;
         }
 
         /* =================================================
            MAIN
         ================================================= */
 
-        .pc-main {
+        .dashboard-main {
           min-height: 100vh;
           margin-left: 260px;
         }
@@ -851,3073 +2624,2836 @@ export default function DashboardPage() {
            HEADER
         ================================================= */
 
-        .pc-header {
+        .dashboard-header {
           position: sticky;
+          z-index: 50;
           top: 0;
-          z-index: 40;
-          height: 76px;
-          padding: 0 30px;
+          min-height: 76px;
           display: flex;
           align-items: center;
-          gap: 18px;
-          background: rgba(
-            251,
-            248,
-            242,
-            0.86
-          );
-          border-bottom: 1px solid
-            rgba(
-              234,
-              223,
-              203,
-              0.8
-            );
+          justify-content: space-between;
+          gap: 20px;
+          padding: 12px 34px;
+          background: rgba(251, 248, 242, 0.84);
+          border-bottom: 1px solid rgba(234, 223, 203, 0.7);
           backdrop-filter: blur(20px);
         }
 
-        .pc-search-wrap {
-          position: relative;
-          width: min(
-            520px,
-            55vw
-          );
-        }
-
-        .pc-search {
-          height: 44px;
+        .header-left {
+          min-width: 0;
+          flex: 1;
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 0 14px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 14px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.9
-          );
-          transition:
-            border 0.2s ease,
-            box-shadow 0.2s ease,
-            transform 0.2s ease;
+          gap: 14px;
         }
 
-        .pc-search:focus-within {
-          border-color: #d3b574;
-          box-shadow:
-            0 0 0 4px
-              rgba(
-                185,
-                151,
-                91,
-                0.09
-              ),
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.05
-              );
-          transform: translateY(-1px);
+        .mobile-menu-button {
+          display: none;
+          width: 40px;
+          height: 40px;
+          place-items: center;
+          border-radius: 11px;
+          background: #fff;
+          border: 1px solid var(--pc-border);
+          color: var(--pc-brown);
+          cursor: pointer;
         }
 
-        .pc-search input {
+        .header-search-wrap {
+          position: relative;
+          width: min(100%, 530px);
+        }
+
+        .header-search-icon {
+          position: absolute;
+          left: 15px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #a99d8c;
+          pointer-events: none;
+        }
+
+        .header-search {
           width: 100%;
-          border: 0;
-          outline: 0;
-          background: transparent;
+          height: 45px;
+          padding: 0 42px;
+          border: 1px solid var(--pc-border);
+          border-radius: 14px;
+          outline: none;
+          background: rgba(255, 255, 255, 0.85);
           color: var(--pc-brown);
           font-size: 12px;
-          font-weight: 600;
+          transition: 0.2s ease;
         }
 
-        .pc-search input::placeholder {
-          color: #aaa092;
+        .header-search::placeholder {
+          color: #b3a999;
         }
 
-        .pc-search-results {
-          position: absolute;
-          top: 52px;
-          left: 0;
-          right: 0;
-          padding: 7px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 17px;
-          background: white;
+        .header-search:focus {
+          border-color: var(--pc-gold-light);
           box-shadow:
-            0 22px 55px
-              rgba(
-                73,
-                57,
-                34,
-                0.13
-              );
-          animation:
-            pcDrop 0.2s ease both;
+            0 0 0 4px rgba(185, 151, 91, 0.08),
+            0 8px 25px rgba(100, 75, 37, 0.05);
+          background: #fff;
         }
 
-        @keyframes pcDrop {
-          from {
-            opacity: 0;
-            transform: translateY(-7px)
-              scale(0.985);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0)
-              scale(1);
-          }
-        }
-
-        .pc-search-result {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px;
-          border-radius: 12px;
-          color: var(--pc-brown);
-          text-decoration: none;
-          transition:
-            background 0.18s ease,
-            transform 0.18s ease;
-        }
-
-        .pc-search-result:hover {
-          background: #faf6ed;
-          transform: translateX(2px);
-        }
-
-        .pc-header-actions {
-          margin-left: auto;
-          display: flex;
-          align-items: center;
-          gap: 9px;
-        }
-
-        .pc-icon-button {
-          position: relative;
-          width: 41px;
-          height: 41px;
+        .search-clear {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          width: 24px;
+          height: 24px;
+          transform: translateY(-50%);
           display: grid;
           place-items: center;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 13px;
-          background: white;
-          color: var(--pc-brown-light);
+          border-radius: 7px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-muted);
           cursor: pointer;
-          transition:
-            all 0.2s ease;
         }
 
-        .pc-icon-button:hover {
-          border-color: #d1b77f;
-          color: #9a763c;
-          transform: translateY(-2px);
-          box-shadow:
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.09
-              );
-        }
-
-        .pc-notification-dot {
+        .search-results {
           position: absolute;
-          right: 8px;
-          top: 8px;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #c3984e;
-          box-shadow:
-            0 0 0 3px white;
-          animation:
-            pcPulse 2s infinite;
-        }
-
-        @keyframes pcPulse {
-          0%,
-          100% {
-            box-shadow:
-              0 0 0 3px white,
-              0 0 0 0
-                rgba(
-                  195,
-                  152,
-                  78,
-                  0
-                );
-          }
-
-          50% {
-            box-shadow:
-              0 0 0 3px white,
-              0 0 0 5px
-                rgba(
-                  195,
-                  152,
-                  78,
-                  0.12
-                );
-          }
-        }
-
-        .pc-dropdown {
-          position: absolute;
+          z-index: 100;
+          top: calc(100% + 9px);
+          left: 0;
           right: 0;
-          top: 49px;
-          width: 290px;
-          padding: 8px;
-          border: 1px solid
-            var(--pc-border);
+          overflow: hidden;
+          border: 1px solid var(--pc-border);
           border-radius: 17px;
-          background: white;
-          box-shadow:
-            0 22px 55px
-              rgba(
-                73,
-                57,
-                34,
-                0.13
-              );
-          animation:
-            pcDrop 0.2s ease both;
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
+          animation: dropdownIn 0.18s ease both;
         }
 
-        .pc-profile {
-          position: relative;
-        }
-
-        .pc-profile-button {
+        .search-results-head {
           display: flex;
           align-items: center;
-          gap: 9px;
-          padding: 4px 9px 4px 4px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 14px;
-          background: white;
+          justify-content: space-between;
+          padding: 13px 15px;
+          border-bottom: 1px solid var(--pc-border-light);
+        }
+
+        .search-results-head span {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+        }
+
+        .search-results-head small {
+          color: var(--pc-muted);
+          font-size: 10px;
+        }
+
+        .search-result-item {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 10px 13px;
+          border-bottom: 1px solid #f4eee4;
+          transition: 0.15s ease;
+        }
+
+        .search-result-item:hover {
+          background: #fffbf5;
+        }
+
+        .search-result-image {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          flex: 0 0 44px;
+          overflow: hidden;
+          border-radius: 10px;
+          background: #faf7f1;
+        }
+
+        .search-result-info {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .search-result-info strong {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 11px;
+        }
+
+        .search-result-info span {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .search-result-info b {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+        }
+
+        .search-result-item > svg {
+          color: #b8aa97;
+        }
+
+        .search-view-all {
+          min-height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          color: var(--pc-gold-dark);
+          font-size: 11px;
+          font-weight: 750;
+        }
+
+        .search-empty {
+          min-height: 150px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          color: #b0a494;
+        }
+
+        .search-empty strong {
           color: var(--pc-brown);
-          cursor: pointer;
-          transition: all 0.2s ease;
+          font-size: 12px;
         }
 
-        .pc-profile-button:hover {
-          border-color: #d7c194;
-          transform: translateY(-1px);
-          box-shadow:
-            0 7px 18px
-              rgba(
-                113,
-                91,
-                53,
-                0.07
-              );
+        .search-empty span {
+          font-size: 10px;
         }
 
-        .pc-avatar {
-          width: 34px;
-          height: 34px;
+        .header-right {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .header-icon-button {
+          position: relative;
+          width: 40px;
+          height: 40px;
           display: grid;
           place-items: center;
           border-radius: 11px;
+          border: 1px solid var(--pc-border);
+          background: rgba(255, 255, 255, 0.8);
+          color: var(--pc-brown-light);
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .header-icon-button:hover {
+          border-color: var(--pc-gold-light);
+          color: var(--pc-gold-dark);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(90, 67, 34, 0.07);
+        }
+
+        .notification-dot {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #d94b4b;
+          box-shadow: 0 0 0 3px #fff;
+        }
+
+        .header-count {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          min-width: 17px;
+          height: 17px;
+          padding: 0 4px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          background: var(--pc-gold-dark);
+          color: white;
+          font-size: 8px;
+          font-weight: 800;
+          border: 2px solid var(--pc-bg);
+        }
+
+        .header-profile-wrap {
+          position: relative;
+        }
+
+        .header-profile {
+          min-height: 42px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 2px 4px 2px 2px;
+          background: transparent;
+          color: var(--pc-brown);
+          cursor: pointer;
+        }
+
+        .avatar,
+        .avatar-image {
+          width: 37px;
+          height: 37px;
+          border-radius: 11px;
+        }
+
+        .avatar {
+          display: grid;
+          place-items: center;
           background:
             linear-gradient(
               145deg,
-              #d5bb85,
-              #aa864b
+              #dfc282,
+              #a47b37
             );
           color: white;
+          font-size: 11px;
+          font-weight: 850;
+          box-shadow: 0 5px 15px rgba(153, 111, 44, 0.17);
+        }
+
+        .avatar.large {
+          width: 42px;
+          height: 42px;
+        }
+
+        .avatar-image {
+          object-fit: cover;
+        }
+
+        .header-profile-copy {
+          min-width: 72px;
+          text-align: left;
+        }
+
+        .header-profile-copy strong {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 11px;
+        }
+
+        .header-profile-copy small {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .profile-dropdown,
+        .notification-dropdown {
+          position: absolute;
+          z-index: 110;
+          top: calc(100% + 10px);
+          right: 0;
+          width: 230px;
+          padding: 8px;
+          border: 1px solid var(--pc-border);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
+          animation: dropdownIn 0.18s ease both;
+        }
+
+        .profile-dropdown-head {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 8px;
+        }
+
+        .profile-dropdown-head strong {
+          display: block;
+          font-size: 11px;
+        }
+
+        .profile-dropdown-head span {
+          display: block;
+          max-width: 145px;
+          margin-top: 3px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .profile-divider {
+          height: 1px;
+          margin: 5px 0;
+          background: var(--pc-border-light);
+        }
+
+        .profile-dropdown a,
+        .profile-dropdown button {
+          width: 100%;
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 0 9px;
+          border-radius: 9px;
+          background: transparent;
+          color: var(--pc-brown-light);
+          font-size: 11px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .profile-dropdown a:hover,
+        .profile-dropdown button:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+        }
+
+        .notification-dropdown {
+          right: 78px;
+          width: 275px;
+        }
+
+        .notification-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 9px 11px;
+          border-bottom: 1px solid var(--pc-border-light);
+        }
+
+        .notification-head strong {
+          font-size: 12px;
+        }
+
+        .notification-head span {
+          padding: 4px 7px;
+          border-radius: 999px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .notification-item {
+          display: flex;
+          gap: 9px;
+          padding: 11px 8px;
+        }
+
+        .notification-icon {
+          width: 30px;
+          height: 30px;
+          flex: 0 0 30px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+        }
+
+        .notification-icon.gold {
+          color: #9a742f;
+          background: #f8ecd7;
+        }
+
+        .notification-icon.green {
+          color: #4e8660;
+          background: #eaf5ec;
+        }
+
+        .notification-item strong {
+          display: block;
           font-size: 10px;
-          font-weight: 900;
+        }
+
+        .notification-item span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
+          font-size: 9px;
         }
 
         /* =================================================
            CONTENT
         ================================================= */
 
-        .pc-content {
-          width: min(
-            1440px,
-            calc(100% - 52px)
-          );
-          margin: auto;
-          padding: 30px 0 50px;
+        .dashboard-content {
+          max-width: 1680px;
+          margin: 0 auto;
+          padding: 28px 34px 45px;
         }
 
         /* =================================================
-           WELCOME
+           HERO
         ================================================= */
 
-        .pc-welcome {
+        .welcome-hero {
           position: relative;
+          min-height: 285px;
           overflow: hidden;
-          min-height: 280px;
-          padding: 35px;
-          border: 1px solid #eadbbd;
-          border-radius: 28px;
-          background:
-            radial-gradient(
-              circle at 90% 20%,
-              rgba(
-                202,
-                169,
-                105,
-                0.25
-              ),
-              transparent 30%
-            ),
-            linear-gradient(
-              120deg,
-              #fffdf8 0%,
-              #f9f0df 55%,
-              #f5e8cf 100%
-            );
-          box-shadow: var(--pc-shadow);
-          animation:
-            pcHero 0.75s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcHero {
-          from {
-            opacity: 0;
-            transform: translateY(18px)
-              scale(0.985);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0)
-              scale(1);
-          }
-        }
-
-        .pc-welcome::before {
-          content: "";
-          position: absolute;
-          width: 230px;
-          height: 230px;
-          right: -70px;
-          bottom: -105px;
-          border-radius: 50%;
-          border: 1px solid
-            rgba(
-              185,
-              151,
-              91,
-              0.18
-            );
-          box-shadow:
-            0 0 0 30px
-              rgba(
-                185,
-                151,
-                91,
-                0.035
-              ),
-            0 0 0 65px
-              rgba(
-                185,
-                151,
-                91,
-                0.025
-              );
-          animation:
-            pcOrbit 8s linear infinite;
-        }
-
-        @keyframes pcOrbit {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .pc-eyebrow {
-          position: relative;
-          width: fit-content;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 6px 10px;
-          border: 1px solid #e5d3ae;
-          border-radius: 999px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.58
-          );
-          color: #98783f;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-        }
-
-        .pc-welcome h1 {
-          position: relative;
-          max-width: 680px;
-          margin: 15px 0 0;
-          color: #493d2e;
-          font-size: clamp(
-            29px,
-            4vw,
-            47px
-          );
-          line-height: 1.05;
-          letter-spacing: -1.8px;
-          font-weight: 950;
-        }
-
-        .pc-welcome h1 span {
-          color: #b18b4c;
-        }
-
-        .pc-welcome-text {
-          position: relative;
-          max-width: 620px;
-          margin-top: 14px;
-          color: #887965;
-          font-size: 13px;
-          line-height: 1.8;
-        }
-
-        .pc-welcome-buttons {
-          position: relative;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 9px;
-          margin-top: 24px;
-        }
-
-        .pc-primary-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          min-height: 43px;
-          padding: 0 17px;
-          border: 0;
-          border-radius: 13px;
-          background:
-            linear-gradient(
-              135deg,
-              #c9a966,
-              #a98246
-            );
-          color: white;
-          text-decoration: none;
-          font-size: 11px;
-          font-weight: 900;
-          box-shadow:
-            0 9px 22px
-              rgba(
-                159,
-                120,
-                55,
-                0.18
-              );
-          transition: all 0.22s ease;
-        }
-
-        .pc-primary-button:hover {
-          transform: translateY(-3px);
-          box-shadow:
-            0 14px 30px
-              rgba(
-                159,
-                120,
-                55,
-                0.25
-              );
-        }
-
-        .pc-secondary-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          min-height: 43px;
-          padding: 0 17px;
-          border: 1px solid #dfcfaf;
-          border-radius: 13px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.6
-          );
-          color: #80673f;
-          text-decoration: none;
-          font-size: 11px;
-          font-weight: 900;
-          transition: all 0.22s ease;
-        }
-
-        .pc-secondary-button:hover {
-          background: white;
-          transform: translateY(-3px);
-          box-shadow:
-            0 10px 22px
-              rgba(
-                113,
-                91,
-                53,
-                0.07
-              );
-        }
-
-        /* =================================================
-           POINTS CARD
-        ================================================= */
-
-        .pc-points-card {
-          position: absolute;
-          top: 34px;
-          right: 35px;
-          width: 240px;
-          padding: 19px;
-          border: 1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.75
-            );
-          border-radius: 21px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.63
-          );
-          box-shadow:
-            0 20px 40px
-              rgba(
-                123,
-                91,
-                43,
-                0.09
-              );
-          backdrop-filter: blur(14px);
-          animation:
-            pcFloat 4.5s ease-in-out
-            infinite;
-        }
-
-        @keyframes pcFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-7px);
-          }
-        }
-
-        .pc-points-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          padding: 39px 42px;
+          border: 1px solid rgba(190, 153, 83, 0.22);
+          border-radius: 27px;
+          background:
+            radial-gradient(
+              circle at 80% 20%,
+              rgba(255, 255, 255, 0.35),
+              transparent 23%
+            ),
+            linear-gradient(
+              120deg,
+              #f1dfb9 0%,
+              #e5cb91 48%,
+              #d6b66b 100%
+            );
+          box-shadow:
+            0 22px 50px rgba(130, 94, 35, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55);
+          animation: heroIn 0.55s ease both;
         }
 
-        .pc-points-icon {
+        .hero-content {
+          position: relative;
+          z-index: 3;
+          max-width: 570px;
+        }
+
+        .hero-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 13px;
+          color: #7b5d2e;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .hero-eyebrow-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #96702f;
+          box-shadow: 0 0 0 4px rgba(150, 112, 47, 0.12);
+        }
+
+        .hero-content h1 {
+          margin: 0;
+          color: #453620;
+          font-size: clamp(30px, 3.5vw, 47px);
+          line-height: 1.05;
+          letter-spacing: -1.8px;
+        }
+
+        .hero-content h1 span {
+          color: #805d27;
+        }
+
+        .hero-content p {
+          max-width: 510px;
+          margin: 13px 0 20px;
+          color: #705d40;
+          font-size: 12px;
+          line-height: 1.65;
+        }
+
+        .hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+        }
+
+        .hero-primary,
+        .hero-secondary {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 15px;
+          border-radius: 11px;
+          font-size: 11px;
+          font-weight: 750;
+          transition: 0.2s ease;
+        }
+
+        .hero-primary {
+          background: #4c3b25;
+          color: #fff;
+          box-shadow: 0 10px 20px rgba(73, 55, 30, 0.16);
+        }
+
+        .hero-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 25px rgba(73, 55, 30, 0.22);
+        }
+
+        .hero-secondary {
+          border: 1px solid rgba(96, 70, 30, 0.2);
+          background: rgba(255, 255, 255, 0.32);
+          color: #654a24;
+        }
+
+        .hero-secondary:hover {
+          background: rgba(255, 255, 255, 0.52);
+          transform: translateY(-2px);
+        }
+
+        .hero-decoration {
+          position: absolute;
+          right: 28%;
+          top: 50%;
+          width: 330px;
+          height: 330px;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .hero-ring {
+          position: absolute;
+          inset: 0;
+          border: 1px solid rgba(115, 82, 27, 0.13);
+          border-radius: 50%;
+        }
+
+        .ring-one {
+          animation: rotateSlow 18s linear infinite;
+        }
+
+        .ring-two {
+          inset: 38px;
+          border-style: dashed;
+          animation: rotateSlowReverse 14s linear infinite;
+        }
+
+        .hero-glow {
+          position: absolute;
+          inset: 100px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          filter: blur(18px);
+        }
+
+        .hero-points-card {
+          position: relative;
+          z-index: 4;
+          width: 230px;
+          padding: 17px;
+          border: 1px solid rgba(255, 255, 255, 0.48);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.52);
+          box-shadow:
+            0 18px 35px rgba(103, 75, 29, 0.11),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(10px);
+          animation: floating 4s ease-in-out infinite;
+        }
+
+        .points-card-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .points-icon {
           width: 39px;
           height: 39px;
           display: grid;
           place-items: center;
-          border-radius: 12px;
-          background: #f1e2c2;
-          color: #a37e3e;
+          border-radius: 11px;
+          background: #fff9eb;
+          color: #9b732f;
         }
 
-        .pc-points-label {
-          color: #a08760;
-          font-size: 8px;
-          font-weight: 900;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
+        .points-card-top > div:nth-child(2) {
+          flex: 1;
         }
 
-        .pc-points-number {
-          margin-top: 13px;
-          color: #4a3c29;
-          font-size: 28px;
-          line-height: 1;
-          font-weight: 950;
+        .points-card-top span {
+          display: block;
+          color: #80683f;
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.1px;
         }
 
-        .pc-progress {
-          height: 5px;
-          margin-top: 14px;
+        .points-card-top strong {
+          display: block;
+          margin-top: 2px;
+          color: #4b3821;
+          font-size: 20px;
+        }
+
+        .points-card-top > a {
+          width: 27px;
+          height: 27px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.6);
+          color: #806335;
+        }
+
+        .points-progress {
+          height: 6px;
+          margin-top: 16px;
           overflow: hidden;
           border-radius: 999px;
-          background: #eadfcf;
+          background: rgba(117, 87, 39, 0.12);
         }
 
-        .pc-progress span {
+        .points-progress span {
           display: block;
-          width: 64%;
           height: 100%;
           border-radius: inherit;
-          background:
-            linear-gradient(
-              90deg,
-              #c9a966,
-              #a17a3f
-            );
-          animation:
-            pcProgress 1.2s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
+          background: #96702e;
+          transition: width 0.7s ease;
         }
 
-        @keyframes pcProgress {
-          from {
-            width: 0;
-          }
-
-          to {
-            width: 64%;
-          }
-        }
-
-        /* =================================================
-           SECTIONS
-        ================================================= */
-
-        .pc-section {
-          margin-top: 38px;
-        }
-
-        .pc-section-heading {
+        .points-footer {
           display: flex;
-          align-items: end;
           justify-content: space-between;
-          margin-bottom: 17px;
-        }
-
-        .pc-section-kicker {
-          margin: 0;
-          color: #b08b4c;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-        }
-
-        .pc-section-heading h2 {
-          margin: 4px 0 0;
-          color: #4c4133;
-          font-size: 23px;
-          line-height: 1.15;
-          font-weight: 950;
-          letter-spacing: -0.7px;
-        }
-
-        .pc-view-all {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          color: #9a763d;
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 900;
-          transition:
-            transform 0.2s ease,
-            color 0.2s ease;
-        }
-
-        .pc-view-all:hover {
-          color: #7f5f2d;
-          transform: translateX(3px);
+          gap: 8px;
+          margin-top: 7px;
+          color: #876f4a;
+          font-size: 8px;
         }
 
         /* =================================================
            STATS
         ================================================= */
 
-        .pc-stats {
+        .stats-grid {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
+          grid-template-columns: repeat(4, 1fr);
           gap: 13px;
-          margin-top: 16px;
+          margin-top: 18px;
         }
 
-        .pc-stat {
-          position: relative;
-          overflow: hidden;
-          padding: 18px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 18px;
-          background: white;
+        .stat-card {
+          min-width: 0;
+          min-height: 105px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.84);
+          box-shadow: 0 7px 22px rgba(84, 62, 30, 0.04);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-3px);
+          border-color: var(--pc-border);
           box-shadow: var(--pc-shadow);
-          transition: all 0.25s ease;
         }
 
-        .pc-stat:hover {
-          transform: translateY(-5px);
-          border-color: #dcc79f;
-          box-shadow:
-            var(--pc-shadow-hover);
-        }
-
-        .pc-stat::after {
-          content: "";
-          position: absolute;
-          width: 90px;
-          height: 90px;
-          right: -35px;
-          bottom: -45px;
-          border-radius: 50%;
-          background: rgba(
-            185,
-            151,
-            91,
-            0.06
-          );
-        }
-
-        .pc-stat-icon {
-          width: 39px;
-          height: 39px;
+        .stat-icon {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
           display: grid;
           place-items: center;
           border-radius: 12px;
-          background: #f7f0e2;
-          color: #a27c3f;
-          transition: all 0.25s ease;
         }
 
-        .pc-stat:hover
-          .pc-stat-icon {
-          background: #b9975b;
-          color: white;
-          transform: scale(1.07)
-            rotate(-3deg);
+        .gold-icon {
+          color: #9b732f;
+          background: #f8ecd8;
         }
 
-        .pc-stat-label {
-          margin-top: 14px;
-          color: #998d7b;
+        .rose-icon {
+          color: #b25e69;
+          background: #fae9eb;
+        }
+
+        .green-icon {
+          color: #4c8560;
+          background: #e8f3eb;
+        }
+
+        .purple-icon {
+          color: #7a65a5;
+          background: #eeeafb;
+        }
+
+        .stat-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .stat-content span {
+          display: block;
+          color: var(--pc-muted);
           font-size: 9px;
-          font-weight: 800;
-        }
-
-        .pc-stat-value {
-          margin-top: 3px;
-          color: #4a4034;
-          font-size: 22px;
-          font-weight: 950;
-          letter-spacing: -0.6px;
-        }
-
-        .pc-stat-sub {
-          margin-top: 3px;
-          color: #aaa091;
-          font-size: 8px;
           font-weight: 650;
+        }
+
+        .stat-content strong {
+          display: block;
+          margin-top: 3px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--pc-brown);
+          font-size: 18px;
+          letter-spacing: -0.4px;
+        }
+
+        .stat-content small {
+          display: block;
+          margin-top: 3px;
+          color: #b0a494;
+          font-size: 8px;
+        }
+
+        .stat-card > svg {
+          color: #c1b5a4;
+        }
+
+        /* =================================================
+           SECTION
+        ================================================= */
+
+        .section {
+          margin-top: 42px;
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 17px;
+        }
+
+        .section-heading.compact {
+          align-items: center;
+        }
+
+        .section-kicker {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .section-kicker.red {
+          color: #bd5a52;
+        }
+
+        .section-heading h2 {
+          margin: 5px 0 0;
+          color: var(--pc-brown);
+          font-size: 20px;
+          letter-spacing: -0.65px;
+        }
+
+        .section-heading p {
+          margin: 5px 0 0;
+          color: var(--pc-muted);
+          font-size: 10px;
+        }
+
+        .heading-sparkle {
+          color: var(--pc-gold-light);
+        }
+
+        .view-all-link,
+        .panel-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+
+        .view-all-link:hover,
+        .panel-link:hover {
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
 
         /* =================================================
            SMART TOOLS
         ================================================= */
 
-        .pc-smart-grid {
+        .smart-tools-grid {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
+          grid-template-columns: repeat(4, 1fr);
           gap: 13px;
         }
 
-        .pc-smart-card {
+        .smart-tool-card {
           position: relative;
+          min-height: 220px;
           overflow: hidden;
-          min-height: 188px;
-          padding: 19px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 20px;
-          background: white;
-          color: var(--pc-brown);
-          text-decoration: none;
-          box-shadow: var(--pc-shadow);
-          transition: all 0.25s ease;
+          padding: 18px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 18px;
+          background: #fff;
+          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.04);
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            border-color 0.25s ease;
+          animation: revealUp 0.55s ease both;
         }
 
-        .pc-smart-card::before {
+        .smart-tool-card::before {
           content: "";
           position: absolute;
-          width: 130px;
-          height: 130px;
           right: -55px;
-          top: -55px;
+          bottom: -65px;
+          width: 150px;
+          height: 150px;
           border-radius: 50%;
-          background: rgba(
-            185,
-            151,
-            91,
-            0.07
-          );
-          transition:
-            transform 0.45s ease;
+          background: rgba(213, 182, 117, 0.08);
+          transition: 0.3s ease;
         }
 
-        .pc-smart-card:hover {
-          transform: translateY(-6px);
-          border-color: #d9c39a;
-          box-shadow:
-            var(--pc-shadow-hover);
+        .smart-tool-card:hover {
+          transform: translateY(-5px);
+          border-color: var(--pc-border);
+          box-shadow: var(--pc-shadow-hover);
         }
 
-        .pc-smart-card:hover::before {
-          transform: scale(1.5);
+        .smart-tool-card:hover::before {
+          transform: scale(1.3);
         }
 
-        .pc-smart-top {
-          position: relative;
+        .smart-tool-top {
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
         }
 
-        .pc-smart-icon {
+        .smart-tool-badge {
+          color: #a27a39;
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.1px;
+        }
+
+        .smart-tool-arrow {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: #faf7f0;
+          color: #9d8760;
+          transition: 0.2s ease;
+        }
+
+        .smart-tool-card:hover .smart-tool-arrow {
+          background: var(--pc-gold);
+          color: #fff;
+          transform: rotate(-5deg);
+        }
+
+        .smart-tool-icon {
           width: 43px;
           height: 43px;
           display: grid;
           place-items: center;
+          margin-top: 23px;
           border-radius: 13px;
-          background: #f7f0e2;
-          color: #a17b40;
-          transition: all 0.25s ease;
+          background: linear-gradient(
+            145deg,
+            #fbf3e2,
+            #f2e2c1
+          );
+          color: var(--pc-gold-dark);
         }
 
-        .pc-smart-card:hover
-          .pc-smart-icon {
-          background: #b9975b;
-          color: white;
-          transform: rotate(-4deg)
-            scale(1.05);
+        .smart-tool-card h3 {
+          margin: 15px 0 6px;
+          font-size: 15px;
+          letter-spacing: -0.3px;
         }
 
-        .pc-smart-tag {
-          padding: 5px 7px;
-          border-radius: 999px;
-          background: #fbf5e8;
-          color: #a17b40;
-          font-size: 7px;
-          font-weight: 950;
-          letter-spacing: 0.12em;
-        }
-
-        .pc-smart-card h3 {
-          position: relative;
-          margin: 18px 0 0;
-          font-size: 14px;
-          font-weight: 950;
-        }
-
-        .pc-smart-card p {
-          position: relative;
-          min-height: 36px;
-          margin: 6px 0 0;
-          color: #978b7b;
+        .smart-tool-card p {
+          max-width: 200px;
+          min-height: 34px;
+          margin: 0;
+          color: var(--pc-muted);
           font-size: 10px;
-          line-height: 1.7;
+          line-height: 1.55;
         }
 
-        .pc-smart-link {
-          position: relative;
-          display: flex;
+        .smart-tool-link {
+          position: absolute;
+          left: 18px;
+          bottom: 17px;
+          display: inline-flex;
           align-items: center;
-          gap: 5px;
-          margin-top: 14px;
-          color: #a17b40;
+          gap: 3px;
+          color: var(--pc-gold-dark);
           font-size: 9px;
-          font-weight: 900;
-          transition: gap 0.2s ease;
-        }
-
-        .pc-smart-card:hover
-          .pc-smart-link {
-          gap: 8px;
+          font-weight: 750;
         }
 
         /* =================================================
            CATEGORIES
         ================================================= */
 
-        .pc-category-grid {
+        .category-strip {
           display: grid;
-          grid-template-columns: repeat(
-            10,
-            1fr
-          );
-          gap: 9px;
+          grid-template-columns: repeat(11, minmax(72px, 1fr));
+          gap: 8px;
         }
 
-        .pc-category {
-          min-height: 104px;
+        .category-card {
+          min-width: 0;
+          min-height: 105px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 10px 5px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 17px;
-          background: white;
+          gap: 6px;
+          padding: 9px 5px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 15px;
+          background: rgba(255, 255, 255, 0.8);
           color: var(--pc-brown);
-          text-decoration: none;
-          text-align: center;
-          box-shadow:
-            0 5px 18px
-              rgba(
-                113,
-                91,
-                53,
-                0.035
-              );
-          transition: all 0.22s ease;
+          cursor: pointer;
+          transition: 0.2s ease;
         }
 
-        .pc-category:hover {
+        .category-card:hover {
+          transform: translateY(-3px);
+          border-color: var(--pc-border);
+          box-shadow: 0 10px 24px rgba(82, 61, 29, 0.07);
+        }
+
+        .category-card-active {
+          border-color: #d9bf8e;
+          background: linear-gradient(
+            145deg,
+            #fffaf1,
+            #f8edda
+          );
+          box-shadow: 0 10px 25px rgba(129, 94, 35, 0.08);
+        }
+
+        .category-emoji {
+          width: 39px;
+          height: 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          background: #faf7f1;
+          font-size: 19px;
+        }
+
+        .category-card strong {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 9px;
+        }
+
+        .category-card small {
+          color: var(--pc-muted);
+          font-size: 7px;
+        }
+
+        /* =================================================
+           FLASH DEALS
+        ================================================= */
+
+        .title-with-live {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .live-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 6px;
+          border-radius: 999px;
+          background: #fbe9e7;
+          color: #b6534b;
+          font-size: 6px;
+          font-weight: 850;
+          letter-spacing: 0.7px;
+        }
+
+        .live-badge span {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #cf4d45;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .flash-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 13px;
+        }
+
+        .flash-card {
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.04);
+          transition: 0.22s ease;
+        }
+
+        .flash-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .flash-image {
+          position: relative;
+          height: 190px;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        .flash-info {
+          padding: 13px;
+        }
+
+        .flash-info h3 {
+          margin: 4px 0 7px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .product-brand {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 750;
+          letter-spacing: 0.2px;
+        }
+
+        .rating-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #c58f35;
+          font-size: 9px;
+        }
+
+        .rating-row small {
+          color: #aaa092;
+          font-size: 8px;
+        }
+
+        .price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 7px;
+          margin-top: 9px;
+        }
+
+        .price-row strong {
+          color: var(--pc-brown);
+          font-size: 14px;
+        }
+
+        .price-row del {
+          color: #aaa092;
+          font-size: 9px;
+        }
+
+        .discount-badge,
+        .flash-label {
+          position: absolute;
+          z-index: 3;
+          top: 10px;
+          padding: 5px 7px;
+          border-radius: 7px;
+          font-size: 7px;
+          font-weight: 850;
+        }
+
+        .discount-badge {
+          left: 10px;
+          background: #fff;
+          color: #ae534b;
+        }
+
+        .flash-label {
+          right: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          background: #8e4f44;
+          color: #fff;
+        }
+
+        /* =================================================
+           PRODUCT CARDS
+        ================================================= */
+
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 13px;
+        }
+
+        .product-card {
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.035);
+          transition:
+            transform 0.22s ease,
+            box-shadow 0.22s ease,
+            border-color 0.22s ease;
+        }
+
+        .product-card:hover {
           transform: translateY(-5px);
-          border-color: #d8bf91;
-          background: #fffdf8;
+          border-color: var(--pc-border);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .product-card-image {
+          position: relative;
+          height: 205px;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        /*
+          IMPORTANT:
+          object-contain keeps the WHOLE ORIGINAL IMAGE visible.
+          It does NOT crop top/bottom/left/right.
+        */
+
+        .product-image-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        .product-image-full {
+          object-fit: contain !important;
+          object-position: center center !important;
+          padding: 10px;
+        }
+
+        .product-image-fallback {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          color: #b9ad9c;
+          background: #faf8f3;
+        }
+
+        .product-image-fallback span {
+          font-size: 8px;
+        }
+
+        .product-discount {
+          position: absolute;
+          z-index: 4;
+          top: 10px;
+          left: 10px;
+          padding: 5px 7px;
+          border-radius: 7px;
+          background: #fff;
+          color: #a9514a;
+          font-size: 7px;
+          font-weight: 850;
+          box-shadow: 0 4px 10px rgba(64, 45, 20, 0.06);
+        }
+
+        .product-heart {
+          position: absolute;
+          z-index: 4;
+          top: 9px;
+          right: 9px;
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: rgba(255, 255, 255, 0.92);
+          color: #8f8170;
+          cursor: pointer;
+          opacity: 0;
+          transform: translateY(-3px);
+          transition: 0.2s ease;
+        }
+
+        .product-card:hover .product-heart {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .product-heart:hover {
+          color: #b95e6b;
+          background: #fff4f5;
+        }
+
+        .low-stock,
+        .out-stock {
+          position: absolute;
+          z-index: 4;
+          left: 9px;
+          bottom: 9px;
+          padding: 5px 7px;
+          border-radius: 6px;
+          font-size: 7px;
+          font-weight: 750;
+        }
+
+        .low-stock {
+          background: #fff5df;
+          color: #a5762d;
+        }
+
+        .out-stock {
+          background: #f8e7e7;
+          color: #ad5858;
+        }
+
+        .product-card-body {
+          padding: 13px;
+        }
+
+        .product-card-body h3 {
+          margin: 4px 0 5px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .product-card-body p {
+          height: 28px;
+          margin: 0 0 7px;
+          overflow: hidden;
+          color: var(--pc-muted);
+          font-size: 8px;
+          line-height: 1.5;
+        }
+
+        .product-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .product-price strong {
+          display: block;
+          color: var(--pc-brown);
+          font-size: 13px;
+        }
+
+        .product-price del {
+          display: block;
+          margin-top: 2px;
+          color: #aaa092;
+          font-size: 8px;
+        }
+
+        .product-arrow {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+          transition: 0.2s ease;
+        }
+
+        .product-card:hover .product-arrow {
+          background: var(--pc-gold);
+          color: #fff;
+        }
+
+        /* =================================================
+           CATEGORY PRODUCTS
+        ================================================= */
+
+        .mini-product-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .mini-product-card {
+          min-height: 105px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 15px;
+          background: #fff;
+          transition: 0.2s ease;
+        }
+
+        .mini-product-card:hover {
+          transform: translateY(-3px);
           box-shadow: var(--pc-shadow);
         }
 
-        .pc-category-icon {
-          width: 43px;
-          height: 43px;
+        .mini-product-image {
+          position: relative;
+          width: 82px;
+          height: 82px;
+          flex: 0 0 82px;
+          overflow: hidden;
+          border-radius: 11px;
+          background: #faf8f3;
+        }
+
+        .mini-product-card > div:last-child {
+          min-width: 0;
+        }
+
+        .mini-product-card span {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+        }
+
+        .mini-product-card strong {
+          display: block;
+          margin: 4px 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 10px;
+        }
+
+        .mini-product-card b {
+          color: var(--pc-brown);
+          font-size: 10px;
+        }
+
+        .empty-category {
+          min-height: 150px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          border: 1px dashed var(--pc-border);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.55);
+          color: var(--pc-muted);
+        }
+
+        .empty-category strong {
+          color: var(--pc-brown);
+          font-size: 12px;
+        }
+
+        .empty-category span {
+          font-size: 9px;
+        }
+
+        /* =================================================
+           FEATURE PANELS
+        ================================================= */
+
+        .feature-grid {
           display: grid;
-          place-items: center;
-          border-radius: 14px;
-          background: #faf4e8;
-          font-size: 20px;
+          grid-template-columns: 1.15fr 0.85fr;
+          gap: 13px;
+          margin-top: 42px;
+        }
+
+        .feature-panel {
+          position: relative;
+          min-height: 305px;
+          overflow: hidden;
+          padding: 30px;
+          border-radius: 22px;
           transition:
             transform 0.25s ease,
             box-shadow 0.25s ease;
         }
 
-        .pc-category:hover
-          .pc-category-icon {
-          transform: scale(1.12)
-            translateY(-2px);
-          box-shadow:
-            0 8px 18px
-              rgba(
-                185,
-                151,
-                91,
-                0.12
-              );
+        .feature-panel:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
         }
 
-        .pc-category-name {
-          margin-top: 9px;
-          font-size: 9px;
-          line-height: 1.3;
-          font-weight: 900;
-        }
-
-        /* =================================================
-           PRODUCTS
-        ================================================= */
-
-        .pc-product-grid {
-          display: grid;
-          grid-template-columns: repeat(
-            6,
-            1fr
-          );
-          gap: 13px;
-        }
-
-        .pc-product {
-          overflow: hidden;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 19px;
-          background: white;
-          color: inherit;
-          text-decoration: none;
-          box-shadow: var(--pc-shadow);
-          transition: all 0.25s ease;
-        }
-
-        .pc-product:hover {
-          transform: translateY(-6px);
-          border-color: #d8c095;
-          box-shadow:
-            var(--pc-shadow-hover);
-        }
-
-        .pc-product-image {
-          position: relative;
-          height: 185px;
-          overflow: hidden;
-          background: #f8f4eb;
-        }
-
-        .pc-product-image img {
-          transition:
-            transform 0.55s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            );
-        }
-
-        .pc-product:hover
-          .pc-product-image img {
-          transform: scale(1.07);
-        }
-
-        .pc-discount {
-          position: absolute;
-          left: 10px;
-          top: 10px;
-          padding: 5px 7px;
-          border-radius: 999px;
-          background: white;
-          color: #9c753b;
-          font-size: 8px;
-          font-weight: 950;
-          box-shadow:
-            0 4px 12px
-              rgba(
-                74,
-                57,
-                31,
-                0.08
-              );
-        }
-
-        .pc-product-heart {
-          position: absolute;
-          right: 10px;
-          top: 10px;
-          width: 31px;
-          height: 31px;
-          display: grid;
-          place-items: center;
-          border: 1px solid
-            rgba(
-              234,
-              223,
-              203,
-              0.8
-            );
-          border-radius: 50%;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.9
-          );
-          color: #827667;
-          cursor: pointer;
-          opacity: 0;
-          transform: translateY(
-            -4px
-          );
-          transition: all 0.2s ease;
-        }
-
-        .pc-product:hover
-          .pc-product-heart {
-          opacity: 1;
-          transform: translateY(
-            0
-          );
-        }
-
-        .pc-product-heart:hover {
-          color: #b66e65;
-          transform: scale(1.1)
-            !important;
-        }
-
-        .pc-product-content {
-          padding: 13px;
-        }
-
-        .pc-product-brand {
-          color: #a39177;
-          font-size: 7px;
-          font-weight: 900;
-          letter-spacing: 0.11em;
-          text-transform: uppercase;
-        }
-
-        .pc-product-title {
-          display: -webkit-box;
-          overflow: hidden;
-          min-height: 34px;
-          margin: 5px 0 0;
-          color: #4b4033;
-          font-size: 11px;
-          line-height: 1.5;
-          font-weight: 900;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        }
-
-        .pc-rating {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-          margin-top: 8px;
-          color: #806f58;
-          font-size: 8px;
-          font-weight: 800;
-        }
-
-        .pc-rating svg {
-          color: #bd9958;
-          fill: #bd9958;
-        }
-
-        .pc-product-price {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-top: 8px;
-        }
-
-        .pc-product-price strong {
-          color: #463a2c;
-          font-size: 13px;
-          font-weight: 950;
-        }
-
-        .pc-product-price del {
-          color: #aaa092;
-          font-size: 8px;
-          font-weight: 650;
-        }
-
-        /* =================================================
-           DEALS
-        ================================================= */
-
-        .pc-deals {
-          overflow: hidden;
-          padding: 25px;
-          border: 1px solid #eadbbd;
-          border-radius: 25px;
+        .prime-match-panel {
+          color: #fff;
           background:
             radial-gradient(
-              circle at 95% 0%,
-              rgba(
-                214,
-                185,
-                127,
-                0.18
-              ),
-              transparent 30%
+              circle at 85% 30%,
+              rgba(255, 255, 255, 0.2),
+              transparent 23%
             ),
             linear-gradient(
-              120deg,
-              #f9f0df,
-              #fffdf8
+              130deg,
+              #51432f,
+              #8c713e
             );
-          box-shadow: var(--pc-shadow);
         }
 
-        .pc-deal-grid {
+        .budget-panel {
+          color: var(--pc-brown);
+          background:
+            radial-gradient(
+              circle at 85% 15%,
+              rgba(255, 255, 255, 0.6),
+              transparent 28%
+            ),
+            linear-gradient(
+              135deg,
+              #f7ead1,
+              #e9d0a1
+            );
+          border: 1px solid #e0c796;
+        }
+
+        .feature-panel-glow {
+          position: absolute;
+          width: 260px;
+          height: 260px;
+          right: -100px;
+          bottom: -130px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .feature-panel-content {
+          position: relative;
+          z-index: 3;
+          max-width: 470px;
+        }
+
+        .feature-kicker {
+          color: rgba(255, 255, 255, 0.62);
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .budget-panel .feature-kicker {
+          color: #977338;
+        }
+
+        .feature-icon {
+          width: 42px;
+          height: 42px;
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
-          gap: 10px;
+          place-items: center;
           margin-top: 18px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.12);
+          color: #f3d99e;
         }
 
-        .pc-deal {
+        .budget-panel .feature-icon {
+          background: rgba(255, 255, 255, 0.5);
+          color: #936d30;
+        }
+
+        .feature-panel h2 {
+          margin: 15px 0 8px;
+          font-size: 28px;
+          line-height: 1.06;
+          letter-spacing: -1px;
+        }
+
+        .feature-panel p {
+          max-width: 400px;
+          margin: 0;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: 10px;
+          line-height: 1.7;
+        }
+
+        .budget-panel p {
+          color: #806a49;
+        }
+
+        .feature-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 20px;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 750;
+        }
+
+        .budget-panel .feature-cta {
+          color: #73562c;
+        }
+
+        .match-orbit {
+          position: absolute;
+          z-index: 1;
+          right: 45px;
+          top: 50%;
+          width: 220px;
+          height: 220px;
+          transform: translateY(-50%);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 50%;
+        }
+
+        .match-orbit::before,
+        .match-orbit::after {
+          content: "";
+          position: absolute;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+        }
+
+        .match-orbit::before {
+          inset: 30px;
+        }
+
+        .match-orbit::after {
+          inset: 64px;
+        }
+
+        .orbit-dot {
+          position: absolute;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #e5c37d;
+          box-shadow: 0 0 0 5px rgba(229, 195, 125, 0.1);
+        }
+
+        .orbit-dot.one {
+          top: 19px;
+          left: 95px;
+        }
+
+        .orbit-dot.two {
+          right: 12px;
+          top: 102px;
+        }
+
+        .orbit-dot.three {
+          bottom: 23px;
+          left: 57px;
+        }
+
+        .orbit-center {
+          position: absolute;
+          inset: 75px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.08);
+          color: #f0d291;
+          box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
+        }
+
+        .budget-panel-top {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .budget-panel-top .feature-icon {
+          margin: 0;
+        }
+
+        .budget-visual {
+          max-width: 330px;
+          margin-top: 25px;
+        }
+
+        .budget-line {
+          height: 7px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(118, 87, 37, 0.13);
+        }
+
+        .budget-line span {
+          display: block;
+          width: 72%;
+          height: 100%;
+          border-radius: inherit;
+          background: #99712f;
+        }
+
+        .budget-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 7px;
+          color: #94794e;
+          font-size: 8px;
+        }
+
+        /* =================================================
+           TRIPLE
+        ================================================= */
+
+        .triple-feature-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 13px;
+          margin-top: 13px;
+        }
+
+        .small-feature-card {
+          position: relative;
+          min-height: 220px;
+          padding: 20px;
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 19px;
+          background: #fff;
+          transition: 0.22s ease;
+        }
+
+        .small-feature-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .setup-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(202, 168, 98, 0.13),
+              transparent 38%
+            ),
+            #fff;
+        }
+
+        .points-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(170, 138, 206, 0.12),
+              transparent 40%
+            ),
+            #fff;
+        }
+
+        .mystery-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(217, 180, 93, 0.17),
+              transparent 40%
+            ),
+            #fff;
+        }
+
+        .small-feature-icon {
+          width: 38px;
+          height: 38px;
+          display: grid;
+          place-items: center;
+          border-radius: 11px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .small-feature-label {
+          display: block;
+          margin-top: 17px;
+          color: var(--pc-gold-dark);
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.3px;
+        }
+
+        .small-feature-card h3 {
+          margin: 6px 0;
+          font-size: 17px;
+          letter-spacing: -0.45px;
+        }
+
+        .small-feature-card p {
+          max-width: 260px;
+          margin: 0;
+          color: var(--pc-muted);
+          font-size: 9px;
+          line-height: 1.65;
+        }
+
+        .small-feature-arrow {
+          position: absolute;
+          left: 20px;
+          bottom: 19px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        .points-mini-bar {
+          max-width: 240px;
+          height: 5px;
+          margin-top: 15px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #eee8f6;
+        }
+
+        .points-mini-bar span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #8a72b0;
+        }
+
+        .mystery-button {
+          position: absolute;
+          left: 20px;
+          bottom: 17px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 31px;
+          padding: 0 10px;
+          border-radius: 9px;
+          background: #f5ead5;
+          color: #8c682f;
+          font-size: 9px;
+          font-weight: 750;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .mystery-button:hover {
+          background: #e8d4ad;
+          transform: translateY(-1px);
+        }
+
+        /* =================================================
+           RECENT
+        ================================================= */
+
+        .recent-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .recent-card {
+          min-width: 0;
           display: flex;
           align-items: center;
           gap: 10px;
           padding: 9px;
-          border: 1px solid #e9dec9;
-          border-radius: 15px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.7
-          );
-          text-decoration: none;
-          color: var(--pc-brown);
-          transition: all 0.22s ease;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 14px;
+          background: #fff;
+          transition: 0.2s ease;
         }
 
-        .pc-deal:hover {
-          transform: translateY(-4px);
-          background: white;
-          box-shadow:
-            0 10px 25px
-              rgba(
-                113,
-                91,
-                53,
-                0.08
-              );
+        .recent-card:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--pc-shadow);
         }
 
-        .pc-deal-image {
+        .recent-image {
           position: relative;
-          width: 68px;
-          height: 68px;
-          flex-shrink: 0;
+          width: 66px;
+          height: 66px;
+          flex: 0 0 66px;
           overflow: hidden;
-          border-radius: 11px;
-          background: #f4eee2;
+          border-radius: 10px;
+          background: #faf8f3;
         }
 
-        .pc-deal-image img {
-          transition:
-            transform 0.35s ease;
+        .recent-info {
+          min-width: 0;
+          flex: 1;
         }
 
-        .pc-deal:hover
-          .pc-deal-image img {
-          transform: scale(1.08);
-        }
-
-        .pc-deal-label {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: #a27b3e;
+        .recent-info span {
+          display: block;
+          color: var(--pc-gold-dark);
           font-size: 7px;
-          font-weight: 950;
         }
 
-        .pc-deal-title {
-          display: -webkit-box;
+        .recent-info strong {
+          display: block;
+          margin: 4px 0;
           overflow: hidden;
-          margin-top: 4px;
-          font-size: 9px;
-          line-height: 1.4;
-          font-weight: 900;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 10px;
         }
 
-        .pc-deal-price {
-          margin-top: 5px;
+        .recent-info b {
+          color: var(--pc-brown);
           font-size: 10px;
-          font-weight: 950;
+        }
+
+        .recent-card > svg {
+          color: #c0b5a5;
         }
 
         /* =================================================
            BOTTOM
         ================================================= */
 
-        .pc-bottom-grid {
+        .bottom-grid {
           display: grid;
-          grid-template-columns: 1.25fr 0.75fr;
-          gap: 14px;
+          grid-template-columns: 1.35fr 0.65fr;
+          gap: 13px;
+          margin-top: 42px;
         }
 
-        .pc-panel {
-          padding: 21px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 20px;
-          background: white;
-          box-shadow: var(--pc-shadow);
-        }
-
-        .pc-orders {
-          overflow: hidden;
-          margin-top: 14px;
-        }
-
-        .pc-order {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          padding: 11px 0;
-          border-bottom: 1px solid
-            var(--pc-border-light);
-          transition:
-            padding-left 0.2s ease;
-        }
-
-        .pc-order:hover {
-          padding-left: 5px;
-        }
-
-        .pc-order:last-child {
-          border-bottom: 0;
-        }
-
-        .pc-order-icon {
-          width: 37px;
-          height: 37px;
-          flex-shrink: 0;
-          display: grid;
-          place-items: center;
-          border-radius: 11px;
-          background: #f8f1e3;
-          color: #a27c3e;
-        }
-
-        .pc-order-info {
+        .dashboard-panel {
           min-width: 0;
-          flex: 1;
+          padding: 20px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.88);
+          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.035);
         }
 
-        .pc-order-title {
-          overflow: hidden;
-          color: #514637;
-          font-size: 10px;
-          font-weight: 900;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .pc-order-meta {
+        .panel-heading {
           display: flex;
           align-items: center;
-          gap: 6px;
-          margin-top: 3px;
-          color: #a19584;
-          font-size: 7px;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 13px;
         }
 
-        .pc-order-status {
-          color: #a17b40;
-          font-weight: 900;
-          text-transform: capitalize;
+        .panel-heading h2 {
+          margin: 5px 0 0;
+          font-size: 17px;
         }
 
-        .pc-order-price {
-          color: #4b3e2e;
-          font-size: 10px;
-          font-weight: 950;
+        .panel-heading > svg {
+          color: var(--pc-gold);
         }
 
-        /* =================================================
-           QUICK ACTIONS
-        ================================================= */
-
-        .pc-quick-grid {
+        .orders-list {
           display: grid;
-          grid-template-columns: repeat(
-            2,
-            1fr
-          );
-          gap: 9px;
-          margin-top: 16px;
         }
 
-        .pc-quick {
-          padding: 13px;
-          border: 1px solid
-            var(--pc-border-light);
-          border-radius: 15px;
-          color: var(--pc-brown);
-          text-decoration: none;
-          transition: all 0.22s ease;
+        .order-row {
+          min-height: 61px;
+          display: grid;
+          grid-template-columns: 35px minmax(120px, 1fr) auto auto 16px;
+          align-items: center;
+          gap: 10px;
+          border-top: 1px solid var(--pc-border-light);
         }
 
-        .pc-quick:hover {
-          border-color: #d9c49a;
-          background: #fffdf8;
-          transform: translateY(-3px);
-          box-shadow:
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.06
-              );
-        }
-
-        .pc-quick-icon {
+        .order-icon {
           width: 32px;
           height: 32px;
           display: grid;
           place-items: center;
-          border-radius: 10px;
-          background: #f7f0e2;
-          color: #a27c3e;
-          transition:
-            transform 0.2s ease;
+          border-radius: 9px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
         }
 
-        .pc-quick:hover
-          .pc-quick-icon {
-          transform: scale(1.08);
+        .order-info strong {
+          display: block;
+          font-size: 10px;
         }
 
-        .pc-quick p {
-          margin: 9px 0 0;
+        .order-info span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
+          font-size: 8px;
+        }
+
+        .order-status {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          color: #6e665c;
+          font-size: 8px;
+          white-space: nowrap;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #d2a44f;
+        }
+
+        .status-dot.delivered,
+        .status-dot.completed {
+          background: #61a873;
+        }
+
+        .status-dot.cancelled,
+        .status-dot.canceled {
+          background: #c96767;
+        }
+
+        .order-price {
+          color: var(--pc-brown);
+          font-size: 10px;
+          white-space: nowrap;
+        }
+
+        .order-row > svg {
+          color: #c0b5a5;
+        }
+
+        .empty-panel {
+          min-height: 200px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          color: var(--pc-muted);
+          text-align: center;
+        }
+
+        .empty-panel-icon {
+          width: 45px;
+          height: 45px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 3px;
+          border-radius: 13px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .empty-panel strong {
+          color: var(--pc-brown);
+          font-size: 12px;
+        }
+
+        .empty-panel span {
           font-size: 9px;
-          font-weight: 900;
         }
 
-        .pc-quick svg:last-child {
+        .empty-panel a {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
           margin-top: 7px;
-          color: #b1a18b;
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        .insight-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .insight-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px;
+          border-radius: 11px;
+          background: #fcfaf6;
+        }
+
+        .insight-icon {
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .insight-row div:last-child {
+          flex: 1;
+        }
+
+        .insight-row span {
+          display: block;
+          color: var(--pc-muted);
+          font-size: 8px;
+        }
+
+        .insight-row strong {
+          display: block;
+          margin-top: 2px;
+          font-size: 12px;
+        }
+
+        .insight-cta {
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 12px;
+          padding: 0 11px;
+          border-radius: 10px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
         }
 
         /* =================================================
-           MINI BANNER
+           BENEFITS
         ================================================= */
 
-        .pc-mini-banner {
-          margin-top: 12px;
-          padding: 15px;
-          border-radius: 16px;
-          background:
-            linear-gradient(
-              135deg,
-              #f7edda,
-              #fffaf0
-            );
-          border: 1px solid #eadabd;
+        .benefits-strip {
+          min-height: 100px;
+          display: grid;
+          grid-template-columns: repeat(7, auto);
+          align-items: center;
+          justify-content: space-between;
+          gap: 17px;
+          margin-top: 42px;
+          padding: 18px 22px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 18px;
+          background: #fff;
         }
 
-        .pc-mini-banner-top {
+        .benefit-item {
           display: flex;
           align-items: center;
           gap: 9px;
         }
 
-        .pc-mini-icon {
+        .benefit-icon {
           width: 34px;
           height: 34px;
           display: grid;
           place-items: center;
+          flex: 0 0 34px;
           border-radius: 10px;
-          background: #d6ba7e;
-          color: white;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
         }
 
-        .pc-mini-banner h4 {
-          margin: 0;
-          color: #57472f;
-          font-size: 10px;
-          font-weight: 950;
+        .benefit-item strong {
+          display: block;
+          font-size: 9px;
         }
 
-        .pc-mini-banner p {
-          margin: 2px 0 0;
-          color: #9b8b73;
+        .benefit-item span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
           font-size: 7px;
         }
 
-        .pc-mini-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          min-height: 31px;
-          margin-top: 11px;
-          border-radius: 10px;
-          background: white;
-          color: #8f6c36;
-          text-decoration: none;
-          font-size: 8px;
-          font-weight: 950;
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .pc-mini-button:hover {
-          transform: translateY(-2px);
-          box-shadow:
-            0 7px 15px
-              rgba(
-                113,
-                91,
-                53,
-                0.08
-              );
+        .benefit-divider {
+          width: 1px;
+          height: 35px;
+          background: var(--pc-border-light);
         }
 
         /* =================================================
-           FOOTER BANNER
+           FOOTER
         ================================================= */
 
-        .pc-footer-banner {
-          margin-top: 14px;
-          padding: 22px;
+        .dashboard-footer {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 20px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 21px;
-          background: white;
-          box-shadow: var(--pc-shadow);
+          margin-top: 35px;
+          padding-top: 22px;
+          border-top: 1px solid var(--pc-border-light);
         }
 
-        .pc-footer-info {
+        .footer-brand {
           display: flex;
           align-items: center;
-          gap: 13px;
+          gap: 8px;
         }
 
-        .pc-footer-icon {
-          width: 43px;
-          height: 43px;
+        .footer-logo {
+          width: 29px;
+          height: 29px;
           display: grid;
           place-items: center;
-          flex-shrink: 0;
-          border-radius: 13px;
-          background: #f6eedf;
-          color: #a17a3e;
+          border-radius: 9px;
+          background: var(--pc-gold);
+          color: white;
+          font-size: 12px;
+          font-weight: 850;
         }
 
-        .pc-footer-info h3 {
-          margin: 0;
-          color: #514435;
-          font-size: 13px;
-          font-weight: 950;
+        .footer-brand strong {
+          display: block;
+          font-size: 10px;
         }
 
-        .pc-footer-info p {
-          max-width: 600px;
-          margin: 4px 0 0;
-          color: #9b907f;
+        .footer-brand span {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 7px;
+        }
+
+        .footer-links {
+          display: flex;
+          gap: 16px;
+        }
+
+        .footer-links a {
+          color: var(--pc-muted);
           font-size: 8px;
-          line-height: 1.6;
+        }
+
+        .footer-links a:hover {
+          color: var(--pc-gold-dark);
+        }
+
+        .footer-copy {
+          color: #b0a494;
+          font-size: 8px;
+        }
+
+        /* =================================================
+           MOBILE OVERLAY
+        ================================================= */
+
+        .mobile-overlay {
+          display: none;
+        }
+
+        /* =================================================
+           ANIMATIONS
+        ================================================= */
+
+        @keyframes heroIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes revealUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes dropdownIn {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes floating {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+
+        @keyframes rotateSlow {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes rotateSlowReverse {
+          to {
+            transform: rotate(-360deg);
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: 0.5;
+            transform: scale(1.3);
+          }
+        }
+
+        /* =================================================
+           RESPONSIVE 1280
+        ================================================= */
+
+        @media (max-width: 1400px) {
+          .product-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+
+          .category-strip {
+            grid-template-columns: repeat(6, 1fr);
+          }
+
+          .hero-decoration {
+            right: 31%;
+          }
+        }
+
+        @media (max-width: 1180px) {
+          .dashboard-sidebar {
+            width: 225px;
+          }
+
+          .dashboard-main {
+            margin-left: 225px;
+          }
+
+          .dashboard-content {
+            padding: 24px;
+          }
+
+          .smart-tools-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .flash-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .bottom-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .recent-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .benefits-strip {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .benefit-divider {
+            display: none;
+          }
+        }
+
+        /* =================================================
+           TABLET
+        ================================================= */
+
+        @media (max-width: 980px) {
+          .dashboard-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.28s ease;
+            box-shadow: 20px 0 50px rgba(50, 37, 20, 0.15);
+          }
+
+          .dashboard-sidebar.sidebar-open {
+            transform: translateX(0);
+          }
+
+          .dashboard-main {
+            margin-left: 0;
+          }
+
+          .mobile-menu-button {
+            display: grid;
+          }
+
+          .mobile-close {
+            display: grid;
+            place-items: center;
+          }
+
+          .mobile-overlay {
+            position: fixed;
+            z-index: 70;
+            inset: 0;
+            display: block;
+            background: rgba(45, 34, 21, 0.28);
+            backdrop-filter: blur(2px);
+          }
+
+          .dashboard-header {
+            padding: 11px 20px;
+          }
+
+          .desktop-action {
+            display: none;
+          }
+
+          .welcome-hero {
+            min-height: 300px;
+          }
+
+          .hero-points-card {
+            width: 205px;
+          }
+
+          .hero-decoration {
+            right: 21%;
+            opacity: 0.7;
+          }
+
+          .product-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .mini-product-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
         /* =================================================
            MOBILE
         ================================================= */
 
-        .pc-mobile-overlay {
-          display: none;
-        }
-
-        .pc-mobile-menu {
-          display: none;
-        }
-
-        @media (max-width: 1250px) {
-          .pc-category-grid {
-            grid-template-columns: repeat(
-              5,
-              1fr
-            );
-          }
-
-          .pc-product-grid {
-            grid-template-columns: repeat(
-              3,
-              1fr
-            );
-          }
-
-          .pc-smart-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
-          }
-        }
-
-        @media (max-width: 1000px) {
-          .pc-sidebar {
-            transform: translateX(
-              -100%
-            );
-          }
-
-          .pc-sidebar.mobile-open {
-            transform: translateX(0);
-          }
-
-          .pc-main {
-            margin-left: 0;
-          }
-
-          .pc-mobile-menu {
-            width: 40px;
-            height: 40px;
-            display: grid;
-            place-items: center;
-            border: 1px solid
-              var(--pc-border);
-            border-radius: 12px;
-            background: white;
-            color: var(--pc-brown);
-            cursor: pointer;
-          }
-
-          .pc-mobile-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 50;
-            display: block;
-            background: rgba(
-              72,
-              57,
-              37,
-              0.2
-            );
-            backdrop-filter: blur(3px);
-          }
-
-          .pc-points-card {
-            display: none;
-          }
-
-          .pc-bottom-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .pc-deal-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
-          }
-        }
-
         @media (max-width: 700px) {
-          .pc-header {
-            height: 67px;
-            padding: 0 14px;
-            gap: 9px;
+          .dashboard-header {
+            min-height: 68px;
+            padding: 10px 14px;
+            gap: 8px;
           }
 
-          .pc-search-wrap {
-            display: none;
+          .header-left {
+            gap: 8px;
           }
 
-          .pc-content {
-            width: calc(100% - 28px);
-            padding-top: 20px;
+          .mobile-menu-button {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
           }
 
-          .pc-welcome {
-            min-height: auto;
-            padding: 23px;
-            border-radius: 23px;
-          }
-
-          .pc-welcome h1 {
-            font-size: 29px;
-            letter-spacing: -1px;
-          }
-
-          .pc-welcome-text {
-            font-size: 11px;
-          }
-
-          .pc-welcome-buttons {
-            flex-direction: column;
-          }
-
-          .pc-primary-button,
-          .pc-secondary-button {
+          .header-search-wrap {
             width: 100%;
           }
 
-          .pc-stats {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
-            gap: 9px;
-          }
-
-          .pc-stat {
-            padding: 13px;
-          }
-
-          .pc-stat-value {
-            font-size: 18px;
-          }
-
-          .pc-smart-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .pc-category-grid {
-            grid-template-columns: repeat(
-              3,
-              1fr
-            );
-          }
-
-          .pc-product-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
-            gap: 9px;
-          }
-
-          .pc-product-image {
-            height: 145px;
-          }
-
-          .pc-product-content {
-            padding: 10px;
-          }
-
-          .pc-product-title {
+          .header-search {
+            height: 40px;
+            padding-left: 38px;
+            padding-right: 34px;
             font-size: 10px;
           }
 
-          .pc-deals {
-            padding: 17px;
+          .header-search-icon {
+            left: 12px;
+            width: 16px;
+          }
+
+          .header-right {
+            gap: 5px;
+          }
+
+          .header-icon-button {
+            width: 37px;
+            height: 37px;
+          }
+
+          .header-profile {
+            padding-right: 0;
+          }
+
+          .header-profile-copy,
+          .header-profile > svg {
+            display: none;
+          }
+
+          .notification-dropdown {
+            right: 55px;
+            width: min(275px, calc(100vw - 30px));
+          }
+
+          .dashboard-content {
+            padding: 15px 13px 30px;
+          }
+
+          .welcome-hero {
+            min-height: 370px;
+            align-items: flex-start;
+            padding: 25px 21px;
             border-radius: 21px;
           }
 
-          .pc-deal-grid {
+          .hero-content h1 {
+            font-size: 34px;
+          }
+
+          .hero-content p {
+            max-width: 90%;
+            font-size: 10px;
+          }
+
+          .hero-decoration {
+            right: -90px;
+            top: 67%;
+            opacity: 0.45;
+            transform: translateY(-50%) scale(0.75);
+          }
+
+          .hero-points-card {
+            position: absolute;
+            left: 21px;
+            right: 21px;
+            bottom: 19px;
+            width: auto;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+          }
+
+          .stat-card {
+            min-height: 91px;
+            padding: 11px;
+            gap: 8px;
+          }
+
+          .stat-icon {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+          }
+
+          .stat-content strong {
+            font-size: 14px;
+          }
+
+          .stat-content small {
+            font-size: 7px;
+          }
+
+          .section {
+            margin-top: 31px;
+          }
+
+          .section-heading {
+            align-items: flex-start;
+            margin-bottom: 12px;
+          }
+
+          .section-heading h2 {
+            font-size: 17px;
+          }
+
+          .section-heading p {
+            font-size: 9px;
+          }
+
+          .smart-tools-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .smart-tool-card {
+            min-height: 195px;
+            padding: 13px;
+          }
+
+          .smart-tool-icon {
+            margin-top: 17px;
+            width: 37px;
+            height: 37px;
+          }
+
+          .smart-tool-card h3 {
+            font-size: 13px;
+          }
+
+          .smart-tool-card p {
+            font-size: 8px;
+          }
+
+          .smart-tool-link {
+            left: 13px;
+            bottom: 13px;
+          }
+
+          .category-strip {
+            display: flex;
+            overflow-x: auto;
+            gap: 7px;
+            padding-bottom: 5px;
+            scrollbar-width: none;
+          }
+
+          .category-strip::-webkit-scrollbar {
+            display: none;
+          }
+
+          .category-card {
+            min-width: 83px;
+            min-height: 92px;
+            flex: 0 0 83px;
+          }
+
+          .category-emoji {
+            width: 34px;
+            height: 34px;
+            font-size: 16px;
+          }
+
+          .flash-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .flash-image {
+            height: 145px;
+          }
+
+          .flash-info {
+            padding: 10px;
+          }
+
+          .flash-info h3 {
+            font-size: 10px;
+          }
+
+          .price-row strong {
+            font-size: 11px;
+          }
+
+          .product-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .product-card-image {
+            height: 165px;
+          }
+
+          .product-image-full {
+            padding: 8px;
+          }
+
+          .product-card-body {
+            padding: 10px;
+          }
+
+          .product-card-body h3 {
+            font-size: 10px;
+          }
+
+          .product-card-body p {
+            font-size: 7px;
+          }
+
+          .product-heart {
+            opacity: 1;
+            transform: none;
+            width: 28px;
+            height: 28px;
+          }
+
+          .feature-grid {
+            margin-top: 31px;
+          }
+
+          .feature-panel {
+            min-height: 300px;
+            padding: 22px;
+            border-radius: 19px;
+          }
+
+          .feature-panel h2 {
+            font-size: 24px;
+          }
+
+          .feature-panel p {
+            max-width: 65%;
+          }
+
+          .match-orbit {
+            right: -80px;
+            opacity: 0.55;
+          }
+
+          .triple-feature-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .small-feature-card {
+            min-height: 190px;
+          }
+
+          .recent-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .mini-product-grid {
             grid-template-columns: 1fr;
           }
 
-          .pc-footer-banner {
-            align-items: flex-start;
-            flex-direction: column;
+          .order-row {
+            grid-template-columns: 34px minmax(80px, 1fr) auto 16px;
           }
 
-          .pc-footer-banner
-            .pc-primary-button {
-            width: 100%;
-          }
-
-          .pc-profile-info,
-          .pc-profile-button
-            > svg {
+          .order-status {
             display: none;
+          }
+
+          .bottom-grid {
+            margin-top: 31px;
+          }
+
+          .benefits-strip {
+            grid-template-columns: 1fr;
+            gap: 13px;
+            padding: 16px;
+          }
+
+          .benefit-divider {
+            display: none;
+          }
+
+          .dashboard-footer {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .footer-links {
+            flex-wrap: wrap;
+          }
+
+          .footer-copy {
+            order: 3;
+          }
+
+          .search-results {
+            position: fixed;
+            top: 62px;
+            left: 12px;
+            right: 12px;
+            width: auto;
           }
         }
 
+        /* =================================================
+           SMALL MOBILE
+        ================================================= */
+
         @media (max-width: 430px) {
-          .pc-category-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
+          .header-right .header-icon-button {
+            display: none;
           }
 
-          .pc-product-image {
+          .header-right .header-profile {
+            display: flex;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .stat-card {
+            min-width: 0;
+          }
+
+          .stat-content strong {
+            max-width: 90px;
+          }
+
+          .smart-tool-card {
+            min-height: 185px;
+          }
+
+          .product-card-image {
+            height: 150px;
+          }
+
+          .flash-image {
             height: 135px;
           }
 
-          .pc-product-price strong {
-            font-size: 12px;
-          }
-
-          .pc-section-heading h2 {
-            font-size: 19px;
+          .welcome-hero {
+            min-height: 365px;
           }
         }
+
+        /* =================================================
+           REDUCED MOTION
+        ================================================= */
 
         @media (prefers-reduced-motion: reduce) {
           *,
           *::before,
           *::after {
-            scroll-behavior: auto !important;
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
             transition-duration: 0.01ms !important;
           }
         }
       `}</style>
-
-      {/* =====================================================
-          MOBILE OVERLAY
-      ===================================================== */}
-
-      {mobileMenu && (
-        <div
-          className="pc-mobile-overlay"
-          onClick={() =>
-            setMobileMenu(false)
-          }
-        />
-      )}
-
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
-      <aside
-        className={`pc-sidebar ${
-          mobileMenu
-            ? "mobile-open"
-            : ""
-        }`}
-      >
-        <div className="pc-logo-area">
-          <Link
-            href="/dashboard"
-            className="pc-logo"
-          >
-            <div className="pc-logo-mark">
-              <ShoppingBag size={20} />
-            </div>
-
-            <div>
-              <div className="pc-logo-name">
-                Prime
-                <span>Cart</span>
-              </div>
-
-              <span className="pc-logo-subtitle">
-                Shop Smarter
-              </span>
-            </div>
-          </Link>
-
-          <button
-            type="button"
-            className="ml-auto lg:hidden"
-            onClick={() =>
-              setMobileMenu(false)
-            }
-            aria-label="Close menu"
-          >
-            <X size={19} />
-          </button>
-        </div>
-
-        <div className="pc-nav">
-          <p className="pc-nav-label">
-            Main Menu
-          </p>
-
-          {sidebarItems.map(
-            (item, index) => {
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() =>
-                    setMobileMenu(false)
-                  }
-                  className={`pc-nav-link ${
-                    index === 0
-                      ? "active"
-                      : ""
-                  }`}
-                >
-                  <Icon size={17} />
-
-                  <span>
-                    {item.label}
-                  </span>
-
-                  {item.label ===
-                    "Wishlist" &&
-                    wishlistCount > 0 && (
-                      <span className="pc-nav-badge">
-                        {wishlistCount}
-                      </span>
-                    )}
-                </Link>
-              );
-            },
-          )}
-
-          <div className="my-6 h-px bg-[#f0e8da]" />
-
-          <p className="pc-nav-label">
-            Smart Shopping
-          </p>
-
-          {smartTools.map((tool) => {
-            const Icon = tool.icon;
-
-            return (
-              <Link
-                key={tool.href}
-                href={tool.href}
-                onClick={() =>
-                  setMobileMenu(false)
-                }
-                className="pc-nav-link"
-              >
-                <Icon size={17} />
-
-                <span>
-                  {tool.title}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="pc-sidebar-bottom">
-          <Link
-            href="/dashboard/settings"
-            className="pc-nav-link"
-          >
-            <Settings size={17} />
-            <span>Settings</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="pc-nav-link w-full text-left"
-          >
-            <LogOut size={17} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <div className="pc-main">
-        {/* HEADER */}
-
-        <header className="pc-header">
-          <button
-            type="button"
-            className="pc-mobile-menu"
-            onClick={() =>
-              setMobileMenu(true)
-            }
-            aria-label="Open menu"
-          >
-            <Menu size={19} />
-          </button>
-
-          {/* SEARCH */}
-
-          <div className="pc-search-wrap">
-            <div className="pc-search">
-              <Search
-                size={16}
-                color="#a09482"
-              />
-
-              <input
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value,
-                  )
-                }
-                onFocus={() =>
-                  setSearchFocused(
-                    true,
-                  )
-                }
-                placeholder="Search products, brands..."
-              />
-
-              {search && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSearch("")
-                  }
-                  className="border-0 bg-transparent text-[#a09482]"
-                  aria-label="Clear search"
-                >
-                  <X size={15} />
-                </button>
-              )}
-            </div>
-
-            {searchFocused &&
-              search && (
-                <div className="pc-search-results">
-                  {searchResults.length >
-                  0 ? (
-                    searchResults.map(
-                      (product) => {
-                        return (
-                          <Link
-                            key={
-                              product.id
-                            }
-                            href={`/dashboard/products/${product.id}`}
-                            className="pc-search-result"
-                            onClick={() =>
-                              setSearchFocused(
-                                false,
-                              )
-                            }
-                          >
-                            <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-[#f6f0e5]">
-                              <ProductImage
-                                src={
-                                  product.image_url
-                                }
-                                alt={
-                                  product.name
-                                }
-                                sizes="40px"
-                              />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[10px] font-black">
-                                {
-                                  product.name
-                                }
-                              </p>
-
-                              <p className="mt-1 text-[8px] text-[#9d917e]">
-                                {product.brand ||
-                                  "PrimeCart"}
-                              </p>
-                            </div>
-
-                            <span className="text-[9px] font-black text-[#9a763d]">
-                              {formatPrice(
-                                Number(
-                                  product.price,
-                                ),
-                              )}
-                            </span>
-                          </Link>
-                        );
-                      },
-                    )
-                  ) : (
-                    <div className="p-7 text-center">
-                      <Search
-                        size={23}
-                        className="mx-auto text-[#c2b5a0]"
-                      />
-
-                      <p className="mt-2 text-[10px] font-black">
-                        No products
-                        found
-                      </p>
-
-                      <p className="mt-1 text-[8px] text-[#9d917e]">
-                        Try another
-                        product or
-                        brand.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-          </div>
-
-          {/* HEADER ACTIONS */}
-
-          <div className="pc-header-actions">
-            {/* NOTIFICATION */}
-
-            <div className="relative">
-              <button
-                type="button"
-                className="pc-icon-button"
-                onClick={() =>
-                  setNotificationOpen(
-                    (value) =>
-                      !value,
-                  )
-                }
-                aria-label="Notifications"
-              >
-                <Bell size={17} />
-
-                <span className="pc-notification-dot" />
-              </button>
-
-              {notificationOpen && (
-                <div className="pc-dropdown">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-[11px] font-black">
-                      Notifications
-                    </span>
-
-                    <span className="rounded-full bg-[#f6ecd9] px-2 py-1 text-[7px] font-black text-[#99763c]">
-                      NEW
-                    </span>
-                  </div>
-
-                  <div className="rounded-xl bg-[#faf6ed] p-3">
-                    <p className="text-[10px] font-black">
-                      Welcome to
-                      PrimeCart
-                    </p>
-
-                    <p className="mt-1 text-[8px] leading-5 text-[#9a8e7c]">
-                      Explore
-                      personalised
-                      shopping and
-                      discover
-                      products made
-                      for you.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* PROFILE */}
-
-            <div className="pc-profile">
-              <button
-                type="button"
-                className="pc-profile-button"
-                onClick={() =>
-                  setProfileOpen(
-                    (value) =>
-                      !value,
-                  )
-                }
-              >
-                <div className="pc-avatar">
-                  {getInitials(
-                    userName,
-                  )}
-                </div>
-
-                <div className="pc-profile-info text-left">
-                  <p className="max-w-[110px] truncate text-[9px] font-black">
-                    {userName}
-                  </p>
-
-                  <p className="mt-0.5 text-[7px] text-[#9e9280]">
-                    Prime Member
-                  </p>
-                </div>
-
-                <ChevronDown
-                  size={14}
-                  className="text-[#9d907e]"
-                />
-              </button>
-
-              {profileOpen && (
-                <div className="pc-dropdown w-[210px]">
-                  <Link
-                    href="/dashboard/profile"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black hover:bg-[#faf6ed]"
-                  >
-                    <User size={15} />
-                    My Profile
-                  </Link>
-
-                  <Link
-                    href="/dashboard/settings"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black hover:bg-[#faf6ed]"
-                  >
-                    <Settings
-                      size={15}
-                    />
-                    Settings
-                  </Link>
-
-                  <div className="my-1 h-px bg-[#f0e8da]" />
-
-                  <button
-                    type="button"
-                    onClick={
-                      handleLogout
-                    }
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black text-[#a0645c] hover:bg-[#fff3f1]"
-                  >
-                    <LogOut
-                      size={15}
-                    />
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* ===================================================
-            CONTENT
-        =================================================== */}
-
-        <main className="pc-content">
-          {/* WELCOME */}
-
-          <section className="pc-welcome">
-            <div className="pc-eyebrow">
-              <Sparkles size={12} />
-              Personal Shopping
-              Dashboard
-            </div>
-
-            <h1>
-              Good to see you,{" "}
-              <span>
-                {firstName}.
-              </span>
-              <br />
-              Let&apos;s shop
-              smarter.
-            </h1>
-
-            <p className="pc-welcome-text">
-              Discover products,
-              explore personalised
-              tools, track your orders
-              and make every shopping
-              decision easier.
-            </p>
-
-            <div className="pc-welcome-buttons">
-              <Link
-                href="/dashboard/products"
-                className="pc-primary-button"
-              >
-                Explore Products
-                <ArrowRight size={14} />
-              </Link>
-
-              <Link
-                href="/dashboard/prime-match"
-                className="pc-secondary-button"
-              >
-                <Target size={14} />
-                Try PrimeMatch
-              </Link>
-            </div>
-
-            <div className="pc-points-card">
-              <div className="pc-points-top">
-                <div className="pc-points-icon">
-                  <Crown size={18} />
-                </div>
-
-                <span className="pc-points-label">
-                  PrimePoints
-                </span>
-              </div>
-
-              <div className="pc-points-number">
-                {loading
-                  ? "—"
-                  : primePoints.toLocaleString(
-                      "en-IN",
-                    )}
-              </div>
-
-              <div className="pc-progress">
-                <span />
-              </div>
-
-              <p className="mt-2 text-[7px] font-bold text-[#9a8c75]">
-                Keep shopping to
-                unlock more rewards
-              </p>
-            </div>
-          </section>
-
-          {/* STATS */}
-
-          <section className="pc-stats">
-            {[
-              {
-                title: "Total Orders",
-                value: orders.length,
-                text: "All shopping orders",
-                icon: Package,
-              },
-              {
-                title: "Wishlist",
-                value: wishlistCount,
-                text: "Saved products",
-                icon: Heart,
-              },
-              {
-                title: "Total Spent",
-                value:
-                  formatPrice(
-                    totalSpent,
-                  ),
-                text: "Shopping total",
-                icon: CircleDollarSign,
-              },
-              {
-                title: "PrimePoints",
-                value: primePoints,
-                text: "Reward balance",
-                icon: Crown,
-              },
-            ].map(
-              (stat, index) => {
-                const Icon =
-                  stat.icon;
-
-                return (
-                  <div
-                    key={stat.title}
-                    className="pc-stat pc-reveal"
-                    style={{
-                      animationDelay: `${index * 70}ms`,
-                    }}
-                  >
-                    <div className="pc-stat-icon">
-                      <Icon size={18} />
-                    </div>
-
-                    <p className="pc-stat-label">
-                      {stat.title}
-                    </p>
-
-                    <p className="pc-stat-value">
-                      {loading
-                        ? "—"
-                        : stat.value}
-                    </p>
-
-                    <p className="pc-stat-sub">
-                      {stat.text}
-                    </p>
-                  </div>
-                );
-              },
-            )}
-          </section>
-
-          {/* SMART SHOPPING */}
-
-          <section className="pc-section">
-            <div className="pc-section-heading">
-              <div>
-                <p className="pc-section-kicker">
-                  Intelligent
-                  Shopping
-                </p>
-
-                <h2>
-                  Shop smarter
-                </h2>
-              </div>
-
-              <span className="hidden text-[8px] font-bold text-[#a09483] sm:block">
-                Tools designed for
-                better decisions
-              </span>
-            </div>
-
-            <div className="pc-smart-grid">
-              {smartTools.map(
-                (tool, index) => {
-                  const Icon =
-                    tool.icon;
-
-                  return (
-                    <Link
-                      key={tool.href}
-                      href={tool.href}
-                      className="pc-smart-card pc-reveal"
-                      style={{
-                        animationDelay: `${index * 70}ms`,
-                      }}
-                    >
-                      <div className="pc-smart-top">
-                        <div className="pc-smart-icon">
-                          <Icon size={19} />
-                        </div>
-
-                        <span className="pc-smart-tag">
-                          {tool.label}
-                        </span>
-                      </div>
-
-                      <h3>
-                        {tool.title}
-                      </h3>
-
-                      <p>
-                        {
-                          tool.description
-                        }
-                      </p>
-
-                      <span className="pc-smart-link">
-                        Explore
-                        <ArrowRight
-                          size={12}
-                        />
-                      </span>
-                    </Link>
-                  );
-                },
-              )}
-            </div>
-          </section>
-
-          {/* CATEGORIES */}
-
-          <section className="pc-section">
-            <div className="pc-section-heading">
-              <div>
-                <p className="pc-section-kicker">
-                  Browse Collection
-                </p>
-
-                <h2>
-                  Shop by category
-                </h2>
-              </div>
-
-              <Link
-                href="/dashboard/categories"
-                className="pc-view-all"
-              >
-                View all
-                <ChevronRight
-                  size={13}
-                />
-              </Link>
-            </div>
-
-            <div className="pc-category-grid">
-              {categories
-                .slice(0, 10)
-                .map(
-                  (
-                    category,
-                    index,
-                  ) => (
-                    <Link
-                      key={
-                        category.id
-                      }
-                      href={`/dashboard/categories/${category.slug}`}
-                      className="pc-category pc-reveal"
-                      style={{
-                        animationDelay: `${index * 45}ms`,
-                      }}
-                    >
-                      <div className="pc-category-icon">
-                        {categoryIcons[
-                          category
-                            .slug
-                        ] ||
-                          "🛍️"}
-                      </div>
-
-                      <span className="pc-category-name">
-                        {
-                          category.name
-                        }
-                      </span>
-                    </Link>
-                  ),
-                )}
-            </div>
-          </section>
-
-          {/* FEATURED PRODUCTS */}
-
-          <section className="pc-section">
-            <div className="pc-section-heading">
-              <div>
-                <p className="pc-section-kicker">
-                  Curated Collection
-                </p>
-
-                <h2>
-                  Featured products
-                </h2>
-              </div>
-
-              <Link
-                href="/dashboard/products"
-                className="pc-view-all"
-              >
-                View all products
-                <ArrowRight
-                  size={13}
-                />
-              </Link>
-            </div>
-
-            {featuredProducts.length >
-            0 ? (
-              <div className="pc-product-grid">
-                {featuredProducts.map(
-                  (
-                    product,
-                    index,
-                  ) => {
-                    const discount =
-                      discountPercentage(
-                        Number(
-                          product.price,
-                        ),
-                        product.original_price
-                          ? Number(
-                              product.original_price,
-                            )
-                          : null,
-                      );
-
-                    return (
-                      <Link
-                        key={
-                          product.id
-                        }
-                        href={`/dashboard/products/${product.id}`}
-                        className="pc-product pc-reveal"
-                        style={{
-                          animationDelay: `${index * 55}ms`,
-                        }}
-                      >
-                        <div className="pc-product-image">
-                          <ProductImage
-                            src={
-                              product.image_url
-                            }
-                            alt={
-                              product.name
-                            }
-                            sizes="(max-width: 700px) 50vw, 180px"
-                          />
-
-                          {discount >
-                            0 && (
-                            <span className="pc-discount">
-                              -
-                              {
-                                discount
-                              }
-                              %
-                            </span>
-                          )}
-
-                          <button
-                            type="button"
-                            className="pc-product-heart"
-                            onClick={(
-                              event,
-                            ) =>
-                              event.preventDefault()
-                            }
-                            aria-label="Wishlist"
-                          >
-                            <Heart
-                              size={14}
-                            />
-                          </button>
-                        </div>
-
-                        <div className="pc-product-content">
-                          <p className="pc-product-brand">
-                            {product.brand ||
-                              "PrimeCart"}
-                          </p>
-
-                          <h3 className="pc-product-title">
-                            {
-                              product.name
-                            }
-                          </h3>
-
-                          <div className="pc-rating">
-                            <Star
-                              size={10}
-                            />
-
-                            {Number(
-                              product.rating ||
-                                0,
-                            ).toFixed(
-                              1,
-                            )}
-
-                            <span className="text-[#a69a89]">
-                              (
-                              {
-                                product.reviews_count ||
-                                  0
-                              }
-                              )
-                            </span>
-                          </div>
-
-                          <div className="pc-product-price">
-                            <strong>
-                              {formatPrice(
-                                Number(
-                                  product.price,
-                                ),
-                              )}
-                            </strong>
-
-                            {product.original_price &&
-                              Number(
-                                product.original_price,
-                              ) >
-                                Number(
-                                  product.price,
-                                ) && (
-                                <del>
-                                  {formatPrice(
-                                    Number(
-                                      product.original_price,
-                                    ),
-                                  )}
-                                </del>
-                              )}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  },
-                )}
-              </div>
-            ) : (
-              <div className="pc-panel text-center">
-                <ShoppingBag
-                  size={27}
-                  className="mx-auto text-[#c3b49d]"
-                />
-
-                <p className="mt-3 text-[10px] font-black">
-                  No products
-                  available yet.
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* FLASH DEALS */}
-
-          <section className="pc-section">
-            <div className="pc-deals">
-              <div className="pc-section-heading mb-0">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Zap
-                      size={13}
-                      className="text-[#b18a49]"
-                      fill="currentColor"
-                    />
-
-                    <p className="pc-section-kicker">
-                      Limited Time
-                    </p>
-                  </div>
-
-                  <h2>
-                    Flash deals
-                  </h2>
-                </div>
-
-                <Link
-                  href="/dashboard/products"
-                  className="pc-view-all"
-                >
-                  Explore deals
-                  <ArrowRight
-                    size={13}
-                  />
-                </Link>
-              </div>
-
-              <div className="pc-deal-grid">
-                {flashProducts.map(
-                  (
-                    product,
-                    index,
-                  ) => {
-                    const discount =
-                      discountPercentage(
-                        Number(
-                          product.price,
-                        ),
-                        product.original_price
-                          ? Number(
-                              product.original_price,
-                            )
-                          : null,
-                      );
-
-                    return (
-                      <Link
-                        key={
-                          product.id
-                        }
-                        href={`/dashboard/products/${product.id}`}
-                        className="pc-deal pc-reveal"
-                        style={{
-                          animationDelay: `${index * 70}ms`,
-                        }}
-                      >
-                        <div className="pc-deal-image">
-                          <ProductImage
-                            src={
-                              product.image_url
-                            }
-                            alt={
-                              product.name
-                            }
-                            sizes="68px"
-                          />
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="pc-deal-label">
-                            <Zap
-                              size={9}
-                            />
-
-                            {discount >
-                            0
-                              ? `${discount}% OFF`
-                              : "DEAL"}
-                          </div>
-
-                          <p className="pc-deal-title">
-                            {
-                              product.name
-                            }
-                          </p>
-
-                          <p className="pc-deal-price">
-                            {formatPrice(
-                              Number(
-                                product.price,
-                              ),
-                            )}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  },
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* ORDERS + QUICK ACTIONS */}
-
-          <section className="pc-section pc-bottom-grid">
-            <div className="pc-panel">
-              <div className="pc-section-heading mb-0">
-                <div>
-                  <p className="pc-section-kicker">
-                    Activity
-                  </p>
-
-                  <h2>
-                    Recent orders
-                  </h2>
-                </div>
-
-                <Link
-                  href="/dashboard/orders"
-                  className="pc-view-all"
-                >
-                  View all
-                </Link>
-              </div>
-
-              <div className="pc-orders">
-                {orders.length >
-                0 ? (
-                  orders
-                    .slice(0, 5)
-                    .map(
-                      (
-                        order,
-                      ) => (
-                        <div
-                          key={
-                            order.id
-                          }
-                          className="pc-order"
-                        >
-                          <div className="pc-order-icon">
-                            {order.status
-                              ?.toLowerCase()
-                              .includes(
-                                "deliver",
-                              ) ? (
-                              <ShieldCheck
-                                size={
-                                  16
-                                }
-                              />
-                            ) : (
-                              <Truck
-                                size={
-                                  16
-                                }
-                              />
-                            )}
-                          </div>
-
-                          <div className="pc-order-info">
-                            <p className="pc-order-title">
-                              Order #
-                              {order.id.slice(
-                                0,
-                                8,
-                              )}
-                            </p>
-
-                            <div className="pc-order-meta">
-                              <span>
-                                {formatDate(
-                                  order.created_at,
-                                )}
-                              </span>
-
-                              <span>
-                                •
-                              </span>
-
-                              <span className="pc-order-status">
-                                {order.status ||
-                                  "Processing"}
-                              </span>
-                            </div>
-                          </div>
-
-                          <span className="pc-order-price">
-                            {formatPrice(
-                              Number(
-                                order.total_amount ||
-                                  0,
-                              ),
-                            )}
-                          </span>
-                        </div>
-                      ),
-                    )
-                ) : (
-                  <div className="py-12 text-center">
-                    <Package
-                      size={25}
-                      className="mx-auto text-[#c3b49d]"
-                    />
-
-                    <p className="mt-3 text-[10px] font-black">
-                      No orders yet
-                    </p>
-
-                    <p className="mt-1 text-[8px] text-[#a29786]">
-                      Your orders
-                      will appear
-                      here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* QUICK ACTIONS */}
-
-            <div className="pc-panel">
-              <div>
-                <p className="pc-section-kicker">
-                  Shortcuts
-                </p>
-
-                <h2 className="mt-1 text-[20px] font-black text-[#4c4133]">
-                  Quick actions
-                </h2>
-              </div>
-
-              <div className="pc-quick-grid">
-                {[
-                  {
-                    title:
-                      "Browse Products",
-                    href: "/dashboard/products",
-                    icon: ShoppingCart,
-                  },
-                  {
-                    title:
-                      "My Wishlist",
-                    href: "/dashboard/wishlist",
-                    icon: Heart,
-                  },
-                  {
-                    title:
-                      "My Orders",
-                    href: "/dashboard/orders",
-                    icon: Package,
-                  },
-                  {
-                    title:
-                      "My Profile",
-                    href: "/dashboard/profile",
-                    icon: User,
-                  },
-                ].map(
-                  (action) => {
-                    const Icon =
-                      action.icon;
-
-                    return (
-                      <Link
-                        key={
-                          action.href
-                        }
-                        href={
-                          action.href
-                        }
-                        className="pc-quick"
-                      >
-                        <div className="pc-quick-icon">
-                          <Icon
-                            size={
-                              15
-                            }
-                          />
-                        </div>
-
-                        <p>
-                          {
-                            action.title
-                          }
-                        </p>
-
-                        <ArrowRight
-                          size={
-                            11
-                          }
-                        />
-                      </Link>
-                    );
-                  },
-                )}
-              </div>
-
-              <div className="pc-mini-banner">
-                <div className="pc-mini-banner-top">
-                  <div className="pc-mini-icon">
-                    <Sparkles
-                      size={15}
-                    />
-                  </div>
-
-                  <div>
-                    <h4>
-                      Personalised
-                      shopping
-                    </h4>
-
-                    <p>
-                      Powered by
-                      PrimeCart
-                      smart tools
-                    </p>
-                  </div>
-                </div>
-
-                <Link
-                  href="/dashboard/prime-match"
-                  className="pc-mini-button"
-                >
-                  Find My Match
-                  <ArrowRight
-                    size={10}
-                  />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          {/* FINAL BANNER */}
-
-          <section className="pc-footer-banner">
-            <div className="pc-footer-info">
-              <div className="pc-footer-icon">
-                <ShieldCheck
-                  size={20}
-                />
-              </div>
-
-              <div>
-                <h3>
-                  A smarter way
-                  to shop
-                </h3>
-
-                <p>
-                  Discover products,
-                  compare options,
-                  manage your
-                  wishlist and make
-                  better shopping
-                  decisions with
-                  PrimeCart.
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/dashboard/products"
-              className="pc-primary-button"
-            >
-              Start Shopping
-              <ArrowRight
-                size={13}
-              />
-            </Link>
-          </section>
-
-          <footer className="py-8 text-center">
-            <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-[#aaa090]">
-              ©{" "}
-              {new Date().getFullYear()}{" "}
-              PrimeCart · Shop
-              Smarter
-            </p>
-          </footer>
-        </main>
-      </div>
     </div>
   );
 }
