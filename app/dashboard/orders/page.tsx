@@ -405,6 +405,12 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] =
     useState<string | null>(null);
 
+const [cancelOrder, setCancelOrder] =
+  useState<Order | null>(null);
+
+const [cancelling, setCancelling] =
+  useState(false);
+
   const [copiedOrder, setCopiedOrder] =
     useState<string | null>(null);
 
@@ -960,6 +966,84 @@ export default function OrdersPage() {
       // Ignore clipboard errors.
     }
   }
+
+
+  /* =======================================================
+     CANCLE ORDER
+  ======================================================= */
+
+async function confirmCancelOrder() {
+  if (!cancelOrder) return;
+
+  try {
+    setCancelling(true);
+    setErrorMessage("");
+
+    const normalized = normalizeStatus(
+      cancelOrder.status
+    );
+
+    if (
+      normalized === "cancelled" ||
+      normalized === "canceled"
+    ) {
+      setCancelOrder(null);
+      return;
+    }
+
+    /*
+      Supabase order cancellation.
+      RLS policy must allow the logged-in user
+      to update their own order.
+    */
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        status: "cancelled",
+      })
+      .eq("id", cancelOrder.id)
+      .eq("user_id", cancelOrder.user_id);
+
+    if (error) {
+      console.error(
+        "Cancel order error:",
+        error
+      );
+
+      setErrorMessage(
+        "We couldn't cancel this order. Please try again."
+      );
+
+      return;
+    }
+
+    setOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === cancelOrder.id
+          ? {
+              ...order,
+              status: "cancelled",
+            }
+          : order
+      )
+    );
+
+    setExpandedOrder(null);
+    setCancelOrder(null);
+  } catch (error) {
+    console.error(
+      "Cancel order error:",
+      error
+    );
+
+    setErrorMessage(
+      "Something went wrong while cancelling the order."
+    );
+  } finally {
+    setCancelling(false);
+  }
+}
 
   /* =======================================================
      BUY AGAIN
@@ -2200,6 +2284,26 @@ export default function OrdersPage() {
                             </button>
                           )}
 
+                       {/* CANCLE ORDER */}
+
+{progress >= 0 &&
+  progress < 4 &&
+  normalizeStatus(order.status) !==
+    "cancelled" &&
+  normalizeStatus(order.status) !==
+    "canceled" && (
+    <button
+      type="button"
+      onClick={() =>
+        setCancelOrder(order)
+      }
+      className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-xs font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+    >
+      <X size={15} />
+      Cancel Order
+    </button>
+  )}
+
                         {/* BUY AGAIN */}
 
                         {items.length >
@@ -2221,52 +2325,6 @@ export default function OrdersPage() {
                             Buy Again
                           </button>
                         )}
-
-                        {/* CANCEL ORDER */}
-
-                        {canCancel && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cancelOrder(
-                                order
-                              )
-                            }
-                            disabled={
-                              isCancelling
-                            }
-                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-xs font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isCancelling ? (
-                              <>
-                                <Loader2
-                                  size={
-                                    15
-                                  }
-                                  className="animate-spin"
-                                />
-                                Cancelling...
-                              </>
-                            ) : (
-                              <>
-                                <X
-                                  size={
-                                    15
-                                  }
-                                />
-                                Cancel Order
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                );
-              }
-            )}
-          </div>
-        )}
 
         {/* TRUST */}
 
@@ -2319,6 +2377,214 @@ export default function OrdersPage() {
           );
         }
       `}</style>
+{/* =================================================
+    CANCEL ORDER CONFIRMATION MODAL
+================================================= */}
+
+{cancelOrder && (
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-[#211b13]/40 px-4 backdrop-blur-sm"
+    onClick={() => {
+      if (!cancelling) {
+        setCancelOrder(null);
+      }
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancel-order-title"
+      className="w-full max-w-md overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_25px_80px_rgba(60,45,20,0.20)]"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+      {/* Modal Header */}
+      <div className="border-b border-[#f0e8da] px-5 py-5 sm:px-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+              <X size={21} />
+            </div>
+
+            <div>
+              <h2
+                id="cancel-order-title"
+                className="text-lg font-bold text-[#2e2519]"
+              >
+                Cancel Order?
+              </h2>
+
+              <p className="mt-1 text-xs text-[#8b7b65]">
+                Please confirm your cancellation.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={() =>
+              setCancelOrder(null)
+            }
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8b7b65] transition hover:bg-[#f8f2e7] hover:text-[#4b3b27] disabled:opacity-50"
+          >
+            <X size={17} />
+          </button>
+        </div>
+      </div>
+
+      {/* Product Preview */}
+      <div className="px-5 py-5 sm:px-6">
+        <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-3">
+          {(cancelOrder.order_items || []).length >
+          0 ? (
+            <div className="flex items-center gap-3">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-white">
+                <ProductImage
+                  src={
+                    cancelOrder.order_items?.[0]
+                      ?.image_url
+                  }
+                  alt={
+                    cancelOrder.order_items?.[0]
+                      ?.product_name ||
+                    "Product"
+                  }
+                />
+              </div>
+
+              <div className="min-w-0">
+                <p className="line-clamp-2 text-sm font-bold text-[#3a2e20]">
+                  {
+                    cancelOrder.order_items?.[0]
+                      ?.product_name
+                  }
+                </p>
+
+                {(cancelOrder.order_items
+                  ?.length || 0) > 1 && (
+                  <p className="mt-1 text-xs text-[#8c7c67]">
+                    +
+                    {(cancelOrder.order_items
+                      ?.length || 0) -
+                      1}{" "}
+                    more item
+                    {(
+                      (cancelOrder
+                        .order_items
+                        ?.length || 0) -
+                      1
+                    ) > 1
+                      ? "s"
+                      : ""}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#fbf5e7] text-[#b38a42]">
+                <Package size={22} />
+              </div>
+
+              <div>
+                <p className="text-sm font-bold text-[#3a2e20]">
+                  Order #
+                  {cancelOrder.id
+                    .slice(0, 12)
+                    .toUpperCase()}
+                </p>
+
+                <p className="mt-1 text-xs text-[#8c7c67]">
+                  {formatDate(
+                    cancelOrder.created_at
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Warning */}
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-800">
+            Are you sure you want to cancel
+            this order?
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-amber-700">
+            Once cancelled, this order will no
+            longer continue for delivery.
+          </p>
+        </div>
+
+        {/* Order Info */}
+        <div className="mt-4 space-y-2 rounded-2xl bg-[#faf7f0] p-4">
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <span className="text-[#8b7b65]">
+              Order ID
+            </span>
+
+            <span className="font-semibold text-[#4a3b28]">
+              #{cancelOrder.id
+                .slice(0, 12)
+                .toUpperCase()}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <span className="text-[#8b7b65]">
+              Order Total
+            </span>
+
+            <span className="font-bold text-[#a2772d]">
+              {formatPrice(
+                cancelOrder.total_amount
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col-reverse gap-2 border-t border-[#f0e8da] bg-[#fffdfb] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+        <button
+          type="button"
+          disabled={cancelling}
+          onClick={() =>
+            setCancelOrder(null)
+          }
+          className="h-11 rounded-xl border border-[#eadfc9] bg-white px-5 text-sm font-bold text-[#66543b] transition hover:bg-[#fffaf0] disabled:opacity-50"
+        >
+          Keep Order
+        </button>
+
+        <button
+          type="button"
+          disabled={cancelling}
+          onClick={confirmCancelOrder}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-[0_7px_18px_rgba(220,38,38,0.18)] transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {cancelling ? (
+            <>
+              <Loader2
+                size={16}
+                className="animate-spin"
+              />
+              Cancelling...
+            </>
+          ) : (
+            <>
+              <X size={16} />
+              Yes, Cancel Order
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </main>
   );
 }
