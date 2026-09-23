@@ -36,6 +36,7 @@ import {
   Eye,
   Plus,
   Minus,
+  type LucideIcon,
 } from "lucide-react";
 import {
   useCallback,
@@ -457,11 +458,12 @@ function SidebarItem({
   onNavigate,
 }: {
   item: {
-    label: string;
-    href: string;
-    icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
-  };
-  collapsed: boolean;
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+collapsed: boolean;
   onNavigate: () => void;
 }) {
   const Icon = item.icon;
