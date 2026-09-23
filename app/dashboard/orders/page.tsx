@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   AlertCircle,
@@ -12,10 +17,13 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
   Clock3,
+  Copy,
   CreditCard,
+  ExternalLink,
   MapPin,
   Package,
   RefreshCw,
@@ -24,6 +32,7 @@ import {
   ShoppingBag,
   Sparkles,
   Truck,
+  WalletCards,
   X,
   XCircle,
 } from "lucide-react";
@@ -60,6 +69,7 @@ type Order = {
   payment_method?: string | null;
   delivery_charge?: number | null;
   discount?: number | null;
+  subtotal?: number | null;
 
   shipping_address?: OrderAddress | null;
 
@@ -70,7 +80,7 @@ type LocalOrder = {
   id: string;
   createdAt: string;
   status: string;
-  paymentMethod: string;
+  paymentMethod?: string;
   total: number;
   subtotal?: number;
   delivery?: number;
@@ -85,6 +95,12 @@ type StatusConfig = {
   badgeClass: string;
   iconClass: string;
 };
+
+type SortOption =
+  | "newest"
+  | "oldest"
+  | "highest"
+  | "lowest";
 
 function getImageUrl(imageUrl: string | null) {
   if (!imageUrl) return null;
@@ -113,25 +129,39 @@ function formatPrice(price: number) {
 }
 
 function formatDate(date: string) {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(date));
+  }).format(parsed);
 }
 
 function formatDateTime(date: string) {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(date));
+  }).format(parsed);
 }
 
 function normalizeStatus(status: string) {
-  return status.toLowerCase().replace(/\s+/g, "_");
+  return String(status || "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 }
 
 function getStatusConfig(status: string): StatusConfig {
@@ -157,7 +187,8 @@ function getStatusConfig(status: string): StatusConfig {
     return {
       label: "Cancelled",
       icon: XCircle,
-      badgeClass: "border-red-200 bg-red-50 text-red-700",
+      badgeClass:
+        "border-red-200 bg-red-50 text-red-700",
       iconClass: "text-red-600",
     };
   }
@@ -201,6 +232,16 @@ function getStatusConfig(status: string): StatusConfig {
     };
   }
 
+  if (normalized === "pending") {
+    return {
+      label: "Pending",
+      icon: Clock3,
+      badgeClass:
+        "border-orange-200 bg-orange-50 text-orange-700",
+      iconClass: "text-orange-600",
+    };
+  }
+
   return {
     label: "Order Placed",
     icon: Clock3,
@@ -224,28 +265,28 @@ function getOrderProgress(status: string) {
     normalized === "delivered" ||
     normalized === "completed"
   ) {
-    return 4;
+    return 5;
   }
 
   if (
     normalized === "out_for_delivery" ||
     normalized === "outfordelivery"
   ) {
-    return 3;
+    return 4;
   }
 
   if (normalized === "shipped") {
-    return 2;
+    return 3;
   }
 
   if (
     normalized === "processing" ||
     normalized === "confirmed"
   ) {
-    return 1;
+    return 2;
   }
 
-  return 0;
+  return 1;
 }
 
 function getLocalOrderAsOrder(
@@ -257,16 +298,57 @@ function getLocalOrderAsOrder(
     status: order.status || "Placed",
     total_amount: Number(order.total) || 0,
     created_at: order.createdAt,
-    payment_method: order.paymentMethod,
-    delivery_charge: Number(order.delivery || 0),
-    discount: Number(order.discount || 0),
-    shipping_address: order.address || null,
+    payment_method:
+      order.paymentMethod || null,
+    subtotal:
+      order.subtotal !== undefined
+        ? Number(order.subtotal)
+        : null,
+    delivery_charge:
+      order.delivery !== undefined
+        ? Number(order.delivery)
+        : null,
+    discount:
+      order.discount !== undefined
+        ? Number(order.discount)
+        : null,
+    shipping_address:
+      order.address || null,
     order_items: order.items || [],
   };
 }
 
 function getOrderSignature(order: Order) {
-  return `${order.id}-${order.created_at}`;
+  return `${order.id}|${new Date(
+    order.created_at
+  ).getTime()}`;
+}
+
+function getPaymentLabel(payment?: string | null) {
+  if (!payment) return "Payment details unavailable";
+
+  return payment
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
+}
+
+function getAddressText(
+  address?: OrderAddress | null
+) {
+  if (!address) return "";
+
+  return [
+    address.address,
+    address.city,
+    address.state,
+    address.pincode
+      ? `- ${address.pincode}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 export default function OrdersPage() {
@@ -274,10 +356,15 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] =
+    useState("all");
+
+  const [sort, setSort] =
+    useState<SortOption>("newest");
 
   const [expandedOrder, setExpandedOrder] =
     useState<string | null>(null);
@@ -285,7 +372,13 @@ export default function OrdersPage() {
   const [showTimeline, setShowTimeline] =
     useState<string | null>(null);
 
+  const [copiedOrder, setCopiedOrder] =
+    useState<string | null>(null);
+
   const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  const [cartMessage, setCartMessage] =
     useState<string | null>(null);
 
   const loadOrders = useCallback(
@@ -300,30 +393,32 @@ export default function OrdersPage() {
         setErrorMessage(null);
 
         /*
-         * --------------------------------------------
-         * 1. LOAD LOCAL ORDERS
-         * --------------------------------------------
-         *
-         * Checkout page saves newly placed orders in:
-         *
-         * primecart-orders
-         *
-         * This makes the new order appear immediately.
+         * ============================================
+         * LOCAL ORDERS
+         * ============================================
          */
 
         let localOrders: Order[] = [];
 
         try {
-          const localData = JSON.parse(
-            localStorage.getItem("primecart-orders") ||
-              "[]"
-          );
-
-          if (Array.isArray(localData)) {
-            localOrders = localData.map(
-              (order: LocalOrder) =>
-                getLocalOrderAsOrder(order)
+          const raw =
+            localStorage.getItem(
+              "primecart-orders"
             );
+
+          if (raw) {
+            const parsed = JSON.parse(raw);
+
+            if (Array.isArray(parsed)) {
+              localOrders = parsed
+                .filter(Boolean)
+                .map(
+                  (order: LocalOrder) =>
+                    getLocalOrderAsOrder(
+                      order
+                    )
+                );
+            }
           }
         } catch (error) {
           console.error(
@@ -333,9 +428,9 @@ export default function OrdersPage() {
         }
 
         /*
-         * --------------------------------------------
-         * 2. LOAD SUPABASE ORDERS
-         * --------------------------------------------
+         * ============================================
+         * SUPABASE ORDERS
+         * ============================================
          */
 
         const {
@@ -343,33 +438,40 @@ export default function OrdersPage() {
         } = await supabase.auth.getUser();
 
         if (!user) {
-          window.location.href = "/auth/login";
+          window.location.href =
+            "/auth/login";
           return;
         }
 
-        const { data, error } = await supabase
-          .from("orders")
-          .select(
-            `
-              id,
-              user_id,
-              status,
-              total_amount,
-              created_at,
-              order_items (
+        const { data, error } =
+          await supabase
+            .from("orders")
+            .select(
+              `
                 id,
-                product_id,
-                product_name,
-                quantity,
-                price,
-                image_url
-              )
-            `
-          )
-          .eq("user_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          });
+                user_id,
+                status,
+                total_amount,
+                created_at,
+                payment_method,
+                delivery_charge,
+                discount,
+                subtotal,
+                shipping_address,
+                order_items (
+                  id,
+                  product_id,
+                  product_name,
+                  quantity,
+                  price,
+                  image_url
+                )
+              `
+            )
+            .eq("user_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            });
 
         if (error) {
           console.error(
@@ -377,10 +479,6 @@ export default function OrdersPage() {
             error
           );
 
-          /*
-           * We don't fail completely because local
-           * checkout orders can still be displayed.
-           */
           if (localOrders.length === 0) {
             setErrorMessage(
               "We couldn't load your orders right now. Please try again."
@@ -392,9 +490,9 @@ export default function OrdersPage() {
           (data as Order[]) || [];
 
         /*
-         * --------------------------------------------
-         * 3. MERGE LOCAL + SUPABASE
-         * --------------------------------------------
+         * ============================================
+         * MERGE LOCAL + DATABASE ORDERS
+         * ============================================
          */
 
         const mergedMap = new Map<
@@ -402,22 +500,39 @@ export default function OrdersPage() {
           Order
         >();
 
-        [...localOrders, ...databaseOrders].forEach(
-          (order) => {
-            const key = getOrderSignature(order);
+        [
+          ...localOrders,
+          ...databaseOrders,
+        ].forEach((order) => {
+          const key =
+            getOrderSignature(order);
 
-            if (!mergedMap.has(key)) {
-              mergedMap.set(key, order);
-            }
+          const existing =
+            mergedMap.get(key);
+
+          /*
+           * Prefer database version because it
+           * contains authoritative server data.
+           */
+          if (
+            !existing ||
+            (existing.user_id === "local" &&
+              order.user_id !== "local")
+          ) {
+            mergedMap.set(key, order);
           }
-        );
+        });
 
         const mergedOrders = Array.from(
           mergedMap.values()
         ).sort(
           (a, b) =>
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
+            new Date(
+              b.created_at
+            ).getTime() -
+            new Date(
+              a.created_at
+            ).getTime()
         );
 
         setOrders(mergedOrders);
@@ -458,100 +573,444 @@ export default function OrdersPage() {
     };
   }, [loadOrders]);
 
+  /*
+   * ============================================
+   * FILTER + SEARCH + SORT
+   * ============================================
+   */
+
   const filteredOrders = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query =
+      search.trim().toLowerCase();
 
-    return orders.filter((order) => {
-      const matchesSearch =
-        !query ||
-        order.id.toLowerCase().includes(query) ||
-        order.order_items?.some((item) =>
-          item.product_name
+    const result = orders.filter(
+      (order) => {
+        const matchesSearch =
+          !query ||
+          order.id
             .toLowerCase()
-            .includes(query)
+            .includes(query) ||
+          order.order_items?.some(
+            (item) =>
+              item.product_name
+                .toLowerCase()
+                .includes(query)
+          ) ||
+          String(
+            order.payment_method || ""
+          )
+            .toLowerCase()
+            .includes(query) ||
+          normalizeStatus(
+            order.status
+          ).includes(query);
+
+        const normalized =
+          normalizeStatus(
+            order.status
+          );
+
+        let matchesFilter = true;
+
+        if (filter === "pending") {
+          matchesFilter = [
+            "pending",
+            "placed",
+            "order_placed",
+          ].includes(normalized);
+        }
+
+        if (filter === "processing") {
+          matchesFilter = [
+            "processing",
+            "confirmed",
+          ].includes(normalized);
+        }
+
+        if (filter === "shipped") {
+          matchesFilter = [
+            "shipped",
+            "out_for_delivery",
+            "outfordelivery",
+          ].includes(normalized);
+        }
+
+        if (filter === "delivered") {
+          matchesFilter = [
+            "delivered",
+            "completed",
+          ].includes(normalized);
+        }
+
+        if (filter === "cancelled") {
+          matchesFilter = [
+            "cancelled",
+            "canceled",
+          ].includes(normalized);
+        }
+
+        return (
+          matchesSearch &&
+          matchesFilter
         );
-
-      const normalized = normalizeStatus(
-        order.status
-      );
-
-      let matchesFilter = true;
-
-      if (filter === "all") {
-        matchesFilter = true;
-      } else if (filter === "pending") {
-        matchesFilter = [
-          "pending",
-          "placed",
-        ].includes(normalized);
-      } else if (filter === "processing") {
-        matchesFilter = [
-          "processing",
-          "confirmed",
-        ].includes(normalized);
-      } else if (filter === "shipped") {
-        matchesFilter = [
-          "shipped",
-          "out_for_delivery",
-        ].includes(normalized);
-      } else if (filter === "delivered") {
-        matchesFilter = [
-          "delivered",
-          "completed",
-        ].includes(normalized);
-      } else if (filter === "cancelled") {
-        matchesFilter = [
-          "cancelled",
-          "canceled",
-        ].includes(normalized);
       }
+    );
 
-      return matchesSearch && matchesFilter;
-    });
-  }, [orders, search, filter]);
+    return [...result].sort(
+      (a, b) => {
+        const dateA =
+          new Date(
+            a.created_at
+          ).getTime();
 
-  const totalOrders = orders.length;
+        const dateB =
+          new Date(
+            b.created_at
+          ).getTime();
 
-  const deliveredOrders = orders.filter(
-    (order) =>
-      ["delivered", "completed"].includes(
-        normalizeStatus(order.status)
+        if (sort === "newest") {
+          return dateB - dateA;
+        }
+
+        if (sort === "oldest") {
+          return dateA - dateB;
+        }
+
+        if (sort === "highest") {
+          return (
+            Number(b.total_amount) -
+            Number(a.total_amount)
+          );
+        }
+
+        return (
+          Number(a.total_amount) -
+          Number(b.total_amount)
+        );
+      }
+    );
+  }, [
+    orders,
+    search,
+    filter,
+    sort,
+  ]);
+
+  /*
+   * ============================================
+   * STATS
+   * ============================================
+   */
+
+  const totalOrders =
+    orders.length;
+
+  const deliveredOrders =
+    orders.filter((order) =>
+      [
+        "delivered",
+        "completed",
+      ].includes(
+        normalizeStatus(
+          order.status
+        )
       )
-  ).length;
+    ).length;
 
-  const cancelledOrders = orders.filter(
-    (order) =>
-      ["cancelled", "canceled"].includes(
-        normalizeStatus(order.status)
+  const cancelledOrders =
+    orders.filter((order) =>
+      [
+        "cancelled",
+        "canceled",
+      ].includes(
+        normalizeStatus(
+          order.status
+        )
       )
-  ).length;
+    ).length;
 
-  const activeOrders = orders.filter(
-    (order) =>
+  const activeOrders =
+    orders.filter((order) =>
       ![
         "delivered",
         "completed",
         "cancelled",
         "canceled",
-      ].includes(normalizeStatus(order.status))
-  ).length;
+      ].includes(
+        normalizeStatus(
+          order.status
+        )
+      )
+    ).length;
 
-  const totalSpent = orders.reduce(
-    (sum, order) =>
-      sum + Number(order.total_amount || 0),
-    0
-  );
+  const totalSpent =
+    orders.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.total_amount || 0
+        ),
+      0
+    );
 
-  function clearSearch() {
+  const totalSaved =
+    orders.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.discount || 0
+        ),
+      0
+    );
+
+  /*
+   * ============================================
+   * ACTIONS
+   * ============================================
+   */
+
+  async function copyOrderId(
+    orderId: string
+  ) {
+    try {
+      await navigator.clipboard.writeText(
+        orderId
+      );
+
+      setCopiedOrder(orderId);
+
+      window.setTimeout(() => {
+        setCopiedOrder(null);
+      }, 1800);
+    } catch (error) {
+      console.error(
+        "Unable to copy order ID:",
+        error
+      );
+    }
+  }
+
+  function clearFilters() {
     setSearch("");
     setFilter("all");
+    setSort("newest");
   }
+
+  function buyAgain(order: Order) {
+    try {
+      const existingCartRaw =
+        localStorage.getItem(
+          "primecart-cart"
+        );
+
+      const existingCart =
+        existingCartRaw
+          ? JSON.parse(
+              existingCartRaw
+            )
+          : [];
+
+      const cart = Array.isArray(
+        existingCart
+      )
+        ? [...existingCart]
+        : [];
+
+      let addedCount = 0;
+
+      (order.order_items || []).forEach(
+        (item) => {
+          if (!item.product_id) return;
+
+          const existingIndex =
+            cart.findIndex(
+              (cartItem: {
+                id?: string;
+                product_id?: string;
+              }) =>
+                String(
+                  cartItem.id ??
+                    cartItem.product_id
+                ) ===
+                String(
+                  item.product_id
+                )
+            );
+
+          if (existingIndex >= 0) {
+            const current =
+              Number(
+                cart[existingIndex]
+                  .quantity || 0
+              );
+
+            cart[
+              existingIndex
+            ] = {
+              ...cart[
+                existingIndex
+              ],
+              quantity:
+                current +
+                Number(
+                  item.quantity || 1
+                ),
+            };
+          } else {
+            cart.push({
+              id: item.product_id,
+              product_id:
+                item.product_id,
+              name:
+                item.product_name,
+              product_name:
+                item.product_name,
+              price:
+                Number(
+                  item.price || 0
+                ),
+              quantity:
+                Number(
+                  item.quantity || 1
+                ),
+              image_url:
+                item.image_url ||
+                null,
+              image:
+                item.image_url ||
+                null,
+            });
+          }
+
+          addedCount += 1;
+        }
+      );
+
+      localStorage.setItem(
+        "primecart-cart",
+        JSON.stringify(cart)
+      );
+
+      window.dispatchEvent(
+        new Event("storage")
+      );
+
+      setCartMessage(
+        addedCount > 0
+          ? `${addedCount} product${
+              addedCount > 1
+                ? "s"
+                : ""
+            } added to your cart.`
+          : "Products from this order are unavailable for reorder."
+      );
+
+      window.setTimeout(() => {
+        setCartMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error(
+        "Buy again error:",
+        error
+      );
+
+      setCartMessage(
+        "Unable to add products to cart."
+      );
+    }
+  }
+
+  /*
+   * ============================================
+   * FILTER COUNTS
+   * ============================================
+   */
+
+  const getCount = (
+    statuses: string[]
+  ) =>
+    orders.filter((order) =>
+      statuses.includes(
+        normalizeStatus(
+          order.status
+        )
+      )
+    ).length;
+
+  const filters = [
+    {
+      value: "all",
+      label: "All",
+      count: totalOrders,
+    },
+    {
+      value: "pending",
+      label: "Placed",
+      count: getCount([
+        "pending",
+        "placed",
+        "order_placed",
+      ]),
+    },
+    {
+      value: "processing",
+      label: "Processing",
+      count: getCount([
+        "processing",
+        "confirmed",
+      ]),
+    },
+    {
+      value: "shipped",
+      label: "Shipped",
+      count: getCount([
+        "shipped",
+        "out_for_delivery",
+        "outfordelivery",
+      ]),
+    },
+    {
+      value: "delivered",
+      label: "Delivered",
+      count: deliveredOrders,
+    },
+    {
+      value: "cancelled",
+      label: "Cancelled",
+      count: cancelledOrders,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#faf8f3] text-[#17130d]">
-      {/* ------------------------------------------------ */}
-      {/* HEADER */}
-      {/* ------------------------------------------------ */}
+      {/* ==========================================
+          TOAST
+      ========================================== */}
+
+      {cartMessage && (
+        <div className="fixed bottom-5 left-1/2 z-[100] w-[calc(100%-32px)] max-w-md -translate-x-1/2 animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="flex items-center gap-3 rounded-2xl border border-[#d9c79f] bg-white px-4 py-3 shadow-[0_15px_40px_rgba(50,35,10,0.18)]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7f0df] text-[#977538]">
+              <CheckCircle size={18} />
+            </div>
+
+            <p className="flex-1 text-xs font-semibold text-[#423a30]">
+              {cartMessage}
+            </p>
+
+            <Link
+              href="/dashboard/cart"
+              className="rounded-lg bg-[#b9975b] px-3 py-2 text-[10px] font-bold text-white hover:bg-[#977538]"
+            >
+              View Cart
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          HEADER
+      ========================================== */}
 
       <header className="sticky top-0 z-50 border-b border-[#eadfc9] bg-white/90 shadow-[0_4px_25px_rgba(50,35,10,0.04)] backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -580,7 +1039,9 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => loadOrders(true)}
+              onClick={() =>
+                loadOrders(true)
+              }
               disabled={refreshing}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#806b4a] transition hover:bg-[#fffaf0] disabled:opacity-60 sm:w-auto sm:gap-2 sm:px-3"
             >
@@ -610,13 +1071,13 @@ export default function OrdersPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* ------------------------------------------------ */}
-        {/* HERO */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            HERO
+        ========================================== */}
 
         <section className="relative mb-6 overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_15px_45px_rgba(70,45,10,0.06)]">
-          {/* decorative background */}
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#f7edd8] opacity-70 blur-3xl" />
+
           <div className="pointer-events-none absolute -bottom-24 left-10 h-48 w-48 rounded-full bg-[#f8f2e6] blur-3xl" />
 
           <div className="relative p-5 sm:p-7 lg:p-8">
@@ -638,13 +1099,34 @@ export default function OrdersPage() {
                 </h2>
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-[#756b5d]">
-                  Everything you&apos;ve purchased in one place.
-                  Track deliveries, view products and manage
+                  Everything you&apos;ve purchased
+                  in one place. Track deliveries,
+                  revisit products and manage
                   your order history.
                 </p>
+
+                {totalSaved > 0 && (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#f7f4e9] px-3 py-2">
+                    <BadgeCheck
+                      size={15}
+                      className="text-emerald-600"
+                    />
+
+                    <span className="text-[10px] font-semibold text-[#6f6659]">
+                      You&apos;ve saved
+                    </span>
+
+                    <strong className="text-xs text-emerald-600">
+                      {formatPrice(
+                        totalSaved
+                      )}
+                    </strong>
+                  </div>
+                )}
               </div>
 
               {/* STATS */}
+
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[590px]">
                 <div className="group rounded-2xl border border-[#eadfc9] bg-[#fffdf8] p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
                   <div className="flex items-center justify-between">
@@ -710,7 +1192,9 @@ export default function OrdersPage() {
                   </div>
 
                   <p className="mt-2 truncate text-lg font-extrabold text-[#977538]">
-                    {formatPrice(totalSpent)}
+                    {formatPrice(
+                      totalSpent
+                    )}
                   </p>
                 </div>
               </div>
@@ -718,9 +1202,9 @@ export default function OrdersPage() {
           </div>
         </section>
 
-        {/* ------------------------------------------------ */}
-        {/* ERROR */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            ERROR
+        ========================================== */}
 
         {errorMessage && (
           <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -740,7 +1224,9 @@ export default function OrdersPage() {
             </div>
 
             <button
-              onClick={() => loadOrders(true)}
+              onClick={() =>
+                loadOrders(true)
+              }
               className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[10px] font-bold text-red-700 shadow-sm"
             >
               Retry
@@ -748,191 +1234,236 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* ------------------------------------------------ */}
-        {/* SEARCH + FILTER */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            SEARCH / FILTER / SORT
+        ========================================== */}
 
         <section className="mb-6 rounded-[22px] border border-[#eadfc9] bg-white p-4 shadow-[0_10px_30px_rgba(70,45,10,0.04)] sm:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-lg">
-              <Search
-                size={17}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9c9180]"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-xl">
+                <Search
+                  size={17}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9c9180]"
+                />
 
-              <input
-                type="text"
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                placeholder="Search order ID or product..."
-                className="h-11 w-full rounded-xl border border-[#e3d9c8] bg-[#fffdf9] pl-10 pr-10 text-xs outline-none transition-all duration-300 placeholder:text-[#aaa091] focus:border-[#b9975b] focus:bg-white focus:ring-4 focus:ring-[#b9975b]/10"
-              />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) =>
+                    setSearch(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Search order ID, product, payment or status..."
+                  className="h-11 w-full rounded-xl border border-[#e3d9c8] bg-[#fffdf9] pl-10 pr-10 text-xs outline-none transition-all duration-300 placeholder:text-[#aaa091] focus:border-[#b9975b] focus:bg-white focus:ring-4 focus:ring-[#b9975b]/10"
+                />
 
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8e8374] hover:bg-[#f5f0e6]"
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearch("")
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#8e8374] hover:bg-[#f5f0e6]"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <div className="relative">
+                <select
+                  value={sort}
+                  onChange={(e) =>
+                    setSort(
+                      e.target
+                        .value as SortOption
+                    )
+                  }
+                  className="h-11 w-full appearance-none rounded-xl border border-[#e3d9c8] bg-[#fffdf9] px-4 pr-10 text-xs font-semibold text-[#655c50] outline-none focus:border-[#b9975b] focus:ring-4 focus:ring-[#b9975b]/10 sm:w-[180px]"
                 >
-                  <X size={14} />
-                </button>
-              )}
+                  <option value="newest">
+                    Newest first
+                  </option>
+
+                  <option value="oldest">
+                    Oldest first
+                  </option>
+
+                  <option value="highest">
+                    Highest amount
+                  </option>
+
+                  <option value="lowest">
+                    Lowest amount
+                  </option>
+                </select>
+
+                <ChevronDown
+                  size={15}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#9c9180]"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {[
-                {
-                  value: "all",
-                  label: "All",
-                  count: totalOrders,
-                },
-                {
-                  value: "pending",
-                  label: "Placed",
-                  count: orders.filter((order) =>
-                    ["pending", "placed"].includes(
-                      normalizeStatus(order.status)
-                    )
-                  ).length,
-                },
-                {
-                  value: "processing",
-                  label: "Processing",
-                  count: orders.filter((order) =>
-                    [
-                      "processing",
-                      "confirmed",
-                    ].includes(
-                      normalizeStatus(order.status)
-                    )
-                  ).length,
-                },
-                {
-                  value: "shipped",
-                  label: "Shipped",
-                  count: orders.filter((order) =>
-                    [
-                      "shipped",
-                      "out_for_delivery",
-                    ].includes(
-                      normalizeStatus(order.status)
-                    )
-                  ).length,
-                },
-                {
-                  value: "delivered",
-                  label: "Delivered",
-                  count: deliveredOrders,
-                },
-                {
-                  value: "cancelled",
-                  label: "Cancelled",
-                  count: cancelledOrders,
-                },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() =>
-                    setFilter(item.value)
-                  }
-                  className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[11px] font-bold transition-all duration-300 ${
-                    filter === item.value
-                      ? "border-[#b9975b] bg-[#b9975b] text-white shadow-[0_6px_18px_rgba(185,151,91,0.2)]"
-                      : "border-[#e3d9c8] bg-white text-[#756b5d] hover:-translate-y-0.5 hover:border-[#cdb88d] hover:bg-[#fffaf0]"
-                  }`}
-                >
-                  {item.label}
-
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[9px] ${
+              {filters.map(
+                (item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() =>
+                      setFilter(
+                        item.value
+                      )
+                    }
+                    className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[11px] font-bold transition-all duration-300 ${
                       filter === item.value
-                        ? "bg-white/20"
-                        : "bg-[#f5f0e6]"
+                        ? "border-[#b9975b] bg-[#b9975b] text-white shadow-[0_6px_18px_rgba(185,151,91,0.2)]"
+                        : "border-[#e3d9c8] bg-white text-[#756b5d] hover:-translate-y-0.5 hover:border-[#cdb88d] hover:bg-[#fffaf0]"
                     }`}
                   >
-                    {item.count}
-                  </span>
-                </button>
-              ))}
+                    {item.label}
+
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[9px] ${
+                        filter ===
+                        item.value
+                          ? "bg-white/20"
+                          : "bg-[#f5f0e6]"
+                      }`}
+                    >
+                      {item.count}
+                    </span>
+                  </button>
+                )
+              )}
             </div>
+
+            {(search ||
+              filter !== "all" ||
+              sort !== "newest") && (
+              <div className="flex items-center justify-between border-t border-[#eee6d8] pt-3">
+                <p className="text-[10px] text-[#887d6c]">
+                  Showing{" "}
+                  <strong className="text-[#51483d]">
+                    {
+                      filteredOrders.length
+                    }
+                  </strong>{" "}
+                  of{" "}
+                  <strong className="text-[#51483d]">
+                    {totalOrders}
+                  </strong>{" "}
+                  orders
+                </p>
+
+                <button
+                  type="button"
+                  onClick={
+                    clearFilters
+                  }
+                  className="text-[10px] font-bold text-[#977538] hover:underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* ------------------------------------------------ */}
-        {/* LOADING */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            LOADING
+        ========================================== */}
 
         {loading && (
           <div className="space-y-5">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white"
-              >
-                <div className="animate-pulse">
-                  <div className="border-b border-[#eee6d8] bg-[#fffdf8] p-5">
-                    <div className="h-4 w-32 rounded bg-[#eee8dd]" />
-                    <div className="mt-3 h-3 w-52 rounded bg-[#f2ede5]" />
-                  </div>
+            {[1, 2, 3].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white"
+                >
+                  <div className="animate-pulse">
+                    <div className="border-b border-[#eee6d8] bg-[#fffdf8] p-5">
+                      <div className="h-4 w-32 rounded bg-[#eee8dd]" />
 
-                  <div className="space-y-4 p-5">
-                    <div className="flex gap-4">
-                      <div className="h-24 w-24 rounded-2xl bg-[#eee8dd]" />
-
-                      <div className="flex-1 space-y-3">
-                        <div className="h-4 w-2/3 rounded bg-[#eee8dd]" />
-                        <div className="h-3 w-1/3 rounded bg-[#f2ede5]" />
-                        <div className="h-3 w-1/4 rounded bg-[#f2ede5]" />
-                      </div>
+                      <div className="mt-3 h-3 w-52 rounded bg-[#f2ede5]" />
                     </div>
 
-                    <div className="h-16 rounded-xl bg-[#f5f0e6]" />
+                    <div className="space-y-4 p-5">
+                      <div className="flex gap-4">
+                        <div className="h-24 w-24 rounded-2xl bg-[#eee8dd]" />
+
+                        <div className="flex-1 space-y-3">
+                          <div className="h-4 w-2/3 rounded bg-[#eee8dd]" />
+
+                          <div className="h-3 w-1/3 rounded bg-[#f2ede5]" />
+
+                          <div className="h-3 w-1/4 rounded bg-[#f2ede5]" />
+                        </div>
+                      </div>
+
+                      <div className="h-16 rounded-xl bg-[#f5f0e6]" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         )}
 
-        {/* ------------------------------------------------ */}
-        {/* EMPTY */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            EMPTY
+        ========================================== */}
 
         {!loading &&
-          filteredOrders.length === 0 && (
+          filteredOrders.length ===
+            0 && (
             <section className="rounded-[28px] border border-[#eadfc9] bg-white px-6 py-20 text-center shadow-[0_15px_40px_rgba(70,45,10,0.05)] animate-in fade-in zoom-in-95 duration-500">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#f7f0df] text-[#b9975b] shadow-sm">
-                {orders.length === 0 ? (
-                  <ShoppingBag size={32} />
+                {orders.length ===
+                0 ? (
+                  <ShoppingBag
+                    size={32}
+                  />
                 ) : (
                   <Search size={30} />
                 )}
               </div>
 
               <h3 className="mt-6 text-xl font-extrabold">
-                {orders.length === 0
+                {orders.length ===
+                0
                   ? "No orders yet"
                   : "No matching orders"}
               </h3>
 
               <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-[#817666]">
-                {orders.length === 0
+                {orders.length ===
+                0
                   ? "Your PrimeCart purchases will appear here after you place an order."
-                  : "Try a different search term or select another order status."}
+                  : "Try a different search term, status or sorting option."}
               </p>
 
-              {orders.length === 0 ? (
+              {orders.length ===
+              0 ? (
                 <Link
                   href="/dashboard/products"
                   className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#b9975b] px-6 py-3 text-xs font-bold text-white shadow-[0_10px_25px_rgba(185,151,91,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#977538]"
                 >
                   Start Shopping
-                  <ArrowRight size={15} />
+                  <ArrowRight
+                    size={15}
+                  />
                 </Link>
               ) : (
                 <button
-                  onClick={clearSearch}
+                  type="button"
+                  onClick={
+                    clearFilters
+                  }
                   className="mt-7 inline-flex items-center gap-2 rounded-xl border border-[#dcccaf] px-6 py-3 text-xs font-bold text-[#977538] transition hover:bg-[#fffaf0]"
                 >
                   Clear Filters
@@ -942,23 +1473,30 @@ export default function OrdersPage() {
             </section>
           )}
 
-        {/* ------------------------------------------------ */}
-        {/* ORDER LIST */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            ORDER LIST
+        ========================================== */}
 
         {!loading &&
-          filteredOrders.length > 0 && (
+          filteredOrders.length >
+            0 && (
             <div className="space-y-5">
               {filteredOrders.map(
-                (order, orderIndex) => {
-                  const status = getStatusConfig(
-                    order.status
-                  );
+                (
+                  order,
+                  orderIndex
+                ) => {
+                  const status =
+                    getStatusConfig(
+                      order.status
+                    );
 
-                  const StatusIcon = status.icon;
+                  const StatusIcon =
+                    status.icon;
 
                   const items =
-                    order.order_items || [];
+                    order.order_items ||
+                    [];
 
                   const progress =
                     getOrderProgress(
@@ -966,16 +1504,31 @@ export default function OrdersPage() {
                     );
 
                   const isExpanded =
-                    expandedOrder === order.id;
+                    expandedOrder ===
+                    order.id;
 
                   const isTimelineOpen =
-                    showTimeline === order.id;
+                    showTimeline ===
+                    order.id;
 
                   const itemCount =
                     items.reduce(
-                      (total, item) =>
-                        total + item.quantity,
+                      (
+                        total,
+                        item
+                      ) =>
+                        total +
+                        Number(
+                          item.quantity ||
+                            0
+                        ),
                       0
+                    );
+
+                  const totalDiscount =
+                    Number(
+                      order.discount ||
+                        0
                     );
 
                   return (
@@ -984,12 +1537,16 @@ export default function OrdersPage() {
                       className="group overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(70,45,10,0.045)] transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(70,45,10,0.08)] animate-in fade-in slide-in-from-bottom-3 duration-500"
                       style={{
                         animationDelay: `${Math.min(
-                          orderIndex * 70,
+                          orderIndex *
+                            70,
                           350
                         )}ms`,
                       }}
                     >
-                      {/* ORDER HEADER */}
+                      {/* ==================================
+                          ORDER HEADER
+                      ================================== */}
+
                       <div className="border-b border-[#eee6d8] bg-[#fffdf8] p-4 sm:p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -998,12 +1555,44 @@ export default function OrdersPage() {
                                 Order ID
                               </p>
 
-                              <p className="mt-1 font-mono text-xs font-bold text-[#423a30]">
-                                #
-                                {order.id
-                                  .slice(0, 12)
-                                  .toUpperCase()}
-                              </p>
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <p className="font-mono text-xs font-bold text-[#423a30]">
+                                  #
+                                  {order.id
+                                    .slice(
+                                      0,
+                                      12
+                                    )
+                                    .toUpperCase()}
+                                </p>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyOrderId(
+                                      order.id
+                                    )
+                                  }
+                                  className="rounded-md p-1 text-[#9c9180] transition hover:bg-[#f5f0e6] hover:text-[#977538]"
+                                  title="Copy order ID"
+                                >
+                                  {copiedOrder ===
+                                  order.id ? (
+                                    <Check
+                                      size={
+                                        12
+                                      }
+                                      className="text-emerald-600"
+                                    />
+                                  ) : (
+                                    <Copy
+                                      size={
+                                        12
+                                      }
+                                    />
+                                  )}
+                                </button>
+                              </div>
                             </div>
 
                             <div>
@@ -1013,9 +1602,12 @@ export default function OrdersPage() {
 
                               <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#655c50]">
                                 <CalendarDays
-                                  size={12}
+                                  size={
+                                    12
+                                  }
                                   className="text-[#b9975b]"
                                 />
+
                                 {formatDate(
                                   order.created_at
                                 )}
@@ -1028,8 +1620,12 @@ export default function OrdersPage() {
                               </p>
 
                               <p className="mt-1 text-xs font-semibold text-[#655c50]">
-                                {itemCount} item
-                                {itemCount !== 1
+                                {
+                                  itemCount
+                                }{" "}
+                                item
+                                {itemCount !==
+                                1
                                   ? "s"
                                   : ""}
                               </p>
@@ -1055,7 +1651,9 @@ export default function OrdersPage() {
                           >
                             <StatusIcon
                               size={13}
-                              className={status.iconClass}
+                              className={
+                                status.iconClass
+                              }
                             />
 
                             {status.label}
@@ -1063,133 +1661,199 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
-                      {/* PRODUCTS */}
+                      {/* ==================================
+                          PRODUCT PREVIEW
+                      ================================== */}
+
                       <div className="divide-y divide-[#eee6d8]">
-                        {items.length > 0 ? (
-                          items.map((item) => {
-                            const image =
-                              getImageUrl(
-                                item.image_url
-                              );
+                        {items.length >
+                        0 ? (
+                          <>
+                            {items
+                              .slice(
+                                0,
+                                3
+                              )
+                              .map(
+                                (
+                                  item
+                                ) => {
+                                  const image =
+                                    getImageUrl(
+                                      item.image_url
+                                    );
 
-                            return (
-                              <div
-                                key={item.id}
-                                className="group/item flex gap-3 p-4 sm:gap-5 sm:p-5"
-                              >
-                                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee6d8] bg-[#faf8f3] sm:h-24 sm:w-24">
-                                  {image ? (
-                                    <Image
-                                      src={image}
-                                      alt={
-                                        item.product_name
+                                  return (
+                                    <div
+                                      key={
+                                        item.id
                                       }
-                                      fill
-                                      className="object-contain p-2 transition-transform duration-500 group-hover/item:scale-105"
-                                      sizes="96px"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full items-center justify-center text-[#aaa091]">
-                                      <Package
-                                        size={26}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <h3 className="line-clamp-2 text-sm font-bold text-[#28231d] sm:text-[15px]">
-                                        {
-                                          item.product_name
-                                        }
-                                      </h3>
-
-                                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                                        <span className="text-[10px] text-[#887d6c]">
-                                          Quantity:{" "}
-                                          <strong className="text-[#4e463c]">
-                                            {
-                                              item.quantity
+                                      className="group/item flex gap-3 p-4 sm:gap-5 sm:p-5"
+                                    >
+                                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee6d8] bg-[#faf8f3] sm:h-24 sm:w-24">
+                                        {image ? (
+                                          <Image
+                                            src={
+                                              image
                                             }
-                                          </strong>
-                                        </span>
+                                            alt={
+                                              item.product_name
+                                            }
+                                            fill
+                                            className="object-contain p-2 transition-transform duration-500 group-hover/item:scale-105"
+                                            sizes="96px"
+                                          />
+                                        ) : (
+                                          <div className="flex h-full items-center justify-center text-[#aaa091]">
+                                            <Package
+                                              size={
+                                                26
+                                              }
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
 
-                                        <span className="text-[10px] text-[#887d6c]">
-                                          Unit Price:{" "}
-                                          <strong className="text-[#4e463c]">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <h3 className="line-clamp-2 text-sm font-bold text-[#28231d] sm:text-[15px]">
+                                              {
+                                                item.product_name
+                                              }
+                                            </h3>
+
+                                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                              <span className="text-[10px] text-[#887d6c]">
+                                                Qty:{" "}
+                                                <strong className="text-[#4e463c]">
+                                                  {
+                                                    item.quantity
+                                                  }
+                                                </strong>
+                                              </span>
+
+                                              <span className="text-[10px] text-[#887d6c]">
+                                                Unit:{" "}
+                                                <strong className="text-[#4e463c]">
+                                                  {formatPrice(
+                                                    Number(
+                                                      item.price
+                                                    )
+                                                  )}
+                                                </strong>
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {item.product_id && (
+                                            <Link
+                                              href={`/dashboard/products/${item.product_id}`}
+                                              className="hidden shrink-0 items-center gap-1 rounded-lg border border-[#e3d9c8] px-3 py-2 text-[10px] font-bold text-[#756b5d] transition-all duration-300 hover:border-[#b9975b] hover:bg-[#fffaf0] hover:text-[#977538] sm:flex"
+                                            >
+                                              View Product
+                                              <ArrowRight
+                                                size={
+                                                  12
+                                                }
+                                              />
+                                            </Link>
+                                          )}
+                                        </div>
+
+                                        <div className="mt-3 flex items-center justify-between">
+                                          <p className="text-sm font-extrabold text-[#977538]">
                                             {formatPrice(
                                               Number(
                                                 item.price
-                                              )
+                                              ) *
+                                                Number(
+                                                  item.quantity
+                                                )
                                             )}
-                                          </strong>
-                                        </span>
+                                          </p>
+
+                                          {item.product_id && (
+                                            <Link
+                                              href={`/dashboard/products/${item.product_id}`}
+                                              className="text-[10px] font-bold text-[#977538] sm:hidden"
+                                            >
+                                              View Product →
+                                            </Link>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
+                                  );
+                                }
+                              )}
 
-                                    {item.product_id && (
-                                      <Link
-                                        href={`/dashboard/products/${item.product_id}`}
-                                        className="hidden shrink-0 items-center gap-1 rounded-lg border border-[#e3d9c8] px-3 py-2 text-[10px] font-bold text-[#756b5d] transition-all duration-300 hover:border-[#b9975b] hover:bg-[#fffaf0] hover:text-[#977538] sm:flex"
-                                      >
-                                        View Product
-                                        <ArrowRight
-                                          size={12}
-                                        />
-                                      </Link>
-                                    )}
-                                  </div>
-
-                                  <div className="mt-3 flex items-center justify-between">
-                                    <p className="text-sm font-extrabold text-[#977538]">
-                                      {formatPrice(
-                                        Number(
-                                          item.price
-                                        ) *
-                                          item.quantity
-                                      )}
-                                    </p>
-
-                                    {item.product_id && (
-                                      <Link
-                                        href={`/dashboard/products/${item.product_id}`}
-                                        className="text-[10px] font-bold text-[#977538] sm:hidden"
-                                      >
-                                        View Product →
-                                      </Link>
-                                    )}
-                                  </div>
-                                </div>
+                            {items.length >
+                              3 && (
+                              <div className="flex items-center justify-center bg-[#fcfaf6] px-5 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedOrder(
+                                      isExpanded
+                                        ? null
+                                        : order.id
+                                    )
+                                  }
+                                  className="text-[10px] font-bold text-[#977538] hover:underline"
+                                >
+                                  +
+                                  {items.length -
+                                    3}{" "}
+                                  more item
+                                  {items.length -
+                                    3 !==
+                                  1
+                                    ? "s"
+                                    : ""}{" "}
+                                  · View all
+                                </button>
                               </div>
-                            );
-                          })
+                            )}
+                          </>
                         ) : (
                           <div className="px-5 py-8 text-center text-xs text-[#887d6c]">
-                            No product details available for
-                            this order.
+                            No product details available
+                            for this order.
                           </div>
                         )}
                       </div>
 
-                      {/* DELIVERY TIMELINE */}
+                      {/* ==================================
+                          TRACKING
+                      ================================== */}
+
                       {isTimelineOpen && (
                         <div className="border-t border-[#eee6d8] bg-[#fcfaf6] px-5 py-6 sm:px-7 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <div className="mb-5">
-                            <p className="text-xs font-extrabold">
-                              Delivery Progress
-                            </p>
+                          <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                              <p className="text-xs font-extrabold">
+                                Delivery Progress
+                              </p>
 
-                            <p className="mt-1 text-[10px] text-[#887d6c]">
-                              Track the current status of your
-                              order.
-                            </p>
+                              <p className="mt-1 text-[10px] text-[#887d6c]">
+                                Follow the current
+                                stage of your PrimeCart
+                                order.
+                              </p>
+                            </div>
+
+                            <span className="text-[10px] font-bold text-[#977538]">
+                              {status.label}
+                            </span>
                           </div>
 
-                          {progress === -1 ? (
+                          {progress ===
+                          -1 ? (
                             <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
-                              <XCircle size={20} />
+                              <XCircle
+                                size={20}
+                              />
 
                               <div>
                                 <p className="text-xs font-bold">
@@ -1197,33 +1861,39 @@ export default function OrdersPage() {
                                 </p>
 
                                 <p className="mt-1 text-[10px]">
-                                  This order is no longer in
-                                  delivery.
+                                  This order is no
+                                  longer in the
+                                  delivery process.
                                 </p>
                               </div>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-y-6 sm:grid-cols-5 sm:gap-0">
                               {[
                                 {
                                   label: "Placed",
                                   icon: Check,
-                                  step: 0,
+                                  step: 1,
                                 },
                                 {
-                                  label: "Processing",
-                                  icon: Package,
-                                  step: 1,
+                                  label: "Confirmed",
+                                  icon: BadgeCheck,
+                                  step: 2,
                                 },
                                 {
                                   label: "Shipped",
                                   icon: Truck,
-                                  step: 2,
+                                  step: 3,
+                                },
+                                {
+                                  label: "Out for Delivery",
+                                  icon: Package,
+                                  step: 4,
                                 },
                                 {
                                   label: "Delivered",
                                   icon: CheckCircle2,
-                                  step: 4,
+                                  step: 5,
                                 },
                               ].map(
                                 (
@@ -1235,6 +1905,10 @@ export default function OrdersPage() {
 
                                   const completed =
                                     progress >=
+                                    timeline.step;
+
+                                  const isCurrent =
+                                    progress ===
                                     timeline.step;
 
                                   return (
@@ -1250,15 +1924,21 @@ export default function OrdersPage() {
                                             completed
                                               ? "border-[#b9975b] bg-[#b9975b] text-white shadow-[0_6px_18px_rgba(185,151,91,0.2)]"
                                               : "border-[#ddd2c0] bg-white text-[#aaa091]"
+                                          } ${
+                                            isCurrent
+                                              ? "ring-4 ring-[#b9975b]/10"
+                                              : ""
                                           }`}
                                         >
                                           <Icon
-                                            size={16}
+                                            size={
+                                              16
+                                            }
                                           />
                                         </div>
 
                                         <p
-                                          className={`mt-2 text-[10px] font-bold ${
+                                          className={`mt-2 text-[9px] font-bold sm:text-[10px] ${
                                             completed
                                               ? "text-[#806536]"
                                               : "text-[#9c9180]"
@@ -1271,7 +1951,7 @@ export default function OrdersPage() {
                                       </div>
 
                                       {index <
-                                        3 && (
+                                        4 && (
                                         <div
                                           className={`absolute left-[calc(50%+25px)] right-[calc(-50%+25px)] top-5 hidden h-0.5 sm:block ${
                                             progress >=
@@ -1289,13 +1969,16 @@ export default function OrdersPage() {
                             </div>
                           )}
 
-                          <div className="mt-6 flex items-center gap-2 rounded-xl bg-white p-3 text-[10px] text-[#756b5d]">
-                            <Clock3
-                              size={14}
-                              className="text-[#b9975b]"
-                            />
+                          <div className="mt-6 flex flex-col gap-2 rounded-xl bg-white p-3 text-[10px] text-[#756b5d] sm:flex-row sm:items-center">
+                            <div className="flex items-center gap-2">
+                              <Clock3
+                                size={14}
+                                className="text-[#b9975b]"
+                              />
 
-                            Last order update:
+                              Order placed:
+                            </div>
+
                             <strong className="text-[#4e463c]">
                               {formatDateTime(
                                 order.created_at
@@ -1305,14 +1988,18 @@ export default function OrdersPage() {
                         </div>
                       )}
 
-                      {/* EXPANDED DETAILS */}
+                      {/* ==================================
+                          DETAILS
+                      ================================== */}
+
                       {isExpanded && (
                         <div className="border-t border-[#eee6d8] bg-white px-5 py-5 sm:px-6 animate-in fade-in slide-in-from-top-2 duration-300">
                           <div className="grid gap-4 md:grid-cols-3">
                             {/* PAYMENT */}
+
                             <div className="rounded-2xl border border-[#eadfc9] bg-[#fcfaf6] p-4">
                               <div className="flex items-center gap-2">
-                                <CreditCard
+                                <WalletCards
                                   size={15}
                                   className="text-[#b9975b]"
                                 />
@@ -1323,17 +2010,19 @@ export default function OrdersPage() {
                               </div>
 
                               <p className="mt-3 text-xs font-semibold text-[#51483d]">
-                                {order.payment_method ||
-                                  "Payment details unavailable"}
+                                {getPaymentLabel(
+                                  order.payment_method
+                                )}
                               </p>
 
                               <p className="mt-1 text-[9px] text-[#968a79]">
-                                Payment information for this
-                                order
+                                Payment method used for
+                                this order
                               </p>
                             </div>
 
                             {/* ADDRESS */}
+
                             <div className="rounded-2xl border border-[#eadfc9] bg-[#fcfaf6] p-4">
                               <div className="flex items-center gap-2">
                                 <MapPin
@@ -1357,29 +2046,9 @@ export default function OrdersPage() {
                                   </p>
 
                                   <p className="mt-1 text-[10px] leading-4 text-[#756b5d]">
-                                    {
-                                      order
-                                        .shipping_address
-                                        .address
-                                    }
-                                    ,{" "}
-                                    {
-                                      order
-                                        .shipping_address
-                                        .city
-                                    }
-                                    ,{" "}
-                                    {
-                                      order
-                                        .shipping_address
-                                        .state
-                                    }{" "}
-                                    -{" "}
-                                    {
-                                      order
-                                        .shipping_address
-                                        .pincode
-                                    }
+                                    {getAddressText(
+                                      order.shipping_address
+                                    )}
                                   </p>
 
                                   {order
@@ -1402,7 +2071,8 @@ export default function OrdersPage() {
                               )}
                             </div>
 
-                            {/* PRICE */}
+                            {/* SUMMARY */}
+
                             <div className="rounded-2xl border border-[#eadfc9] bg-[#fcfaf6] p-4">
                               <div className="flex items-center gap-2">
                                 <BadgeCheck
@@ -1416,22 +2086,40 @@ export default function OrdersPage() {
                               </div>
 
                               <div className="mt-3 space-y-2 text-[10px]">
-                                {order.discount ? (
+                                {order.subtotal !==
+                                  undefined &&
+                                  order.subtotal !==
+                                    null && (
+                                    <div className="flex justify-between">
+                                      <span className="text-[#887d6c]">
+                                        Subtotal
+                                      </span>
+
+                                      <span className="font-bold">
+                                        {formatPrice(
+                                          Number(
+                                            order.subtotal
+                                          )
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                {totalDiscount >
+                                  0 && (
                                   <div className="flex justify-between">
                                     <span className="text-[#887d6c]">
                                       Discount
                                     </span>
 
                                     <span className="font-bold text-green-600">
-                                      -{" "}
+                                      -
                                       {formatPrice(
-                                        Number(
-                                          order.discount
-                                        )
+                                        totalDiscount
                                       )}
                                     </span>
                                   </div>
-                                ) : null}
+                                )}
 
                                 {order.delivery_charge !==
                                   undefined &&
@@ -1472,10 +2160,106 @@ export default function OrdersPage() {
                               </div>
                             </div>
                           </div>
+
+                          {/* ITEM LIST */}
+
+                          {items.length >
+                            3 && (
+                            <div className="mt-4 rounded-2xl border border-[#eadfc9] bg-[#fcfaf6] p-4">
+                              <div className="mb-3 flex items-center justify-between">
+                                <p className="text-xs font-bold">
+                                  All Items
+                                </p>
+
+                                <span className="text-[10px] text-[#887d6c]">
+                                  {
+                                    items.length
+                                  }{" "}
+                                  products
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {items
+                                  .slice(3)
+                                  .map(
+                                    (
+                                      item
+                                    ) => (
+                                      <div
+                                        key={
+                                          item.id
+                                        }
+                                        className="flex items-center justify-between gap-3 rounded-xl bg-white p-3"
+                                      >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#f7f3eb]">
+                                            {getImageUrl(
+                                              item.image_url
+                                            ) ? (
+                                              <Image
+                                                src={
+                                                  getImageUrl(
+                                                    item.image_url
+                                                  ) as string
+                                                }
+                                                alt={
+                                                  item.product_name
+                                                }
+                                                fill
+                                                className="object-contain p-1"
+                                                sizes="40px"
+                                              />
+                                            ) : (
+                                              <div className="flex h-full items-center justify-center text-[#aaa091]">
+                                                <Package
+                                                  size={
+                                                    16
+                                                  }
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="min-w-0">
+                                            <p className="truncate text-[10px] font-bold text-[#423a30]">
+                                              {
+                                                item.product_name
+                                              }
+                                            </p>
+
+                                            <p className="mt-0.5 text-[9px] text-[#887d6c]">
+                                              Qty{" "}
+                                              {
+                                                item.quantity
+                                              }
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        <p className="shrink-0 text-[10px] font-extrabold text-[#977538]">
+                                          {formatPrice(
+                                            Number(
+                                              item.price
+                                            ) *
+                                              Number(
+                                                item.quantity
+                                              )
+                                          )}
+                                        </p>
+                                      </div>
+                                    )
+                                  )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {/* FOOTER */}
+                      {/* ==================================
+                          FOOTER ACTIONS
+                      ================================== */}
+
                       <div className="flex flex-col gap-3 border-t border-[#eee6d8] bg-[#fffdf8] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                         <div className="flex items-center gap-2">
                           <ShieldCheck
@@ -1514,6 +2298,21 @@ export default function OrdersPage() {
                           <button
                             type="button"
                             onClick={() =>
+                              buyAgain(
+                                order
+                              )
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#e3d9c8] bg-white px-3.5 py-2.5 text-[10px] font-bold text-[#756b5d] transition-all duration-300 hover:border-[#b9975b] hover:bg-[#fffaf0] hover:text-[#977538]"
+                          >
+                            <RefreshCw
+                              size={13}
+                            />
+                            Buy Again
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
                               setExpandedOrder(
                                 isExpanded
                                   ? null
@@ -1536,6 +2335,24 @@ export default function OrdersPage() {
                               />
                             )}
                           </button>
+
+                          {items.length >
+                            0 &&
+                            items[0]
+                              ?.product_id && (
+                              <Link
+                                href={`/dashboard/products/${items[0].product_id}`}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-[#e3d9c8] bg-white px-3.5 py-2.5 text-[10px] font-bold text-[#756b5d] transition-all duration-300 hover:border-[#b9975b] hover:bg-[#fffaf0] hover:text-[#977538]"
+                              >
+                                <ExternalLink
+                                  size={
+                                    13
+                                  }
+                                />
+
+                                Product
+                              </Link>
+                            )}
                         </div>
                       </div>
                     </article>
@@ -1545,9 +2362,9 @@ export default function OrdersPage() {
             </div>
           )}
 
-        {/* ------------------------------------------------ */}
-        {/* BOTTOM TRUST AREA */}
-        {/* ------------------------------------------------ */}
+        {/* ==========================================
+            TRUST AREA
+        ========================================== */}
 
         {!loading &&
           orders.length > 0 && (
@@ -1568,30 +2385,41 @@ export default function OrdersPage() {
                   title: "PrimeCart Support",
                   text: "We're here when you need help with an order.",
                 },
-              ].map((item) => {
-                const Icon = item.icon;
+              ].map(
+                (item) => {
+                  const Icon =
+                    item.icon;
 
-                return (
-                  <div
-                    key={item.title}
-                    className="group flex items-center gap-3 rounded-2xl border border-[#eadfc9] bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7f0df] text-[#977538] transition-transform duration-300 group-hover:scale-105">
-                      <Icon size={18} />
+                  return (
+                    <div
+                      key={
+                        item.title
+                      }
+                      className="group flex items-center gap-3 rounded-2xl border border-[#eadfc9] bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7f0df] text-[#977538] transition-transform duration-300 group-hover:scale-105">
+                        <Icon
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] font-bold">
+                          {
+                            item.title
+                          }
+                        </p>
+
+                        <p className="mt-0.5 text-[9px] leading-4 text-[#887d6c]">
+                          {
+                            item.text
+                          }
+                        </p>
+                      </div>
                     </div>
-
-                    <div>
-                      <p className="text-[11px] font-bold">
-                        {item.title}
-                      </p>
-
-                      <p className="mt-0.5 text-[9px] leading-4 text-[#887d6c]">
-                        {item.text}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </section>
           )}
       </main>
