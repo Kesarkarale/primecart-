@@ -2,7 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,7 +71,11 @@ type Order = {
   delivery_charge?: number | null;
   discount?: number | null;
   subtotal?: number | null;
-  shipping_address?: OrderAddress | string | null;
+
+  shipping_address?:
+    | OrderAddress
+    | string
+    | null;
 
   order_items?: OrderItem[];
 };
@@ -109,15 +119,23 @@ type SortValue =
    IMAGE HELPERS
 ========================================================= */
 
-function getImageCandidates(value?: string | null): string[] {
+function getImageCandidates(
+  value?: string | null
+): string[] {
   if (!value) {
-    return ["/products/placeholder.png", "/placeholder.png"];
+    return [
+      "/products/placeholder.png",
+      "/placeholder.png",
+    ];
   }
 
   const original = value.trim();
 
   if (!original) {
-    return ["/products/placeholder.png", "/placeholder.png"];
+    return [
+      "/products/placeholder.png",
+      "/placeholder.png",
+    ];
   }
 
   if (
@@ -137,17 +155,25 @@ function getImageCandidates(value?: string | null): string[] {
 
   if (clean.startsWith("products/")) {
     candidates.push(`/${clean}`);
-    candidates.push(`/${clean.replace(/^products\//, "")}`);
+    candidates.push(
+      `/${clean.replace(/^products\//, "")}`
+    );
   } else {
     candidates.push(`/products/${clean}`);
     candidates.push(`/${clean}`);
   }
 
-  candidates.push("/products/placeholder.png");
+  candidates.push(
+    "/products/placeholder.png"
+  );
   candidates.push("/placeholder.png");
 
   return [...new Set(candidates)];
 }
+
+/* =========================================================
+   PRODUCT IMAGE
+========================================================= */
 
 function ProductImage({
   src,
@@ -221,7 +247,9 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function normalizeStatus(status?: string | null) {
+function normalizeStatus(
+  status?: string | null
+) {
   return String(status || "placed")
     .toLowerCase()
     .trim()
@@ -295,7 +323,9 @@ function getStatusConfig(
   }
 }
 
-function getOrderProgress(status?: string) {
+function getOrderProgress(
+  status?: string
+) {
   const normalized = normalizeStatus(status);
 
   if (
@@ -330,7 +360,22 @@ function getOrderProgress(status?: string) {
   return 0;
 }
 
-function getOrderSignature(order: Order) {
+function canCancelOrder(
+  status?: string
+) {
+  const normalized =
+    normalizeStatus(status);
+
+  return [
+    "placed",
+    "confirmed",
+    "processing",
+  ].includes(normalized);
+}
+
+function getOrderSignature(
+  order: Order
+) {
   return `${order.id}-${order.created_at}`;
 }
 
@@ -341,19 +386,28 @@ function getLocalOrderAsOrder(
     id: order.id,
     user_id: "local",
     status: order.status || "placed",
-    total_amount: Number(order.total || 0),
+    total_amount: Number(
+      order.total || 0
+    ),
     created_at: order.createdAt,
-    payment_method: order.paymentMethod,
-    delivery_charge: order.delivery,
+    payment_method:
+      order.paymentMethod,
+    delivery_charge:
+      order.delivery,
     discount: order.discount,
     subtotal: order.subtotal,
-    shipping_address: order.address,
-    order_items: order.items || [],
+    shipping_address:
+      order.address,
+    order_items:
+      order.items || [],
   };
 }
 
 function getAddressText(
-  address?: OrderAddress | string | null
+  address?:
+    | OrderAddress
+    | string
+    | null
 ) {
   if (!address) return null;
 
@@ -381,9 +435,8 @@ export default function OrdersPage() {
     []
   );
 
-  const [orders, setOrders] = useState<Order[]>(
-    []
-  );
+  const [orders, setOrders] =
+    useState<Order[]>([]);
 
   const [loading, setLoading] =
     useState(true);
@@ -391,10 +444,8 @@ export default function OrdersPage() {
   const [refreshing, setRefreshing] =
     useState(false);
 
-  const [cancellingOrder, setCancellingOrder] =
-    useState<string | null>(null);
-
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
   const [filter, setFilter] =
     useState<FilterValue>("all");
@@ -405,16 +456,21 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] =
     useState<string | null>(null);
 
-const [cancelOrder, setCancelOrder] =
-  useState<Order | null>(null);
+  /* CANCEL MODAL STATE */
 
-const [cancelling, setCancelling] =
-  useState(false);
+  const [orderToCancel, setOrderToCancel] =
+    useState<Order | null>(null);
+
+  const [cancelling, setCancelling] =
+    useState(false);
 
   const [copiedOrder, setCopiedOrder] =
     useState<string | null>(null);
 
   const [errorMessage, setErrorMessage] =
+    useState("");
+
+  const [successMessage, setSuccessMessage] =
     useState("");
 
   /* =======================================================
@@ -432,9 +488,7 @@ const [cancelling, setCancelling] =
 
         setErrorMessage("");
 
-        /* -----------------------------------------------
-           LOCAL ORDERS
-        ----------------------------------------------- */
+        /* LOCAL ORDERS */
 
         let localOrders: Order[] = [];
 
@@ -445,24 +499,28 @@ const [cancelling, setCancelling] =
             );
 
           if (stored) {
-            const parsed = JSON.parse(stored);
+            const parsed =
+              JSON.parse(stored);
 
             if (Array.isArray(parsed)) {
               localOrders = parsed
                 .map(
                   (item: LocalOrder) =>
-                    getLocalOrderAsOrder(item)
+                    getLocalOrderAsOrder(
+                      item
+                    )
                 )
                 .filter(Boolean);
             }
           }
-        } catch {
-          // Ignore invalid local storage.
+        } catch (error) {
+          console.error(
+            "Local orders error:",
+            error
+          );
         }
 
-        /* -----------------------------------------------
-           AUTH
-        ----------------------------------------------- */
+        /* AUTH */
 
         const {
           data: { user },
@@ -475,9 +533,7 @@ const [cancelling, setCancelling] =
           return;
         }
 
-        /* -----------------------------------------------
-           DATABASE ORDERS
-        ----------------------------------------------- */
+        /* DATABASE ORDERS */
 
         const { data, error } =
           await supabase
@@ -510,7 +566,9 @@ const [cancelling, setCancelling] =
             error
           );
 
-          if (localOrders.length === 0) {
+          if (
+            localOrders.length === 0
+          ) {
             setErrorMessage(
               "We couldn't load your orders right now. Please try again."
             );
@@ -532,9 +590,7 @@ const [cancelling, setCancelling] =
             })
           );
 
-        /* -----------------------------------------------
-           MERGE
-        ----------------------------------------------- */
+        /* MERGE */
 
         const merged = [
           ...databaseOrders,
@@ -556,7 +612,9 @@ const [cancelling, setCancelling] =
         });
 
         const finalOrders =
-          Array.from(unique.values()).sort(
+          Array.from(
+            unique.values()
+          ).sort(
             (a, b) =>
               new Date(
                 b.created_at
@@ -584,6 +642,10 @@ const [cancelling, setCancelling] =
     [supabase]
   );
 
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
+
   useEffect(() => {
     loadOrders();
 
@@ -605,86 +667,103 @@ const [cancelling, setCancelling] =
   }, [loadOrders]);
 
   /* =======================================================
-     CANCEL ORDER
+     OPEN CANCEL MODAL
   ======================================================= */
 
-  async function cancelOrder(order: Order) {
-    const status =
-      normalizeStatus(order.status);
+  function openCancelModal(
+    order: Order
+  ) {
+    setErrorMessage("");
+    setSuccessMessage("");
+    setOrderToCancel(order);
+  }
 
-    if (
-      status === "delivered" ||
-      status === "completed" ||
-      status === "cancelled" ||
-      status === "canceled"
-    ) {
-      return;
-    }
+  /* =======================================================
+     CONFIRM CANCEL ORDER
+  ======================================================= */
 
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this order?"
-    );
-
-    if (!confirmed) return;
+  async function confirmCancelOrder() {
+    if (!orderToCancel) return;
 
     try {
-      setCancellingOrder(order.id);
+      setCancelling(true);
       setErrorMessage("");
+      setSuccessMessage("");
 
-      /* -----------------------------------------------
-         LOCAL ORDER
-      ----------------------------------------------- */
+      const normalized =
+        normalizeStatus(
+          orderToCancel.status
+        );
 
-      let localUpdated = false;
+      if (
+        !canCancelOrder(
+          orderToCancel.status
+        )
+      ) {
+        setOrderToCancel(null);
+        return;
+      }
 
-      try {
-        const stored =
-          localStorage.getItem(
-            "primecart-orders"
-          );
+      /* LOCAL ORDER */
 
-        if (stored) {
-          const parsed = JSON.parse(stored);
-
-          if (Array.isArray(parsed)) {
-            const updated = parsed.map(
-              (item: LocalOrder) => {
-                if (
-                  String(item.id) ===
-                  String(order.id)
-                ) {
-                  localUpdated = true;
-
-                  return {
-                    ...item,
-                    status: "cancelled",
-                  };
-                }
-
-                return item;
-              }
+      if (
+        orderToCancel.user_id ===
+        "local"
+      ) {
+        try {
+          const stored =
+            localStorage.getItem(
+              "primecart-orders"
             );
 
-            if (localUpdated) {
+          if (stored) {
+            const parsed =
+              JSON.parse(stored);
+
+            if (Array.isArray(parsed)) {
+              const updated =
+                parsed.map(
+                  (
+                    item: LocalOrder
+                  ) =>
+                    String(item.id) ===
+                    String(
+                      orderToCancel.id
+                    )
+                      ? {
+                          ...item,
+                          status:
+                            "cancelled",
+                        }
+                      : item
+                );
+
               localStorage.setItem(
                 "primecart-orders",
-                JSON.stringify(updated)
+                JSON.stringify(
+                  updated
+                )
               );
             }
           }
+        } catch (error) {
+          console.error(
+            "Local cancellation error:",
+            error
+          );
+
+          throw new Error(
+            "Unable to cancel this local order."
+          );
         }
-      } catch (error) {
-        console.error(
-          "Local cancel error:",
-          error
-        );
       }
 
-      /* -----------------------------------------------
-         DATABASE ORDER
-      ----------------------------------------------- */
+      /* SUPABASE ORDER */
 
-      if (order.user_id !== "local") {
+      if (
+        orderToCancel.user_id !==
+        "local"
+      ) {
         const {
           data: { user },
         } =
@@ -702,41 +781,51 @@ const [cancelling, setCancelling] =
             .update({
               status: "cancelled",
             })
-            .eq("id", order.id)
-            .eq("user_id", user.id);
+            .eq(
+              "id",
+              orderToCancel.id
+            )
+            .eq(
+              "user_id",
+              user.id
+            );
 
         if (error) {
           console.error(
-            "Cancel order error:",
+            "Supabase cancellation error:",
             error
           );
 
-          /*
-             If DB update fails but this is a local
-             order, local cancellation can still remain.
-          */
-          if (!localUpdated) {
-            throw error;
-          }
+          throw error;
         }
       }
 
-      /* -----------------------------------------------
-         INSTANT UI UPDATE
-      ----------------------------------------------- */
+      /* INSTANT UI UPDATE */
 
-      setOrders((currentOrders) =>
-        currentOrders.map((item) =>
-          item.id === order.id
-            ? {
-                ...item,
-                status: "cancelled",
-              }
-            : item
-        )
+      setOrders(
+        (currentOrders) =>
+          currentOrders.map(
+            (order) =>
+              order.id ===
+              orderToCancel.id
+                ? {
+                    ...order,
+                    status:
+                      "cancelled",
+                  }
+                : order
+          )
       );
 
-      setExpandedOrder(order.id);
+      setExpandedOrder(null);
+
+      setOrderToCancel(null);
+
+      setSuccessMessage(
+        `Order #${orderToCancel.id
+          .slice(0, 12)
+          .toUpperCase()} has been cancelled successfully.`
+      );
 
       window.dispatchEvent(
         new Event("storage")
@@ -751,7 +840,7 @@ const [cancelling, setCancelling] =
         "We couldn't cancel this order. Please try again."
       );
     } finally {
-      setCancellingOrder(null);
+      setCancelling(false);
     }
   }
 
@@ -778,16 +867,16 @@ const [cancelling, setCancelling] =
                   "cancelled" ||
                 normalized ===
                   "canceled"
-              : filter === "placed"
-                ? normalized ===
-                  "placed"
-                : normalized ===
-                  filter;
+              : normalized ===
+                filter;
 
-        if (!matchesFilter)
+        if (!matchesFilter) {
           return false;
+        }
 
-        if (!query) return true;
+        if (!query) {
+          return true;
+        }
 
         const orderMatch =
           order.id
@@ -921,10 +1010,8 @@ const [cancelling, setCancelling] =
             );
 
           return (
-            status !==
-              "cancelled" &&
-            status !==
-              "canceled"
+            status !== "cancelled" &&
+            status !== "canceled"
           );
         })
         .reduce(
@@ -963,87 +1050,11 @@ const [cancelling, setCancelling] =
         setCopiedOrder(null);
       }, 1800);
     } catch {
-      // Ignore clipboard errors.
-    }
-  }
-
-
-  /* =======================================================
-     CANCLE ORDER
-  ======================================================= */
-
-async function confirmCancelOrder() {
-  if (!cancelOrder) return;
-
-  try {
-    setCancelling(true);
-    setErrorMessage("");
-
-    const normalized = normalizeStatus(
-      cancelOrder.status
-    );
-
-    if (
-      normalized === "cancelled" ||
-      normalized === "canceled"
-    ) {
-      setCancelOrder(null);
-      return;
-    }
-
-    /*
-      Supabase order cancellation.
-      RLS policy must allow the logged-in user
-      to update their own order.
-    */
-
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        status: "cancelled",
-      })
-      .eq("id", cancelOrder.id)
-      .eq("user_id", cancelOrder.user_id);
-
-    if (error) {
-      console.error(
-        "Cancel order error:",
-        error
-      );
-
       setErrorMessage(
-        "We couldn't cancel this order. Please try again."
+        "Unable to copy order ID."
       );
-
-      return;
     }
-
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === cancelOrder.id
-          ? {
-              ...order,
-              status: "cancelled",
-            }
-          : order
-      )
-    );
-
-    setExpandedOrder(null);
-    setCancelOrder(null);
-  } catch (error) {
-    console.error(
-      "Cancel order error:",
-      error
-    );
-
-    setErrorMessage(
-      "Something went wrong while cancelling the order."
-    );
-  } finally {
-    setCancelling(false);
   }
-}
 
   /* =======================================================
      BUY AGAIN
@@ -1084,8 +1095,9 @@ async function confirmCancelOrder() {
             existingIndex
           ].quantity =
             Number(
-              cart[existingIndex]
-                .quantity || 0
+              cart[
+                existingIndex
+              ].quantity || 0
             ) +
             Number(
               item.quantity || 1
@@ -1126,6 +1138,10 @@ async function confirmCancelOrder() {
       console.error(
         "Buy again error:",
         error
+      );
+
+      setErrorMessage(
+        "Unable to add these products to cart."
       );
     }
   }
@@ -1258,7 +1274,9 @@ async function confirmCancelOrder() {
               <StatCard
                 icon={Check}
                 label="Delivered"
-                value={stats.deliveredOrders}
+                value={
+                  stats.deliveredOrders
+                }
               />
 
               <StatCard
@@ -1291,6 +1309,32 @@ async function confirmCancelOrder() {
               onClick={() =>
                 setErrorMessage("")
               }
+              aria-label="Close error"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* SUCCESS */}
+
+        {successMessage && (
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <Check
+              size={18}
+              className="mt-0.5 shrink-0"
+            />
+
+            <div className="flex-1">
+              {successMessage}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSuccessMessage("")
+              }
+              aria-label="Close success"
             >
               <X size={16} />
             </button>
@@ -1325,6 +1369,7 @@ async function confirmCancelOrder() {
                     setSearch("")
                   }
                   className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#907f65] hover:bg-[#f7f1e5]"
+                  aria-label="Clear search"
                 >
                   <X size={15} />
                 </button>
@@ -1377,9 +1422,7 @@ async function confirmCancelOrder() {
             </FilterButton>
 
             <FilterButton
-              active={
-                filter === "placed"
-              }
+              active={filter === "placed"}
               onClick={() =>
                 setFilter("placed")
               }
@@ -1392,9 +1435,7 @@ async function confirmCancelOrder() {
                 filter === "processing"
               }
               onClick={() =>
-                setFilter(
-                  "processing"
-                )
+                setFilter("processing")
               }
             >
               Processing
@@ -1427,13 +1468,10 @@ async function confirmCancelOrder() {
 
             <FilterButton
               active={
-                filter ===
-                "delivered"
+                filter === "delivered"
               }
               onClick={() =>
-                setFilter(
-                  "delivered"
-                )
+                setFilter("delivered")
               }
             >
               Delivered
@@ -1441,13 +1479,10 @@ async function confirmCancelOrder() {
 
             <FilterButton
               active={
-                filter ===
-                "cancelled"
+                filter === "cancelled"
               }
               onClick={() =>
-                setFilter(
-                  "cancelled"
-                )
+                setFilter("cancelled")
               }
             >
               Cancelled
@@ -1485,7 +1520,9 @@ async function confirmCancelOrder() {
           </div>
         )}
 
-        {/* LOADING */}
+        {/* =================================================
+            ORDERS
+        ================================================= */}
 
         {loading ? (
           <div className="mt-5 space-y-4">
@@ -1595,19 +1632,10 @@ async function confirmCancelOrder() {
                     order.status
                   );
 
-                const canCancel =
-                  normalizedStatus !==
-                    "delivered" &&
-                  normalizedStatus !==
-                    "completed" &&
-                  normalizedStatus !==
-                    "cancelled" &&
-                  normalizedStatus !==
-                    "canceled";
-
-                const isCancelling =
-                  cancellingOrder ===
-                  order.id;
+                const cancellable =
+                  canCancelOrder(
+                    order.status
+                  );
 
                 return (
                   <article
@@ -1716,6 +1744,7 @@ async function confirmCancelOrder() {
                             <StatusIcon
                               size={13}
                             />
+
                             {
                               status.label
                             }
@@ -1785,15 +1814,13 @@ async function confirmCancelOrder() {
                                         }
                                       </Link>
 
-                                      <p className="mt-1 text-xs text-[#91816a]">
+                                      <p className="mt-1 break-all text-xs text-[#91816a]">
                                         Product
                                         ID:{" "}
                                         {
                                           item.product_id
                                         }
                                       </p>
-
-                                      {/* PRODUCT LINK */}
 
                                       <Link
                                         href={`/dashboard/products/${item.product_id}`}
@@ -1862,8 +1889,7 @@ async function confirmCancelOrder() {
                                 Track your
                                 order from
                                 placement
-                                to
-                                delivery.
+                                to delivery.
                               </p>
                             </div>
 
@@ -2000,8 +2026,7 @@ async function confirmCancelOrder() {
 
                               <p className="mt-1 text-xs leading-5 text-red-600/80">
                                 This order has
-                                been
-                                cancelled
+                                been cancelled
                                 successfully.
                               </p>
                             </div>
@@ -2023,19 +2048,17 @@ async function confirmCancelOrder() {
                             />
 
                             <h3 className="text-sm font-bold text-[#382d20]">
-                              Payment
-                              Details
+                              Payment Details
                             </h3>
                           </div>
 
                           <div className="mt-4 space-y-2 text-sm">
                             <div className="flex justify-between gap-4">
                               <span className="text-[#8b7b65]">
-                                Payment
-                                Method
+                                Payment Method
                               </span>
 
-                              <span className="font-semibold text-[#4a3b28]">
+                              <span className="text-right font-semibold text-[#4a3b28]">
                                 {order.payment_method ||
                                   "Online / Checkout"}
                               </span>
@@ -2055,8 +2078,7 @@ async function confirmCancelOrder() {
 
                             <div className="flex justify-between gap-4">
                               <span className="text-[#8b7b65]">
-                                Order
-                                Date
+                                Order Date
                               </span>
 
                               <span className="font-semibold text-[#4a3b28]">
@@ -2078,8 +2100,7 @@ async function confirmCancelOrder() {
                             />
 
                             <h3 className="text-sm font-bold text-[#382d20]">
-                              Delivery
-                              Address
+                              Delivery Address
                             </h3>
                           </div>
 
@@ -2220,8 +2241,7 @@ async function confirmCancelOrder() {
                         />
 
                         <span>
-                          Secure order with
-                          PrimeCart
+                          Secure order with PrimeCart
                         </span>
                       </div>
 
@@ -2239,9 +2259,7 @@ async function confirmCancelOrder() {
                           }
                           className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#eadfc9] bg-white px-4 text-xs font-bold text-[#66543b] transition hover:border-[#c9a65d] hover:bg-[#fffaf0]"
                         >
-                          <Eye
-                            size={15}
-                          />
+                          <Eye size={15} />
 
                           {isExpanded
                             ? "Hide Details"
@@ -2249,15 +2267,11 @@ async function confirmCancelOrder() {
 
                           {isExpanded ? (
                             <ChevronUp
-                              size={
-                                14
-                              }
+                              size={14}
                             />
                           ) : (
                             <ChevronDown
-                              size={
-                                14
-                              }
+                              size={14}
                             />
                           )}
                         </button>
@@ -2276,33 +2290,45 @@ async function confirmCancelOrder() {
                               className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-bold text-white shadow-[0_6px_16px_rgba(185,151,91,0.18)] transition hover:bg-[#a98449]"
                             >
                               <Truck
-                                size={
-                                  15
-                                }
+                                size={15}
                               />
                               Track Order
                             </button>
                           )}
 
-                       {/* CANCLE ORDER */}
+                        {/* CANCEL ORDER */}
 
-{progress >= 0 &&
-  progress < 4 &&
-  normalizeStatus(order.status) !==
-    "cancelled" &&
-  normalizeStatus(order.status) !==
-    "canceled" && (
-    <button
-      type="button"
-      onClick={() =>
-        setCancelOrder(order)
-      }
-      className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-xs font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50"
-    >
-      <X size={15} />
-      Cancel Order
-    </button>
-  )}
+                        {cancellable && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openCancelModal(
+                                order
+                              )
+                            }
+                            disabled={
+                              cancelling
+                            }
+                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-xs font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {cancelling ? (
+                              <>
+                                <Loader2
+                                  size={15}
+                                  className="animate-spin"
+                                />
+                                Cancelling...
+                              </>
+                            ) : (
+                              <>
+                                <X
+                                  size={15}
+                                />
+                                Cancel Order
+                              </>
+                            )}
+                          </button>
+                        )}
 
                         {/* BUY AGAIN */}
 
@@ -2318,15 +2344,23 @@ async function confirmCancelOrder() {
                             className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d9c294] bg-[#fffaf0] px-4 text-xs font-bold text-[#986f27] transition hover:bg-[#f8efd9]"
                           >
                             <RefreshCw
-                              size={
-                                15
-                              }
+                              size={15}
                             />
                             Buy Again
                           </button>
                         )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              }
+            )}
+          </div>
+        )}
 
-        {/* TRUST */}
+        {/* =================================================
+            TRUST CARDS
+        ================================================= */}
 
         <section className="mt-8 grid gap-3 sm:grid-cols-3">
           <TrustCard
@@ -2350,6 +2384,253 @@ async function confirmCancelOrder() {
 
         <div className="h-6" />
       </div>
+
+      {/* =================================================
+          CANCEL CONFIRMATION MODAL
+      ================================================= */}
+
+      {orderToCancel && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#211b13]/45 px-4 py-6 backdrop-blur-sm"
+          onClick={() => {
+            if (!cancelling) {
+              setOrderToCancel(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-title"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_25px_80px_rgba(60,45,20,0.22)]"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* MODAL HEADER */}
+
+            <div className="border-b border-[#f0e8da] px-5 py-5 sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                    <X size={21} />
+                  </div>
+
+                  <div>
+                    <h2
+                      id="cancel-order-title"
+                      className="text-lg font-bold text-[#2e2519]"
+                    >
+                      Cancel Order?
+                    </h2>
+
+                    <p className="mt-1 text-xs text-[#8b7b65]">
+                      Please confirm your
+                      cancellation.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={cancelling}
+                  onClick={() =>
+                    setOrderToCancel(
+                      null
+                    )
+                  }
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8b7b65] transition hover:bg-[#f8f2e7] hover:text-[#4b3b27] disabled:opacity-50"
+                  aria-label="Close cancel dialog"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+            </div>
+
+            {/* MODAL CONTENT */}
+
+            <div className="px-5 py-5 sm:px-6">
+              {/* PRODUCT PREVIEW */}
+
+              <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-3">
+                {(
+                  orderToCancel.order_items ||
+                  []
+                ).length > 0 ? (
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-white">
+                      <ProductImage
+                        src={
+                          orderToCancel
+                            .order_items?.[0]
+                            ?.image_url
+                        }
+                        alt={
+                          orderToCancel
+                            .order_items?.[0]
+                            ?.product_name ||
+                          "Product"
+                        }
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 text-sm font-bold text-[#3a2e20]">
+                        {
+                          orderToCancel
+                            .order_items?.[0]
+                            ?.product_name
+                        }
+                      </p>
+
+                      {(
+                        orderToCancel
+                          .order_items
+                          ?.length || 0
+                      ) > 1 && (
+                        <p className="mt-1 text-xs text-[#8c7c67]">
+                          +
+                          {(
+                            orderToCancel
+                              .order_items
+                              ?.length || 0
+                          ) - 1}{" "}
+                          more item
+                          {(
+                            (
+                              orderToCancel
+                                .order_items
+                                ?.length || 0
+                            ) - 1
+                          ) > 1
+                            ? "s"
+                            : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#fbf5e7] text-[#b38a42]">
+                      <Package size={22} />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-bold text-[#3a2e20]">
+                        Order #
+                        {orderToCancel.id
+                          .slice(
+                            0,
+                            12
+                          )
+                          .toUpperCase()}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[#8c7c67]">
+                        {formatDate(
+                          orderToCancel.created_at
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* WARNING */}
+
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-800">
+                  Are you sure you want
+                  to cancel this order?
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-amber-700">
+                  Once cancelled, this
+                  order will no longer
+                  continue for delivery.
+                </p>
+              </div>
+
+              {/* ORDER INFO */}
+
+              <div className="mt-4 space-y-2 rounded-2xl bg-[#faf7f0] p-4">
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-[#8b7b65]">
+                    Order ID
+                  </span>
+
+                  <span className="font-semibold text-[#4a3b28]">
+                    #
+                    {orderToCancel.id
+                      .slice(
+                        0,
+                        12
+                      )
+                      .toUpperCase()}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-[#8b7b65]">
+                    Order Total
+                  </span>
+
+                  <span className="font-bold text-[#a2772d]">
+                    {formatPrice(
+                      orderToCancel.total_amount
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL ACTIONS */}
+
+            <div className="flex flex-col-reverse gap-2 border-t border-[#f0e8da] bg-[#fffdfb] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() =>
+                  setOrderToCancel(
+                    null
+                  )
+                }
+                className="h-11 rounded-xl border border-[#eadfc9] bg-white px-5 text-sm font-bold text-[#66543b] transition hover:bg-[#fffaf0] disabled:opacity-50"
+              >
+                Keep Order
+              </button>
+
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={
+                  confirmCancelOrder
+                }
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-[0_7px_18px_rgba(220,38,38,0.18)] transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                    />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <X size={16} />
+                    Yes, Cancel Order
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================
+          ANIMATION
+      ================================================= */}
 
       <style jsx global>{`
         @keyframes orderFadeUp {
@@ -2377,214 +2658,6 @@ async function confirmCancelOrder() {
           );
         }
       `}</style>
-{/* =================================================
-    CANCEL ORDER CONFIRMATION MODAL
-================================================= */}
-
-{cancelOrder && (
-  <div
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-[#211b13]/40 px-4 backdrop-blur-sm"
-    onClick={() => {
-      if (!cancelling) {
-        setCancelOrder(null);
-      }
-    }}
-  >
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cancel-order-title"
-      className="w-full max-w-md overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_25px_80px_rgba(60,45,20,0.20)]"
-      onClick={(event) =>
-        event.stopPropagation()
-      }
-    >
-      {/* Modal Header */}
-      <div className="border-b border-[#f0e8da] px-5 py-5 sm:px-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <X size={21} />
-            </div>
-
-            <div>
-              <h2
-                id="cancel-order-title"
-                className="text-lg font-bold text-[#2e2519]"
-              >
-                Cancel Order?
-              </h2>
-
-              <p className="mt-1 text-xs text-[#8b7b65]">
-                Please confirm your cancellation.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            disabled={cancelling}
-            onClick={() =>
-              setCancelOrder(null)
-            }
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8b7b65] transition hover:bg-[#f8f2e7] hover:text-[#4b3b27] disabled:opacity-50"
-          >
-            <X size={17} />
-          </button>
-        </div>
-      </div>
-
-      {/* Product Preview */}
-      <div className="px-5 py-5 sm:px-6">
-        <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-3">
-          {(cancelOrder.order_items || []).length >
-          0 ? (
-            <div className="flex items-center gap-3">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-white">
-                <ProductImage
-                  src={
-                    cancelOrder.order_items?.[0]
-                      ?.image_url
-                  }
-                  alt={
-                    cancelOrder.order_items?.[0]
-                      ?.product_name ||
-                    "Product"
-                  }
-                />
-              </div>
-
-              <div className="min-w-0">
-                <p className="line-clamp-2 text-sm font-bold text-[#3a2e20]">
-                  {
-                    cancelOrder.order_items?.[0]
-                      ?.product_name
-                  }
-                </p>
-
-                {(cancelOrder.order_items
-                  ?.length || 0) > 1 && (
-                  <p className="mt-1 text-xs text-[#8c7c67]">
-                    +
-                    {(cancelOrder.order_items
-                      ?.length || 0) -
-                      1}{" "}
-                    more item
-                    {(
-                      (cancelOrder
-                        .order_items
-                        ?.length || 0) -
-                      1
-                    ) > 1
-                      ? "s"
-                      : ""}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#fbf5e7] text-[#b38a42]">
-                <Package size={22} />
-              </div>
-
-              <div>
-                <p className="text-sm font-bold text-[#3a2e20]">
-                  Order #
-                  {cancelOrder.id
-                    .slice(0, 12)
-                    .toUpperCase()}
-                </p>
-
-                <p className="mt-1 text-xs text-[#8c7c67]">
-                  {formatDate(
-                    cancelOrder.created_at
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Warning */}
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-800">
-            Are you sure you want to cancel
-            this order?
-          </p>
-
-          <p className="mt-1 text-xs leading-5 text-amber-700">
-            Once cancelled, this order will no
-            longer continue for delivery.
-          </p>
-        </div>
-
-        {/* Order Info */}
-        <div className="mt-4 space-y-2 rounded-2xl bg-[#faf7f0] p-4">
-          <div className="flex items-center justify-between gap-4 text-sm">
-            <span className="text-[#8b7b65]">
-              Order ID
-            </span>
-
-            <span className="font-semibold text-[#4a3b28]">
-              #{cancelOrder.id
-                .slice(0, 12)
-                .toUpperCase()}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between gap-4 text-sm">
-            <span className="text-[#8b7b65]">
-              Order Total
-            </span>
-
-            <span className="font-bold text-[#a2772d]">
-              {formatPrice(
-                cancelOrder.total_amount
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-col-reverse gap-2 border-t border-[#f0e8da] bg-[#fffdfb] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-        <button
-          type="button"
-          disabled={cancelling}
-          onClick={() =>
-            setCancelOrder(null)
-          }
-          className="h-11 rounded-xl border border-[#eadfc9] bg-white px-5 text-sm font-bold text-[#66543b] transition hover:bg-[#fffaf0] disabled:opacity-50"
-        >
-          Keep Order
-        </button>
-
-        <button
-          type="button"
-          disabled={cancelling}
-          onClick={confirmCancelOrder}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-[0_7px_18px_rgba(220,38,38,0.18)] transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {cancelling ? (
-            <>
-              <Loader2
-                size={16}
-                className="animate-spin"
-              />
-              Cancelling...
-            </>
-          ) : (
-            <>
-              <X size={16} />
-              Yes, Cancel Order
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
     </main>
   );
 }
