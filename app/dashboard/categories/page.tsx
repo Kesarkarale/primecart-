@@ -1,4 +1,4 @@
-ani aaik  tithe popular category ahet na tithe pn logo disudet "use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
