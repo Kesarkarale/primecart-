@@ -79,7 +79,7 @@ const categories: Category[] = [
     description:
       "Furniture, decor, kitchen essentials and everyday products for a better home.",
     icon: Home,
-    image: "/appliances.png",
+    image: "/home.png",
     keywords: ["home", "living", "furniture", "decor", "kitchen"],
   },
   {
