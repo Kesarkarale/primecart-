@@ -123,28 +123,32 @@ const sidebarItems = [
 const smartTools = [
   {
     title: "PrimeMatch",
-    description: "Find products matched to your needs.",
+    description:
+      "Find products matched to your needs, priorities and budget.",
     href: "/dashboard/prime-match",
     icon: Target,
     label: "SMART MATCH",
   },
   {
     title: "Budget Builder",
-    description: "Plan your shopping without overspending.",
+    description:
+      "Plan your shopping and build a practical budget.",
     href: "/dashboard/budget-builder",
     icon: WalletCards,
     label: "BUDGET",
   },
   {
     title: "Setup Builder",
-    description: "Create a complete setup from scratch.",
+    description:
+      "Create a complete setup for gaming, college, work and more.",
     href: "/dashboard/setup-builder",
     icon: Sparkles,
     label: "CURATED",
   },
   {
     title: "PrimePoints",
-    description: "Track your rewards and shopping points.",
+    description:
+      "Track your rewards and discover more ways to earn.",
     href: "/dashboard/prime-points",
     icon: Crown,
     label: "REWARDS",
@@ -155,28 +159,22 @@ const smartTools = [
    HELPERS
 ========================================================= */
 
-function getImageCandidates(value: string | null) {
-  if (!value) return [];
+function getImageUrl(value: string | null) {
+  if (!value) return null;
 
   const image = value.trim();
 
-  if (!image) return [];
+  if (!image) return null;
 
   if (
     image.startsWith("http://") ||
-    image.startsWith("https://")
+    image.startsWith("https://") ||
+    image.startsWith("/")
   ) {
-    return [image];
+    return image;
   }
 
-  if (image.startsWith("/")) {
-    return [image];
-  }
-
-  return [
-    `/${image}`,
-    `/products/${image}`,
-  ];
+  return `/${image}`;
 }
 
 function formatPrice(value: number) {
@@ -191,7 +189,9 @@ function discountPercentage(
   price: number,
   originalPrice: number | null,
 ) {
-  if (!originalPrice || originalPrice <= price) return 0;
+  if (!originalPrice || originalPrice <= price) {
+    return 0;
+  }
 
   return Math.round(
     ((originalPrice - price) / originalPrice) * 100,
@@ -204,12 +204,16 @@ function getInitials(name: string) {
     .filter(Boolean)
     .slice(0, 2);
 
-  return parts
+  const initials = parts
     .map((part) => part[0]?.toUpperCase())
     .join("");
+
+  return initials || "PC";
 }
 
 function formatDate(value: string) {
+  if (!value) return "—";
+
   return new Date(value).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -218,100 +222,32 @@ function formatDate(value: string) {
 }
 
 /* =========================================================
-   PRODUCT IMAGE
-========================================================= */
-
-function ProductImage({
-  src,
-  alt,
-  className = "",
-  sizes = "200px",
-}: {
-  src: string | null;
-  alt: string;
-  className?: string;
-  sizes?: string;
-}) {
-  const candidates = useMemo(
-    () => getImageCandidates(src),
-    [src],
-  );
-
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [src]);
-
-  const current = candidates[index];
-
-  if (!current) {
-    return (
-      <div
-        className={`flex h-full w-full items-center justify-center bg-[#f7f1e6] text-[#b8aa94] ${className}`}
-      >
-        <ShoppingBag size={27} strokeWidth={1.6} />
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={current}
-      alt={alt}
-      fill
-      sizes={sizes}
-      className={`object-cover ${className}`}
-      onError={() => {
-        if (index < candidates.length - 1) {
-          setIndex((value) => value + 1);
-        } else {
-          setIndex(candidates.length);
-        }
-      }}
-    />
-  );
-}
-
-/* =========================================================
    DASHBOARD
 ========================================================= */
 
 export default function DashboardPage() {
-  /*
-   * IMPORTANT:
-   * Keep one browser Supabase client instance.
-   * This avoids unnecessary effect reruns.
-   */
-  const supabase = useMemo(() => createClient(), []);
-
   const [loading, setLoading] = useState(true);
+
   const [mobileMenu, setMobileMenu] = useState(false);
 
-  const [profile, setProfile] =
-    useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(
+    null,
+  );
 
-  const [products, setProducts] =
-    useState<Product[]>([]);
-
-  const [categories, setCategories] =
-    useState<Category[]>([]);
-
-  const [orders, setOrders] =
-    useState<Order[]>([]);
-
-  const [wishlistCount, setWishlistCount] =
-    useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const [search, setSearch] = useState("");
-  const [searchFocused, setSearchFocused] =
-    useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const [notificationOpen, setNotificationOpen] =
     useState(false);
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const supabase = useMemo(() => createClient(), []);
 
   /* =======================================================
      LOAD DASHBOARD
@@ -342,9 +278,7 @@ export default function DashboardPage() {
         ] = await Promise.all([
           supabase
             .from("profiles")
-            .select(
-              "full_name,email,avatar_url",
-            )
+            .select("full_name,email,avatar_url")
             .eq("id", user.id)
             .maybeSingle(),
 
@@ -352,23 +286,23 @@ export default function DashboardPage() {
             .from("products")
             .select(
               `
-              id,
-              name,
-              slug,
-              short_description,
-              description,
-              price,
-              original_price,
-              stock,
-              image_url,
-              brand,
-              rating,
-              reviews_count,
-              is_featured,
-              is_flash_sale,
-              is_active,
-              category_id
-            `,
+                id,
+                name,
+                slug,
+                short_description,
+                description,
+                price,
+                original_price,
+                stock,
+                image_url,
+                brand,
+                rating,
+                reviews_count,
+                is_featured,
+                is_flash_sale,
+                is_active,
+                category_id
+              `,
             )
             .eq("is_active", true)
             .order("created_at", {
@@ -400,37 +334,44 @@ export default function DashboardPage() {
 
         if (!mounted) return;
 
-        setProfile(
-          profileResult.data ?? {
+        if (profileResult.data) {
+          setProfile(profileResult.data as Profile);
+        } else {
+          setProfile({
             full_name:
               user.user_metadata?.full_name ??
               user.email?.split("@")[0] ??
               "PrimeCart User",
             email: user.email ?? "",
-          },
-        );
+          });
+        }
 
-        setProducts(
-          (productsResult.data ??
-            []) as Product[],
-        );
+        if (productsResult.data) {
+          setProducts(
+            productsResult.data as Product[],
+          );
+        }
 
-        setCategories(
-          (categoriesResult.data ??
-            []) as Category[],
-        );
+        if (categoriesResult.data) {
+          setCategories(
+            categoriesResult.data as Category[],
+          );
+        }
 
-        setOrders(
-          (ordersResult.data ??
-            []) as Order[],
-        );
+        if (ordersResult.data) {
+          setOrders(
+            ordersResult.data as Order[],
+          );
+        }
 
-        setWishlistCount(
-          wishlistResult.data?.length ?? 0,
-        );
+        if (wishlistResult.data) {
+          setWishlistCount(
+            wishlistResult.data.length,
+          );
+        }
       } catch (error) {
         console.error(
-          "Dashboard error:",
+          "PrimeCart dashboard error:",
           error,
         );
       } finally {
@@ -472,58 +413,53 @@ export default function DashboardPage() {
   }, [products]);
 
   const searchResults = useMemo(() => {
-    const value = search
-      .trim()
-      .toLowerCase();
+    const value = search.trim().toLowerCase();
 
     if (!value) return [];
 
     return products
-      .filter(
-        (product) =>
-          product.name
-            .toLowerCase()
-            .includes(value) ||
-          product.brand
-            ?.toLowerCase()
-            .includes(value),
-      )
+      .filter((product) => {
+        const name =
+          product.name?.toLowerCase() ?? "";
+
+        const brand =
+          product.brand?.toLowerCase() ?? "";
+
+        return (
+          name.includes(value) ||
+          brand.includes(value)
+        );
+      })
       .slice(0, 6);
   }, [products, search]);
 
-  const totalSpent = useMemo(
-    () =>
-      orders.reduce(
-        (total, order) =>
-          total +
-          Number(order.total_amount || 0),
-        0,
-      ),
-    [orders],
-  );
+  const totalSpent = useMemo(() => {
+    return orders.reduce(
+      (total, order) =>
+        total + Number(order.total_amount || 0),
+      0,
+    );
+  }, [orders]);
 
-  const primePoints = Math.floor(
-    totalSpent / 10,
-  );
+  const primePoints = Math.floor(totalSpent / 10);
 
   const userName =
     profile?.full_name?.trim() ||
     profile?.email?.split("@")[0] ||
     "PrimeCart User";
 
-  const firstName =
-    userName.split(" ")[0];
+  const firstName = userName.split(" ")[0];
 
   /* =======================================================
      LOGOUT
   ======================================================= */
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-
-    window.location.replace(
-      "/auth/login",
-    );
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      window.location.replace("/auth/login");
+    }
   }
 
   /* =======================================================
@@ -533,35 +469,6 @@ export default function DashboardPage() {
   return (
     <div className="prime-dashboard">
       <style jsx global>{`
-        :root {
-          --pc-bg: #fbf8f2;
-          --pc-surface: #ffffff;
-          --pc-soft: #f8f3e9;
-          --pc-gold: #b9975b;
-          --pc-gold-dark: #96723b;
-          --pc-gold-light: #dcc596;
-          --pc-gold-pale: #f5ead6;
-          --pc-brown: #4a4034;
-          --pc-brown-light: #796e5d;
-          --pc-muted: #9b907f;
-          --pc-border: #eadfcb;
-          --pc-border-light: #f0e8da;
-          --pc-shadow:
-            0 10px 30px rgba(
-              113,
-              91,
-              53,
-              0.07
-            );
-          --pc-shadow-hover:
-            0 20px 45px rgba(
-              113,
-              91,
-              53,
-              0.13
-            );
-        }
-
         * {
           box-sizing: border-box;
         }
@@ -572,7 +479,7 @@ export default function DashboardPage() {
 
         body {
           margin: 0;
-          background: var(--pc-bg);
+          background: #fbf8f2;
         }
 
         button,
@@ -581,70 +488,34 @@ export default function DashboardPage() {
         }
 
         .prime-dashboard {
+          --pc-bg: #fbf8f2;
+          --pc-white: #ffffff;
+          --pc-cream: #fffdf8;
+          --pc-soft: #f8f3e9;
+          --pc-gold: #b9975b;
+          --pc-gold-dark: #997438;
+          --pc-gold-light: #d9bd84;
+          --pc-gold-pale: #f5ead4;
+          --pc-text: #4a4034;
+          --pc-text-soft: #786c5b;
+          --pc-muted: #9c907f;
+          --pc-border: #eadfcb;
+          --pc-border-light: #f1e9dc;
+          --pc-shadow:
+            0 10px 30px rgba(113, 91, 53, 0.07);
+          --pc-shadow-hover:
+            0 18px 42px rgba(113, 91, 53, 0.13);
+
           min-height: 100vh;
-          color: var(--pc-brown);
+          color: var(--pc-text);
+
           background:
             radial-gradient(
-              circle at 85% 0%,
-              rgba(216, 189, 134, 0.13),
+              circle at 90% 0%,
+              rgba(216, 189, 134, 0.12),
               transparent 25%
             ),
-            radial-gradient(
-              circle at 10% 35%,
-              rgba(218, 193, 143, 0.07),
-              transparent 23%
-            ),
             var(--pc-bg);
-        }
-
-        /* =================================================
-           REVEAL ANIMATION
-        ================================================= */
-
-        .pc-reveal {
-          animation:
-            pcReveal 0.65s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcReveal {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .pc-fade-in {
-          animation:
-            pcFade 0.7s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcFade {
-          from {
-            opacity: 0;
-          }
-
-          to {
-            opacity: 1;
-          }
         }
 
         /* =================================================
@@ -654,86 +525,74 @@ export default function DashboardPage() {
         .pc-sidebar {
           position: fixed;
           inset: 0 auto 0 0;
-          z-index: 70;
+          z-index: 80;
+
           width: 260px;
+
           display: flex;
           flex-direction: column;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.94
-          );
-          border-right: 1px solid
-            var(--pc-border);
-          backdrop-filter: blur(22px);
-          transition:
-            transform 0.35s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
+
+          background:
+            linear-gradient(
+              180deg,
+              rgba(255, 255, 255, 0.97),
+              rgba(255, 253, 248, 0.96)
             );
+
+          border-right: 1px solid var(--pc-border);
+
+          backdrop-filter: blur(20px);
+
+          transition:
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
         }
 
         .pc-logo-area {
           height: 78px;
-          padding: 0 22px;
+          padding: 0 21px;
+
           display: flex;
           align-items: center;
-          border-bottom: 1px solid
-            var(--pc-border-light);
+
+          border-bottom: 1px solid var(--pc-border-light);
         }
 
         .pc-logo {
           display: flex;
           align-items: center;
           gap: 11px;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
           text-decoration: none;
         }
 
         .pc-logo-mark {
           width: 42px;
           height: 42px;
+
           display: grid;
           place-items: center;
+
           border-radius: 13px;
+
           color: white;
+
           background:
             linear-gradient(
               145deg,
-              #d3b579,
-              #a88345
+              #ceb174,
+              #a47d40
             );
+
           box-shadow:
-            0 9px 22px
-              rgba(
-                185,
-                151,
-                91,
-                0.24
-              );
-          animation:
-            pcLogoFloat 4s ease-in-out
-            infinite;
-        }
-
-        @keyframes pcLogoFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-2px);
-          }
+            0 8px 20px
+              rgba(185, 151, 91, 0.23);
         }
 
         .pc-logo-name {
           font-size: 19px;
-          font-weight: 900;
+          font-weight: 950;
           letter-spacing: -0.7px;
         }
 
@@ -744,9 +603,11 @@ export default function DashboardPage() {
         .pc-logo-subtitle {
           display: block;
           margin-top: 1px;
+
           color: var(--pc-muted);
+
           font-size: 8px;
-          font-weight: 800;
+          font-weight: 850;
           letter-spacing: 0.18em;
           text-transform: uppercase;
         }
@@ -759,30 +620,39 @@ export default function DashboardPage() {
 
         .pc-nav-label {
           margin: 0 10px 10px;
+
           color: #aa9d89;
+
           font-size: 9px;
           font-weight: 900;
-          letter-spacing: 0.19em;
+          letter-spacing: 0.18em;
           text-transform: uppercase;
         }
 
         .pc-nav-link {
           position: relative;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
+
           min-height: 46px;
           margin-bottom: 4px;
           padding: 0 13px;
+
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
           border: 0;
           border-radius: 14px;
+
           background: transparent;
-          color: var(--pc-brown-light);
+
+          color: var(--pc-text-soft);
           text-decoration: none;
-          font-size: 13px;
-          font-weight: 750;
+
+          font-size: 12px;
+          font-weight: 800;
+
           cursor: pointer;
+
           transition:
             background 0.2s ease,
             color 0.2s ease,
@@ -790,52 +660,63 @@ export default function DashboardPage() {
         }
 
         .pc-nav-link:hover {
-          color: var(--pc-brown);
+          color: var(--pc-text);
           background: #faf6ed;
-          transform: translateX(3px);
+          transform: translateX(2px);
         }
 
         .pc-nav-link.active {
-          color: #8e6c35;
+          color: #8d6a34;
+
           background:
             linear-gradient(
               100deg,
               #f7eddb,
-              #fbf7ee
+              #fbf7ef
             );
+
           box-shadow:
-            inset 0 0 0 1px
-              #eadab9;
+            inset 0 0 0 1px #ead9b7;
         }
 
         .pc-nav-link.active::before {
           content: "";
+
           position: absolute;
           left: 0;
+
           width: 3px;
           height: 23px;
-          border-radius: 0 4px 4px 0;
+
+          border-radius:
+            0 5px 5px 0;
+
           background: var(--pc-gold);
         }
 
         .pc-nav-badge {
-          margin-left: auto;
           min-width: 21px;
           height: 21px;
-          padding: 0 6px;
+
+          margin-left: auto;
+
           display: grid;
           place-items: center;
+
           border-radius: 999px;
+
           background: var(--pc-gold-pale);
-          color: #8f6e39;
+          color: var(--pc-gold-dark);
+
           font-size: 9px;
-          font-weight: 900;
+          font-weight: 950;
         }
 
         .pc-sidebar-bottom {
           padding: 13px;
-          border-top: 1px solid
-            var(--pc-border-light);
+
+          border-top:
+            1px solid var(--pc-border-light);
         }
 
         /* =================================================
@@ -854,83 +735,86 @@ export default function DashboardPage() {
         .pc-header {
           position: sticky;
           top: 0;
-          z-index: 40;
+          z-index: 50;
+
           height: 76px;
           padding: 0 30px;
+
           display: flex;
           align-items: center;
           gap: 18px;
-          background: rgba(
-            251,
-            248,
-            242,
-            0.86
-          );
-          border-bottom: 1px solid
-            rgba(
-              234,
-              223,
-              203,
-              0.8
-            );
-          backdrop-filter: blur(20px);
+
+          background:
+            rgba(251, 248, 242, 0.86);
+
+          border-bottom:
+            1px solid rgba(234, 223, 203, 0.8);
+
+          backdrop-filter: blur(18px);
+        }
+
+        .pc-mobile-menu {
+          width: 41px;
+          height: 41px;
+
+          display: none;
+          place-items: center;
+
+          border:
+            1px solid var(--pc-border);
+
+          border-radius: 13px;
+
+          background: white;
+          color: var(--pc-text);
+
+          cursor: pointer;
         }
 
         .pc-search-wrap {
           position: relative;
-          width: min(
-            520px,
-            55vw
-          );
+          width: min(520px, 55vw);
         }
 
         .pc-search {
-          height: 44px;
+          height: 43px;
+
           display: flex;
           align-items: center;
           gap: 10px;
+
           padding: 0 14px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 14px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.9
-          );
+
+          background: rgba(255, 255, 255, 0.9);
+
           transition:
-            border 0.2s ease,
-            box-shadow 0.2s ease,
-            transform 0.2s ease;
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
         .pc-search:focus-within {
-          border-color: #d3b574;
+          border-color: #d4b879;
+
           box-shadow:
             0 0 0 4px
-              rgba(
-                185,
-                151,
-                91,
-                0.09
-              ),
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.05
-              );
-          transform: translateY(-1px);
+              rgba(185, 151, 91, 0.09);
         }
 
         .pc-search input {
           width: 100%;
+
           border: 0;
           outline: 0;
+
           background: transparent;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
+
           font-size: 12px;
           font-weight: 600;
         }
@@ -941,60 +825,49 @@ export default function DashboardPage() {
 
         .pc-search-results {
           position: absolute;
-          top: 52px;
+          top: 51px;
           left: 0;
           right: 0;
+
           padding: 7px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 17px;
+
           background: white;
+
           box-shadow:
             0 22px 55px
-              rgba(
-                73,
-                57,
-                34,
-                0.13
-              );
+              rgba(73, 57, 34, 0.13);
+
           animation:
-            pcDrop 0.2s ease both;
-        }
-
-        @keyframes pcDrop {
-          from {
-            opacity: 0;
-            transform: translateY(-7px)
-              scale(0.985);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0)
-              scale(1);
-          }
+            pcDrop 0.18s ease both;
         }
 
         .pc-search-result {
           display: flex;
           align-items: center;
           gap: 10px;
+
           padding: 8px;
+
           border-radius: 12px;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
           text-decoration: none;
-          transition:
-            background 0.18s ease,
-            transform 0.18s ease;
+
+          transition: background 0.15s ease;
         }
 
         .pc-search-result:hover {
           background: #faf6ed;
-          transform: translateX(2px);
         }
 
         .pc-header-actions {
           margin-left: auto;
+
           display: flex;
           align-items: center;
           gap: 9px;
@@ -1002,95 +875,49 @@ export default function DashboardPage() {
 
         .pc-icon-button {
           position: relative;
+
           width: 41px;
           height: 41px;
+
           display: grid;
           place-items: center;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 13px;
+
           background: white;
-          color: var(--pc-brown-light);
+          color: var(--pc-text-soft);
+
           cursor: pointer;
-          transition:
-            all 0.2s ease;
+
+          transition: all 0.2s ease;
         }
 
         .pc-icon-button:hover {
-          border-color: #d1b77f;
-          color: #9a763c;
-          transform: translateY(-2px);
+          color: #957039;
+          border-color: #d2b77e;
+          transform: translateY(-1px);
           box-shadow:
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.09
-              );
+            0 7px 18px
+              rgba(113, 91, 53, 0.08);
         }
 
         .pc-notification-dot {
           position: absolute;
-          right: 8px;
           top: 8px;
+          right: 8px;
+
           width: 6px;
           height: 6px;
+
           border-radius: 50%;
+
           background: #c3984e;
+
           box-shadow:
             0 0 0 3px white;
-          animation:
-            pcPulse 2s infinite;
-        }
-
-        @keyframes pcPulse {
-          0%,
-          100% {
-            box-shadow:
-              0 0 0 3px white,
-              0 0 0 0
-                rgba(
-                  195,
-                  152,
-                  78,
-                  0
-                );
-          }
-
-          50% {
-            box-shadow:
-              0 0 0 3px white,
-              0 0 0 5px
-                rgba(
-                  195,
-                  152,
-                  78,
-                  0.12
-                );
-          }
-        }
-
-        .pc-dropdown {
-          position: absolute;
-          right: 0;
-          top: 49px;
-          width: 290px;
-          padding: 8px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 17px;
-          background: white;
-          box-shadow:
-            0 22px 55px
-              rgba(
-                73,
-                57,
-                34,
-                0.13
-              );
-          animation:
-            pcDrop 0.2s ease both;
         }
 
         .pc-profile {
@@ -1101,44 +928,77 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 9px;
-          padding: 4px 9px 4px 4px;
-          border: 1px solid
-            var(--pc-border);
-          border-radius: 14px;
-          background: white;
-          color: var(--pc-brown);
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
 
-        .pc-profile-button:hover {
-          border-color: #d7c194;
-          transform: translateY(-1px);
-          box-shadow:
-            0 7px 18px
-              rgba(
-                113,
-                91,
-                53,
-                0.07
-              );
+          padding: 4px 9px 4px 4px;
+
+          border:
+            1px solid var(--pc-border);
+
+          border-radius: 14px;
+
+          background: white;
+
+          color: var(--pc-text);
+
+          cursor: pointer;
         }
 
         .pc-avatar {
           width: 34px;
           height: 34px;
+
           display: grid;
           place-items: center;
+
           border-radius: 11px;
+
+          color: white;
+
           background:
             linear-gradient(
               145deg,
-              #d5bb85,
-              #aa864b
+              #d4b97f,
+              #a68147
             );
-          color: white;
+
           font-size: 10px;
-          font-weight: 900;
+          font-weight: 950;
+        }
+
+        .pc-dropdown {
+          position: absolute;
+          right: 0;
+          top: 49px;
+
+          width: 290px;
+
+          padding: 8px;
+
+          border:
+            1px solid var(--pc-border);
+
+          border-radius: 17px;
+
+          background: white;
+
+          box-shadow:
+            0 22px 55px
+              rgba(73, 57, 34, 0.13);
+
+          animation:
+            pcDrop 0.18s ease both;
+        }
+
+        @keyframes pcDrop {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         /* =================================================
@@ -1150,8 +1010,9 @@ export default function DashboardPage() {
             1440px,
             calc(100% - 52px)
           );
+
           margin: auto;
-          padding: 30px 0 50px;
+          padding: 30px 0 55px;
         }
 
         /* =================================================
@@ -1161,131 +1022,72 @@ export default function DashboardPage() {
         .pc-welcome {
           position: relative;
           overflow: hidden;
-          min-height: 280px;
-          padding: 35px;
-          border: 1px solid #eadbbd;
+
+          min-height: 285px;
+
+          padding: 36px;
+
+          border:
+            1px solid #eadbbd;
+
           border-radius: 28px;
+
           background:
             radial-gradient(
-              circle at 90% 20%,
-              rgba(
-                202,
-                169,
-                105,
-                0.25
-              ),
-              transparent 30%
+              circle at 91% 18%,
+              rgba(202, 169, 105, 0.22),
+              transparent 29%
             ),
             linear-gradient(
               120deg,
               #fffdf8 0%,
-              #f9f0df 55%,
+              #f9f0df 58%,
               #f5e8cf 100%
             );
+
           box-shadow: var(--pc-shadow);
+
           animation:
-            pcHero 0.75s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
-        }
-
-        @keyframes pcHero {
-          from {
-            opacity: 0;
-            transform: translateY(18px)
-              scale(0.985);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0)
-              scale(1);
-          }
-        }
-
-        .pc-welcome::before {
-          content: "";
-          position: absolute;
-          width: 230px;
-          height: 230px;
-          right: -70px;
-          bottom: -105px;
-          border-radius: 50%;
-          border: 1px solid
-            rgba(
-              185,
-              151,
-              91,
-              0.18
-            );
-          box-shadow:
-            0 0 0 30px
-              rgba(
-                185,
-                151,
-                91,
-                0.035
-              ),
-            0 0 0 65px
-              rgba(
-                185,
-                151,
-                91,
-                0.025
-              );
-          animation:
-            pcOrbit 8s linear infinite;
-        }
-
-        @keyframes pcOrbit {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
+            pcFadeUp 0.55s ease both;
         }
 
         .pc-eyebrow {
-          position: relative;
-          width: fit-content;
           display: inline-flex;
           align-items: center;
           gap: 7px;
+
           padding: 6px 10px;
-          border: 1px solid #e5d3ae;
+
+          border:
+            1px solid #e5d3ae;
+
           border-radius: 999px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.58
-          );
+
+          background:
+            rgba(255, 255, 255, 0.58);
+
           color: #98783f;
+
           font-size: 9px;
           font-weight: 900;
-          letter-spacing: 0.16em;
+          letter-spacing: 0.15em;
           text-transform: uppercase;
         }
 
         .pc-welcome h1 {
-          position: relative;
-          max-width: 680px;
+          max-width: 700px;
+
           margin: 15px 0 0;
+
           color: #493d2e;
-          font-size: clamp(
-            29px,
-            4vw,
-            47px
-          );
+
+          font-size:
+            clamp(29px, 4vw, 47px);
+
           line-height: 1.05;
+
           letter-spacing: -1.8px;
+
           font-weight: 950;
         }
 
@@ -1294,135 +1096,131 @@ export default function DashboardPage() {
         }
 
         .pc-welcome-text {
-          position: relative;
           max-width: 620px;
+
           margin-top: 14px;
+
           color: #887965;
+
           font-size: 13px;
           line-height: 1.8;
         }
 
         .pc-welcome-buttons {
-          position: relative;
           display: flex;
           flex-wrap: wrap;
           gap: 9px;
+
           margin-top: 24px;
         }
 
         .pc-primary-button {
+          min-height: 43px;
+
+          padding: 0 17px;
+
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          min-height: 43px;
-          padding: 0 17px;
+
           border: 0;
           border-radius: 13px;
+
           background:
             linear-gradient(
               135deg,
               #c9a966,
               #a98246
             );
+
           color: white;
           text-decoration: none;
+
           font-size: 11px;
           font-weight: 900;
+
           box-shadow:
             0 9px 22px
-              rgba(
-                159,
-                120,
-                55,
-                0.18
-              );
-          transition: all 0.22s ease;
+              rgba(159, 120, 55, 0.18);
+
+          cursor: pointer;
+
+          transition: all 0.2s ease;
         }
 
         .pc-primary-button:hover {
-          transform: translateY(-3px);
+          transform: translateY(-2px);
+
           box-shadow:
-            0 14px 30px
-              rgba(
-                159,
-                120,
-                55,
-                0.25
-              );
+            0 13px 28px
+              rgba(159, 120, 55, 0.23);
         }
 
         .pc-secondary-button {
+          min-height: 43px;
+
+          padding: 0 17px;
+
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          min-height: 43px;
-          padding: 0 17px;
-          border: 1px solid #dfcfaf;
+
+          border:
+            1px solid #dfcfaf;
+
           border-radius: 13px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.6
-          );
+
+          background:
+            rgba(255, 255, 255, 0.6);
+
           color: #80673f;
+
           text-decoration: none;
+
           font-size: 11px;
           font-weight: 900;
-          transition: all 0.22s ease;
+
+          transition: all 0.2s ease;
         }
 
         .pc-secondary-button:hover {
           background: white;
-          transform: translateY(-3px);
-          box-shadow:
-            0 10px 22px
-              rgba(
-                113,
-                91,
-                53,
-                0.07
-              );
+          transform: translateY(-2px);
         }
 
         /* =================================================
-           POINTS CARD
+           POINTS
         ================================================= */
 
         .pc-points-card {
           position: absolute;
+
           top: 34px;
           right: 35px;
+
           width: 240px;
+
           padding: 19px;
-          border: 1px solid
-            rgba(
-              255,
-              255,
-              255,
-              0.75
-            );
+
+          border:
+            1px solid
+              rgba(255, 255, 255, 0.75);
+
           border-radius: 21px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.63
-          );
+
+          background:
+            rgba(255, 255, 255, 0.65);
+
           box-shadow:
             0 20px 40px
-              rgba(
-                123,
-                91,
-                43,
-                0.09
-              );
+              rgba(123, 91, 43, 0.09);
+
           backdrop-filter: blur(14px);
+
           animation:
-            pcFloat 4.5s ease-in-out
-            infinite;
+            pcFloat 4.5s ease-in-out infinite;
         }
 
         @keyframes pcFloat {
@@ -1432,7 +1230,7 @@ export default function DashboardPage() {
           }
 
           50% {
-            transform: translateY(-7px);
+            transform: translateY(-6px);
           }
         }
 
@@ -1445,15 +1243,19 @@ export default function DashboardPage() {
         .pc-points-icon {
           width: 39px;
           height: 39px;
+
           display: grid;
           place-items: center;
+
           border-radius: 12px;
+
           background: #f1e2c2;
           color: #a37e3e;
         }
 
         .pc-points-label {
           color: #a08760;
+
           font-size: 8px;
           font-weight: 900;
           letter-spacing: 0.14em;
@@ -1462,7 +1264,9 @@ export default function DashboardPage() {
 
         .pc-points-number {
           margin-top: 13px;
+
           color: #4a3c29;
+
           font-size: 28px;
           line-height: 1;
           font-weight: 950;
@@ -1470,32 +1274,33 @@ export default function DashboardPage() {
 
         .pc-progress {
           height: 5px;
+
           margin-top: 14px;
+
           overflow: hidden;
+
           border-radius: 999px;
+
           background: #eadfcf;
         }
 
         .pc-progress span {
           display: block;
+
           width: 64%;
           height: 100%;
+
           border-radius: inherit;
+
           background:
             linear-gradient(
               90deg,
               #c9a966,
               #a17a3f
             );
+
           animation:
-            pcProgress 1.2s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            )
-            both;
+            pcProgress 1s ease both;
         }
 
         @keyframes pcProgress {
@@ -1509,7 +1314,7 @@ export default function DashboardPage() {
         }
 
         /* =================================================
-           SECTIONS
+           SECTION
         ================================================= */
 
         .pc-section {
@@ -1520,24 +1325,33 @@ export default function DashboardPage() {
           display: flex;
           align-items: end;
           justify-content: space-between;
+
           margin-bottom: 17px;
         }
 
         .pc-section-kicker {
           margin: 0;
+
           color: #b08b4c;
+
           font-size: 9px;
           font-weight: 900;
+
           letter-spacing: 0.18em;
+
           text-transform: uppercase;
         }
 
         .pc-section-heading h2 {
           margin: 4px 0 0;
+
           color: #4c4133;
+
           font-size: 23px;
           line-height: 1.15;
+
           font-weight: 950;
+
           letter-spacing: -0.7px;
         }
 
@@ -1545,18 +1359,17 @@ export default function DashboardPage() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
+
           color: #9a763d;
+
           text-decoration: none;
+
           font-size: 10px;
           font-weight: 900;
-          transition:
-            transform 0.2s ease,
-            color 0.2s ease;
         }
 
         .pc-view-all:hover {
           color: #7f5f2d;
-          transform: translateX(3px);
         }
 
         /* =================================================
@@ -1565,86 +1378,96 @@ export default function DashboardPage() {
 
         .pc-stats {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(4, 1fr);
+
           gap: 13px;
+
           margin-top: 16px;
         }
 
         .pc-stat {
           position: relative;
           overflow: hidden;
+
           padding: 18px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 18px;
+
           background: white;
+
           box-shadow: var(--pc-shadow);
+
           transition: all 0.25s ease;
         }
 
         .pc-stat:hover {
-          transform: translateY(-5px);
+          transform: translateY(-4px);
+
           border-color: #dcc79f;
-          box-shadow:
-            var(--pc-shadow-hover);
+
+          box-shadow: var(--pc-shadow-hover);
         }
 
         .pc-stat::after {
           content: "";
+
           position: absolute;
-          width: 90px;
-          height: 90px;
+
           right: -35px;
           bottom: -45px;
+
+          width: 90px;
+          height: 90px;
+
           border-radius: 50%;
-          background: rgba(
-            185,
-            151,
-            91,
-            0.06
-          );
+
+          background:
+            rgba(185, 151, 91, 0.06);
         }
 
         .pc-stat-icon {
           width: 39px;
           height: 39px;
+
           display: grid;
           place-items: center;
+
           border-radius: 12px;
+
           background: #f7f0e2;
           color: #a27c3f;
-          transition: all 0.25s ease;
-        }
-
-        .pc-stat:hover
-          .pc-stat-icon {
-          background: #b9975b;
-          color: white;
-          transform: scale(1.07)
-            rotate(-3deg);
         }
 
         .pc-stat-label {
-          margin-top: 14px;
+          margin: 14px 0 0;
+
           color: #998d7b;
+
           font-size: 9px;
           font-weight: 800;
         }
 
         .pc-stat-value {
-          margin-top: 3px;
+          margin: 3px 0 0;
+
           color: #4a4034;
+
           font-size: 22px;
           font-weight: 950;
+
           letter-spacing: -0.6px;
         }
 
         .pc-stat-sub {
-          margin-top: 3px;
+          margin: 3px 0 0;
+
           color: #aaa091;
+
           font-size: 8px;
           font-weight: 650;
         }
@@ -1655,59 +1478,73 @@ export default function DashboardPage() {
 
         .pc-smart-grid {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(4, 1fr);
+
           gap: 13px;
         }
 
         .pc-smart-card {
           position: relative;
           overflow: hidden;
-          min-height: 188px;
+
+          min-height: 190px;
+
           padding: 19px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 20px;
+
           background: white;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
+
           text-decoration: none;
+
           box-shadow: var(--pc-shadow);
+
           transition: all 0.25s ease;
         }
 
-        .pc-smart-card::before {
-          content: "";
-          position: absolute;
-          width: 130px;
-          height: 130px;
-          right: -55px;
-          top: -55px;
-          border-radius: 50%;
-          background: rgba(
-            185,
-            151,
-            91,
-            0.07
-          );
-          transition:
-            transform 0.45s ease;
-        }
-
         .pc-smart-card:hover {
-          transform: translateY(-6px);
+          transform: translateY(-5px);
+
           border-color: #d9c39a;
+
           box-shadow:
             var(--pc-shadow-hover);
         }
 
+        .pc-smart-card::before {
+          content: "";
+
+          position: absolute;
+
+          top: -70px;
+          right: -70px;
+
+          width: 160px;
+          height: 160px;
+
+          border-radius: 50%;
+
+          background:
+            rgba(185, 151, 91, 0.06);
+
+          transition:
+            transform 0.45s ease;
+        }
+
         .pc-smart-card:hover::before {
-          transform: scale(1.5);
+          transform: scale(1.35);
         }
 
         .pc-smart-top {
           position: relative;
+
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -1716,11 +1553,15 @@ export default function DashboardPage() {
         .pc-smart-icon {
           width: 43px;
           height: 43px;
+
           display: grid;
           place-items: center;
+
           border-radius: 13px;
+
           background: #f7f0e2;
           color: #a17b40;
+
           transition: all 0.25s ease;
         }
 
@@ -1728,127 +1569,140 @@ export default function DashboardPage() {
           .pc-smart-icon {
           background: #b9975b;
           color: white;
-          transform: rotate(-4deg)
-            scale(1.05);
+
+          transform:
+            rotate(-3deg)
+            scale(1.04);
         }
 
         .pc-smart-tag {
           padding: 5px 7px;
+
           border-radius: 999px;
+
           background: #fbf5e8;
           color: #a17b40;
+
           font-size: 7px;
           font-weight: 950;
+
           letter-spacing: 0.12em;
         }
 
         .pc-smart-card h3 {
           position: relative;
+
           margin: 18px 0 0;
-          font-size: 14px;
+
+          font-size: 15px;
           font-weight: 950;
         }
 
         .pc-smart-card p {
           position: relative;
-          min-height: 36px;
+
+          min-height: 40px;
+
           margin: 6px 0 0;
+
           color: #978b7b;
+
           font-size: 10px;
           line-height: 1.7;
         }
 
         .pc-smart-link {
           position: relative;
+
+          margin-top: 14px;
+
           display: flex;
           align-items: center;
           gap: 5px;
-          margin-top: 14px;
+
           color: #a17b40;
+
           font-size: 9px;
           font-weight: 900;
-          transition: gap 0.2s ease;
-        }
-
-        .pc-smart-card:hover
-          .pc-smart-link {
-          gap: 8px;
         }
 
         /* =================================================
-           CATEGORIES
+           CATEGORY
         ================================================= */
 
         .pc-category-grid {
           display: grid;
-          grid-template-columns: repeat(
-            10,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(10, 1fr);
+
           gap: 9px;
         }
 
         .pc-category {
-          min-height: 104px;
+          min-height: 108px;
+
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+
           padding: 10px 5px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 17px;
+
           background: white;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
+
           text-decoration: none;
           text-align: center;
+
           box-shadow:
             0 5px 18px
-              rgba(
-                113,
-                91,
-                53,
-                0.035
-              );
+              rgba(113, 91, 53, 0.035);
+
           transition: all 0.22s ease;
         }
 
         .pc-category:hover {
-          transform: translateY(-5px);
+          transform: translateY(-4px);
+
           border-color: #d8bf91;
+
           background: #fffdf8;
+
           box-shadow: var(--pc-shadow);
         }
 
         .pc-category-icon {
-          width: 43px;
-          height: 43px;
+          width: 45px;
+          height: 45px;
+
           display: grid;
           place-items: center;
+
           border-radius: 14px;
+
           background: #faf4e8;
+
           font-size: 20px;
+
           transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease;
+            transform 0.25s ease;
         }
 
         .pc-category:hover
           .pc-category-icon {
-          transform: scale(1.12)
-            translateY(-2px);
-          box-shadow:
-            0 8px 18px
-              rgba(
-                185,
-                151,
-                91,
-                0.12
-              );
+          transform: scale(1.1);
         }
 
         .pc-category-name {
           margin-top: 9px;
+
           font-size: 9px;
           line-height: 1.3;
           font-weight: 900;
@@ -1860,118 +1714,146 @@ export default function DashboardPage() {
 
         .pc-product-grid {
           display: grid;
-          grid-template-columns: repeat(
-            6,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(6, 1fr);
+
           gap: 13px;
         }
 
         .pc-product {
           overflow: hidden;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 19px;
+
           background: white;
-          color: inherit;
+
+          color: var(--pc-text);
+
           text-decoration: none;
+
           box-shadow: var(--pc-shadow);
-          transition: all 0.25s ease;
+
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            border-color 0.25s ease;
         }
 
         .pc-product:hover {
-          transform: translateY(-6px);
+          transform: translateY(-5px);
+
           border-color: #d8c095;
+
           box-shadow:
             var(--pc-shadow-hover);
         }
 
+        /*
+          IMPORTANT:
+          contain = complete original image visible.
+          No crop.
+          No stretch.
+        */
+
         .pc-product-image {
           position: relative;
-          height: 185px;
+
+          width: 100%;
+          height: 205px;
+
           overflow: hidden;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
           background: #f8f4eb;
         }
 
         .pc-product-image img {
+          object-fit: contain !important;
+          object-position: center !important;
+
+          padding: 14px;
+
           transition:
-            transform 0.55s
-            cubic-bezier(
-              0.22,
-              1,
-              0.36,
-              1
-            );
+            transform 0.45s
+              cubic-bezier(
+                0.22,
+                1,
+                0.36,
+                1
+              );
         }
 
         .pc-product:hover
           .pc-product-image img {
-          transform: scale(1.07);
+          transform: scale(1.045);
         }
 
         .pc-discount {
           position: absolute;
+
           left: 10px;
           top: 10px;
+
           padding: 5px 7px;
+
           border-radius: 999px;
+
           background: white;
           color: #9c753b;
+
           font-size: 8px;
           font-weight: 950;
+
           box-shadow:
             0 4px 12px
-              rgba(
-                74,
-                57,
-                31,
-                0.08
-              );
+              rgba(74, 57, 31, 0.08);
         }
 
         .pc-product-heart {
           position: absolute;
-          right: 10px;
+
           top: 10px;
-          width: 31px;
-          height: 31px;
+          right: 10px;
+
+          width: 32px;
+          height: 32px;
+
           display: grid;
           place-items: center;
-          border: 1px solid
-            rgba(
-              234,
-              223,
-              203,
-              0.8
-            );
+
+          border:
+            1px solid
+              rgba(234, 223, 203, 0.9);
+
           border-radius: 50%;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.9
-          );
+
+          background:
+            rgba(255, 255, 255, 0.92);
+
           color: #827667;
+
           cursor: pointer;
+
           opacity: 0;
-          transform: translateY(
-            -4px
-          );
+
           transition: all 0.2s ease;
         }
 
         .pc-product:hover
           .pc-product-heart {
           opacity: 1;
-          transform: translateY(
-            0
-          );
         }
 
         .pc-product-heart:hover {
           color: #b66e65;
-          transform: scale(1.1)
-            !important;
+          transform: scale(1.08);
         }
 
         .pc-product-content {
@@ -1979,22 +1861,34 @@ export default function DashboardPage() {
         }
 
         .pc-product-brand {
+          margin: 0;
+
           color: #a39177;
+
           font-size: 7px;
           font-weight: 900;
+
           letter-spacing: 0.11em;
+
           text-transform: uppercase;
         }
 
         .pc-product-title {
           display: -webkit-box;
+
           overflow: hidden;
+
           min-height: 34px;
+
           margin: 5px 0 0;
+
           color: #4b4033;
+
           font-size: 11px;
           line-height: 1.5;
+
           font-weight: 900;
+
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
@@ -2003,8 +1897,11 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 3px;
+
           margin-top: 8px;
+
           color: #806f58;
+
           font-size: 8px;
           font-weight: 800;
         }
@@ -2018,39 +1915,42 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 6px;
+
           margin-top: 8px;
         }
 
         .pc-product-price strong {
           color: #463a2c;
+
           font-size: 13px;
           font-weight: 950;
         }
 
         .pc-product-price del {
           color: #aaa092;
+
           font-size: 8px;
           font-weight: 650;
         }
 
         /* =================================================
-           DEALS
+           FLASH DEALS
         ================================================= */
 
         .pc-deals {
           overflow: hidden;
+
           padding: 25px;
-          border: 1px solid #eadbbd;
+
+          border:
+            1px solid #eadbbd;
+
           border-radius: 25px;
+
           background:
             radial-gradient(
               circle at 95% 0%,
-              rgba(
-                214,
-                185,
-                127,
-                0.18
-              ),
+              rgba(214, 185, 127, 0.18),
               transparent 30%
             ),
             linear-gradient(
@@ -2058,16 +1958,18 @@ export default function DashboardPage() {
               #f9f0df,
               #fffdf8
             );
+
           box-shadow: var(--pc-shadow);
         }
 
         .pc-deal-grid {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(4, 1fr);
+
           gap: 10px;
+
           margin-top: 18px;
         }
 
@@ -2075,75 +1977,98 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 10px;
+
           padding: 9px;
-          border: 1px solid #e9dec9;
+
+          border:
+            1px solid #e9dec9;
+
           border-radius: 15px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.7
-          );
+
+          background:
+            rgba(255, 255, 255, 0.72);
+
+          color: var(--pc-text);
+
           text-decoration: none;
-          color: var(--pc-brown);
+
           transition: all 0.22s ease;
         }
 
         .pc-deal:hover {
-          transform: translateY(-4px);
+          transform: translateY(-3px);
+
           background: white;
+
           box-shadow:
             0 10px 25px
-              rgba(
-                113,
-                91,
-                53,
-                0.08
-              );
+              rgba(113, 91, 53, 0.08);
         }
 
         .pc-deal-image {
           position: relative;
-          width: 68px;
-          height: 68px;
+
+          width: 70px;
+          height: 70px;
+
           flex-shrink: 0;
+
           overflow: hidden;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
           border-radius: 11px;
+
           background: #f4eee2;
         }
 
         .pc-deal-image img {
+          object-fit: contain !important;
+          object-position: center !important;
+
+          padding: 6px;
+
           transition:
             transform 0.35s ease;
         }
 
         .pc-deal:hover
           .pc-deal-image img {
-          transform: scale(1.08);
+          transform: scale(1.06);
         }
 
         .pc-deal-label {
           display: flex;
           align-items: center;
           gap: 4px;
+
           color: #a27b3e;
+
           font-size: 7px;
           font-weight: 950;
         }
 
         .pc-deal-title {
           display: -webkit-box;
+
           overflow: hidden;
-          margin-top: 4px;
+
+          margin: 4px 0 0;
+
           font-size: 9px;
           line-height: 1.4;
+
           font-weight: 900;
+
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
         .pc-deal-price {
-          margin-top: 5px;
+          margin: 5px 0 0;
+
           font-size: 10px;
           font-weight: 950;
         }
@@ -2154,16 +2079,23 @@ export default function DashboardPage() {
 
         .pc-bottom-grid {
           display: grid;
-          grid-template-columns: 1.25fr 0.75fr;
+
+          grid-template-columns:
+            1.25fr 0.75fr;
+
           gap: 14px;
         }
 
         .pc-panel {
           padding: 21px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 20px;
+
           background: white;
+
           box-shadow: var(--pc-shadow);
         }
 
@@ -2176,15 +2108,11 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 11px;
-          padding: 11px 0;
-          border-bottom: 1px solid
-            var(--pc-border-light);
-          transition:
-            padding-left 0.2s ease;
-        }
 
-        .pc-order:hover {
-          padding-left: 5px;
+          padding: 11px 0;
+
+          border-bottom:
+            1px solid var(--pc-border-light);
         }
 
         .pc-order:last-child {
@@ -2194,10 +2122,14 @@ export default function DashboardPage() {
         .pc-order-icon {
           width: 37px;
           height: 37px;
+
           flex-shrink: 0;
+
           display: grid;
           place-items: center;
+
           border-radius: 11px;
+
           background: #f8f1e3;
           color: #a27c3e;
         }
@@ -2209,9 +2141,14 @@ export default function DashboardPage() {
 
         .pc-order-title {
           overflow: hidden;
+
+          margin: 0;
+
           color: #514637;
+
           font-size: 10px;
           font-weight: 900;
+
           text-overflow: ellipsis;
           white-space: nowrap;
         }
@@ -2220,8 +2157,11 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           gap: 6px;
+
           margin-top: 3px;
+
           color: #a19584;
+
           font-size: 7px;
         }
 
@@ -2233,6 +2173,7 @@ export default function DashboardPage() {
 
         .pc-order-price {
           color: #4b3e2e;
+
           font-size: 10px;
           font-weight: 950;
         }
@@ -2243,57 +2184,53 @@ export default function DashboardPage() {
 
         .pc-quick-grid {
           display: grid;
-          grid-template-columns: repeat(
-            2,
-            1fr
-          );
+
+          grid-template-columns:
+            repeat(2, 1fr);
+
           gap: 9px;
+
           margin-top: 16px;
         }
 
         .pc-quick {
           padding: 13px;
-          border: 1px solid
-            var(--pc-border-light);
+
+          border:
+            1px solid var(--pc-border-light);
+
           border-radius: 15px;
-          color: var(--pc-brown);
+
+          color: var(--pc-text);
+
           text-decoration: none;
+
           transition: all 0.22s ease;
         }
 
         .pc-quick:hover {
           border-color: #d9c49a;
           background: #fffdf8;
-          transform: translateY(-3px);
-          box-shadow:
-            0 8px 20px
-              rgba(
-                113,
-                91,
-                53,
-                0.06
-              );
+
+          transform: translateY(-2px);
         }
 
         .pc-quick-icon {
           width: 32px;
           height: 32px;
+
           display: grid;
           place-items: center;
+
           border-radius: 10px;
+
           background: #f7f0e2;
           color: #a27c3e;
-          transition:
-            transform 0.2s ease;
-        }
-
-        .pc-quick:hover
-          .pc-quick-icon {
-          transform: scale(1.08);
         }
 
         .pc-quick p {
           margin: 9px 0 0;
+
           font-size: 9px;
           font-weight: 900;
         }
@@ -2309,15 +2246,20 @@ export default function DashboardPage() {
 
         .pc-mini-banner {
           margin-top: 12px;
+
           padding: 15px;
+
+          border:
+            1px solid #eadabd;
+
           border-radius: 16px;
+
           background:
             linear-gradient(
               135deg,
               #f7edda,
               #fffaf0
             );
-          border: 1px solid #eadabd;
         }
 
         .pc-mini-banner-top {
@@ -2329,71 +2271,74 @@ export default function DashboardPage() {
         .pc-mini-icon {
           width: 34px;
           height: 34px;
+
           display: grid;
           place-items: center;
+
           border-radius: 10px;
+
           background: #d6ba7e;
           color: white;
         }
 
         .pc-mini-banner h4 {
           margin: 0;
+
           color: #57472f;
+
           font-size: 10px;
           font-weight: 950;
         }
 
         .pc-mini-banner p {
           margin: 2px 0 0;
+
           color: #9b8b73;
+
           font-size: 7px;
         }
 
         .pc-mini-button {
+          min-height: 31px;
+
+          margin-top: 11px;
+
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
-          min-height: 31px;
-          margin-top: 11px;
+
           border-radius: 10px;
+
           background: white;
           color: #8f6c36;
+
           text-decoration: none;
+
           font-size: 8px;
           font-weight: 950;
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .pc-mini-button:hover {
-          transform: translateY(-2px);
-          box-shadow:
-            0 7px 15px
-              rgba(
-                113,
-                91,
-                53,
-                0.08
-              );
         }
 
         /* =================================================
-           FOOTER BANNER
+           FINAL BANNER
         ================================================= */
 
         .pc-footer-banner {
           margin-top: 14px;
           padding: 22px;
+
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 20px;
-          border: 1px solid
-            var(--pc-border);
+
+          border:
+            1px solid var(--pc-border);
+
           border-radius: 21px;
+
           background: white;
+
           box-shadow: var(--pc-shadow);
         }
 
@@ -2406,73 +2351,111 @@ export default function DashboardPage() {
         .pc-footer-icon {
           width: 43px;
           height: 43px;
+
+          flex-shrink: 0;
+
           display: grid;
           place-items: center;
-          flex-shrink: 0;
+
           border-radius: 13px;
+
           background: #f6eedf;
           color: #a17a3e;
         }
 
         .pc-footer-info h3 {
           margin: 0;
+
           color: #514435;
+
           font-size: 13px;
           font-weight: 950;
         }
 
         .pc-footer-info p {
-          max-width: 600px;
+          max-width: 620px;
+
           margin: 4px 0 0;
+
           color: #9b907f;
+
           font-size: 8px;
           line-height: 1.6;
         }
 
         /* =================================================
-           MOBILE
+           ANIMATION
+        ================================================= */
+
+        .pc-reveal {
+          animation:
+            pcFadeUp 0.55s
+              cubic-bezier(
+                0.22,
+                1,
+                0.36,
+                1
+              )
+            both;
+        }
+
+        @keyframes pcFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* =================================================
+           MOBILE OVERLAY
         ================================================= */
 
         .pc-mobile-overlay {
           display: none;
         }
 
-        .pc-mobile-menu {
-          display: none;
-        }
+        /* =================================================
+           TABLET
+        ================================================= */
 
         @media (max-width: 1250px) {
           .pc-category-grid {
-            grid-template-columns: repeat(
-              5,
-              1fr
-            );
+            grid-template-columns:
+              repeat(5, 1fr);
           }
 
           .pc-product-grid {
-            grid-template-columns: repeat(
-              3,
-              1fr
-            );
+            grid-template-columns:
+              repeat(3, 1fr);
           }
 
           .pc-smart-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
+            grid-template-columns:
+              repeat(2, 1fr);
           }
         }
 
+        /* =================================================
+           1000
+        ================================================= */
+
         @media (max-width: 1000px) {
           .pc-sidebar {
-            transform: translateX(
-              -100%
-            );
+            transform:
+              translateX(-100%);
           }
 
           .pc-sidebar.mobile-open {
-            transform: translateX(0);
+            transform:
+              translateX(0);
+            box-shadow:
+              15px 0 40px
+                rgba(64, 48, 27, 0.13);
           }
 
           .pc-main {
@@ -2480,30 +2463,21 @@ export default function DashboardPage() {
           }
 
           .pc-mobile-menu {
-            width: 40px;
-            height: 40px;
             display: grid;
-            place-items: center;
-            border: 1px solid
-              var(--pc-border);
-            border-radius: 12px;
-            background: white;
-            color: var(--pc-brown);
-            cursor: pointer;
           }
 
           .pc-mobile-overlay {
             position: fixed;
             inset: 0;
-            z-index: 50;
+            z-index: 70;
+
             display: block;
-            background: rgba(
-              72,
-              57,
-              37,
-              0.2
-            );
-            backdrop-filter: blur(3px);
+
+            background:
+              rgba(72, 57, 37, 0.2);
+
+            backdrop-filter:
+              blur(3px);
           }
 
           .pc-points-card {
@@ -2515,12 +2489,21 @@ export default function DashboardPage() {
           }
 
           .pc-deal-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
+            grid-template-columns:
+              repeat(2, 1fr);
+          }
+
+          .pc-search-wrap {
+            width: min(
+              500px,
+              60vw
             );
           }
         }
+
+        /* =================================================
+           MOBILE
+        ================================================= */
 
         @media (max-width: 700px) {
           .pc-header {
@@ -2534,13 +2517,17 @@ export default function DashboardPage() {
           }
 
           .pc-content {
-            width: calc(100% - 28px);
+            width:
+              calc(100% - 28px);
+
             padding-top: 20px;
           }
 
           .pc-welcome {
             min-height: auto;
+
             padding: 23px;
+
             border-radius: 23px;
           }
 
@@ -2563,10 +2550,9 @@ export default function DashboardPage() {
           }
 
           .pc-stats {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
+            grid-template-columns:
+              repeat(2, 1fr);
+
             gap: 9px;
           }
 
@@ -2583,22 +2569,19 @@ export default function DashboardPage() {
           }
 
           .pc-category-grid {
-            grid-template-columns: repeat(
-              3,
-              1fr
-            );
+            grid-template-columns:
+              repeat(3, 1fr);
           }
 
           .pc-product-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
+            grid-template-columns:
+              repeat(2, 1fr);
+
             gap: 9px;
           }
 
           .pc-product-image {
-            height: 145px;
+            height: 155px;
           }
 
           .pc-product-content {
@@ -2607,6 +2590,10 @@ export default function DashboardPage() {
 
           .pc-product-title {
             font-size: 10px;
+          }
+
+          .pc-product-heart {
+            opacity: 1;
           }
 
           .pc-deals {
@@ -2635,16 +2622,18 @@ export default function DashboardPage() {
           }
         }
 
+        /* =================================================
+           SMALL MOBILE
+        ================================================= */
+
         @media (max-width: 430px) {
           .pc-category-grid {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
+            grid-template-columns:
+              repeat(2, 1fr);
           }
 
           .pc-product-image {
-            height: 135px;
+            height: 145px;
           }
 
           .pc-product-price strong {
@@ -2654,16 +2643,38 @@ export default function DashboardPage() {
           .pc-section-heading h2 {
             font-size: 19px;
           }
+
+          .pc-section {
+            margin-top: 30px;
+          }
+
+          .pc-footer-info {
+            align-items: flex-start;
+          }
+
+          .pc-footer-icon {
+            display: none;
+          }
         }
+
+        /* =================================================
+           REDUCED MOTION
+        ================================================= */
 
         @media (prefers-reduced-motion: reduce) {
           *,
           *::before,
           *::after {
             scroll-behavior: auto !important;
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
+
+            animation-duration:
+              0.01ms !important;
+
+            animation-iteration-count:
+              1 !important;
+
+            transition-duration:
+              0.01ms !important;
           }
         }
       `}</style>
@@ -2696,6 +2707,9 @@ export default function DashboardPage() {
           <Link
             href="/dashboard"
             className="pc-logo"
+            onClick={() =>
+              setMobileMenu(false)
+            }
           >
             <div className="pc-logo-mark">
               <ShoppingBag size={20} />
@@ -2703,8 +2717,7 @@ export default function DashboardPage() {
 
             <div>
               <div className="pc-logo-name">
-                Prime
-                <span>Cart</span>
+                Prime<span>Cart</span>
               </div>
 
               <span className="pc-logo-subtitle">
@@ -2714,8 +2727,7 @@ export default function DashboardPage() {
           </Link>
 
           <button
-            type="button"
-            className="ml-auto lg:hidden"
+            className="ml-auto rounded-lg p-2 lg:hidden"
             onClick={() =>
               setMobileMenu(false)
             }
@@ -2765,7 +2777,13 @@ export default function DashboardPage() {
             },
           )}
 
-          <div className="my-6 h-px bg-[#f0e8da]" />
+          <div
+            className="my-6 h-px"
+            style={{
+              background:
+                "#f0e8da",
+            }}
+          />
 
           <p className="pc-nav-label">
             Smart Shopping
@@ -2803,7 +2821,6 @@ export default function DashboardPage() {
           </Link>
 
           <button
-            type="button"
             onClick={handleLogout}
             className="pc-nav-link w-full text-left"
           >
@@ -2818,11 +2835,12 @@ export default function DashboardPage() {
       ===================================================== */}
 
       <div className="pc-main">
-        {/* HEADER */}
+        {/* ===================================================
+            HEADER
+        =================================================== */}
 
         <header className="pc-header">
           <button
-            type="button"
             className="pc-mobile-menu"
             onClick={() =>
               setMobileMenu(true)
@@ -2849,16 +2867,13 @@ export default function DashboardPage() {
                   )
                 }
                 onFocus={() =>
-                  setSearchFocused(
-                    true,
-                  )
+                  setSearchFocused(true)
                 }
                 placeholder="Search products, brands..."
               />
 
               {search && (
                 <button
-                  type="button"
                   onClick={() =>
                     setSearch("")
                   }
@@ -2871,12 +2886,17 @@ export default function DashboardPage() {
             </div>
 
             {searchFocused &&
-              search && (
+              search.trim() && (
                 <div className="pc-search-results">
                   {searchResults.length >
                   0 ? (
                     searchResults.map(
                       (product) => {
+                        const image =
+                          getImageUrl(
+                            product.image_url,
+                          );
+
                         return (
                           <Link
                             key={
@@ -2890,16 +2910,20 @@ export default function DashboardPage() {
                               )
                             }
                           >
-                            <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-[#f6f0e5]">
-                              <ProductImage
-                                src={
-                                  product.image_url
-                                }
-                                alt={
-                                  product.name
-                                }
-                                sizes="40px"
-                              />
+                            <div
+                              className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-[#f6f0e5]"
+                            >
+                              {image && (
+                                <Image
+                                  src={image}
+                                  alt={
+                                    product.name
+                                  }
+                                  fill
+                                  sizes="40px"
+                                  className="object-contain p-1"
+                                />
+                              )}
                             </div>
 
                             <div className="min-w-0 flex-1">
@@ -2934,13 +2958,11 @@ export default function DashboardPage() {
                       />
 
                       <p className="mt-2 text-[10px] font-black">
-                        No products
-                        found
+                        No products found
                       </p>
 
                       <p className="mt-1 text-[8px] text-[#9d917e]">
-                        Try another
-                        product or
+                        Try another product or
                         brand.
                       </p>
                     </div>
@@ -2952,16 +2974,14 @@ export default function DashboardPage() {
           {/* HEADER ACTIONS */}
 
           <div className="pc-header-actions">
-            {/* NOTIFICATION */}
+            {/* Notification */}
 
             <div className="relative">
               <button
-                type="button"
                 className="pc-icon-button"
                 onClick={() =>
                   setNotificationOpen(
-                    (value) =>
-                      !value,
+                    (value) => !value,
                   )
                 }
                 aria-label="Notifications"
@@ -2985,33 +3005,27 @@ export default function DashboardPage() {
 
                   <div className="rounded-xl bg-[#faf6ed] p-3">
                     <p className="text-[10px] font-black">
-                      Welcome to
-                      PrimeCart
+                      Welcome to PrimeCart
                     </p>
 
                     <p className="mt-1 text-[8px] leading-5 text-[#9a8e7c]">
-                      Explore
-                      personalised
-                      shopping and
-                      discover
-                      products made
-                      for you.
+                      Explore personalised
+                      shopping and discover
+                      products made for you.
                     </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* PROFILE */}
+            {/* Profile */}
 
             <div className="pc-profile">
               <button
-                type="button"
                 className="pc-profile-button"
                 onClick={() =>
                   setProfileOpen(
-                    (value) =>
-                      !value,
+                    (value) => !value,
                   )
                 }
               >
@@ -3042,6 +3056,9 @@ export default function DashboardPage() {
                   <Link
                     href="/dashboard/profile"
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black hover:bg-[#faf6ed]"
+                    onClick={() =>
+                      setProfileOpen(false)
+                    }
                   >
                     <User size={15} />
                     My Profile
@@ -3050,25 +3067,23 @@ export default function DashboardPage() {
                   <Link
                     href="/dashboard/settings"
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black hover:bg-[#faf6ed]"
+                    onClick={() =>
+                      setProfileOpen(false)
+                    }
                   >
-                    <Settings
-                      size={15}
-                    />
+                    <Settings size={15} />
                     Settings
                   </Link>
 
                   <div className="my-1 h-px bg-[#f0e8da]" />
 
                   <button
-                    type="button"
                     onClick={
                       handleLogout
                     }
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[9px] font-black text-[#a0645c] hover:bg-[#fff3f1]"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[9px] font-black text-[#a0645c] hover:bg-[#fff3f1]"
                   >
-                    <LogOut
-                      size={15}
-                    />
+                    <LogOut size={15} />
                     Sign Out
                   </button>
                 </div>
@@ -3082,13 +3097,15 @@ export default function DashboardPage() {
         =================================================== */}
 
         <main className="pc-content">
-          {/* WELCOME */}
+          {/* =================================================
+              WELCOME
+          ================================================= */}
 
           <section className="pc-welcome">
             <div className="pc-eyebrow">
               <Sparkles size={12} />
-              Personal Shopping
-              Dashboard
+
+              Personal Shopping Dashboard
             </div>
 
             <h1>
@@ -3096,16 +3113,16 @@ export default function DashboardPage() {
               <span>
                 {firstName}.
               </span>
+
               <br />
-              Let&apos;s shop
-              smarter.
+
+              Let&apos;s shop smarter.
             </h1>
 
             <p className="pc-welcome-text">
-              Discover products,
-              explore personalised
-              tools, track your orders
-              and make every shopping
+              Discover products, explore
+              personalised tools, track your
+              orders and make every shopping
               decision easier.
             </p>
 
@@ -3126,6 +3143,8 @@ export default function DashboardPage() {
                 Try PrimeMatch
               </Link>
             </div>
+
+            {/* POINTS */}
 
             <div className="pc-points-card">
               <div className="pc-points-top">
@@ -3151,25 +3170,29 @@ export default function DashboardPage() {
               </div>
 
               <p className="mt-2 text-[7px] font-bold text-[#9a8c75]">
-                Keep shopping to
-                unlock more rewards
+                Keep shopping to unlock more
+                rewards
               </p>
             </div>
           </section>
 
-          {/* STATS */}
+          {/* =================================================
+              STATS
+          ================================================= */}
 
           <section className="pc-stats">
             {[
               {
                 title: "Total Orders",
-                value: orders.length,
+                value:
+                  orders.length,
                 text: "All shopping orders",
                 icon: Package,
               },
               {
                 title: "Wishlist",
-                value: wishlistCount,
+                value:
+                  wishlistCount,
                 text: "Saved products",
                 icon: Heart,
               },
@@ -3184,7 +3207,8 @@ export default function DashboardPage() {
               },
               {
                 title: "PrimePoints",
-                value: primePoints,
+                value:
+                  primePoints,
                 text: "Reward balance",
                 icon: Crown,
               },
@@ -3195,10 +3219,13 @@ export default function DashboardPage() {
 
                 return (
                   <div
-                    key={stat.title}
+                    key={
+                      stat.title
+                    }
                     className="pc-stat pc-reveal"
                     style={{
-                      animationDelay: `${index * 70}ms`,
+                      animationDelay:
+                        `${index * 70}ms`,
                     }}
                   >
                     <div className="pc-stat-icon">
@@ -3224,14 +3251,15 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* SMART SHOPPING */}
+          {/* =================================================
+              SMART TOOLS
+          ================================================= */}
 
           <section className="pc-section">
             <div className="pc-section-heading">
               <div>
                 <p className="pc-section-kicker">
-                  Intelligent
-                  Shopping
+                  Intelligent Shopping
                 </p>
 
                 <h2>
@@ -3240,8 +3268,8 @@ export default function DashboardPage() {
               </div>
 
               <span className="hidden text-[8px] font-bold text-[#a09483] sm:block">
-                Tools designed for
-                better decisions
+                Tools designed for better
+                decisions
               </span>
             </div>
 
@@ -3253,11 +3281,16 @@ export default function DashboardPage() {
 
                   return (
                     <Link
-                      key={tool.href}
-                      href={tool.href}
+                      key={
+                        tool.href
+                      }
+                      href={
+                        tool.href
+                      }
                       className="pc-smart-card pc-reveal"
                       style={{
-                        animationDelay: `${index * 70}ms`,
+                        animationDelay:
+                          `${index * 70}ms`,
                       }}
                     >
                       <div className="pc-smart-top">
@@ -3293,7 +3326,9 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* CATEGORIES */}
+          {/* =================================================
+              CATEGORIES
+          ================================================= */}
 
           <section className="pc-section">
             <div className="pc-section-heading">
@@ -3318,44 +3353,56 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            <div className="pc-category-grid">
-              {categories
-                .slice(0, 10)
-                .map(
-                  (
-                    category,
-                    index,
-                  ) => (
-                    <Link
-                      key={
-                        category.id
-                      }
-                      href={`/dashboard/categories/${category.slug}`}
-                      className="pc-category pc-reveal"
-                      style={{
-                        animationDelay: `${index * 45}ms`,
-                      }}
-                    >
-                      <div className="pc-category-icon">
-                        {categoryIcons[
-                          category
-                            .slug
-                        ] ||
-                          "🛍️"}
-                      </div>
-
-                      <span className="pc-category-name">
-                        {
-                          category.name
+            {categories.length >
+            0 ? (
+              <div className="pc-category-grid">
+                {categories
+                  .slice(0, 10)
+                  .map(
+                    (
+                      category,
+                    ) => (
+                      <Link
+                        key={
+                          category.id
                         }
-                      </span>
-                    </Link>
-                  ),
-                )}
-            </div>
+                        href={`/dashboard/categories/${category.slug}`}
+                        className="pc-category"
+                      >
+                        <div className="pc-category-icon">
+                          {categoryIcons[
+                            category
+                              .slug
+                          ] ||
+                            "🛍️"}
+                        </div>
+
+                        <span className="pc-category-name">
+                          {
+                            category.name
+                          }
+                        </span>
+                      </Link>
+                    ),
+                  )}
+              </div>
+            ) : (
+              <div className="pc-panel py-10 text-center">
+                <ShoppingBag
+                  size={28}
+                  className="mx-auto text-[#c3b49d]"
+                />
+
+                <p className="mt-3 text-[10px] font-black">
+                  No categories available
+                </p>
+              </div>
+            )}
           </section>
 
-          {/* FEATURED PRODUCTS */}
+          {/* =================================================
+              FEATURED PRODUCTS
+          ================================================= */}
 
           <section className="pc-section">
             <div className="pc-section-heading">
@@ -3388,6 +3435,11 @@ export default function DashboardPage() {
                     product,
                     index,
                   ) => {
+                    const image =
+                      getImageUrl(
+                        product.image_url,
+                      );
+
                     const discount =
                       discountPercentage(
                         Number(
@@ -3408,19 +3460,43 @@ export default function DashboardPage() {
                         href={`/dashboard/products/${product.id}`}
                         className="pc-product pc-reveal"
                         style={{
-                          animationDelay: `${index * 55}ms`,
+                          animationDelay:
+                            `${index * 55}ms`,
                         }}
                       >
+                        {/* IMAGE */}
+
                         <div className="pc-product-image">
-                          <ProductImage
-                            src={
-                              product.image_url
-                            }
-                            alt={
-                              product.name
-                            }
-                            sizes="(max-width: 700px) 50vw, 180px"
-                          />
+                          {image ? (
+                            <Image
+                              src={
+                                image
+                              }
+                              alt={
+                                product.name
+                              }
+                              fill
+                              sizes="
+                                (max-width: 430px) 50vw,
+                                (max-width: 700px) 50vw,
+                                (max-width: 1250px) 33vw,
+                                16vw
+                              "
+                              className="object-contain"
+                              priority={
+                                index <
+                                2
+                              }
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[#b7aa96]">
+                              <ShoppingBag
+                                size={
+                                  30
+                                }
+                              />
+                            </div>
+                          )}
 
                           {discount >
                             0 && (
@@ -3434,7 +3510,6 @@ export default function DashboardPage() {
                           )}
 
                           <button
-                            type="button"
                             className="pc-product-heart"
                             onClick={(
                               event,
@@ -3444,10 +3519,14 @@ export default function DashboardPage() {
                             aria-label="Wishlist"
                           >
                             <Heart
-                              size={14}
+                              size={
+                                14
+                              }
                             />
                           </button>
                         </div>
+
+                        {/* CONTENT */}
 
                         <div className="pc-product-content">
                           <p className="pc-product-brand">
@@ -3463,7 +3542,9 @@ export default function DashboardPage() {
 
                           <div className="pc-rating">
                             <Star
-                              size={10}
+                              size={
+                                10
+                              }
                             />
 
                             {Number(
@@ -3477,7 +3558,7 @@ export default function DashboardPage() {
                               (
                               {
                                 product.reviews_count ||
-                                  0
+                                0
                               }
                               )
                             </span>
@@ -3515,21 +3596,27 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              <div className="pc-panel text-center">
+              <div className="pc-panel py-12 text-center">
                 <ShoppingBag
-                  size={27}
+                  size={28}
                   className="mx-auto text-[#c3b49d]"
                 />
 
                 <p className="mt-3 text-[10px] font-black">
-                  No products
-                  available yet.
+                  No products available yet.
+                </p>
+
+                <p className="mt-1 text-[8px] text-[#a29786]">
+                  Add products from your
+                  Supabase database.
                 </p>
               </div>
             )}
           </section>
 
-          {/* FLASH DEALS */}
+          {/* =================================================
+              FLASH DEALS
+          ================================================= */}
 
           <section className="pc-section">
             <div className="pc-deals">
@@ -3563,84 +3650,114 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="pc-deal-grid">
-                {flashProducts.map(
-                  (
-                    product,
-                    index,
-                  ) => {
-                    const discount =
-                      discountPercentage(
-                        Number(
-                          product.price,
-                        ),
-                        product.original_price
-                          ? Number(
-                              product.original_price,
-                            )
-                          : null,
-                      );
+              {flashProducts.length >
+              0 ? (
+                <div className="pc-deal-grid">
+                  {flashProducts.map(
+                    (product) => {
+                      const image =
+                        getImageUrl(
+                          product.image_url,
+                        );
 
-                    return (
-                      <Link
-                        key={
-                          product.id
-                        }
-                        href={`/dashboard/products/${product.id}`}
-                        className="pc-deal pc-reveal"
-                        style={{
-                          animationDelay: `${index * 70}ms`,
-                        }}
-                      >
-                        <div className="pc-deal-image">
-                          <ProductImage
-                            src={
-                              product.image_url
-                            }
-                            alt={
-                              product.name
-                            }
-                            sizes="68px"
-                          />
-                        </div>
+                      const discount =
+                        discountPercentage(
+                          Number(
+                            product.price,
+                          ),
+                          product.original_price
+                            ? Number(
+                                product.original_price,
+                              )
+                            : null,
+                        );
 
-                        <div className="min-w-0">
-                          <div className="pc-deal-label">
-                            <Zap
-                              size={9}
-                            />
-
-                            {discount >
-                            0
-                              ? `${discount}% OFF`
-                              : "DEAL"}
+                      return (
+                        <Link
+                          key={
+                            product.id
+                          }
+                          href={`/dashboard/products/${product.id}`}
+                          className="pc-deal"
+                        >
+                          <div className="pc-deal-image">
+                            {image ? (
+                              <Image
+                                src={
+                                  image
+                                }
+                                alt={
+                                  product.name
+                                }
+                                fill
+                                sizes="70px"
+                                className="object-contain"
+                              />
+                            ) : (
+                              <ShoppingBag
+                                size={
+                                  22
+                                }
+                                className="text-[#b7aa96]"
+                              />
+                            )}
                           </div>
 
-                          <p className="pc-deal-title">
-                            {
-                              product.name
-                            }
-                          </p>
+                          <div className="min-w-0">
+                            <div className="pc-deal-label">
+                              <Zap
+                                size={
+                                  9
+                                }
+                              />
 
-                          <p className="pc-deal-price">
-                            {formatPrice(
-                              Number(
-                                product.price,
-                              ),
-                            )}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  },
-                )}
-              </div>
+                              {discount >
+                              0
+                                ? `${discount}% OFF`
+                                : "DEAL"}
+                            </div>
+
+                            <p className="pc-deal-title">
+                              {
+                                product.name
+                              }
+                            </p>
+
+                            <p className="pc-deal-price">
+                              {formatPrice(
+                                Number(
+                                  product.price,
+                                ),
+                              )}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    },
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <Zap
+                    size={26}
+                    className="mx-auto text-[#c3b49d]"
+                  />
+
+                  <p className="mt-2 text-[10px] font-black">
+                    No deals available
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 
-          {/* ORDERS + QUICK ACTIONS */}
+          {/* =================================================
+              ORDERS + QUICK ACTIONS
+          ================================================= */}
 
           <section className="pc-section pc-bottom-grid">
+            {/* ORDERS */}
+
             <div className="pc-panel">
               <div className="pc-section-heading mb-0">
                 <div>
@@ -3667,9 +3784,7 @@ export default function DashboardPage() {
                   orders
                     .slice(0, 5)
                     .map(
-                      (
-                        order,
-                      ) => (
+                      (order) => (
                         <div
                           key={
                             order.id
@@ -3746,10 +3861,19 @@ export default function DashboardPage() {
                     </p>
 
                     <p className="mt-1 text-[8px] text-[#a29786]">
-                      Your orders
-                      will appear
-                      here.
+                      Your orders will
+                      appear here.
                     </p>
+
+                    <Link
+                      href="/dashboard/products"
+                      className="pc-primary-button mx-auto mt-4"
+                    >
+                      Start Shopping
+                      <ArrowRight
+                        size={12}
+                      />
+                    </Link>
                   </div>
                 )}
               </div>
@@ -3773,25 +3897,31 @@ export default function DashboardPage() {
                   {
                     title:
                       "Browse Products",
-                    href: "/dashboard/products",
-                    icon: ShoppingCart,
+                    href:
+                      "/dashboard/products",
+                    icon:
+                      ShoppingCart,
                   },
                   {
                     title:
                       "My Wishlist",
-                    href: "/dashboard/wishlist",
+                    href:
+                      "/dashboard/wishlist",
                     icon: Heart,
                   },
                   {
                     title:
                       "My Orders",
-                    href: "/dashboard/orders",
-                    icon: Package,
+                    href:
+                      "/dashboard/orders",
+                    icon:
+                      Package,
                   },
                   {
                     title:
                       "My Profile",
-                    href: "/dashboard/profile",
+                    href:
+                      "/dashboard/profile",
                     icon: User,
                   },
                 ].map(
@@ -3838,7 +3968,9 @@ export default function DashboardPage() {
                 <div className="pc-mini-banner-top">
                   <div className="pc-mini-icon">
                     <Sparkles
-                      size={15}
+                      size={
+                        15
+                      }
                     />
                   </div>
 
@@ -3849,8 +3981,7 @@ export default function DashboardPage() {
                     </h4>
 
                     <p>
-                      Powered by
-                      PrimeCart
+                      Powered by PrimeCart
                       smart tools
                     </p>
                   </div>
@@ -3869,7 +4000,9 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* FINAL BANNER */}
+          {/* =================================================
+              FINAL BANNER
+          ================================================= */}
 
           <section className="pc-footer-banner">
             <div className="pc-footer-info">
@@ -3881,18 +4014,14 @@ export default function DashboardPage() {
 
               <div>
                 <h3>
-                  A smarter way
-                  to shop
+                  A smarter way to shop
                 </h3>
 
                 <p>
-                  Discover products,
-                  compare options,
-                  manage your
-                  wishlist and make
-                  better shopping
-                  decisions with
-                  PrimeCart.
+                  Discover products, compare
+                  options, manage your wishlist
+                  and make better shopping
+                  decisions with PrimeCart.
                 </p>
               </div>
             </div>
@@ -3908,12 +4037,15 @@ export default function DashboardPage() {
             </Link>
           </section>
 
+          {/* =================================================
+              FOOTER
+          ================================================= */}
+
           <footer className="py-8 text-center">
             <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-[#aaa090]">
               ©{" "}
               {new Date().getFullYear()}{" "}
-              PrimeCart · Shop
-              Smarter
+              PrimeCart · Shop Smarter
             </p>
           </footer>
         </main>
