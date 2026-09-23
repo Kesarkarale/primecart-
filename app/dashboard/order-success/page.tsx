@@ -20,6 +20,11 @@ import {
   Clock3,
   ShieldCheck,
 } from "lucide-react";
+import OrderSuccessClient from "./OrderSuccessClient";
+
+export default function OrderSuccessPage() {
+  return <OrderSuccessClient />;
+}
 
 type OrderItem = {
   id?: string | number;
