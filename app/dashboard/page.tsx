@@ -159,22 +159,20 @@ const smartTools = [
    HELPERS
 ========================================================= */
 
-function getImageUrl(value: string | null) {
-  if (!value) return null;
+function getImageUrl(image?: string | null) {
+  if (!image) return "";
 
-  const image = value.trim();
-
-  if (!image) return null;
+  const value = image.trim();
 
   if (
-    image.startsWith("http://") ||
-    image.startsWith("https://") ||
-    image.startsWith("/")
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/")
   ) {
-    return image;
+    return value;
   }
 
-  return `/${image}`;
+  return `/${value}`;
 }
 
 function formatPrice(value: number) {
