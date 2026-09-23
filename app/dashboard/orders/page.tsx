@@ -158,7 +158,10 @@ function ProductImage({
   alt: string;
   priority?: boolean;
 }) {
-  const candidates = useMemo(() => getImageCandidates(src), [src]);
+  const candidates = useMemo(
+    () => getImageCandidates(src),
+    [src]
+  );
 
   const [index, setIndex] = useState(0);
 
@@ -166,7 +169,8 @@ function ProductImage({
     setIndex(0);
   }, [src]);
 
-  const currentSrc = candidates[index] ?? candidates[0];
+  const currentSrc =
+    candidates[index] ?? candidates[0];
 
   return (
     <Image
@@ -189,7 +193,9 @@ function ProductImage({
    HELPERS
 ========================================================= */
 
-function formatPrice(value: number | null | undefined) {
+function formatPrice(
+  value: number | null | undefined
+) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -223,7 +229,9 @@ function normalizeStatus(status?: string | null) {
     .replace(/\s+/g, "_");
 }
 
-function getStatusConfig(status?: string): StatusConfig {
+function getStatusConfig(
+  status?: string
+): StatusConfig {
   const normalized = normalizeStatus(status);
 
   switch (normalized) {
@@ -241,7 +249,8 @@ function getStatusConfig(status?: string): StatusConfig {
       return {
         label: "Cancelled",
         icon: X,
-        className: "border-red-200 bg-red-50 text-red-600",
+        className:
+          "border-red-200 bg-red-50 text-red-600",
       };
 
     case "out_for_delivery":
@@ -289,11 +298,17 @@ function getStatusConfig(status?: string): StatusConfig {
 function getOrderProgress(status?: string) {
   const normalized = normalizeStatus(status);
 
-  if (normalized === "cancelled" || normalized === "canceled") {
+  if (
+    normalized === "cancelled" ||
+    normalized === "canceled"
+  ) {
     return -1;
   }
 
-  if (normalized === "delivered" || normalized === "completed") {
+  if (
+    normalized === "delivered" ||
+    normalized === "completed"
+  ) {
     return 4;
   }
 
@@ -319,7 +334,9 @@ function getOrderSignature(order: Order) {
   return `${order.id}-${order.created_at}`;
 }
 
-function getLocalOrderAsOrder(order: LocalOrder): Order {
+function getLocalOrderAsOrder(
+  order: LocalOrder
+): Order {
   return {
     id: order.id,
     user_id: "local",
@@ -359,13 +376,26 @@ function getAddressText(
 ========================================================= */
 
 export default function OrdersPage() {
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(
+    () => createClient(),
+    []
+  );
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [orders, setOrders] = useState<Order[]>(
+    []
+  );
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [cancellingOrder, setCancellingOrder] =
+    useState<string | null>(null);
 
   const [search, setSearch] = useState("");
+
   const [filter, setFilter] =
     useState<FilterValue>("all");
 
@@ -381,6 +411,10 @@ export default function OrdersPage() {
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  /* =======================================================
+     LOAD ORDERS
+  ======================================================= */
+
   const loadOrders = useCallback(
     async (showRefresh = false) => {
       try {
@@ -392,24 +426,26 @@ export default function OrdersPage() {
 
         setErrorMessage("");
 
-        /* ---------------------------------------------
+        /* -----------------------------------------------
            LOCAL ORDERS
-        --------------------------------------------- */
+        ----------------------------------------------- */
 
         let localOrders: Order[] = [];
 
         try {
-          const stored = localStorage.getItem(
-            "primecart-orders"
-          );
+          const stored =
+            localStorage.getItem(
+              "primecart-orders"
+            );
 
           if (stored) {
             const parsed = JSON.parse(stored);
 
             if (Array.isArray(parsed)) {
               localOrders = parsed
-                .map((item: LocalOrder) =>
-                  getLocalOrderAsOrder(item)
+                .map(
+                  (item: LocalOrder) =>
+                    getLocalOrderAsOrder(item)
                 )
                 .filter(Boolean);
             }
@@ -418,51 +454,56 @@ export default function OrdersPage() {
           // Ignore invalid local storage.
         }
 
-        /* ---------------------------------------------
+        /* -----------------------------------------------
            AUTH
-        --------------------------------------------- */
+        ----------------------------------------------- */
 
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } =
+          await supabase.auth.getUser();
 
         if (!user) {
-          window.location.href = "/auth/login";
+          window.location.href =
+            "/auth/login";
           return;
         }
 
-        /* ---------------------------------------------
-           SUPABASE ORDERS
+        /* -----------------------------------------------
+           DATABASE ORDERS
+        ----------------------------------------------- */
 
-           Only uses columns that are confirmed in the
-           current project schema.
-        --------------------------------------------- */
-
-        const { data, error } = await supabase
-          .from("orders")
-          .select(
-            `
-              id,
-              user_id,
-              status,
-              total_amount,
-              created_at,
-              order_items (
+        const { data, error } =
+          await supabase
+            .from("orders")
+            .select(
+              `
                 id,
-                product_id,
-                product_name,
-                quantity,
-                price,
-                image_url
-              )
-            `
-          )
-          .eq("user_id", user.id)
-          .order("created_at", {
-            ascending: false,
-          });
+                user_id,
+                status,
+                total_amount,
+                created_at,
+                order_items (
+                  id,
+                  product_id,
+                  product_name,
+                  quantity,
+                  price,
+                  image_url
+                )
+              `
+            )
+            .eq("user_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            });
 
         if (error) {
+          console.error(
+            "Supabase orders error:",
+            error
+          );
+
           if (localOrders.length === 0) {
             setErrorMessage(
               "We couldn't load your orders right now. Please try again."
@@ -474,57 +515,67 @@ export default function OrdersPage() {
         }
 
         const databaseOrders: Order[] =
-          (data || []).map((order: any) => ({
-            ...order,
-            total_amount: Number(
-              order.total_amount || 0
-            ),
-            order_items:
-              order.order_items || [],
-          }));
+          (data || []).map(
+            (order: any) => ({
+              ...order,
+              total_amount: Number(
+                order.total_amount || 0
+              ),
+              order_items:
+                order.order_items || [],
+            })
+          );
 
-        /* ---------------------------------------------
-           MERGE LOCAL + DATABASE ORDERS
-        --------------------------------------------- */
+        /* -----------------------------------------------
+           MERGE
+        ----------------------------------------------- */
 
         const merged = [
           ...databaseOrders,
           ...localOrders,
         ];
 
-        const unique = new Map<string, Order>();
+        const unique = new Map<
+          string,
+          Order
+        >();
 
         merged.forEach((order) => {
-          const key = getOrderSignature(order);
+          const key =
+            getOrderSignature(order);
 
           if (!unique.has(key)) {
             unique.set(key, order);
           }
         });
 
-        const finalOrders = Array.from(
-          unique.values()
-        ).sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
-        );
+        const finalOrders =
+          Array.from(unique.values()).sort(
+            (a, b) =>
+              new Date(
+                b.created_at
+              ).getTime() -
+              new Date(
+                a.created_at
+              ).getTime()
+          );
 
         setOrders(finalOrders);
       } catch (error) {
-        console.error("Orders loading error:", error);
+        console.error(
+          "Orders loading error:",
+          error
+        );
 
-        if (orders.length === 0) {
-          setErrorMessage(
-            "Something went wrong while loading your orders."
-          );
-        }
+        setErrorMessage(
+          "Something went wrong while loading your orders."
+        );
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [supabase, orders.length]
+    [supabase]
   );
 
   useEffect(() => {
@@ -547,130 +598,337 @@ export default function OrdersPage() {
     };
   }, [loadOrders]);
 
-  /* =====================================================
+  /* =======================================================
+     CANCEL ORDER
+  ======================================================= */
+
+  async function cancelOrder(order: Order) {
+    const status =
+      normalizeStatus(order.status);
+
+    if (
+      status === "delivered" ||
+      status === "completed" ||
+      status === "cancelled" ||
+      status === "canceled"
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this order?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setCancellingOrder(order.id);
+      setErrorMessage("");
+
+      /* -----------------------------------------------
+         LOCAL ORDER
+      ----------------------------------------------- */
+
+      let localUpdated = false;
+
+      try {
+        const stored =
+          localStorage.getItem(
+            "primecart-orders"
+          );
+
+        if (stored) {
+          const parsed = JSON.parse(stored);
+
+          if (Array.isArray(parsed)) {
+            const updated = parsed.map(
+              (item: LocalOrder) => {
+                if (
+                  String(item.id) ===
+                  String(order.id)
+                ) {
+                  localUpdated = true;
+
+                  return {
+                    ...item,
+                    status: "cancelled",
+                  };
+                }
+
+                return item;
+              }
+            );
+
+            if (localUpdated) {
+              localStorage.setItem(
+                "primecart-orders",
+                JSON.stringify(updated)
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Local cancel error:",
+          error
+        );
+      }
+
+      /* -----------------------------------------------
+         DATABASE ORDER
+      ----------------------------------------------- */
+
+      if (order.user_id !== "local") {
+        const {
+          data: { user },
+        } =
+          await supabase.auth.getUser();
+
+        if (!user) {
+          throw new Error(
+            "Please login again."
+          );
+        }
+
+        const { error } =
+          await supabase
+            .from("orders")
+            .update({
+              status: "cancelled",
+            })
+            .eq("id", order.id)
+            .eq("user_id", user.id);
+
+        if (error) {
+          console.error(
+            "Cancel order error:",
+            error
+          );
+
+          /*
+             If DB update fails but this is a local
+             order, local cancellation can still remain.
+          */
+          if (!localUpdated) {
+            throw error;
+          }
+        }
+      }
+
+      /* -----------------------------------------------
+         INSTANT UI UPDATE
+      ----------------------------------------------- */
+
+      setOrders((currentOrders) =>
+        currentOrders.map((item) =>
+          item.id === order.id
+            ? {
+                ...item,
+                status: "cancelled",
+              }
+            : item
+        )
+      );
+
+      setExpandedOrder(order.id);
+
+      window.dispatchEvent(
+        new Event("storage")
+      );
+    } catch (error) {
+      console.error(
+        "Cancel order failed:",
+        error
+      );
+
+      setErrorMessage(
+        "We couldn't cancel this order. Please try again."
+      );
+    } finally {
+      setCancellingOrder(null);
+    }
+  }
+
+  /* =======================================================
      FILTER + SORT
-  ===================================================== */
+  ======================================================= */
 
   const filteredOrders = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query =
+      search.trim().toLowerCase();
 
-    let result = orders.filter((order) => {
-      const normalized = normalizeStatus(
-        order.status
-      );
-
-      const matchesFilter =
-        filter === "all"
-          ? true
-          : filter === "cancelled"
-            ? normalized === "cancelled" ||
-              normalized === "canceled"
-            : filter === "placed"
-              ? normalized === "placed"
-              : normalized === filter;
-
-      if (!matchesFilter) return false;
-
-      if (!query) return true;
-
-      const orderMatch = order.id
-        .toLowerCase()
-        .includes(query);
-
-      const productMatch = (
-        order.order_items || []
-      ).some((item) =>
-        item.product_name
-          ?.toLowerCase()
-          .includes(query)
-      );
-
-      return orderMatch || productMatch;
-    });
-
-    result = [...result].sort((a, b) => {
-      switch (sort) {
-        case "oldest":
-          return (
-            new Date(a.created_at).getTime() -
-            new Date(b.created_at).getTime()
+    let result = orders.filter(
+      (order) => {
+        const normalized =
+          normalizeStatus(
+            order.status
           );
 
-        case "highest":
-          return (
-            Number(b.total_amount || 0) -
-            Number(a.total_amount || 0)
-          );
+        const matchesFilter =
+          filter === "all"
+            ? true
+            : filter === "cancelled"
+              ? normalized ===
+                  "cancelled" ||
+                normalized ===
+                  "canceled"
+              : filter === "placed"
+                ? normalized ===
+                  "placed"
+                : normalized ===
+                  filter;
 
-        case "lowest":
-          return (
-            Number(a.total_amount || 0) -
-            Number(b.total_amount || 0)
-          );
+        if (!matchesFilter)
+          return false;
 
-        default:
-          return (
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
-          );
-      }
-    });
+        if (!query) return true;
 
-    return result;
-  }, [orders, search, filter, sort]);
+        const orderMatch =
+          order.id
+            .toLowerCase()
+            .includes(query);
 
-  /* =====================================================
-     STATS
-  ===================================================== */
-
-  const stats = useMemo(() => {
-    const totalOrders = orders.length;
-
-    const deliveredOrders = orders.filter((order) => {
-      const status = normalizeStatus(order.status);
-
-      return (
-        status === "delivered" ||
-        status === "completed"
-      );
-    }).length;
-
-    const cancelledOrders = orders.filter((order) => {
-      const status = normalizeStatus(order.status);
-
-      return (
-        status === "cancelled" ||
-        status === "canceled"
-      );
-    }).length;
-
-    const activeOrders = orders.filter((order) => {
-      const status = normalizeStatus(order.status);
-
-      return (
-        status !== "delivered" &&
-        status !== "completed" &&
-        status !== "cancelled" &&
-        status !== "canceled"
-      );
-    }).length;
-
-    const totalSpent = orders
-      .filter((order) => {
-        const status = normalizeStatus(
-          order.status
+        const productMatch = (
+          order.order_items || []
+        ).some((item) =>
+          item.product_name
+            ?.toLowerCase()
+            .includes(query)
         );
 
         return (
+          orderMatch ||
+          productMatch
+        );
+      }
+    );
+
+    result = [...result].sort(
+      (a, b) => {
+        switch (sort) {
+          case "oldest":
+            return (
+              new Date(
+                a.created_at
+              ).getTime() -
+              new Date(
+                b.created_at
+              ).getTime()
+            );
+
+          case "highest":
+            return (
+              Number(
+                b.total_amount || 0
+              ) -
+              Number(
+                a.total_amount || 0
+              )
+            );
+
+          case "lowest":
+            return (
+              Number(
+                a.total_amount || 0
+              ) -
+              Number(
+                b.total_amount || 0
+              )
+            );
+
+          default:
+            return (
+              new Date(
+                b.created_at
+              ).getTime() -
+              new Date(
+                a.created_at
+              ).getTime()
+            );
+        }
+      }
+    );
+
+    return result;
+  }, [
+    orders,
+    search,
+    filter,
+    sort,
+  ]);
+
+  /* =======================================================
+     STATS
+  ======================================================= */
+
+  const stats = useMemo(() => {
+    const totalOrders =
+      orders.length;
+
+    const deliveredOrders =
+      orders.filter((order) => {
+        const status =
+          normalizeStatus(
+            order.status
+          );
+
+        return (
+          status === "delivered" ||
+          status === "completed"
+        );
+      }).length;
+
+    const cancelledOrders =
+      orders.filter((order) => {
+        const status =
+          normalizeStatus(
+            order.status
+          );
+
+        return (
+          status === "cancelled" ||
+          status === "canceled"
+        );
+      }).length;
+
+    const activeOrders =
+      orders.filter((order) => {
+        const status =
+          normalizeStatus(
+            order.status
+          );
+
+        return (
+          status !== "delivered" &&
+          status !== "completed" &&
           status !== "cancelled" &&
           status !== "canceled"
         );
-      })
-      .reduce(
-        (sum, order) =>
-          sum + Number(order.total_amount || 0),
-        0
-      );
+      }).length;
+
+    const totalSpent =
+      orders
+        .filter((order) => {
+          const status =
+            normalizeStatus(
+              order.status
+            );
+
+          return (
+            status !==
+              "cancelled" &&
+            status !==
+              "canceled"
+          );
+        })
+        .reduce(
+          (sum, order) =>
+            sum +
+            Number(
+              order.total_amount || 0
+            ),
+          0
+        );
 
     return {
       totalOrders,
@@ -681,13 +939,18 @@ export default function OrdersPage() {
     };
   }, [orders]);
 
-  /* =====================================================
+  /* =======================================================
      COPY ORDER ID
-  ===================================================== */
+  ======================================================= */
 
-  async function copyOrderId(id: string) {
+  async function copyOrderId(
+    id: string
+  ) {
     try {
-      await navigator.clipboard.writeText(id);
+      await navigator.clipboard.writeText(
+        id
+      );
+
       setCopiedOrder(id);
 
       setTimeout(() => {
@@ -698,44 +961,68 @@ export default function OrdersPage() {
     }
   }
 
-  /* =====================================================
+  /* =======================================================
      BUY AGAIN
-  ===================================================== */
+  ======================================================= */
 
   function buyAgain(order: Order) {
     try {
-      const existing = JSON.parse(
-        localStorage.getItem("primecart-cart") ||
-          "[]"
-      );
+      const existing =
+        JSON.parse(
+          localStorage.getItem(
+            "primecart-cart"
+          ) || "[]"
+        );
 
-      const cart = Array.isArray(existing)
+      const cart = Array.isArray(
+        existing
+      )
         ? existing
         : [];
 
-      (order.order_items || []).forEach((item) => {
-        const existingIndex = cart.findIndex(
-          (cartItem: any) =>
-            String(
-              cartItem.product_id ||
-                cartItem.id
-            ) === String(item.product_id)
-        );
+      (
+        order.order_items || []
+      ).forEach((item) => {
+        const existingIndex =
+          cart.findIndex(
+            (cartItem: any) =>
+              String(
+                cartItem.product_id ||
+                  cartItem.id
+              ) ===
+              String(
+                item.product_id
+              )
+          );
 
         if (existingIndex >= 0) {
-          cart[existingIndex].quantity =
+          cart[
+            existingIndex
+          ].quantity =
             Number(
-              cart[existingIndex].quantity || 0
-            ) + Number(item.quantity || 1);
+              cart[existingIndex]
+                .quantity || 0
+            ) +
+            Number(
+              item.quantity || 1
+            );
         } else {
           cart.push({
             id: item.product_id,
-            product_id: item.product_id,
+            product_id:
+              item.product_id,
             name: item.product_name,
-            product_name: item.product_name,
-            price: Number(item.price || 0),
-            quantity: Number(item.quantity || 1),
-            image_url: item.image_url || null,
+            product_name:
+              item.product_name,
+            price: Number(
+              item.price || 0
+            ),
+            quantity: Number(
+              item.quantity || 1
+            ),
+            image_url:
+              item.image_url ||
+              null,
           });
         }
       });
@@ -752,13 +1039,16 @@ export default function OrdersPage() {
       window.location.href =
         "/dashboard/cart";
     } catch (error) {
-      console.error("Buy again error:", error);
+      console.error(
+        "Buy again error:",
+        error
+      );
     }
   }
 
-  /* =====================================================
-     CLEAR SEARCH
-  ===================================================== */
+  /* =======================================================
+     CLEAR FILTERS
+  ======================================================= */
 
   function clearSearch() {
     setSearch("");
@@ -766,9 +1056,9 @@ export default function OrdersPage() {
     setSort("newest");
   }
 
-  /* =====================================================
+  /* =======================================================
      RENDER
-  ===================================================== */
+  ======================================================= */
 
   return (
     <main className="min-h-screen bg-[#faf8f3] text-[#211b13]">
@@ -783,10 +1073,7 @@ export default function OrdersPage() {
             className="group inline-flex items-center gap-2 text-sm font-semibold text-[#5f503a] transition hover:text-[#a47a2c]"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffdf8] transition group-hover:border-[#c8a65b]">
-              <ArrowLeft
-                size={17}
-                strokeWidth={2}
-              />
+              <ArrowLeft size={17} />
             </span>
 
             <span className="hidden sm:inline">
@@ -813,7 +1100,9 @@ export default function OrdersPage() {
 
             <button
               type="button"
-              onClick={() => loadOrders(true)}
+              onClick={() =>
+                loadOrders(true)
+              }
               disabled={refreshing}
               className="flex h-9 items-center gap-2 rounded-xl border border-[#eadfc9] bg-white px-3 text-sm font-semibold text-[#80673e] transition hover:border-[#c8a65b] hover:bg-[#fffaf0] disabled:opacity-60"
             >
@@ -825,6 +1114,7 @@ export default function OrdersPage() {
                     : ""
                 }
               />
+
               <span className="hidden sm:inline">
                 Refresh
               </span>
@@ -838,12 +1128,9 @@ export default function OrdersPage() {
       ================================================= */}
 
       <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        {/* ===============================================
-            HERO
-        =============================================== */}
+        {/* HERO */}
 
         <section className="relative overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white p-5 shadow-[0_12px_45px_rgba(94,72,34,0.06)] sm:p-7 lg:p-9">
-          {/* Decorative background */}
           <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#f4e8c9]/60 blur-3xl" />
 
           <div className="pointer-events-none absolute -bottom-24 left-20 h-64 w-64 rounded-full bg-[#f8f1df] blur-3xl" />
@@ -851,10 +1138,7 @@ export default function OrdersPage() {
           <div className="relative">
             <div className="mb-5 flex items-center gap-2">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbf5e5] text-[#b48a3d]">
-                <ShoppingBag
-                  size={19}
-                  strokeWidth={2}
-                />
+                <ShoppingBag size={19} />
               </span>
 
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#a47a2c]">
@@ -868,13 +1152,12 @@ export default function OrdersPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[#786b59] sm:text-base">
-                Keep track of your purchases, delivery
-                progress and order details — all in one
-                place.
+                Keep track of your purchases,
+                delivery progress and order
+                details — all in one place.
               </p>
             </div>
 
-            {/* Stats */}
             <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard
                 icon={Package}
@@ -906,9 +1189,7 @@ export default function OrdersPage() {
           </div>
         </section>
 
-        {/* ===============================================
-            ERROR
-        =============================================== */}
+        {/* ERROR */}
 
         {errorMessage && (
           <div className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -923,21 +1204,19 @@ export default function OrdersPage() {
 
             <button
               type="button"
-              onClick={() => setErrorMessage("")}
-              className="shrink-0"
+              onClick={() =>
+                setErrorMessage("")
+              }
             >
               <X size={16} />
             </button>
           </div>
         )}
 
-        {/* ===============================================
-            TOOLBAR
-        =============================================== */}
+        {/* TOOLBAR */}
 
         <section className="mt-6 rounded-[24px] border border-[#eadfc9] bg-white p-4 shadow-[0_8px_30px_rgba(94,72,34,0.04)] sm:p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            {/* Search */}
             <div className="relative w-full xl:max-w-md">
               <Search
                 size={18}
@@ -947,7 +1226,9 @@ export default function OrdersPage() {
               <input
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value
+                  )
                 }
                 placeholder="Search orders or products..."
                 className="h-12 w-full rounded-2xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-4 text-sm text-[#33291c] outline-none transition placeholder:text-[#aa9d88] focus:border-[#c6a158] focus:ring-4 focus:ring-[#c6a158]/10"
@@ -956,7 +1237,9 @@ export default function OrdersPage() {
               {search && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() =>
+                    setSearch("")
+                  }
                   className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#907f65] hover:bg-[#f7f1e5]"
                 >
                   <X size={15} />
@@ -964,13 +1247,13 @@ export default function OrdersPage() {
               )}
             </div>
 
-            {/* Sort */}
             <div className="relative">
               <select
                 value={sort}
                 onChange={(e) =>
                   setSort(
-                    e.target.value as SortValue
+                    e.target
+                      .value as SortValue
                   )
                 }
                 className="h-12 w-full appearance-none rounded-2xl border border-[#eadfc9] bg-[#fffdf9] px-4 pr-10 text-sm font-medium text-[#51432e] outline-none focus:border-[#c6a158] focus:ring-4 focus:ring-[#c6a158]/10 sm:w-[190px]"
@@ -978,12 +1261,15 @@ export default function OrdersPage() {
                 <option value="newest">
                   Newest First
                 </option>
+
                 <option value="oldest">
                   Oldest First
                 </option>
+
                 <option value="highest">
                   Highest Amount
                 </option>
+
                 <option value="lowest">
                   Lowest Amount
                 </option>
@@ -996,70 +1282,94 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {/* Filters */}
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             <FilterButton
               active={filter === "all"}
-              onClick={() => setFilter("all")}
+              onClick={() =>
+                setFilter("all")
+              }
             >
               All Orders
             </FilterButton>
 
             <FilterButton
-              active={filter === "placed"}
-              onClick={() => setFilter("placed")}
+              active={
+                filter === "placed"
+              }
+              onClick={() =>
+                setFilter("placed")
+              }
             >
               Placed
             </FilterButton>
 
             <FilterButton
-              active={filter === "processing"}
+              active={
+                filter === "processing"
+              }
               onClick={() =>
-                setFilter("processing")
+                setFilter(
+                  "processing"
+                )
               }
             >
               Processing
             </FilterButton>
 
             <FilterButton
-              active={filter === "shipped"}
-              onClick={() => setFilter("shipped")}
+              active={
+                filter === "shipped"
+              }
+              onClick={() =>
+                setFilter("shipped")
+              }
             >
               Shipped
             </FilterButton>
 
             <FilterButton
-              active={filter === "out_for_delivery"}
+              active={
+                filter ===
+                "out_for_delivery"
+              }
               onClick={() =>
-                setFilter("out_for_delivery")
+                setFilter(
+                  "out_for_delivery"
+                )
               }
             >
               Out for Delivery
             </FilterButton>
 
             <FilterButton
-              active={filter === "delivered"}
+              active={
+                filter ===
+                "delivered"
+              }
               onClick={() =>
-                setFilter("delivered")
+                setFilter(
+                  "delivered"
+                )
               }
             >
               Delivered
             </FilterButton>
 
             <FilterButton
-              active={filter === "cancelled"}
+              active={
+                filter ===
+                "cancelled"
+              }
               onClick={() =>
-                setFilter("cancelled")
+                setFilter(
+                  "cancelled"
+                )
               }
             >
               Cancelled
             </FilterButton>
           </div>
         </section>
-
-        {/* ===============================================
-            RESULT COUNT
-        =============================================== */}
 
         {!loading && (
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1068,7 +1378,8 @@ export default function OrdersPage() {
               <span className="font-semibold text-[#493b28]">
                 {filteredOrders.length}
               </span>{" "}
-              {filteredOrders.length === 1
+              {filteredOrders.length ===
+              1
                 ? "order"
                 : "orders"}
             </p>
@@ -1078,7 +1389,9 @@ export default function OrdersPage() {
               sort !== "newest") && (
               <button
                 type="button"
-                onClick={clearSearch}
+                onClick={
+                  clearSearch
+                }
                 className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#a47a2c] hover:text-[#7e5c20]"
               >
                 <RefreshCw size={14} />
@@ -1088,26 +1401,24 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* ===============================================
-            LOADING
-        =============================================== */}
+        {/* LOADING */}
 
         {loading ? (
           <div className="mt-5 space-y-4">
-            {[1, 2, 3].map((item) => (
-              <OrderSkeleton key={item} />
-            ))}
+            {[1, 2, 3].map(
+              (item) => (
+                <OrderSkeleton
+                  key={item}
+                />
+              )
+            )}
           </div>
-        ) : filteredOrders.length === 0 ? (
-          /* =============================================
-             EMPTY
-          ============================================= */
-
+        ) : filteredOrders.length ===
+          0 ? (
           <section className="mt-5 rounded-[28px] border border-[#eadfc9] bg-white px-5 py-16 text-center shadow-[0_8px_30px_rgba(94,72,34,0.04)]">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#fbf5e6] text-[#b48a3d]">
               <ShoppingBag
                 size={34}
-                strokeWidth={1.7}
               />
             </div>
 
@@ -1129,7 +1440,9 @@ export default function OrdersPage() {
             filter !== "all" ? (
               <button
                 type="button"
-                onClick={clearSearch}
+                onClick={
+                  clearSearch
+                }
                 className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#b9975b] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(185,151,91,0.22)] transition hover:bg-[#a98449]"
               >
                 Clear Filters
@@ -1139,24 +1452,27 @@ export default function OrdersPage() {
                 href="/dashboard/products"
                 className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#b9975b] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(185,151,91,0.22)] transition hover:bg-[#a98449]"
               >
-                <ShoppingBag size={16} />
+                <ShoppingBag
+                  size={16}
+                />
                 Start Shopping
               </Link>
             )}
           </section>
         ) : (
-          /* =============================================
-             ORDERS
-          ============================================= */
-
           <div className="mt-5 space-y-4">
             {filteredOrders.map(
-              (order, orderIndex) => {
-                const status = getStatusConfig(
-                  order.status
-                );
+              (
+                order,
+                orderIndex
+              ) => {
+                const status =
+                  getStatusConfig(
+                    order.status
+                  );
 
-                const StatusIcon = status.icon;
+                const StatusIcon =
+                  status.icon;
 
                 const progress =
                   getOrderProgress(
@@ -1164,29 +1480,58 @@ export default function OrdersPage() {
                   );
 
                 const isExpanded =
-                  expandedOrder === order.id;
+                  expandedOrder ===
+                  order.id;
 
                 const items =
-                  order.order_items || [];
+                  order.order_items ||
+                  [];
 
-                const itemCount = items.reduce(
-                  (sum, item) =>
-                    sum +
-                    Number(item.quantity || 0),
-                  0
-                );
+                const itemCount =
+                  items.reduce(
+                    (
+                      sum,
+                      item
+                    ) =>
+                      sum +
+                      Number(
+                        item.quantity ||
+                          0
+                      ),
+                    0
+                  );
 
                 const addressText =
                   getAddressText(
                     order.shipping_address
                   );
 
+                const normalizedStatus =
+                  normalizeStatus(
+                    order.status
+                  );
+
+                const canCancel =
+                  normalizedStatus !==
+                    "delivered" &&
+                  normalizedStatus !==
+                    "completed" &&
+                  normalizedStatus !==
+                    "cancelled" &&
+                  normalizedStatus !==
+                    "canceled";
+
+                const isCancelling =
+                  cancellingOrder ===
+                  order.id;
+
                 return (
                   <article
                     key={`${order.id}-${order.created_at}-${orderIndex}`}
                     className="group overflow-hidden rounded-[26px] border border-[#eadfc9] bg-white shadow-[0_8px_30px_rgba(94,72,34,0.045)] transition duration-300 hover:-translate-y-[1px] hover:shadow-[0_14px_40px_rgba(94,72,34,0.08)]"
                   >
-                    {/* Order Header */}
+                    {/* ORDER HEADER */}
+
                     <div className="border-b border-[#f0e8da] px-4 py-4 sm:px-6">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
@@ -1201,7 +1546,10 @@ export default function OrdersPage() {
                               <span className="text-sm font-bold text-[#302619]">
                                 Order #
                                 {order.id
-                                  .slice(0, 12)
+                                  .slice(
+                                    0,
+                                    12
+                                  )
                                   .toUpperCase()}
                               </span>
 
@@ -1218,18 +1566,21 @@ export default function OrdersPage() {
                                 order.id ? (
                                   <>
                                     <Check
-                                      size={12}
+                                      size={
+                                        12
+                                      }
                                     />
+
                                     <span className="text-[11px] font-semibold">
                                       Copied
                                     </span>
                                   </>
                                 ) : (
-                                  <>
-                                    <Copy
-                                      size={12}
-                                    />
-                                  </>
+                                  <Copy
+                                    size={
+                                      12
+                                    }
+                                  />
                                 )}
                               </button>
                             </div>
@@ -1245,7 +1596,8 @@ export default function OrdersPage() {
 
                               <span>
                                 {itemCount}{" "}
-                                {itemCount === 1
+                                {itemCount ===
+                                1
                                   ? "item"
                                   : "items"}
                               </span>
@@ -1280,23 +1632,31 @@ export default function OrdersPage() {
                             <StatusIcon
                               size={13}
                             />
-                            {status.label}
+                            {
+                              status.label
+                            }
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Product Items */}
+                    {/* PRODUCT ITEMS */}
+
                     <div className="px-4 py-4 sm:px-6">
-                      {items.length === 0 ? (
+                      {items.length ===
+                      0 ? (
                         <div className="rounded-2xl border border-dashed border-[#e6dac5] bg-[#fffdf9] p-5 text-center text-sm text-[#8c7c65]">
-                          Product details are not
-                          available for this order.
+                          Product details are
+                          not available
+                          for this order.
                         </div>
                       ) : (
                         <div className="space-y-3">
                           {items.map(
-                            (item, itemIndex) => (
+                            (
+                              item,
+                              itemIndex
+                            ) => (
                               <div
                                 key={
                                   item.id ||
@@ -1304,10 +1664,12 @@ export default function OrdersPage() {
                                 }
                                 className="group flex gap-3 rounded-2xl border border-[#f0e8da] bg-[#fffdf9] p-3 transition hover:border-[#e5d4b3] hover:bg-[#fffaf1] sm:p-4"
                               >
-                                {/* Image */}
+                                {/* IMAGE */}
+
                                 <Link
                                   href={`/dashboard/products/${item.product_id}`}
                                   className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-white sm:h-[110px] sm:w-[110px]"
+                                  title={`View ${item.product_name}`}
                                 >
                                   <ProductImage
                                     src={
@@ -1325,7 +1687,8 @@ export default function OrdersPage() {
                                   />
                                 </Link>
 
-                                {/* Info */}
+                                {/* INFO */}
+
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-col justify-between gap-2 sm:flex-row">
                                     <div className="min-w-0">
@@ -1339,11 +1702,27 @@ export default function OrdersPage() {
                                       </Link>
 
                                       <p className="mt-1 text-xs text-[#91816a]">
-                                        Product ID:{" "}
+                                        Product
+                                        ID:{" "}
                                         {
                                           item.product_id
                                         }
                                       </p>
+
+                                      {/* PRODUCT LINK */}
+
+                                      <Link
+                                        href={`/dashboard/products/${item.product_id}`}
+                                        className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#a47a2c] transition hover:text-[#7e5c20]"
+                                      >
+                                        View
+                                        Product
+                                        <ArrowRight
+                                          size={
+                                            13
+                                          }
+                                        />
+                                      </Link>
                                     </div>
 
                                     <p className="shrink-0 text-sm font-bold text-[#2e2519]">
@@ -1383,19 +1762,24 @@ export default function OrdersPage() {
                       )}
                     </div>
 
-                    {/* Timeline */}
+                    {/* TIMELINE */}
+
                     {isExpanded &&
                       progress >= 0 && (
                         <div className="border-t border-[#f0e8da] bg-[#fffdf9] px-4 py-5 sm:px-6">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-bold text-[#302619]">
-                                Delivery Progress
+                                Delivery
+                                Progress
                               </p>
 
                               <p className="mt-1 text-xs text-[#8c7c67]">
-                                Track your order from
-                                placement to delivery.
+                                Track your
+                                order from
+                                placement
+                                to
+                                delivery.
                               </p>
                             </div>
 
@@ -1415,7 +1799,7 @@ export default function OrdersPage() {
                                   style={{
                                     width:
                                       progress ===
-                                        0
+                                      0
                                         ? "0%"
                                         : progress ===
                                             1
@@ -1432,15 +1816,18 @@ export default function OrdersPage() {
 
                                 {[
                                   {
-                                    label: "Placed",
+                                    label:
+                                      "Placed",
                                     icon: ShoppingBag,
                                   },
                                   {
-                                    label: "Processing",
+                                    label:
+                                      "Processing",
                                     icon: Clock3,
                                   },
                                   {
-                                    label: "Shipped",
+                                    label:
+                                      "Shipped",
                                     icon: Package,
                                   },
                                   {
@@ -1449,7 +1836,8 @@ export default function OrdersPage() {
                                     icon: Truck,
                                   },
                                   {
-                                    label: "Delivered",
+                                    label:
+                                      "Delivered",
                                     icon: Check,
                                   },
                                 ].map(
@@ -1479,7 +1867,9 @@ export default function OrdersPage() {
                                           }`}
                                         >
                                           <StepIcon
-                                            size={14}
+                                            size={
+                                              14
+                                            }
                                           />
                                         </div>
 
@@ -1504,10 +1894,43 @@ export default function OrdersPage() {
                         </div>
                       )}
 
-                    {/* Expanded Details */}
+                    {/* CANCELLED MESSAGE */}
+
+                    {isExpanded &&
+                      (normalizedStatus ===
+                        "cancelled" ||
+                        normalizedStatus ===
+                          "canceled") && (
+                        <div className="border-t border-red-100 bg-red-50/60 px-4 py-5 sm:px-6">
+                          <div className="flex items-start gap-3">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+                              <X
+                                size={19}
+                              />
+                            </span>
+
+                            <div>
+                              <p className="text-sm font-bold text-red-700">
+                                Order Cancelled
+                              </p>
+
+                              <p className="mt-1 text-xs leading-5 text-red-600/80">
+                                This order has
+                                been
+                                cancelled
+                                successfully.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* EXPANDED DETAILS */}
+
                     {isExpanded && (
                       <div className="grid gap-4 border-t border-[#f0e8da] bg-white px-4 py-5 sm:px-6 lg:grid-cols-2">
-                        {/* Payment */}
+                        {/* PAYMENT */}
+
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4">
                           <div className="flex items-center gap-2">
                             <CreditCard
@@ -1516,14 +1939,16 @@ export default function OrdersPage() {
                             />
 
                             <h3 className="text-sm font-bold text-[#382d20]">
-                              Payment Details
+                              Payment
+                              Details
                             </h3>
                           </div>
 
                           <div className="mt-4 space-y-2 text-sm">
                             <div className="flex justify-between gap-4">
                               <span className="text-[#8b7b65]">
-                                Payment Method
+                                Payment
+                                Method
                               </span>
 
                               <span className="font-semibold text-[#4a3b28]">
@@ -1538,13 +1963,16 @@ export default function OrdersPage() {
                               </span>
 
                               <span className="font-semibold text-[#4a3b28]">
-                                {itemCount}
+                                {
+                                  itemCount
+                                }
                               </span>
                             </div>
 
                             <div className="flex justify-between gap-4">
                               <span className="text-[#8b7b65]">
-                                Order Date
+                                Order
+                                Date
                               </span>
 
                               <span className="font-semibold text-[#4a3b28]">
@@ -1556,7 +1984,8 @@ export default function OrdersPage() {
                           </div>
                         </div>
 
-                        {/* Address */}
+                        {/* ADDRESS */}
+
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4">
                           <div className="flex items-center gap-2">
                             <MapPin
@@ -1565,13 +1994,14 @@ export default function OrdersPage() {
                             />
 
                             <h3 className="text-sm font-bold text-[#382d20]">
-                              Delivery Address
+                              Delivery
+                              Address
                             </h3>
                           </div>
 
                           <div className="mt-4">
                             {typeof order.shipping_address ===
-                            "object" &&
+                              "object" &&
                             order.shipping_address ? (
                               <>
                                 {order
@@ -1612,7 +2042,8 @@ export default function OrdersPage() {
                           </div>
                         </div>
 
-                        {/* Summary */}
+                        {/* PRICE */}
+
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4 lg:col-span-2">
                           <div className="flex items-center gap-2">
                             <Sparkles
@@ -1660,7 +2091,8 @@ export default function OrdersPage() {
                             )}
 
                             {Number(
-                              order.discount || 0
+                              order.discount ||
+                                0
                             ) > 0 && (
                               <div className="flex justify-between text-emerald-700">
                                 <span>
@@ -1694,8 +2126,9 @@ export default function OrdersPage() {
                       </div>
                     )}
 
-                    {/* Footer */}
-                    <div className="flex flex-col gap-3 border-t border-[#f0e8da] bg-[#fffdfb] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    {/* FOOTER */}
+
+                    <div className="flex flex-col gap-3 border-t border-[#f0e8da] bg-[#fffdfb] px-4 py-4 sm:px-6">
                       <div className="flex items-center gap-2 text-xs text-[#8c7c67]">
                         <ShieldCheck
                           size={15}
@@ -1703,11 +2136,14 @@ export default function OrdersPage() {
                         />
 
                         <span>
-                          Secure order with PrimeCart
+                          Secure order with
+                          PrimeCart
                         </span>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
+                        {/* VIEW DETAILS */}
+
                         <button
                           type="button"
                           onClick={() =>
@@ -1719,7 +2155,9 @@ export default function OrdersPage() {
                           }
                           className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#eadfc9] bg-white px-4 text-xs font-bold text-[#66543b] transition hover:border-[#c9a65d] hover:bg-[#fffaf0]"
                         >
-                          <Eye size={15} />
+                          <Eye
+                            size={15}
+                          />
 
                           {isExpanded
                             ? "Hide Details"
@@ -1727,14 +2165,20 @@ export default function OrdersPage() {
 
                           {isExpanded ? (
                             <ChevronUp
-                              size={14}
+                              size={
+                                14
+                              }
                             />
                           ) : (
                             <ChevronDown
-                              size={14}
+                              size={
+                                14
+                              }
                             />
                           )}
                         </button>
+
+                        {/* TRACK */}
 
                         {progress >= 0 &&
                           progress < 4 && (
@@ -1747,23 +2191,72 @@ export default function OrdersPage() {
                               }
                               className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-bold text-white shadow-[0_6px_16px_rgba(185,151,91,0.18)] transition hover:bg-[#a98449]"
                             >
-                              <Truck size={15} />
+                              <Truck
+                                size={
+                                  15
+                                }
+                              />
                               Track Order
                             </button>
                           )}
 
-                        {items.length > 0 && (
+                        {/* BUY AGAIN */}
+
+                        {items.length >
+                          0 && (
                           <button
                             type="button"
                             onClick={() =>
-                              buyAgain(order)
+                              buyAgain(
+                                order
+                              )
                             }
                             className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d9c294] bg-[#fffaf0] px-4 text-xs font-bold text-[#986f27] transition hover:bg-[#f8efd9]"
                           >
                             <RefreshCw
-                              size={15}
+                              size={
+                                15
+                              }
                             />
                             Buy Again
+                          </button>
+                        )}
+
+                        {/* CANCEL ORDER */}
+
+                        {canCancel && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              cancelOrder(
+                                order
+                              )
+                            }
+                            disabled={
+                              isCancelling
+                            }
+                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-xs font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isCancelling ? (
+                              <>
+                                <Loader2
+                                  size={
+                                    15
+                                  }
+                                  className="animate-spin"
+                                />
+                                Cancelling...
+                              </>
+                            ) : (
+                              <>
+                                <X
+                                  size={
+                                    15
+                                  }
+                                />
+                                Cancel Order
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
@@ -1775,9 +2268,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* ===============================================
-            TRUST SECTION
-        =============================================== */}
+        {/* TRUST */}
 
         <section className="mt-8 grid gap-3 sm:grid-cols-3">
           <TrustCard
@@ -1799,7 +2290,6 @@ export default function OrdersPage() {
           />
         </section>
 
-        {/* Bottom spacing */}
         <div className="h-6" />
       </div>
 
@@ -1821,7 +2311,12 @@ export default function OrdersPage() {
         }
 
         ::selection {
-          background: rgba(185, 151, 91, 0.22);
+          background: rgba(
+            185,
+            151,
+            91,
+            0.22
+          );
         }
       `}</style>
     </main>
@@ -1948,6 +2443,7 @@ function OrderSkeleton() {
 
           <div className="flex-1">
             <div className="h-4 w-48 rounded bg-[#eee7d9]" />
+
             <div className="mt-2 h-3 w-64 rounded bg-[#f1eadf]" />
           </div>
 
@@ -1956,6 +2452,7 @@ function OrderSkeleton() {
 
         <div className="mt-5 space-y-3">
           <div className="h-28 rounded-2xl bg-[#f7f2e9]" />
+
           <div className="h-28 rounded-2xl bg-[#f7f2e9]" />
         </div>
 
