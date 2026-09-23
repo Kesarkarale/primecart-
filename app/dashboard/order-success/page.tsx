@@ -1,54 +1,54 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Package,
   Truck,
-  ShoppingBag,
-  ArrowRight,
-  Home,
-  Download,
+  MapPin,
+  CreditCard,
   Copy,
   Check,
+  ArrowRight,
+  Home,
+  ShoppingBag,
+  Printer,
   Volume2,
   VolumeX,
   Sparkles,
+  Clock3,
   ShieldCheck,
-  CalendarDays,
-  CreditCard,
-  MapPin,
-  Loader2,
 } from "lucide-react";
 
 type OrderItem = {
-  id?: string;
-  productId?: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image_url?: string;
+  id?: string | number;
+  productId?: string | number;
+  name?: string;
   image?: string;
-  brand?: string;
+  image_url?: string;
+  price?: number;
+  quantity?: number;
 };
 
-type OrderAddress = {
+type Address = {
+  id?: string;
   fullName?: string;
   name?: string;
   phone?: string;
+  mobile?: string;
   addressLine1?: string;
   addressLine2?: string;
   address?: string;
   city?: string;
   state?: string;
   pincode?: string;
-  postalCode?: string;
+  zipCode?: string;
 };
 
-type OrderRecord = {
-  id: string;
+type Order = {
+  id?: string;
+  orderId?: string;
   createdAt?: string;
   status?: string;
   paymentMethod?: string;
@@ -56,247 +56,223 @@ type OrderRecord = {
   subtotal?: number;
   delivery?: number;
   discount?: number;
-  address?: OrderAddress;
+  savings?: number;
+  address?: Address;
   items?: OrderItem[];
 };
 
-const ORDER_KEY = "primecart-orders";
-const LAST_ORDER_KEY = "primecart-last-order";
-
-function formatPrice(value: number) {
-  return `₹${Math.round(Number(value || 0)).toLocaleString("en-IN")}`;
-}
-
-function formatDate(value?: string) {
-  if (!value) return "Today";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Today";
+function getImageUrl(image?: string) {
+  if (!image) {
+    return "/logo.png";
   }
-
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function getImageUrl(value?: string) {
-  if (!value) return "/placeholder-product.png";
 
   if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("/")
+    image.startsWith("http://") ||
+    image.startsWith("https://") ||
+    image.startsWith("/")
   ) {
-    return value;
+    return image;
   }
 
-  return `/products/${value}`;
+  return `/products/${image}`;
 }
 
-function getPaymentLabel(method?: string) {
-  switch (method) {
-    case "upi":
-      return "UPI";
-    case "card":
-      return "Credit / Debit Card";
-    case "netbanking":
-      return "Net Banking";
-    case "wallet":
-      return "Wallet";
-    case "emi":
-      return "EMI";
-    case "cod":
-      return "Cash on Delivery";
-    default:
-      return method || "Payment";
-  }
+function formatMoney(value: number | undefined) {
+  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
 export default function OrderSuccessPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-
-  const orderIdFromUrl = searchParams.get("order");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [order, setOrder] = useState<OrderRecord | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [soundPlaying, setSoundPlaying] = useState(false);
-  const [soundAvailable, setSoundAvailable] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [order, setOrder] = useState<Order | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundPlayed, setSoundPlayed] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+
     try {
-      const storedOrders = localStorage.getItem(ORDER_KEY);
+      const orderId = searchParams.get("order");
 
-      let foundOrder: OrderRecord | null = null;
+      const savedOrders = localStorage.getItem("primecart-orders");
+      const lastOrder = localStorage.getItem("primecart-last-order");
 
-      if (storedOrders) {
-        const orders: OrderRecord[] = JSON.parse(storedOrders);
+      let foundOrder: Order | null = null;
 
-        if (orderIdFromUrl) {
-          foundOrder =
-            orders.find((item) => item.id === orderIdFromUrl) || null;
-        }
-      }
+      if (savedOrders) {
+        try {
+          const parsed = JSON.parse(savedOrders);
 
-      if (!foundOrder) {
-        const lastOrder = localStorage.getItem(LAST_ORDER_KEY);
-
-        if (lastOrder) {
-          const parsed = JSON.parse(lastOrder);
-
-          if (!orderIdFromUrl || parsed?.id === orderIdFromUrl) {
-            foundOrder = parsed;
+          if (Array.isArray(parsed)) {
+            foundOrder =
+              parsed.find(
+                (item: Order) =>
+                  String(item?.id || item?.orderId || "") === String(orderId)
+              ) || null;
           }
+        } catch {
+          foundOrder = null;
         }
       }
 
-      setOrder(foundOrder);
-    } catch (error) {
-      console.error("Failed to load order:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [orderIdFromUrl]);
+      if (!foundOrder && lastOrder) {
+        try {
+          const parsedLastOrder = JSON.parse(lastOrder);
 
-  /*
-   * ORDER SUCCESS SOUND
-   *
-   * MP3 location:
-   * public/sounds/order-success.mp3
-   *
-   * Browser may block autoplay.
-   * We try to play automatically first.
-   * If blocked, the user can click "Play Confirmation Sound".
-   */
+          if (
+            !orderId ||
+            String(parsedLastOrder?.id || parsedLastOrder?.orderId || "") ===
+              String(orderId)
+          ) {
+            foundOrder = parsedLastOrder;
+          }
+        } catch {
+          foundOrder = null;
+        }
+      }
+
+      if (foundOrder) {
+        setOrder(foundOrder);
+      }
+    } catch (error) {
+      console.error("Unable to load order:", error);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
-    if (loading || !order) return;
+    if (!mounted || !order || !soundEnabled || soundPlayed) {
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       const audio = audioRef.current;
 
-      if (!audio) return;
-
-      audio.currentTime = 0;
-      audio.volume = 0.85;
-
-      const playPromise = audio.play();
-
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setSoundPlaying(true);
-          })
-          .catch((error) => {
-            console.warn("Autoplay was blocked by the browser:", error);
-            setSoundPlaying(false);
-          });
+      if (!audio) {
+        return;
       }
-    }, 350);
 
-    return () => window.clearTimeout(timer);
-  }, [loading, order]);
+      audio.volume = 0.8;
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowConfetti(false);
-    }, 5000);
+      audio
+        .play()
+        .then(() => {
+          setSoundPlayed(true);
+        })
+        .catch(() => {
+          // Browser autoplay policy may block automatic playback.
+          // User can manually press the sound button.
+        });
+    }, 500);
 
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [mounted, order, soundEnabled, soundPlayed]);
 
-  const handleAudioEnded = () => {
-    setSoundPlaying(false);
-  };
-
-  const handleAudioPlay = () => {
-    setSoundPlaying(true);
-  };
-
-  const handleAudioPause = () => {
-    setSoundPlaying(false);
-  };
-
-  const handleAudioError = () => {
-    setSoundAvailable(false);
-    setSoundPlaying(false);
-    console.error(
-      "Order success sound could not be loaded. Check public/sounds/order-success.mp3"
-    );
-  };
-
-  const playSoundManually = async () => {
-    const audio = audioRef.current;
-
-    if (!audio) return;
-
-    try {
-      audio.currentTime = 0;
-      audio.volume = 0.85;
-
-      await audio.play();
-
-      setSoundPlaying(true);
-    } catch (error) {
-      console.error("Could not play confirmation sound:", error);
+  const getOrderId = () => {
+    if (!order) {
+      return searchParams.get("order") || "PC-ORDER";
     }
+
+    return order.id || order.orderId || searchParams.get("order") || "PC-ORDER";
   };
 
-  const toggleSound = async () => {
-    const audio = audioRef.current;
+  const orderId = getOrderId();
 
-    if (!audio) return;
-
-    if (audio.paused) {
-      await playSoundManually();
-    } else {
-      audio.pause();
-      setSoundPlaying(false);
-    }
-  };
-
-  const copyOrderId = async () => {
-    if (!order?.id) return;
-
+  const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(order.id);
-
+      await navigator.clipboard.writeText(String(orderId));
       setCopied(true);
 
       window.setTimeout(() => {
         setCopied(false);
       }, 1800);
-    } catch (error) {
-      console.error("Copy failed:", error);
+    } catch {
+      // Clipboard may not be available in some browsers.
     }
   };
 
+  const playSound = async () => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    try {
+      audio.currentTime = 0;
+      audio.volume = 0.8;
+      await audio.play();
+
+      setSoundEnabled(true);
+      setSoundPlayed(true);
+    } catch (error) {
+      console.error("Audio playback failed:", error);
+    }
+  };
+
+  const toggleSound = () => {
+    if (soundEnabled) {
+      const audio = audioRef.current;
+
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+
+      setSoundEnabled(false);
+      return;
+    }
+
+    setSoundEnabled(true);
+    playSound();
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const items = order?.items || [];
+
   const subtotal = Number(order?.subtotal || 0);
   const delivery = Number(order?.delivery || 0);
-  const discount = Number(order?.discount || 0);
-  const total = Number(order?.total || 0);
+  const discount = Number(order?.discount || order?.savings || 0);
+  const total = Number(
+    order?.total || subtotal + delivery - discount
+  );
 
-  const itemCount = useMemo(() => {
-    if (!order?.items) return 0;
+  const address = order?.address;
 
-    return order.items.reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0
-    );
-  }, [order]);
+  const paymentMethod =
+    order?.paymentMethod
+      ?.replace(/_/g, " ")
+      ?.replace(/\b\w/g, (letter) => letter.toUpperCase()) ||
+    "Online Payment";
 
-  if (loading) {
+  const orderDate = order?.createdAt
+    ? new Date(order.createdAt).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
+  if (!mounted) {
     return (
-      <main className="min-h-screen bg-[#fbf8f2] flex items-center justify-center">
+      <main className="min-h-screen bg-[#fffdf9] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-[#eadfcb] border-t-[#b9975b] animate-spin" />
-          <p className="text-sm font-semibold text-[#796e5d]">
+          <div className="h-12 w-12 rounded-full border-4 border-[#ead7aa] border-t-[#b8872d] animate-spin" />
+
+          <p className="text-sm font-medium text-[#766b5b]">
             Loading your order...
           </p>
         </div>
@@ -304,703 +280,490 @@ export default function OrderSuccessPage() {
     );
   }
 
-  if (!order) {
-    return (
-      <main className="min-h-screen bg-[#fbf8f2] text-[#4a4034]">
-        <header className="h-[72px] bg-white border-b border-[#eadfcb] flex items-center px-5 md:px-10">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#b9975b] flex items-center justify-center text-white font-black">
-              P
-            </div>
-
-            <div>
-              <div className="font-black text-lg tracking-tight">
-                PrimeCart
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#9b907f]">
-                Smart Shopping
-              </div>
-            </div>
-          </Link>
-        </header>
-
-        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center px-5">
-          <div className="max-w-md w-full bg-white rounded-3xl border border-[#eadfcb] shadow-[0_20px_70px_rgba(74,64,52,0.10)] p-8 text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-[#f5ead6] flex items-center justify-center">
-              <Package className="w-8 h-8 text-[#b9975b]" />
-            </div>
-
-            <h1 className="mt-5 text-2xl font-black">
-              Order not found
-            </h1>
-
-            <p className="mt-2 text-sm text-[#796e5d] leading-6">
-              We couldn't find this order in your current browser session.
-            </p>
-
-            <Link
-              href="/dashboard"
-              className="mt-6 h-12 px-6 rounded-xl bg-[#b9975b] text-white font-bold flex items-center justify-center gap-2 hover:bg-[#96723b] transition"
-            >
-              <Home className="w-4 h-4" />
-              Go to Dashboard
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const address = order.address || {};
-  const items = order.items || [];
-
   return (
-    <main className="min-h-screen bg-[#fbf8f2] text-[#4a4034]">
-      {/* Confirmation audio */}
+    <>
       <audio
         ref={audioRef}
         src="/sounds/order-success.mp3"
         preload="auto"
-        onPlay={handleAudioPlay}
-        onPause={handleAudioPause}
-        onEnded={handleAudioEnded}
-        onError={handleAudioError}
       />
 
-      {/* Decorative success particles */}
-      {showConfetti && (
-        <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
-          <span className="confetti c1" />
-          <span className="confetti c2" />
-          <span className="confetti c3" />
-          <span className="confetti c4" />
-          <span className="confetti c5" />
-          <span className="confetti c6" />
-          <span className="confetti c7" />
-          <span className="confetti c8" />
+      <main className="min-h-screen bg-[#fffdf9] text-[#2b241b] print:bg-white">
+        {/* Background decoration */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden print:hidden">
+          <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-[#f4e6c5]/40 blur-3xl" />
+          <div className="absolute -right-40 top-40 h-96 w-96 rounded-full bg-[#f6ead0]/40 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-[#f9efd9]/50 blur-3xl" />
         </div>
-      )}
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 h-[72px] bg-white/95 backdrop-blur-xl border-b border-[#eadfcb]">
-        <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#b9975b] flex items-center justify-center shadow-[0_8px_25px_rgba(185,151,91,0.25)]">
-              <ShoppingBag className="w-5 h-5 text-white" />
-            </div>
-
-            <div>
-              <div className="font-black text-lg tracking-tight">
-                PrimeCart
-              </div>
-
-              <div className="hidden sm:block text-[10px] uppercase tracking-[0.22em] text-[#9b907f]">
-                Smart Shopping
-              </div>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            {soundAvailable && (
-              <button
-                onClick={toggleSound}
-                className={`h-10 px-3 sm:px-4 rounded-xl border flex items-center gap-2 text-sm font-bold transition ${
-                  soundPlaying
-                    ? "bg-[#f5ead6] border-[#dcc596] text-[#96723b]"
-                    : "bg-white border-[#eadfcb] text-[#796e5d] hover:border-[#b9975b]"
-                }`}
-                title={
-                  soundPlaying
-                    ? "Stop confirmation sound"
-                    : "Play confirmation sound"
-                }
-              >
-                {soundPlaying ? (
-                  <Volume2 className="w-4 h-4" />
-                ) : (
-                  <VolumeX className="w-4 h-4" />
-                )}
-
-                <span className="hidden sm:inline">
-                  {soundPlaying ? "Sound On" : "Play Sound"}
-                </span>
-              </button>
-            )}
-
-            <Link
-              href="/dashboard"
-              className="h-10 px-3 sm:px-4 rounded-xl bg-[#f8f3e9] border border-[#eadfcb] flex items-center gap-2 text-sm font-bold text-[#5e5345] hover:bg-[#f5ead6] transition"
+        {/* Top bar */}
+        <header className="relative z-10 border-b border-[#eadfca] bg-white/90 backdrop-blur-xl print:hidden">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-3"
             >
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </Link>
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#ead9b7] bg-white shadow-sm">
+                <img
+                  src="/logo.png"
+                  alt="PrimeCart"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+
+              <div className="text-left">
+                <p className="text-lg font-black tracking-tight text-[#2d261d]">
+                  Prime<span className="text-[#b8872d]">Cart</span>
+                </p>
+
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9a8b72]">
+                  Shopping made premium
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="flex h-10 items-center gap-2 rounded-xl border border-[#e8dcc3] bg-white px-3 text-sm font-semibold text-[#645947] shadow-sm transition hover:border-[#c79a3b] hover:text-[#a57521]"
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sound On</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sound Off</span>
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {/* Success Hero */}
-        <section className="relative overflow-hidden bg-white rounded-[32px] border border-[#eadfcb] shadow-[0_20px_70px_rgba(74,64,52,0.08)]">
-          <div className="absolute -top-28 -right-28 w-72 h-72 rounded-full bg-[#f5ead6] blur-3xl opacity-70" />
-          <div className="absolute -bottom-32 -left-20 w-72 h-72 rounded-full bg-[#f8f3e9] blur-3xl" />
+        <div className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+          {/* Success hero */}
+          <section className="text-center">
+            <div className="relative mx-auto mb-6 h-24 w-24">
+              <div className="absolute inset-0 animate-ping rounded-full bg-[#d9b45c]/20" />
 
-          <div className="relative px-5 py-10 sm:px-8 md:px-12 md:py-14 text-center">
-            <div className="mx-auto w-24 h-24 rounded-full bg-[#f5ead6] border border-[#dcc596] flex items-center justify-center success-pop">
-              <div className="w-16 h-16 rounded-full bg-[#b9975b] flex items-center justify-center shadow-[0_12px_35px_rgba(185,151,91,0.30)]">
-                <CheckCircle2 className="w-9 h-9 text-white" strokeWidth={2.5} />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[#dec27f] bg-gradient-to-br from-[#fffaf0] to-[#f4e3b7] shadow-[0_18px_50px_rgba(184,135,45,0.18)]">
+                <CheckCircle2 className="h-14 w-14 text-[#b8872d]" strokeWidth={1.8} />
               </div>
             </div>
 
-            <div className="mt-7 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f8f3e9] border border-[#eadfcb] text-xs font-bold text-[#96723b]">
-              <Sparkles className="w-3.5 h-3.5" />
-              Order Confirmed
+            <div className="mb-3 flex items-center justify-center gap-2 text-[#b8872d]">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-[0.25em]">
+                Order Confirmed
+              </span>
+              <Sparkles className="h-4 w-4" />
             </div>
 
-            <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#40372e]">
+            <h1 className="text-3xl font-black tracking-tight text-[#2d261d] sm:text-5xl">
               Thank you for your order!
             </h1>
 
-            <p className="mt-3 max-w-2xl mx-auto text-sm sm:text-base leading-7 text-[#796e5d]">
-              Your order has been successfully placed. We’re getting
-              everything ready for you.
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#766b5b] sm:text-base">
+              Your order has been successfully placed. We&apos;ll keep you
+              updated as your package moves towards you.
             </p>
 
-            <div className="mt-7 inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-[#fbf8f2] border border-[#eadfcb]">
-              <span className="text-xs font-semibold text-[#9b907f]">
-                Order ID
-              </span>
+            {/* Order ID */}
+            <div className="mx-auto mt-6 flex w-fit max-w-full items-center gap-2 rounded-2xl border border-[#e7d9bc] bg-white px-4 py-3 shadow-sm">
+              <div className="min-w-0">
+                <p className="text-left text-[10px] font-bold uppercase tracking-[0.18em] text-[#a3947c]">
+                  Order ID
+                </p>
 
-              <span className="font-black text-sm text-[#4a4034] break-all">
-                {order.id}
-              </span>
+                <p className="mt-0.5 truncate text-sm font-black text-[#3b3022] sm:text-base">
+                  {orderId}
+                </p>
+              </div>
 
               <button
-                onClick={copyOrderId}
-                className="w-8 h-8 rounded-lg bg-white border border-[#eadfcb] flex items-center justify-center hover:border-[#b9975b] transition"
-                title="Copy order ID"
+                type="button"
+                onClick={handleCopy}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#faf5e9] text-[#a57521] transition hover:bg-[#f3e6c7]"
+                aria-label="Copy order ID"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-green-600" />
+                  <Check className="h-4 w-4" />
                 ) : (
-                  <Copy className="w-4 h-4 text-[#796e5d]" />
+                  <Copy className="h-4 w-4" />
                 )}
               </button>
             </div>
 
-            {/* Sound CTA */}
-            {soundAvailable && !soundPlaying && (
+            {/* Sound button */}
+            {!soundPlayed && (
               <button
-                onClick={playSoundManually}
-                className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-[#b9975b] text-white text-sm font-bold shadow-[0_10px_25px_rgba(185,151,91,0.22)] hover:bg-[#96723b] transition"
+                type="button"
+                onClick={playSound}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#d9bd79] bg-[#fffaf0] px-4 py-2.5 text-sm font-bold text-[#a57521] shadow-sm transition hover:bg-[#f9edcf]"
               >
-                <Volume2 className="w-4 h-4" />
+                <Volume2 className="h-4 w-4" />
                 Play Order Confirmation Sound
               </button>
             )}
-          </div>
-        </section>
+          </section>
 
-        {/* Status */}
-        <section className="mt-6 bg-white rounded-3xl border border-[#eadfcb] p-5 sm:p-7 shadow-[0_12px_40px_rgba(74,64,52,0.05)]">
-          <div className="flex items-center justify-between mb-7">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] font-bold text-[#b9975b]">
-                Order progress
-              </p>
-              <h2 className="mt-1 text-xl font-black">
-                Your order is on its way
-              </h2>
+          {/* Progress */}
+          <section className="mt-10 rounded-3xl border border-[#e9dec8] bg-white p-5 shadow-[0_12px_45px_rgba(70,50,20,0.06)] sm:p-7">
+            <div className="mb-7 flex items-center justify-between">
+              <div>
+                <p className="text-lg font-black text-[#342a1e]">
+                  Order progress
+                </p>
+                <p className="mt-1 text-xs text-[#8c7e68]">
+                  Estimated delivery within 3–5 business days
+                </p>
+              </div>
+
+              <div className="hidden items-center gap-2 rounded-full bg-[#f8f1df] px-3 py-1.5 sm:flex">
+                <Clock3 className="h-4 w-4 text-[#b8872d]" />
+                <span className="text-xs font-bold text-[#8b6a32]">
+                  Processing
+                </span>
+              </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f8f3e9] text-xs font-bold text-[#96723b]">
-              <Truck className="w-4 h-4" />
-              Processing
-            </div>
-          </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  icon: CheckCircle2,
+                  title: "Confirmed",
+                  active: true,
+                },
+                {
+                  icon: Package,
+                  title: "Packed",
+                  active: false,
+                },
+                {
+                  icon: Truck,
+                  title: "Delivered",
+                  active: false,
+                },
+              ].map((step, index) => {
+                const Icon = step.icon;
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            {[
-              {
-                icon: CheckCircle2,
-                title: "Order Placed",
-                text: "Confirmed",
-                active: true,
-              },
-              {
-                icon: Package,
-                title: "Processing",
-                text: "Preparing",
-                active: true,
-              },
-              {
-                icon: Truck,
-                title: "Shipped",
-                text: "Coming soon",
-                active: false,
-              },
-              {
-                icon: ShoppingBag,
-                title: "Delivered",
-                text: "Coming soon",
-                active: false,
-              },
-            ].map((step, index) => {
-              const Icon = step.icon;
+                return (
+                  <div key={step.title} className="relative text-center">
+                    {index < 2 && (
+                      <div className="absolute left-[58%] top-6 hidden h-px w-[84%] bg-[#e8dfcf] sm:block" />
+                    )}
 
-              return (
-                <div key={step.title} className="relative">
-                  <div className="flex items-center gap-3">
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`relative mx-auto flex h-12 w-12 items-center justify-center rounded-full border ${
                         step.active
-                          ? "bg-[#b9975b] text-white"
-                          : "bg-[#f8f3e9] text-[#9b907f]"
+                          ? "border-[#c79a3b] bg-[#f8edcf] text-[#b8872d]"
+                          : "border-[#e5dccb] bg-[#faf9f6] text-[#b9ae9d]"
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="h-5 w-5" />
                     </div>
 
-                    <div>
-                      <p className="font-bold text-sm">{step.title}</p>
-                      <p className="text-xs text-[#9b907f] mt-0.5">
-                        {step.text}
-                      </p>
-                    </div>
+                    <p
+                      className={`mt-3 text-xs font-bold sm:text-sm ${
+                        step.active
+                          ? "text-[#7f5d24]"
+                          : "text-[#958875]"
+                      }`}
+                    >
+                      {step.title}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Main details */}
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+            {/* Left */}
+            <div className="space-y-6">
+              {/* Items */}
+              <section className="rounded-3xl border border-[#e9dec8] bg-white p-5 shadow-[0_12px_45px_rgba(70,50,20,0.06)] sm:p-7">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-black text-[#342a1e]">
+                      Ordered items
+                    </p>
+                    <p className="mt-1 text-xs text-[#8c7e68]">
+                      {items.length} {items.length === 1 ? "item" : "items"} in
+                      this order
+                    </p>
                   </div>
 
-                  {index < 3 && (
-                    <div className="hidden sm:block absolute top-[22px] left-[58px] right-[-18px] h-px bg-[#eadfcb]" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Details */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-          {/* Left */}
-          <div className="space-y-6">
-            {/* Order Items */}
-            <section className="bg-white rounded-3xl border border-[#eadfcb] shadow-[0_12px_40px_rgba(74,64,52,0.05)] overflow-hidden">
-              <div className="px-5 sm:px-7 py-5 border-b border-[#f0e8da] flex items-center justify-between">
-                <div>
-                  <h2 className="font-black text-lg">Order Items</h2>
-                  <p className="text-xs text-[#9b907f] mt-1">
-                    {itemCount} {itemCount === 1 ? "item" : "items"}
-                  </p>
+                  <ShoppingBag className="h-5 w-5 text-[#b8872d]" />
                 </div>
 
-                <ShoppingBag className="w-5 h-5 text-[#b9975b]" />
-              </div>
+                {items.length > 0 ? (
+                  <div className="divide-y divide-[#eee6d8]">
+                    {items.map((item, index) => {
+                      const quantity = Number(item.quantity || 1);
+                      const price = Number(item.price || 0);
 
-              <div className="divide-y divide-[#f0e8da]">
-                {items.map((item, index) => (
-                  <div
-                    key={`${item.id || item.productId || item.name}-${index}`}
-                    className="p-5 sm:px-7 flex gap-4"
-                  >
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#fbf8f2] border border-[#eadfcb] flex items-center justify-center overflow-hidden shrink-0">
-                      <img
-                        src={getImageUrl(item.image_url || item.image)}
-                        alt={item.name}
-                        className="w-full h-full object-contain p-2"
-                        onError={(event) => {
-                          event.currentTarget.src =
-                            "/placeholder-product.png";
-                        }}
-                      />
-                    </div>
+                      return (
+                        <div
+                          key={`${item.id || item.productId || "item"}-${index}`}
+                          className="flex gap-4 py-4 first:pt-0 last:pb-0"
+                        >
+                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#eee3cf] bg-[#faf8f3] sm:h-24 sm:w-24">
+                            <img
+                              src={getImageUrl(
+                                item.image_url || item.image
+                              )}
+                              alt={item.name || "Product"}
+                              className="h-full w-full object-contain p-2"
+                            />
+                          </div>
 
-                    <div className="min-w-0 flex-1">
-                      {item.brand && (
-                        <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#b9975b]">
-                          {item.brand}
-                        </p>
-                      )}
+                          <div className="min-w-0 flex-1">
+                            <h3 className="line-clamp-2 text-sm font-bold text-[#403527] sm:text-base">
+                              {item.name || "PrimeCart Product"}
+                            </h3>
 
-                      <h3 className="mt-1 font-bold text-sm sm:text-base leading-6 line-clamp-2">
-                        {item.name}
-                      </h3>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8b7d68]">
+                              <span>
+                                Qty:{" "}
+                                <strong className="text-[#5d4b35]">
+                                  {quantity}
+                                </strong>
+                              </span>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#796e5d]">
-                        <span className="px-2 py-1 rounded-lg bg-[#f8f3e9]">
-                          Qty: {item.quantity}
-                        </span>
+                              <span>
+                                Unit price:{" "}
+                                <strong className="text-[#5d4b35]">
+                                  {formatMoney(price)}
+                                </strong>
+                              </span>
+                            </div>
+                          </div>
 
-                        <span>×</span>
-
-                        <span className="font-semibold">
-                          {formatPrice(item.price)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <p className="font-black text-sm sm:text-base">
-                        {formatPrice(
-                          Number(item.price || 0) *
-                            Number(item.quantity || 0)
-                        )}
-                      </p>
-                    </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-black text-[#3b3022] sm:text-base">
+                              {formatMoney(price * quantity)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Delivery */}
-            <section className="bg-white rounded-3xl border border-[#eadfcb] shadow-[0_12px_40px_rgba(74,64,52,0.05)] p-5 sm:p-7">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#f5ead6] flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-[#96723b]" />
-                </div>
-
-                <div>
-                  <h2 className="font-black text-lg">Delivery Address</h2>
-                  <p className="text-xs text-[#9b907f] mt-1">
-                    Your order will be delivered here
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl bg-[#fbf8f2] border border-[#eadfcb] p-4">
-                <p className="font-bold text-sm">
-                  {address.fullName || address.name || "Customer"}
-                </p>
-
-                {address.phone && (
-                  <p className="mt-1 text-sm text-[#796e5d]">
-                    {address.phone}
-                  </p>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-[#dfd3bb] bg-[#fcfaf5] px-5 py-10 text-center">
+                    <Package className="mx-auto h-8 w-8 text-[#b9a98c]" />
+                    <p className="mt-3 text-sm font-semibold text-[#786a55]">
+                      Order details are loading...
+                    </p>
+                  </div>
                 )}
+              </section>
 
-                <p className="mt-2 text-sm text-[#796e5d] leading-6">
-                  {address.addressLine1 || address.address || ""}
-                  {address.addressLine2
-                    ? `, ${address.addressLine2}`
-                    : ""}
-                  {(address.city || address.state) && (
-                    <>
-                      <br />
-                      {[address.city, address.state]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </>
-                  )}
-                  {(address.pincode || address.postalCode) && (
-                    <>
-                      {" - "}
-                      {address.pincode || address.postalCode}
-                    </>
-                  )}
+              {/* Delivery */}
+              <section className="rounded-3xl border border-[#e9dec8] bg-white p-5 shadow-[0_12px_45px_rgba(70,50,20,0.06)] sm:p-7">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8f0df]">
+                    <MapPin className="h-5 w-5 text-[#b8872d]" />
+                  </div>
+
+                  <div>
+                    <p className="font-black text-[#342a1e]">
+                      Delivery address
+                    </p>
+                    <p className="text-xs text-[#8c7e68]">
+                      Your package will be delivered here
+                    </p>
+                  </div>
+                </div>
+
+                {address ? (
+                  <div className="rounded-2xl border border-[#eee3d0] bg-[#fcfaf6] p-4">
+                    <p className="text-sm font-black text-[#433626]">
+                      {address.fullName || address.name || "Customer"}
+                    </p>
+
+                    {(address.phone || address.mobile) && (
+                      <p className="mt-1 text-xs font-medium text-[#82745f]">
+                        {address.phone || address.mobile}
+                      </p>
+                    )}
+
+                    <p className="mt-3 text-sm leading-6 text-[#746653]">
+                      {address.addressLine1 ||
+                        address.address ||
+                        ""}
+                      {address.addressLine2 && (
+                        <>
+                          <br />
+                          {address.addressLine2}
+                        </>
+                      )}
+                      {(address.city ||
+                        address.state ||
+                        address.pincode ||
+                        address.zipCode) && (
+                        <>
+                          <br />
+                          {[
+                            address.city,
+                            address.state,
+                            address.pincode || address.zipCode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-[#dfd3bb] bg-[#fcfaf5] p-5 text-sm text-[#83745e]">
+                    Delivery address information is not available.
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/* Right */}
+            <div className="space-y-6">
+              {/* Summary */}
+              <section className="rounded-3xl border border-[#dfdecf] bg-white p-5 shadow-[0_12px_45px_rgba(70,50,20,0.07)] sm:p-6">
+                <p className="text-lg font-black text-[#342a1e]">
+                  Order summary
                 </p>
-              </div>
-            </section>
 
-            {/* Payment */}
-            <section className="bg-white rounded-3xl border border-[#eadfcb] shadow-[0_12px_40px_rgba(74,64,52,0.05)] p-5 sm:p-7">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#f5ead6] flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-[#96723b]" />
-                </div>
-
-                <div>
-                  <h2 className="font-black text-lg">
-                    Payment Information
-                  </h2>
-                  <p className="text-xs text-[#9b907f] mt-1">
-                    Selected payment method
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#fbf8f2] border border-[#eadfcb] p-4">
-                <div>
-                  <p className="text-xs text-[#9b907f]">Payment Method</p>
-                  <p className="mt-1 font-bold text-sm">
-                    {getPaymentLabel(order.paymentMethod)}
-                  </p>
-                </div>
-
-                <ShieldCheck className="w-5 h-5 text-[#b9975b]" />
-              </div>
-            </section>
-          </div>
-
-          {/* Right summary */}
-          <aside>
-            <div className="lg:sticky lg:top-[92px] bg-white rounded-3xl border border-[#eadfcb] shadow-[0_15px_50px_rgba(74,64,52,0.08)] overflow-hidden">
-              <div className="px-6 py-5 border-b border-[#f0e8da]">
-                <h2 className="font-black text-lg">Order Summary</h2>
-              </div>
-
-              <div className="p-6">
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#796e5d]">Subtotal</span>
-                    <span className="font-semibold">
-                      {formatPrice(subtotal)}
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="flex justify-between gap-4 text-[#756754]">
+                    <span>Subtotal</span>
+                    <span className="font-semibold text-[#4d402f]">
+                      {formatMoney(subtotal)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#796e5d]">Delivery</span>
+                  <div className="flex justify-between gap-4 text-[#756754]">
+                    <span>Delivery</span>
                     <span
                       className={`font-semibold ${
-                        delivery === 0 ? "text-green-600" : ""
+                        delivery === 0
+                          ? "text-[#4b8a62]"
+                          : "text-[#4d402f]"
                       }`}
                     >
-                      {delivery === 0 ? "FREE" : formatPrice(delivery)}
+                      {delivery === 0
+                        ? "FREE"
+                        : formatMoney(delivery)}
                     </span>
                   </div>
 
                   {discount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#796e5d]">
-                        Discount
-                      </span>
-                      <span className="font-semibold text-green-600">
-                        -{formatPrice(discount)}
+                    <div className="flex justify-between gap-4 text-[#4b8a62]">
+                      <span>Discount</span>
+                      <span className="font-bold">
+                        -{formatMoney(discount)}
                       </span>
                     </div>
                   )}
+
+                  <div className="my-4 border-t border-dashed border-[#ded3c0]" />
+
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-[#8b7d69]">
+                        Total paid
+                      </p>
+                      <p className="mt-1 text-2xl font-black text-[#2f271d]">
+                        {formatMoney(total)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-[#f5eddb] px-3 py-1.5 text-xs font-bold text-[#896526]">
+                      Paid
+                    </div>
+                  </div>
                 </div>
+              </section>
 
-                <div className="my-5 border-t border-dashed border-[#eadfcb]" />
+              {/* Payment */}
+              <section className="rounded-3xl border border-[#e9dec8] bg-white p-5 shadow-[0_12px_45px_rgba(70,50,20,0.06)] sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8f0df]">
+                    <CreditCard className="h-5 w-5 text-[#b8872d]" />
+                  </div>
 
-                <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-xs text-[#9b907f]">
-                      Total Amount
+                    <p className="font-black text-[#342a1e]">
+                      Payment method
                     </p>
-                    <p className="mt-1 text-2xl font-black text-[#40372e]">
-                      {formatPrice(total)}
+                    <p className="mt-1 text-sm font-semibold text-[#665742]">
+                      {paymentMethod}
                     </p>
                   </div>
-
-                  <span className="text-xs font-bold text-green-600">
-                    Paid / Confirmed
-                  </span>
                 </div>
 
-                <div className="mt-6 rounded-2xl bg-[#f8f3e9] border border-[#eadfcb] p-4">
-                  <div className="flex gap-3">
-                    <CalendarDays className="w-5 h-5 text-[#b9975b] shrink-0" />
-
-                    <div>
-                      <p className="text-xs font-bold">
-                        Order placed
-                      </p>
-
-                      <p className="mt-1 text-xs text-[#796e5d]">
-                        {formatDate(order.createdAt)}
-                      </p>
-                    </div>
-                  </div>
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#f7f5ef] px-3 py-2.5 text-xs text-[#716653]">
+                  <ShieldCheck className="h-4 w-4 text-[#6b9878]" />
+                  Your order information is securely stored.
                 </div>
+              </section>
 
-                <div className="mt-4 rounded-2xl bg-[#fbf8f2] border border-[#eadfcb] p-4">
-                  <div className="flex gap-3">
-                    <ShieldCheck className="w-5 h-5 text-[#b9975b] shrink-0" />
+              {/* Order date */}
+              <section className="rounded-3xl border border-[#e9dec8] bg-[#fffaf0] p-5 sm:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#a28d68]">
+                  Order placed
+                </p>
 
-                    <div>
-                      <p className="text-xs font-bold">
-                        PrimeCart Order Protection
-                      </p>
+                <p className="mt-2 text-base font-black text-[#4b3a25]">
+                  {orderDate}
+                </p>
 
-                      <p className="mt-1 text-xs leading-5 text-[#796e5d]">
-                        Keep your order ID handy for future order
-                        tracking.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => window.print()}
-                    className="h-11 rounded-xl border border-[#eadfcb] bg-white text-[#5e5345] text-sm font-bold flex items-center justify-center gap-2 hover:border-[#b9975b] transition"
-                  >
-                    <Download className="w-4 h-4" />
-                    Print
-                  </button>
-
-                  <Link
-                    href="/dashboard/orders"
-                    className="h-11 rounded-xl bg-[#b9975b] text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#96723b] transition"
-                  >
-                    My Orders
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-
-                <Link
-                  href="/dashboard"
-                  className="mt-3 h-11 rounded-xl bg-[#f8f3e9] border border-[#eadfcb] text-[#5e5345] text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#f5ead6] transition"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  Continue Shopping
-                </Link>
-              </div>
+                <p className="mt-2 text-xs leading-5 text-[#82745f]">
+                  You&apos;ll receive updates about your order as it moves
+                  through each delivery stage.
+                </p>
+              </section>
             </div>
-          </aside>
+          </div>
+
+          {/* Actions */}
+          <section className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#ded2bd] bg-white px-5 text-sm font-bold text-[#665642] shadow-sm transition hover:border-[#c79a3b] hover:text-[#a57521] print:hidden"
+            >
+              <Printer className="h-4 w-4" />
+              Print Order
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/orders")}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#d9c8a7] bg-white px-5 text-sm font-bold text-[#665642] shadow-sm transition hover:border-[#c79a3b] hover:text-[#a57521] print:hidden"
+            >
+              <Package className="h-4 w-4" />
+              My Orders
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#b8872d] px-6 text-sm font-black text-white shadow-[0_10px_25px_rgba(184,135,45,0.24)] transition hover:bg-[#a57521] print:hidden"
+            >
+              Continue Shopping
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </section>
+
+          {/* Footer */}
+          <div className="mt-10 flex items-center justify-center gap-2 text-center text-xs text-[#998c78] print:hidden">
+            <Home className="h-3.5 w-3.5" />
+            <span>Thank you for shopping with PrimeCart.</span>
+          </div>
         </div>
-
-        {/* Bottom reassurance */}
-        <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl border border-[#eadfcb] p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#f5ead6] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-[#96723b]" />
-            </div>
-
-            <div>
-              <p className="font-bold text-sm">Secure Checkout</p>
-              <p className="text-xs text-[#9b907f] mt-1">
-                Order details saved safely
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-[#eadfcb] p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#f5ead6] flex items-center justify-center">
-              <Truck className="w-5 h-5 text-[#96723b]" />
-            </div>
-
-            <div>
-              <p className="font-bold text-sm">Delivery Updates</p>
-              <p className="text-xs text-[#9b907f] mt-1">
-                Track progress from My Orders
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-[#eadfcb] p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#f5ead6] flex items-center justify-center">
-              <Package className="w-5 h-5 text-[#96723b]" />
-            </div>
-
-            <div>
-              <p className="font-bold text-sm">Order Confirmed</p>
-              <p className="text-xs text-[#9b907f] mt-1">
-                Keep your order ID for reference
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <style jsx>{`
-        .success-pop {
-          animation: successPop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1)
-            both;
-        }
-
-        @keyframes successPop {
-          0% {
-            opacity: 0;
-            transform: scale(0.55);
-          }
-
-          70% {
-            opacity: 1;
-            transform: scale(1.08);
-          }
-
-          100% {
-            transform: scale(1);
-          }
-        }
-
-        .confetti {
-          position: absolute;
-          top: -20px;
-          width: 8px;
-          height: 14px;
-          border-radius: 2px;
-          background: #b9975b;
-          animation: fall 3.8s linear forwards;
-        }
-
-        .c1 {
-          left: 8%;
-          animation-delay: 0.1s;
-        }
-
-        .c2 {
-          left: 18%;
-          width: 6px;
-          height: 10px;
-          animation-delay: 0.5s;
-        }
-
-        .c3 {
-          left: 31%;
-          animation-delay: 0.2s;
-        }
-
-        .c4 {
-          left: 48%;
-          width: 6px;
-          height: 11px;
-          animation-delay: 0.8s;
-        }
-
-        .c5 {
-          left: 64%;
-          animation-delay: 0.35s;
-        }
-
-        .c6 {
-          left: 76%;
-          width: 6px;
-          height: 10px;
-          animation-delay: 0.7s;
-        }
-
-        .c7 {
-          left: 88%;
-          animation-delay: 0.25s;
-        }
-
-        .c8 {
-          left: 94%;
-          width: 6px;
-          height: 11px;
-          animation-delay: 0.9s;
-        }
-
-        @keyframes fall {
-          0% {
-            transform: translateY(-30px) rotate(0deg);
-            opacity: 0;
-          }
-
-          10% {
-            opacity: 1;
-          }
-
-          100% {
-            transform: translateY(105vh) rotate(520deg);
-            opacity: 0;
-          }
-        }
-
-        @media print {
-          header {
-            display: none;
-          }
-
-          main {
-            background: white;
-          }
-
-          .confetti {
-            display: none;
-          }
-        }
-      `}</style>
-    </main>
+      </main>
+    </>
   );
 }
