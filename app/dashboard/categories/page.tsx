@@ -88,7 +88,7 @@ const categories: Category[] = [
     description:
       "Smartphones, accessories and mobile essentials for everyday connectivity.",
     icon: Smartphone,
-    image: "/smartphone-x-pro.png",
+    image: "/mobiles.png",
     keywords: ["mobile", "phone", "smartphone", "electronics"],
   },
   {
@@ -97,7 +97,7 @@ const categories: Category[] = [
     description:
       "Smart appliances designed to make everyday tasks easier and faster.",
     icon: WashingMachine,
-    image: "/air-fryer.png",
+    image: "/appliances.png",
     keywords: ["appliance", "air fryer", "kitchen", "electric"],
   },
   {
@@ -115,7 +115,7 @@ const categories: Category[] = [
     description:
       "Classic watches and smart timepieces designed for every style.",
     icon: Watch,
-    image: "/classic-watch.png",
+    image: "/watch.png",
     keywords: ["watch", "smartwatch", "time", "accessories"],
   },
   {
@@ -151,7 +151,7 @@ const categories: Category[] = [
     description:
       "Clothing and lifestyle essentials designed around your style.",
     icon: Shirt,
-    image: "/denim-jacket.png",
+    image: "/fashion.png",
     keywords: ["fashion", "clothing", "shirt", "jacket"],
   },
   {
