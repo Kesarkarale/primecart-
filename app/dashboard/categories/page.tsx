@@ -5,173 +5,40 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import {
   ArrowRight,
-  ChevronRight,
-  Home,
-  Smartphone,
-  WashingMachine,
-  Footprints,
-  Watch,
-  ShoppingBag,
   Baby,
+  BarChart3,
   Car,
-  Shirt,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Footprints,
   Gamepad2,
+  Home,
   Search,
-  X,
+  Shirt,
+  ShoppingBag,
+  Smartphone,
   Sparkles,
-  Grid3X3,
-  Package,
-  RefreshCw,
-  TrendingUp,
-  Zap,
   Star,
-  SlidersHorizontal,
-  WalletCards,
-  WandSparkles,
+  TrendingUp,
+  WashingMachine,
+  Watch,
+  X,
+  Zap,
 } from "lucide-react";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
-/* =========================================================
-   SUPABASE
-========================================================= */
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-);
-
-/* =========================================================
-   CATEGORY DATA
-========================================================= */
-
-const categories = [
-  {
-    name: "Home & Living",
-    slug: "home-living",
-    description:
-      "Furniture, decor, kitchen and everyday essentials for your home.",
-    icon: Home,
-    label: "Home Essentials",
-  },
-  {
-    name: "Mobile",
-    slug: "mobile",
-    description:
-      "Smartphones, accessories and mobile essentials for everyday use.",
-    icon: Smartphone,
-    label: "Tech & Mobile",
-  },
-  {
-    name: "Appliance",
-    slug: "appliance",
-    description:
-      "Smart and useful appliances designed to make life easier.",
-    icon: WashingMachine,
-    label: "Smart Appliances",
-  },
-  {
-    name: "Footwear",
-    slug: "footwear",
-    description:
-      "Shoes, sneakers, sandals and everyday footwear for every style.",
-    icon: Footprints,
-    label: "Shoes & Sneakers",
-  },
-  {
-    name: "Watch",
-    slug: "watch",
-    description:
-      "Smart watches and classic timepieces for every occasion.",
-    icon: Watch,
-    label: "Timepieces",
-  },
-  {
-    name: "Bag",
-    slug: "bag",
-    description:
-      "Backpacks, handbags and travel bags for work, travel and lifestyle.",
-    icon: ShoppingBag,
-    label: "Bags & Travel",
-  },
-  {
-    name: "Toy & Baby",
-    slug: "toy-baby",
-    description:
-      "Toys, baby products and kids essentials for little ones.",
-    icon: Baby,
-    label: "Kids & Baby",
-  },
-  {
-    name: "Automotive",
-    slug: "automotive",
-    description:
-      "Car and bike accessories for a smoother everyday drive.",
-    icon: Car,
-    label: "Auto Essentials",
-  },
-  {
-    name: "Fashion",
-    slug: "fashion",
-    description:
-      "Clothing, accessories and lifestyle fashion for your everyday look.",
-    icon: Shirt,
-    label: "Style & Fashion",
-  },
-  {
-    name: "Gaming",
-    slug: "gaming",
-    description:
-      "Gaming accessories and entertainment gear for your setup.",
-    icon: Gamepad2,
-    label: "Gaming Gear",
-  },
-];
-
-/* =========================================================
-   FILTERS
-========================================================= */
-
-const filters = [
-  { id: "all", label: "All" },
-  { id: "popular", label: "Popular" },
-  { id: "tech", label: "Tech" },
-  { id: "lifestyle", label: "Lifestyle" },
-];
-
-/* =========================================================
-   ANIMATIONS
-========================================================= */
-
-const containerVariants: Variants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.055,
-    },
-  },
+type Category = {
+  name: string;
+  slug: string;
+  description: string;
+  icon: React.ElementType;
+  image: string;
+  keywords: string[];
 };
 
-const cardVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 18,
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.42,
-      ease: "easeOut",
-    },
-  },
-};
-
-/* =========================================================
-   TYPES
-========================================================= */
-
-type ProductRow = {
+type Product = {
   id: string;
   category_id: string | null;
   name: string;
@@ -179,31 +46,137 @@ type ProductRow = {
   price: number | null;
   rating: number | null;
   is_flash_sale: boolean | null;
-  categories:
-    | {
-        slug: string;
-      }
-    | {
-        slug: string;
-      }[]
-    | null;
+  category_slug?: string;
 };
 
 type CategoryStats = {
-  slug: string;
-  count: number;
-  rating: number;
-  flashSaleCount: number;
-  products: ProductRow[];
+  total: number;
+  inStock: number;
+  flashDeals: number;
+  averageRating: number;
+  products: Product[];
 };
 
-/* =========================================================
-   IMAGE HELPER
-========================================================= */
+const categories: Category[] = [
+  {
+    name: "Home & Living",
+    slug: "home-living",
+    description:
+      "Furniture, decor, kitchen essentials and everything for a better home.",
+    icon: Home,
+    image: "/appliances.png",
+    keywords: ["home", "living", "furniture", "decor", "kitchen"],
+  },
+  {
+    name: "Mobile",
+    slug: "mobile",
+    description:
+      "Smartphones, mobile accessories and everyday tech essentials.",
+    icon: Smartphone,
+    image: "/smartphone-x-pro.png",
+    keywords: ["mobile", "phone", "smartphone", "electronics"],
+  },
+  {
+    name: "Appliance",
+    slug: "appliance",
+    description:
+      "Smart appliances designed to make everyday tasks easier.",
+    icon: WashingMachine,
+    image: "/air-fryer.png",
+    keywords: ["appliance", "air fryer", "kitchen", "electric"],
+  },
+  {
+    name: "Footwear",
+    slug: "footwear",
+    description:
+      "Sneakers, running shoes, sandals and footwear for every occasion.",
+    icon: Footprints,
+    image: "/sports-running-shoes.png",
+    keywords: ["footwear", "shoes", "sneakers", "running"],
+  },
+  {
+    name: "Watch",
+    slug: "watch",
+    description:
+      "Classic watches and smart timepieces for every style.",
+    icon: Watch,
+    image: "/classic-watch.png",
+    keywords: ["watch", "smartwatch", "time", "accessories"],
+  },
+  {
+    name: "Bag",
+    slug: "bag",
+    description:
+      "Backpacks, handbags, travel bags and everyday carry essentials.",
+    icon: ShoppingBag,
+    image: "/bag.png",
+    keywords: ["bag", "backpack", "travel", "handbag"],
+  },
+  {
+    name: "Toy & Baby",
+    slug: "toy-baby",
+    description:
+      "Toys, baby products and thoughtful essentials for little ones.",
+    icon: Baby,
+    image: "/toy.png",
+    keywords: ["toy", "baby", "kids", "children"],
+  },
+  {
+    name: "Automotive",
+    slug: "automotive",
+    description:
+      "Useful car and bike accessories for safer, smarter journeys.",
+    icon: Car,
+    image: "/automotive.png",
+    keywords: ["car", "bike", "automotive", "vehicle"],
+  },
+  {
+    name: "Fashion",
+    slug: "fashion",
+    description:
+      "Clothing and lifestyle essentials designed around your style.",
+    icon: Shirt,
+    image: "/denim-jacket.png",
+    keywords: ["fashion", "clothing", "shirt", "jacket"],
+  },
+  {
+    name: "Gaming",
+    slug: "gaming",
+    description:
+      "Gaming accessories, gear and entertainment essentials.",
+    icon: Gamepad2,
+    image: "/gaming.png",
+    keywords: ["gaming", "game", "console", "accessories"],
+  },
+];
 
-function getProductImage(imageUrl: string | null) {
+const fadeUp: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: "easeOut",
+    },
+  },
+};
+
+const staggerContainer: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.07,
+    },
+  },
+};
+
+function getProductImage(imageUrl?: string | null) {
   if (!imageUrl) {
-    return null;
+    return "/logo.png";
   }
 
   if (
@@ -217,917 +190,929 @@ function getProductImage(imageUrl: string | null) {
   return `/${imageUrl}`;
 }
 
-/* =========================================================
-   PAGE
-========================================================= */
+function formatPrice(price: number | null) {
+  if (price === null || Number.isNaN(price)) {
+    return "—";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+function getCategoryFallbackImage(category: Category) {
+  return category.image;
+}
 
 export default function CategoriesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const supabase = createClient();
 
-  const [stats, setStats] = useState<CategoryStats[]>([]);
-
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("popular");
+  const [showFilters, setShowFilters] = useState(false);
 
-  /* =======================================================
-     LOAD CATEGORY DATA
-  ======================================================= */
+  useEffect(() => {
+    let mounted = true;
 
-  const loadCategoryData = async () => {
-    try {
+    async function loadProducts() {
       setLoading(true);
-      setError("");
 
-      const { data, error: queryError } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .select(
           `
-          id,
-          category_id,
-          name,
-          image_url,
-          price,
-          rating,
-          is_flash_sale,
-          categories!inner(
-            slug
-          )
-        `
+            id,
+            category_id,
+            name,
+            image_url,
+            price,
+            rating,
+            stock,
+            is_flash_sale,
+            categories!inner(
+              slug
+            )
+          `,
         )
         .eq("is_active", true);
 
-      if (queryError) {
-        throw queryError;
-      }
+      if (error) {
+        console.error("Categories products error:", error);
 
-      const rows = (data || []) as ProductRow[];
-
-      const calculatedStats: CategoryStats[] = categories.map(
-        (category) => {
-          const categoryProducts = rows.filter((product) => {
-            const relation = product.categories;
-
-            if (!relation) return false;
-
-            if (Array.isArray(relation)) {
-              return relation.some(
-                (item) => item.slug === category.slug
-              );
-            }
-
-            return relation.slug === category.slug;
-          });
-
-          const ratings = categoryProducts
-            .map((product) => Number(product.rating || 0))
-            .filter((rating) => rating > 0);
-
-          const averageRating =
-            ratings.length > 0
-              ? ratings.reduce((sum, value) => sum + value, 0) /
-                ratings.length
-              : 0;
-
-          const flashSaleCount = categoryProducts.filter(
-            (product) => product.is_flash_sale === true
-          ).length;
-
-          return {
-            slug: category.slug,
-            count: categoryProducts.length,
-            rating: averageRating,
-            flashSaleCount,
-            products: categoryProducts.slice(0, 3),
-          };
+        if (mounted) {
+          setProducts([]);
+          setLoading(false);
         }
-      );
 
-      setStats(calculatedStats);
-    } catch (err) {
-      console.error("Category data error:", err);
-
-      setError(
-        "We couldn't load live category data. You can still browse all categories."
-      );
-
-      setStats(
-        categories.map((category) => ({
-          slug: category.slug,
-          count: 0,
-          rating: 0,
-          flashSaleCount: 0,
-          products: [],
-        }))
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadCategoryData();
-  }, []);
-
-  /* =======================================================
-     HELPERS
-  ======================================================= */
-
-  const getStats = (slug: string) => {
-    return (
-      stats.find((item) => item.slug === slug) || {
-        slug,
-        count: 0,
-        rating: 0,
-        flashSaleCount: 0,
-        products: [],
+        return;
       }
-    );
-  };
 
-  const totalProducts = useMemo(() => {
-    return stats.reduce((sum, item) => sum + item.count, 0);
-  }, [stats]);
+      const formatted: Product[] = (data ?? []).map((item: any) => ({
+        id: item.id,
+        category_id: item.category_id,
+        name: item.name,
+        image_url: item.image_url,
+        price: item.price,
+        rating: item.rating,
+        is_flash_sale: item.is_flash_sale,
+        category_slug: Array.isArray(item.categories)
+          ? item.categories?.[0]?.slug
+          : item.categories?.slug,
+      }));
 
-  const totalFlashProducts = useMemo(() => {
-    return stats.reduce(
-      (sum, item) => sum + item.flashSaleCount,
-      0
-    );
-  }, [stats]);
+      if (mounted) {
+        setProducts(formatted);
+        setLoading(false);
+      }
+    }
 
-  /* =======================================================
-     FILTER
-  ======================================================= */
+    loadProducts();
 
-  const filteredCategories = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    return () => {
+      mounted = false;
+    };
+  }, [supabase]);
 
-    let result = categories.filter((category) => {
-      if (!query) return true;
+  const statsByCategory = useMemo(() => {
+    const stats: Record<string, CategoryStats> = {};
 
-      return (
-        category.name.toLowerCase().includes(query) ||
-        category.description.toLowerCase().includes(query) ||
-        category.label.toLowerCase().includes(query)
+    categories.forEach((category) => {
+      const categoryProducts = products.filter(
+        (product) => product.category_slug === category.slug,
       );
+
+      const ratings = categoryProducts
+        .map((product) => Number(product.rating))
+        .filter((rating) => Number.isFinite(rating) && rating > 0);
+
+      const flashDeals = categoryProducts.filter(
+        (product) => product.is_flash_sale,
+      ).length;
+
+      stats[category.slug] = {
+        total: categoryProducts.length,
+        inStock: categoryProducts.length,
+        flashDeals,
+        averageRating:
+          ratings.length > 0
+            ? ratings.reduce((sum, rating) => sum + rating, 0) /
+              ratings.length
+            : 0,
+        products: categoryProducts.slice(0, 3),
+      };
     });
 
-    if (activeFilter === "popular") {
-      result = result.filter(
-        (category) => getStats(category.slug).count > 0
-      );
+    return stats;
+  }, [products]);
 
+  const totalProducts = products.length;
+
+  const totalFlashDeals = products.filter(
+    (product) => product.is_flash_sale,
+  ).length;
+
+  const overallRating = useMemo(() => {
+    const ratings = products
+      .map((product) => Number(product.rating))
+      .filter((rating) => Number.isFinite(rating) && rating > 0);
+
+    if (!ratings.length) return 0;
+
+    return (
+      ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+    );
+  }, [products]);
+
+  const filteredCategories = useMemo(() => {
+    let result = [...categories];
+
+    const query = search.trim().toLowerCase();
+
+    if (query) {
+      result = result.filter((category) => {
+        const searchable = [
+          category.name,
+          category.description,
+          ...category.keywords,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchable.includes(query);
+      });
+    }
+
+    if (activeFilter === "Deals") {
+      result = result.filter(
+        (category) => (statsByCategory[category.slug]?.flashDeals ?? 0) > 0,
+      );
+    }
+
+    if (activeFilter === "Popular") {
+      result = result.filter(
+        (category) => (statsByCategory[category.slug]?.total ?? 0) > 0,
+      );
+    }
+
+    if (activeFilter === "Top Rated") {
+      result = result.filter(
+        (category) =>
+          (statsByCategory[category.slug]?.averageRating ?? 0) >= 4,
+      );
+    }
+
+    if (sortBy === "products") {
       result.sort(
         (a, b) =>
-          getStats(b.slug).count - getStats(a.slug).count
+          (statsByCategory[b.slug]?.total ?? 0) -
+          (statsByCategory[a.slug]?.total ?? 0),
       );
     }
 
-    if (activeFilter === "tech") {
-      const tech = [
-        "mobile",
-        "appliance",
-        "watch",
-        "gaming",
-      ];
-
-      result = result.filter((category) =>
-        tech.includes(category.slug)
+    if (sortBy === "rating") {
+      result.sort(
+        (a, b) =>
+          (statsByCategory[b.slug]?.averageRating ?? 0) -
+          (statsByCategory[a.slug]?.averageRating ?? 0),
       );
     }
 
-    if (activeFilter === "lifestyle") {
-      const lifestyle = [
-        "home-living",
-        "footwear",
-        "bag",
-        "toy-baby",
-        "automotive",
-        "fashion",
-      ];
-
-      result = result.filter((category) =>
-        lifestyle.includes(category.slug)
+    if (sortBy === "deals") {
+      result.sort(
+        (a, b) =>
+          (statsByCategory[b.slug]?.flashDeals ?? 0) -
+          (statsByCategory[a.slug]?.flashDeals ?? 0),
       );
     }
 
     return result;
-  }, [searchQuery, activeFilter, stats]);
+  }, [search, activeFilter, sortBy, statsByCategory]);
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setActiveFilter("all");
-  };
-
-  /* =======================================================
-     TOP CATEGORY
-  ======================================================= */
-
-  const topCategorySlug = useMemo(() => {
-    if (!stats.length) return "";
-
-    return [...stats].sort((a, b) => b.count - a.count)[0]?.slug || "";
-  }, [stats]);
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
+  const trendingCategories = useMemo(() => {
+    return [...categories]
+      .sort(
+        (a, b) =>
+          (statsByCategory[b.slug]?.total ?? 0) -
+          (statsByCategory[a.slug]?.total ?? 0),
+      )
+      .slice(0, 4);
+  }, [statsByCategory]);
 
   return (
-    <main className="min-h-screen bg-[#faf8f3] text-[#29251f] dark:bg-[#11100d] dark:text-[#f5eee2]">
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+    <main className="min-h-screen bg-[#fffdf9] text-[#24211b]">
+      {/* TOP BAR */}
+      <div className="border-b border-[#eadfc9] bg-[#fffaf0]">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-center gap-4 px-5 py-2 text-[11px] font-semibold text-[#806b3d] sm:gap-7 sm:text-xs">
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 size={13} />
+            Secure Shopping
+          </span>
 
-      <header className="sticky top-0 z-50 border-b border-[#e8dfcf] bg-white/95 backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#15130f]/95">
-        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-10">
-          {/* LOGO */}
+          <span className="hidden sm:block">•</span>
 
+          <span className="flex items-center gap-1.5">
+            <Zap size={13} />
+            Exclusive Deals
+          </span>
+
+          <span className="hidden sm:block">•</span>
+
+          <span className="flex items-center gap-1.5">
+            <ShoppingBag size={13} />
+            Easy Returns
+          </span>
+        </div>
+      </div>
+
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-[#eadfc9]/80 bg-[#fffdf9]/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-10">
           <Link
             href="/dashboard"
-            className="group flex items-center gap-3"
+            className="flex min-w-0 items-center gap-3"
           >
-            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#e2c55e] via-[#c9a227] to-[#a98513] text-white shadow-[0_7px_20px_rgba(185,145,35,0.20)]">
-              <span className="relative z-10 text-lg font-black">
-                P
-              </span>
-
-              <div className="absolute -right-3 -top-3 h-7 w-7 rounded-full bg-white/25 blur-md" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#fff7df] shadow-sm ring-1 ring-[#c79a3b]/20">
+              <img
+                src="/logo.png"
+                alt="PrimeCart"
+                className="h-full w-full object-contain"
+              />
             </div>
 
-            <div>
-              <div className="text-xl font-black tracking-tight text-[#171717] dark:text-white">
-                Prime<span className="text-[#b08a00]">Cart</span>
+            <div className="min-w-0">
+              <div className="text-xl font-black tracking-tight text-[#2a261e]">
+                Prime<span className="text-[#b8872d]">Cart</span>
               </div>
 
-              <div className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a39b8d] sm:block">
+              <div className="hidden text-[9px] font-bold uppercase tracking-[0.2em] text-[#a99873] sm:block">
                 Shop Smarter
               </div>
             </div>
           </Link>
 
-          {/* DESKTOP NAV */}
-
-          <nav className="hidden items-center gap-2 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             <Link
               href="/dashboard"
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#756f65] transition hover:bg-[#faf7ef] hover:text-[#9b7600] dark:text-[#b9b0a1] dark:hover:bg-white/[0.06]"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#746a57] transition hover:bg-[#fff8e8] hover:text-[#8e6b24]"
             >
               Dashboard
             </Link>
 
             <Link
               href="/dashboard/products"
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#756f65] transition hover:bg-[#faf7ef] hover:text-[#9b7600] dark:text-[#b9b0a1] dark:hover:bg-white/[0.06]"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#746a57] transition hover:bg-[#fff8e8] hover:text-[#8e6b24]"
             >
               Products
             </Link>
 
             <Link
               href="/dashboard/categories"
-              className="rounded-xl border border-[#d9bd67]/40 bg-[#fff8df] px-4 py-2.5 text-sm font-bold text-[#8d6d00] shadow-sm dark:border-[#c9a227]/25 dark:bg-[#332b18] dark:text-[#e1c766]"
+              className="rounded-xl bg-[#fff4d8] px-4 py-2.5 text-sm font-bold text-[#9a741e] ring-1 ring-[#c79a3b]/15"
             >
               Categories
             </Link>
-
-            {/* GOLD DASHBOARD BUTTON — NO BLACK */}
-
-            <Link
-              href="/dashboard"
-              className="ml-1 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c9a227] to-[#b28b16] px-5 py-2.5 text-sm font-bold text-white shadow-[0_7px_20px_rgba(190,150,35,0.20)] transition duration-300 hover:-translate-y-0.5 hover:from-[#b9951e] hover:to-[#a17c0e] hover:shadow-[0_10px_25px_rgba(190,150,35,0.28)]"
-            >
-              Dashboard
-              <ArrowRight size={15} />
-            </Link>
           </nav>
 
-          {/* MOBILE */}
-
           <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d9bd67]/35 bg-[#fff8df] px-3.5 py-2.5 text-sm font-bold text-[#8d6d00] dark:bg-[#332b18] dark:text-[#e0c35d]"
+            href="/dashboard/products"
+            className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(184,135,45,0.28)] sm:flex"
           >
-            <Home size={16} />
-            <span>Home</span>
+            Shop Products
+            <ArrowRight size={15} />
           </Link>
         </div>
       </header>
 
-      {/* ===================================================
-          PAGE
-      =================================================== */}
-
-      <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
+      <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
         {/* BREADCRUMB */}
-
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-7 flex items-center gap-2 text-sm"
-        >
+        <div className="mb-7 flex items-center gap-2 text-sm text-[#9a907d]">
           <Link
             href="/dashboard"
-            className="font-medium text-[#8b857a] transition hover:text-[#a17b00]"
+            className="transition hover:text-[#a67b22]"
           >
             Dashboard
           </Link>
 
-          <ChevronRight
-            size={15}
-            className="text-[#b8b1a5]"
-          />
+          <ChevronRight size={14} />
 
-          <span className="font-semibold text-[#39342d] dark:text-[#eee5d7]">
+          <span className="font-semibold text-[#50483a]">
             Categories
           </span>
-        </motion.div>
+        </div>
 
-        {/* ===================================================
-            HERO
-        =================================================== */}
-
+        {/* HERO */}
         <motion.section
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative mb-7 overflow-hidden rounded-[30px] border border-[#eadfc9] bg-white shadow-[0_10px_40px_rgba(80,65,35,0.045)] dark:border-white/[0.08] dark:bg-[#181612]"
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] via-[#fffaf0] to-[#f9f0d9] px-6 py-8 shadow-[0_18px_60px_rgba(120,90,30,0.07)] sm:px-9 sm:py-10 lg:px-12 lg:py-12"
         >
-          {/* DECORATIVE GOLD */}
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#c79a3b]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-[#e5c66d]/10 blur-3xl" />
 
-          <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#c9a227]/10 blur-3xl" />
-
-          <div className="pointer-events-none absolute -bottom-28 right-72 h-52 w-52 rounded-full bg-[#c9a227]/[0.06] blur-3xl" />
-
-          <div className="relative px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d6bd70]/35 bg-[#fffaf0] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#9a7800] dark:border-[#c9a227]/25 dark:bg-[#332b18] dark:text-[#e0c35d]">
-                  <Sparkles size={13} />
-                  Explore PrimeCart
-                </div>
-
-                <h1 className="text-3xl font-black tracking-[-0.04em] text-[#211e19] dark:text-white sm:text-4xl lg:text-5xl">
-                  What are you{" "}
-                  <span className="bg-gradient-to-r from-[#ad8500] via-[#c9a227] to-[#dfc45d] bg-clip-text text-transparent">
-                    shopping for?
-                  </span>
-                </h1>
-
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-[#787268] dark:text-[#aaa195] sm:text-base">
-                  Explore carefully organized categories and
-                  discover products that match your everyday needs,
-                  lifestyle and interests.
-                </p>
+          <div className="relative grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#c79a3b]/20 bg-white/70 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#9a741e] shadow-sm">
+                <Sparkles size={13} />
+                Explore PrimeCart
               </div>
 
-              {/* STATS */}
+              <h1 className="max-w-3xl text-3xl font-black tracking-[-0.04em] text-[#29251d] sm:text-4xl lg:text-6xl">
+                Shop smarter with the right{" "}
+                <span className="text-[#b8872d]">category.</span>
+              </h1>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                <div className="min-w-[90px] rounded-2xl border border-[#eadfc9] bg-[#fffdf8] px-3 py-4 text-center dark:border-white/[0.08] dark:bg-[#211e18]">
-                  <Grid3X3
-                    size={17}
-                    className="mx-auto text-[#b08a00]"
-                  />
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#7c715d] sm:text-base">
+                Explore products across everyday essentials, technology,
+                fashion, gaming and more — all organized to make your
+                shopping journey simpler.
+              </p>
 
-                  <div className="mt-1 text-xl font-black text-[#29251f] dark:text-white">
-                    {categories.length}
-                  </div>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard/products"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5"
+                >
+                  Explore Products
+                  <ArrowRight size={16} />
+                </Link>
 
-                  <div className="text-[10px] font-semibold text-[#918a7e]">
-                    Categories
-                  </div>
-                </div>
-
-                <div className="min-w-[90px] rounded-2xl border border-[#eadfc9] bg-[#fffdf8] px-3 py-4 text-center dark:border-white/[0.08] dark:bg-[#211e18]">
-                  <Package
-                    size={17}
-                    className="mx-auto text-[#b08a00]"
-                  />
-
-                  <div className="mt-1 text-xl font-black text-[#29251f] dark:text-white">
-                    {loading ? "—" : totalProducts}
-                  </div>
-
-                  <div className="text-[10px] font-semibold text-[#918a7e]">
-                    Products
-                  </div>
-                </div>
-
-                <div className="min-w-[90px] rounded-2xl border border-[#eadfc9] bg-[#fffdf8] px-3 py-4 text-center dark:border-white/[0.08] dark:bg-[#211e18]">
-                  <Zap
-                    size={17}
-                    className="mx-auto text-[#b08a00]"
-                  />
-
-                  <div className="mt-1 text-xl font-black text-[#29251f] dark:text-white">
-                    {loading ? "—" : totalFlashProducts}
-                  </div>
-
-                  <div className="text-[10px] font-semibold text-[#918a7e]">
-                    Flash Deals
-                  </div>
-                </div>
+                <Link
+                  href="/dashboard/primematch"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#d8c69f] bg-white/80 px-5 py-3 text-sm font-bold text-[#80601f] transition hover:border-[#c79a3b] hover:bg-[#fff8e7]"
+                >
+                  <Sparkles size={16} />
+                  Try PrimeMatch
+                </Link>
               </div>
+            </div>
+
+            {/* HERO STATS */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <StatCard
+                icon={<ShoppingBag size={19} />}
+                value={loading ? "—" : totalProducts.toString()}
+                label="Products"
+              />
+
+              <StatCard
+                icon={<Zap size={19} />}
+                value={loading ? "—" : totalFlashDeals.toString()}
+                label="Flash Deals"
+              />
+
+              <StatCard
+                icon={<Star size={19} />}
+                value={
+                  loading || !overallRating
+                    ? "—"
+                    : overallRating.toFixed(1)
+                }
+                label="Avg Rating"
+              />
+
+              <StatCard
+                icon={<BarChart3 size={19} />}
+                value={categories.length.toString()}
+                label="Categories"
+              />
             </div>
           </div>
         </motion.section>
 
-        {/* ===================================================
-            SEARCH
-        =================================================== */}
+        {/* TRENDING */}
+        <section className="mt-10">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47a22]">
+                <TrendingUp size={15} />
+                Trending Now
+              </div>
 
-        <section className="mb-5">
-          <div className="relative max-w-2xl">
-            <Search
-              size={19}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#a59e92]"
-            />
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Popular categories
+              </h2>
 
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search categories..."
-              className="h-14 w-full rounded-2xl border border-[#e3d9c7] bg-white pl-12 pr-12 text-sm font-medium text-[#29251f] outline-none shadow-[0_6px_25px_rgba(70,55,30,0.035)] transition placeholder:text-[#aaa397] focus:border-[#c9a227]/60 focus:ring-4 focus:ring-[#c9a227]/10 dark:border-white/[0.08] dark:bg-[#181612] dark:text-white dark:placeholder:text-[#857d71]"
-            />
+              <p className="mt-1 text-sm text-[#8d8372]">
+                Quickly jump into categories people are exploring.
+              </p>
+            </div>
 
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#91897c] transition hover:bg-[#fff8df] hover:text-[#9a7800]"
-              >
-                <X size={17} />
-              </button>
-            )}
+            <Link
+              href="/dashboard/products"
+              className="hidden items-center gap-1 text-sm font-bold text-[#a47720] sm:flex"
+            >
+              View products
+              <ArrowRight size={15} />
+            </Link>
           </div>
 
-          {/* FILTERS */}
-
-          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-            <SlidersHorizontal
-              size={15}
-              className="mr-1 shrink-0 text-[#968e82]"
-            />
-
-            {filters.map((filter) => {
-              const active = activeFilter === filter.id;
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {trendingCategories.map((category, index) => {
+              const Icon = category.icon;
+              const stats = statsByCategory[category.slug];
 
               return (
-                <button
-                  key={filter.id}
-                  type="button"
-                  onClick={() => setActiveFilter(filter.id)}
-                  className={`shrink-0 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-                    active
-                      ? "border border-[#c9a227]/50 bg-[#fff4c9] text-[#8d6d00] shadow-sm dark:bg-[#3b3119] dark:text-[#e3c662]"
-                      : "border border-[#e4dac6] bg-white text-[#756f65] hover:border-[#c9a227]/40 hover:bg-[#fffaf0] hover:text-[#967300] dark:border-white/[0.08] dark:bg-[#181612] dark:text-[#aaa195]"
-                  }`}
+                <Link
+                  key={category.slug}
+                  href={`/dashboard/categories/${category.slug}`}
+                  className="group"
                 >
-                  {filter.label}
-                </button>
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.06 }}
+                    className="relative overflow-hidden rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition duration-300 hover:-translate-y-1 hover:border-[#c79a3b]/40 hover:shadow-[0_15px_35px_rgba(130,95,25,0.08)]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff8e7] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white">
+                        <Icon size={21} />
+                      </div>
+
+                      <ArrowRight
+                        size={16}
+                        className="text-[#b5a98f] transition group-hover:translate-x-1 group-hover:text-[#a47720]"
+                      />
+                    </div>
+
+                    <h3 className="mt-4 text-sm font-extrabold">
+                      {category.name}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-[#938875]">
+                      {stats?.total ?? 0} products
+                    </p>
+                  </motion.div>
+                </Link>
               );
             })}
           </div>
         </section>
 
-        {/* ERROR */}
+        {/* SEARCH + FILTER */}
+        <section className="mt-10">
+          <div className="rounded-2xl border border-[#eadfc9] bg-white p-3 shadow-[0_10px_35px_rgba(0,0,0,0.035)] sm:p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a99b80]"
+                />
 
-        {error && (
-          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-[#eadfc9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.08] dark:bg-[#181612]">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fff8df] text-[#a17b00]">
-                <Package size={17} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search categories..."
+                  className="h-12 w-full rounded-xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-11 text-sm font-medium text-[#342e24] outline-none transition placeholder:text-[#aaa08f] focus:border-[#c79a3b] focus:ring-4 focus:ring-[#c79a3b]/10"
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#998d78] transition hover:bg-[#fff3d6] hover:text-[#8e6b24]"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
 
-              <p className="text-sm text-[#756f65] dark:text-[#aaa195]">
-                {error}
+              <button
+                type="button"
+                onClick={() => setShowFilters((value) => !value)}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#dfcfac] bg-[#fff9eb] px-5 text-sm font-bold text-[#856525] transition hover:border-[#c79a3b] hover:bg-[#fff4d8] lg:hidden"
+              >
+                Filters
+                <BarChart3 size={16} />
+              </button>
+
+              <div
+                className={`${
+                  showFilters ? "flex" : "hidden"
+                } flex-col gap-2 lg:flex lg:flex-row`}
+              >
+                {["All", "Popular", "Deals", "Top Rated"].map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setActiveFilter(filter)}
+                    className={`h-11 rounded-xl px-4 text-sm font-bold transition ${
+                      activeFilter === filter
+                        ? "bg-[#fff0c7] text-[#8e6b24] ring-1 ring-[#c79a3b]/25"
+                        : "text-[#7d7465] hover:bg-[#fff9ed] hover:text-[#8e6b24]"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  className="h-11 rounded-xl border border-[#eadfc9] bg-[#fffdf9] px-4 text-sm font-bold text-[#6f6657] outline-none focus:border-[#c79a3b]"
+                >
+                  <option value="popular">Sort: Popular</option>
+                  <option value="products">Most Products</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="deals">Most Deals</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* MAIN CATEGORY SECTION */}
+        <section className="mt-10">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47a22]">
+                All Categories
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Explore everything
+              </h2>
+
+              <p className="mt-1 text-sm text-[#8d8372]">
+                {filteredCategories.length} categories available
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={loadCategoryData}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#d7bd68]/40 bg-[#fff8df] px-4 py-2.5 text-xs font-bold text-[#8d6d00] transition hover:bg-[#fff0bd]"
-            >
-              <RefreshCw size={14} />
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* RESULT */}
-
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#37322b] dark:text-[#eee5d7]">
-              {filteredCategories.length}{" "}
-              {filteredCategories.length === 1
-                ? "category"
-                : "categories"}
-            </p>
-
-            {searchQuery && (
-              <p className="mt-1 text-xs text-[#918a7e]">
-                Results for &quot;{searchQuery}&quot;
-              </p>
-            )}
           </div>
 
-          {(searchQuery || activeFilter !== "all") && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-xs font-bold text-[#a17b00] hover:underline"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
-
-        {/* ===================================================
-            SKELETON
-        =================================================== */}
-
-        {loading ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {categories.map((category) => (
-              <div
-                key={category.slug}
-                className="min-h-[320px] animate-pulse rounded-[26px] border border-[#e8dfd1] bg-white p-6 dark:border-white/[0.08] dark:bg-[#181612]"
-              >
-                <div className="h-[60px] w-[60px] rounded-[19px] bg-[#f0eadf] dark:bg-[#28241d]" />
-
-                <div className="mt-6 h-3 w-24 rounded bg-[#f0eadf] dark:bg-[#28241d]" />
-
-                <div className="mt-3 h-6 w-36 rounded bg-[#ebe4d8] dark:bg-[#28241d]" />
-
-                <div className="mt-3 space-y-2">
-                  <div className="h-3 w-full rounded bg-[#f0eadf] dark:bg-[#28241d]" />
-                  <div className="h-3 w-4/5 rounded bg-[#f0eadf] dark:bg-[#28241d]" />
-                </div>
-
-                <div className="mt-5 h-8 w-24 rounded-xl bg-[#f0eadf] dark:bg-[#28241d]" />
-
-                <div className="mt-7 border-t border-[#eee8de] pt-5 dark:border-white/[0.06]">
-                  <div className="h-4 w-28 rounded bg-[#f0eadf] dark:bg-[#28241d]" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredCategories.length > 0 ? (
-          /* =================================================
-             CATEGORY CARDS
-          ================================================= */
-
-          <motion.section
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          >
-            {filteredCategories.map((category) => {
-              const Icon = category.icon;
-              const categoryStats = getStats(category.slug);
-
-              const isPopular =
-                category.slug === topCategorySlug &&
-                categoryStats.count > 0;
-
-              return (
-                <motion.div
-                  key={category.slug}
-                  variants={cardVariants}
-                  className="h-full"
+          {loading ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[370px] animate-pulse rounded-[28px] border border-[#eadfc9] bg-white"
                 >
-                  <Link
-                    href={`/dashboard/categories/${category.slug}`}
-                    className="group block h-full"
-                  >
-                    <article className="relative flex h-full min-h-[360px] flex-col overflow-hidden rounded-[26px] border border-[#e7dfd1] bg-white p-6 shadow-[0_8px_35px_rgba(80,65,35,0.04)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d3b45c]/55 hover:shadow-[0_20px_50px_rgba(100,75,20,0.11)] dark:border-white/[0.08] dark:bg-[#181612]">
-                      {/* TOP LINE */}
+                  <div className="h-48 rounded-t-[28px] bg-[#f6f0e2]" />
+                  <div className="space-y-3 p-5">
+                    <div className="h-5 w-2/3 rounded bg-[#f3ecdc]" />
+                    <div className="h-4 w-full rounded bg-[#f6f0e2]" />
+                    <div className="h-4 w-4/5 rounded bg-[#f6f0e2]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredCategories.length === 0 ? (
+            <EmptyState
+              search={search}
+              onClear={() => {
+                setSearch("");
+                setActiveFilter("All");
+              }}
+            />
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              {filteredCategories.map((category) => {
+                const Icon = category.icon;
+                const stats = statsByCategory[category.slug];
 
-                      <div className="absolute left-0 top-0 h-1 w-0 bg-gradient-to-r from-[#b08a00] via-[#c9a227] to-[#e2c866] transition-all duration-500 group-hover:w-full" />
+                return (
+                  <motion.div key={category.slug} variants={fadeUp}>
+                    <Link
+                      href={`/dashboard/categories/${category.slug}`}
+                      className="group block h-full"
+                    >
+                      <article className="relative h-full overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c79a3b]/40 hover:shadow-[0_20px_50px_rgba(130,95,25,0.1)]">
+                        {/* IMAGE */}
+                        <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc]">
+                          <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#c79a3b]/10 blur-2xl" />
 
-                      {/* GLOW */}
-
-                      <div className="pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full bg-[#c9a227]/10 blur-3xl transition group-hover:bg-[#c9a227]/20" />
-
-                      {/* BADGES */}
-
-                      <div className="relative flex min-h-[30px] items-start justify-between">
-                        <span className="rounded-full border border-[#dfcc8d]/50 bg-[#fffaf0] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-[#9a7800] dark:bg-[#332b18] dark:text-[#e0c35d]">
-                          {category.label}
-                        </span>
-
-                        <div className="flex gap-1.5">
-                          {isPopular && (
-                            <span className="flex items-center gap-1 rounded-full border border-[#dfcc8d]/50 bg-[#fffaf0] px-2 py-1 text-[9px] font-bold text-[#9a7800] dark:bg-[#332b18] dark:text-[#e0c35d]">
-                              <TrendingUp size={10} />
-                              Popular
-                            </span>
-                          )}
-
-                          {categoryStats.flashSaleCount > 0 && (
-                            <span className="flex items-center gap-1 rounded-full border border-[#efd58c] bg-[#fff7dc] px-2 py-1 text-[9px] font-bold text-[#9a7800]">
-                              <Zap size={10} />
-                              Sale
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* ICON */}
-
-                      <div className="relative mt-4 flex items-center justify-between">
-                        <div className="flex h-[60px] w-[60px] items-center justify-center rounded-[19px] border border-[#e8dcb9] bg-gradient-to-br from-[#fffaf0] to-[#faf3dc] text-[#aa8500] transition-all duration-300 group-hover:border-[#c9a227]/30 group-hover:bg-gradient-to-br group-hover:from-[#c9a227] group-hover:to-[#a98208] group-hover:text-white group-hover:shadow-[0_10px_25px_rgba(190,150,35,0.22)] dark:border-[#c9a227]/20 dark:from-[#302814] dark:to-[#262116]">
-                          <Icon
-                            size={28}
-                            strokeWidth={1.8}
-                            className="transition-transform duration-300 group-hover:scale-110"
+                          <img
+                            src={getCategoryFallbackImage(category)}
+                            alt={category.name}
+                            className="relative z-10 h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105"
+                            onError={(event) => {
+                              event.currentTarget.src = "/logo.png";
+                            }}
                           />
-                        </div>
 
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e7e0d5] bg-white text-[#a8a094] transition group-hover:border-[#d7bd68]/40 group-hover:bg-[#fffaf0] group-hover:text-[#a17b00] dark:border-white/[0.08] dark:bg-[#211e18]">
-                          <ArrowRight size={16} />
-                        </div>
-                      </div>
-
-                      {/* TITLE */}
-
-                      <div className="relative mt-5">
-                        <h2 className="text-xl font-extrabold tracking-[-0.02em] text-[#25221d] transition-colors group-hover:text-[#9b7600] dark:text-[#f6f0e5] dark:group-hover:text-[#e0c35d]">
-                          {category.name}
-                        </h2>
-
-                        <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#817b72] dark:text-[#aaa195]">
-                          {category.description}
-                        </p>
-                      </div>
-
-                      {/* STATS */}
-
-                      <div className="relative mt-4 grid grid-cols-2 gap-2">
-                        <div className="rounded-xl bg-[#faf7ef] px-3 py-2.5 dark:bg-[#211e18]">
-                          <div className="flex items-center gap-1.5">
-                            <Package
-                              size={13}
-                              className="text-[#aa8500]"
-                            />
-
-                            <span className="text-xs font-bold text-[#5f594f] dark:text-[#c1b8a9]">
-                              {categoryStats.count}
-                            </span>
+                          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#89671e] shadow-sm backdrop-blur">
+                            <Icon size={12} />
+                            {category.name}
                           </div>
 
-                          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#999184]">
-                            Products
-                          </p>
+                          {stats?.flashDeals > 0 && (
+                            <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-[#c79a3b] px-3 py-1.5 text-[10px] font-black text-white shadow-sm">
+                              <Zap size={11} />
+                              {stats.flashDeals} Deals
+                            </div>
+                          )}
                         </div>
 
-                        <div className="rounded-xl bg-[#faf7ef] px-3 py-2.5 dark:bg-[#211e18]">
-                          <div className="flex items-center gap-1.5">
-                            <Star
-                              size={13}
-                              className="fill-[#c9a227] text-[#c9a227]"
-                            />
+                        {/* CONTENT */}
+                        <div className="p-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-xl font-black tracking-tight text-[#302a20]">
+                                {category.name}
+                              </h3>
 
-                            <span className="text-xs font-bold text-[#5f594f] dark:text-[#c1b8a9]">
-                              {categoryStats.rating > 0
-                                ? categoryStats.rating.toFixed(1)
-                                : "—"}
-                            </span>
+                              <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#887e6c]">
+                                {category.description}
+                              </p>
+                            </div>
+
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#eadfc9] text-[#a98a50] transition group-hover:border-[#c79a3b]/30 group-hover:bg-[#fff6df] group-hover:text-[#a47720]">
+                              <ArrowRight
+                                size={15}
+                                className="transition-transform group-hover:translate-x-0.5"
+                              />
+                            </div>
                           </div>
 
-                          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#999184]">
-                            Rating
-                          </p>
-                        </div>
-                      </div>
+                          {/* STATS */}
+                          <div className="mt-5 grid grid-cols-3 divide-x divide-[#eee6d6] rounded-xl border border-[#eee6d6] bg-[#fffdf9]">
+                            <MiniStat
+                              value={stats?.total ?? 0}
+                              label="Products"
+                            />
 
-                      {/* PRODUCT PREVIEW */}
+                            <MiniStat
+                              value={stats?.flashDeals ?? 0}
+                              label="Deals"
+                            />
 
-                      {categoryStats.products.length > 0 && (
-                        <div className="relative mt-4 flex items-center gap-2">
-                          {categoryStats.products.map(
-                            (product) => {
-                              const image = getProductImage(
-                                product.image_url
-                              );
+                            <MiniStat
+                              value={
+                                stats?.averageRating
+                                  ? stats.averageRating.toFixed(1)
+                                  : "—"
+                              }
+                              label="Rating"
+                              star
+                            />
+                          </div>
 
-                              return (
+                          {/* PREVIEW PRODUCTS */}
+                          {stats?.products?.length > 0 && (
+                            <div className="mt-5 flex items-center gap-2">
+                              {stats.products.map((product) => (
                                 <div
                                   key={product.id}
-                                  className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-[#e8dfd1] bg-[#faf8f3] dark:border-white/[0.08] dark:bg-[#211e18]"
+                                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffaf0]"
                                   title={product.name}
                                 >
-                                  {image ? (
-                                    <img
-                                      src={image}
-                                      alt=""
-                                      className="h-full w-full object-contain p-1.5"
-                                    />
-                                  ) : (
-                                    <Package
-                                      size={17}
-                                      className="text-[#b49b58]"
-                                    />
-                                  )}
+                                  <img
+                                    src={getProductImage(product.image_url)}
+                                    alt={product.name}
+                                    className="h-full w-full object-contain p-1"
+                                    onError={(event) => {
+                                      event.currentTarget.src = "/logo.png";
+                                    }}
+                                  />
                                 </div>
-                              );
-                            }
+                              ))}
+
+                              <span className="ml-auto flex items-center gap-1 text-xs font-bold text-[#9b8760]">
+                                Explore
+                                <ArrowRight size={13} />
+                              </span>
+                            </div>
                           )}
 
-                          {categoryStats.count > 3 && (
-                            <span className="text-[10px] font-bold text-[#9a7800]">
-                              +{categoryStats.count - 3} more
+                          <div className="mt-5 flex items-center justify-between border-t border-[#f0e9dc] pt-4">
+                            <span className="text-sm font-bold text-[#a47720]">
+                              Explore products
                             </span>
-                          )}
+
+                            {stats?.flashDeals ? (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-[#bd8121]">
+                                <Clock3 size={12} />
+                                Limited deals
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-[#9c927f]">
+                                <CheckCircle2 size={12} />
+                                Available now
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </article>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </section>
 
-                      {/* FOOTER */}
-
-                      <div className="relative mt-auto pt-5">
-                        <div className="flex items-center justify-between border-t border-[#eee8de] pt-5 dark:border-white/[0.06]">
-                          <span className="text-sm font-bold text-[#9e7a08] dark:text-[#d2b24f]">
-                            Explore products
-                          </span>
-
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff8df] text-[#a17b00] transition-all duration-300 group-hover:bg-[#c9a227] group-hover:text-white dark:bg-[#332a17] dark:text-[#dfc25f]">
-                            <ArrowRight
-                              size={15}
-                              className="transition-transform group-hover:translate-x-0.5"
-                            />
-                          </span>
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </motion.section>
-        ) : (
-          /* =================================================
-             EMPTY STATE
-          ================================================= */
-
+        {/* SMART SHOPPING SECTION */}
+        <section className="mt-12 grid gap-5 lg:grid-cols-2">
+          {/* PRIME MATCH */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-[28px] border border-[#e7dfd1] bg-white px-6 py-16 text-center dark:border-white/[0.08] dark:bg-[#181612]"
-          >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff8df] text-[#a27c00] dark:bg-[#342c18] dark:text-[#e0c35d]">
-              <Search size={27} />
-            </div>
-
-            <h2 className="mt-5 text-xl font-extrabold text-[#29251f] dark:text-white">
-              No categories found
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#837c72] dark:text-[#a59d91]">
-              We couldn&apos;t find a category matching{" "}
-              <span className="font-bold text-[#9b7600]">
-                &quot;{searchQuery}&quot;
-              </span>
-              .
-            </p>
-
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-[#d7bd68]/45 bg-[#fff8df] px-5 py-3 text-sm font-bold text-[#8d6d00] transition hover:bg-[#ffefbd]"
-            >
-              <X size={16} />
-              Clear Filters
-            </button>
-          </motion.div>
-        )}
-
-        {/* ===================================================
-            SMART SHOPPING CTA
-        =================================================== */}
-
-        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {/* PRIMEMATCH */}
-
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-[26px] border border-[#eadfc9] bg-white p-6 dark:border-white/[0.08] dark:bg-[#181612] sm:p-7"
+            className="relative overflow-hidden rounded-[28px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] to-[#f8efd9] p-6 sm:p-8"
           >
-            <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[#c9a227]/10 blur-3xl" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#c79a3b]/10 blur-3xl" />
 
             <div className="relative">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff8df] text-[#a17b00] dark:bg-[#332b18] dark:text-[#dfc25f]">
-                <WandSparkles size={21} />
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c79a3b] text-white shadow-[0_8px_20px_rgba(184,135,45,0.2)]">
+                <Sparkles size={22} />
               </div>
 
-              <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#aa8b31]">
+              <div className="text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
                 PrimeMatch
-              </p>
+              </div>
 
-              <h3 className="mt-1 text-xl font-black text-[#29251f] dark:text-white">
-                Not sure what to buy?
+              <h3 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                Not sure what to choose?
               </h3>
 
-              <p className="mt-2 max-w-md text-sm leading-6 text-[#817b72] dark:text-[#aaa195]">
-                Tell PrimeCart what you need, your budget and your
-                priorities. Get recommendations made around you.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-[#817562]">
+                Tell PrimeMatch what you need, your budget and priorities.
+                Get product suggestions tailored around your requirements.
               </p>
 
               <Link
                 href="/dashboard/primematch"
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c9a227] to-[#b28b16] px-5 py-3 text-sm font-bold text-white shadow-[0_7px_20px_rgba(190,150,35,0.18)] transition hover:-translate-y-0.5 hover:from-[#b9951e] hover:to-[#a17c0e]"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5"
               >
-                Try PrimeMatch
+                Find My Products
                 <ArrowRight size={16} />
               </Link>
             </div>
           </motion.div>
 
           {/* BUDGET BUILDER */}
-
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-[26px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] to-[#fff8e8] p-6 dark:border-white/[0.08] dark:from-[#181612] dark:to-[#211e18] sm:p-7"
+            transition={{ delay: 0.08 }}
+            className="relative overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white p-6 shadow-[0_10px_35px_rgba(0,0,0,0.035)] sm:p-8"
           >
-            <div className="absolute -bottom-16 -right-16 h-40 w-40 rounded-full bg-[#c9a227]/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -right-20 h-48 w-48 rounded-full bg-[#e8ca75]/15 blur-3xl" />
 
             <div className="relative">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#a17b00] shadow-sm dark:bg-[#302814] dark:text-[#dfc25f]">
-                <WalletCards size={21} />
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff2cc] text-[#a47720] ring-1 ring-[#c79a3b]/20">
+                <BarChart3 size={22} />
               </div>
 
-              <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#aa8b31]">
+              <div className="text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
                 Budget Builder
-              </p>
+              </div>
 
-              <h3 className="mt-1 text-xl font-black text-[#29251f] dark:text-white">
-                Shop within your budget.
+              <h3 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                Build more within your budget.
               </h3>
 
-              <p className="mt-2 max-w-md text-sm leading-6 text-[#817b72] dark:text-[#aaa195]">
-                Set your budget and build a smart product collection
-                without losing track of what matters.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-[#817562]">
+                Set a budget and create a smart shopping plan without
+                manually checking hundreds of products.
               </p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {["₹5K", "₹10K", "₹25K", "Custom"].map((budget) => (
+                  <span
+                    key={budget}
+                    className="rounded-full border border-[#eadfc9] bg-[#fffaf0] px-3 py-1.5 text-xs font-bold text-[#8b7140]"
+                  >
+                    {budget}
+                  </span>
+                ))}
+              </div>
 
               <Link
                 href="/dashboard/budget-builder"
-                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#d4b85f]/50 bg-white px-5 py-3 text-sm font-bold text-[#8d6d00] shadow-sm transition hover:-translate-y-0.5 hover:border-[#c9a227] hover:bg-[#fffaf0] dark:bg-[#211e18] dark:text-[#dfc25f]"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[#d9c79e] bg-[#fff8e7] px-5 py-3 text-sm font-bold text-[#866521] transition hover:border-[#c79a3b] hover:bg-[#fff1cb]"
               >
-                Build Your Budget
+                Build My Budget
                 <ArrowRight size={16} />
               </Link>
             </div>
           </motion.div>
         </section>
 
-        {/* ===================================================
-            BOTTOM PRODUCT CTA
-        =================================================== */}
-
-        <motion.section
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="relative mt-6 overflow-hidden rounded-[26px] border border-[#eadfc9] bg-white p-6 dark:border-white/[0.08] dark:bg-[#181612] sm:p-7"
-        >
-          <div className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-[#c9a227]/10 blur-3xl" />
-
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        {/* BOTTOM CTA */}
+        <section className="mt-12 overflow-hidden rounded-[28px] border border-[#eadfc9] bg-[#fffaf0]">
+          <div className="flex flex-col items-center justify-between gap-5 px-6 py-8 text-center sm:px-10 lg:flex-row lg:text-left">
             <div>
-              <div className="flex items-center gap-2 text-sm font-bold text-[#9a7800] dark:text-[#dfc25f]">
-                <Sparkles size={16} />
-                PrimeCart Collection
+              <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720] lg:justify-start">
+                <Sparkles size={14} />
+                PrimeCart
               </div>
 
-              <h3 className="mt-1 text-lg font-extrabold text-[#29251f] dark:text-white">
-                Prefer browsing everything?
+              <h3 className="mt-2 text-2xl font-black tracking-tight">
+                Ready to discover your next favourite product?
               </h3>
 
-              <p className="mt-1 max-w-xl text-sm leading-6 text-[#817b72] dark:text-[#aaa195]">
-                Explore the complete PrimeCart product collection
-                and discover your next favourite product.
+              <p className="mt-1 text-sm text-[#897e6a]">
+                Browse the complete PrimeCart product collection.
               </p>
             </div>
 
-            {/* GOLD BUTTON — NO BLACK */}
-
             <Link
               href="/dashboard/products"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c9a227] to-[#b28b16] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_22px_rgba(190,150,35,0.20)] transition duration-300 hover:-translate-y-0.5 hover:from-[#b9951e] hover:to-[#a17c0e] hover:shadow-[0_12px_28px_rgba(190,150,35,0.28)]"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5"
             >
               View All Products
               <ArrowRight size={16} />
             </Link>
           </div>
-        </motion.section>
+        </section>
       </div>
     </main>
+  );
+}
+
+function StatCard({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#eadfc9] bg-white/80 p-4 shadow-sm backdrop-blur">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff3d4] text-[#a47720]">
+        {icon}
+      </div>
+
+      <div className="mt-4 text-2xl font-black text-[#302a20] sm:text-3xl">
+        {value}
+      </div>
+
+      <div className="mt-1 text-xs font-semibold text-[#958a76]">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({
+  value,
+  label,
+  star = false,
+}: {
+  value: number | string;
+  label: string;
+  star?: boolean;
+}) {
+  return (
+    <div className="px-2 py-3 text-center">
+      <div className="flex items-center justify-center gap-1 text-sm font-black text-[#4a4030]">
+        {star && <Star size={12} className="fill-[#c79a3b] text-[#c79a3b]" />}
+        {value}
+      </div>
+
+      <div className="mt-0.5 text-[10px] font-semibold text-[#a09787]">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  search,
+  onClear,
+}: {
+  search: string;
+  onClear: () => void;
+}) {
+  return (
+    <div className="rounded-[28px] border border-dashed border-[#dbcdaF] bg-[#fffaf0] px-6 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff0c7] text-[#a47720]">
+        <Search size={26} />
+      </div>
+
+      <h3 className="mt-5 text-xl font-black">
+        No categories found
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#8e8472]">
+        We couldn&apos;t find any category matching{" "}
+        <span className="font-bold text-[#6e5b37]">
+          &quot;{search}&quot;
+        </span>
+        .
+      </p>
+
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-6 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(184,135,45,0.18)] transition hover:-translate-y-0.5"
+      >
+        Clear Filters
+      </button>
+    </div>
   );
 }
