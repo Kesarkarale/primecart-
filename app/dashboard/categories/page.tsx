@@ -807,70 +807,106 @@ export default function CategoriesPage() {
         </section>
 
         {/* TRENDING */}
-        <section className="mt-11">
-          <SectionHeading
-            eyebrow="Trending"
-            title="Popular categories"
-            description="Explore categories with the most product activity."
-          />
+       {/* TRENDING */}
+<section className="mt-11">
+  <SectionHeading
+    eyebrow="Trending"
+    title="Popular categories"
+    description="Explore categories with the most product activity."
+  />
 
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 gap-3 md:grid-cols-4"
+  <motion.div
+    variants={stagger}
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true }}
+    className="grid grid-cols-2 gap-3 md:grid-cols-4"
+  >
+    {trending.map((category) => {
+      const stat = stats[category.slug];
+
+      return (
+        <motion.div
+          key={category.slug}
+          variants={cardVariants}
+        >
+          <Link
+            href={`/dashboard/categories/${category.slug}`}
+            className="group block"
           >
-            {trending.map((category) => {
-              const Icon = category.icon;
-              const stat = stats[category.slug];
+            <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition duration-300 hover:-translate-y-1 hover:border-[#c79a3b]/40 hover:shadow-[0_15px_35px_rgba(130,95,25,0.08)]">
 
-              return (
-                <motion.div
-                  key={category.slug}
-                  variants={cardVariants}
-                >
-                  <Link
-                    href={`/dashboard/categories/${category.slug}`}
-                    className="group block"
-                  >
-                    <div className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition hover:-translate-y-1 hover:border-[#c79a3b]/40 hover:shadow-[0_15px_35px_rgba(130,95,25,0.08)]">
-                      <div className="flex items-center justify-between">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff7e1] text-[#b8872d] group-hover:bg-[#c79a3b] group-hover:text-white">
-                          <Icon size={21} />
-                        </div>
+              {/* CATEGORY IMAGE */}
+              <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc] sm:h-36">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#c79a3b]/10 blur-2xl" />
 
-                        <ArrowRight
-                          size={15}
-                          className="text-[#b7aa92] group-hover:translate-x-1 group-hover:text-[#a47720]"
-                        />
-                      </div>
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="relative h-full w-full object-contain p-5 transition duration-500 group-hover:scale-110"
+                  onError={(event) => {
+                    event.currentTarget.src = "/logo.png";
+                  }}
+                />
 
-                      <h3 className="mt-4 text-sm font-black">
-                        {category.name}
-                      </h3>
+                {/* GOLD BADGE */}
+                {stat?.flashDeals > 0 && (
+                  <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-[#c79a3b] px-2.5 py-1 text-[9px] font-black text-white shadow-sm">
+                    <Zap size={10} />
+                    Deals
+                  </div>
+                )}
+              </div>
 
-                      <div className="mt-1 flex items-center gap-2 text-xs text-[#958a78]">
-                        <span>
-                          {stat?.total ?? 0} products
-                        </span>
+              {/* CARD INFO */}
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="truncate text-sm font-black text-[#29251d]">
+                    {category.name}
+                  </h3>
 
-                        {stat?.flashDeals > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="font-bold text-[#b77d1d]">
-                              {stat.flashDeals} deals
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </section>
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#fff7e1] text-[#a47720] transition group-hover:bg-[#c79a3b] group-hover:text-white">
+                    <ArrowRight
+                      size={13}
+                      className="transition group-hover:translate-x-0.5"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-[#958a78]">
+                  <span>
+                    {stat?.total ?? 0} products
+                  </span>
+
+                  {stat?.flashDeals > 0 && (
+                    <>
+                      <span>•</span>
+
+                      <span className="font-bold text-[#b77d1d]">
+                        {stat.flashDeals} deals
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {stat?.averageRating > 0 && (
+                  <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#806b43]">
+                    <Star
+                      size={11}
+                      className="fill-[#c79a3b] text-[#c79a3b]"
+                    />
+
+                    {stat.averageRating.toFixed(1)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      );
+    })}
+  </motion.div>
+</section>
 
         {/* SEARCH */}
         <section className="mt-11">
