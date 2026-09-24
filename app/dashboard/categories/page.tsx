@@ -83,8 +83,8 @@ const categories: Category[] = [
     keywords: ["home", "living", "furniture", "decor", "kitchen"],
   },
   {
-    name: "Mobile",
-    slug: "mobile",
+    name: "Mobiles",
+    slug: "mobiles",
     description:
       "Smartphones, accessories and mobile essentials for everyday connectivity.",
     icon: Smartphone,
