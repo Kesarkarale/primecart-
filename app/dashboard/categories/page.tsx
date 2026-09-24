@@ -163,6 +163,74 @@ const categories: Category[] = [
     image: "/gaming.png",
     keywords: ["gaming", "game", "console", "accessories"],
   },
+    {
+    name: "Eyewear",
+    slug: "eyewear",
+    description:
+      "Sunglasses, eyeglasses and stylish eyewear for everyday comfort and protection.",
+    icon: Eye,
+    image: "/eyewear.png",
+    keywords: [
+      "eyewear",
+      "glasses",
+      "sunglasses",
+      "spectacles",
+      "frames",
+      "optical",
+    ],
+  },
+  {
+    name: "Books",
+    slug: "books",
+    description:
+      "Bestsellers, educational books, fiction, non-fiction and books for every reader.",
+    icon: Layers3,
+    image: "/books.png",
+    keywords: [
+      "books",
+      "book",
+      "fiction",
+      "non-fiction",
+      "education",
+      "novels",
+      "reading",
+    ],
+  },
+  {
+    name: "Beauty",
+    slug: "beauty",
+    description:
+      "Skincare, makeup, haircare, fragrances and everyday beauty essentials.",
+    icon: Sparkles,
+    image: "/beauty.png",
+    keywords: [
+      "beauty",
+      "skincare",
+      "makeup",
+      "cosmetics",
+      "haircare",
+      "fragrance",
+      "personal care",
+    ],
+  },
+  {
+    name: "Electronics",
+    slug: "electronics",
+    description:
+      "Smart electronics, audio devices, accessories and everyday tech essentials.",
+    icon: Smartphone,
+    image: "/electronics.png",
+    keywords: [
+      "electronics",
+      "electronic",
+      "gadgets",
+      "audio",
+      "speaker",
+      "headphones",
+      "tech",
+      "accessories",
+    ],
+  },
 ];
 
 const fadeUp: Variants = {
