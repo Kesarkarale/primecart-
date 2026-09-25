@@ -162,30 +162,23 @@ const BUDGETS: Budget[] = [
    HELPERS
 ========================================================= */
 
-function getImageCandidates(value: string | null) {
-  if (!value?.trim()) return [PRODUCT_IMAGE_FALLBACK];
+function getImageUrl(value: string | null) {
+  if (!value?.trim()) return null;
 
   const cleaned = value.trim();
 
-  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
-    return [cleaned, PRODUCT_IMAGE_FALLBACK];
+  if (
+    cleaned.startsWith("http://") ||
+    cleaned.startsWith("https://")
+  ) {
+    return cleaned;
   }
 
   if (cleaned.startsWith("/")) {
-    return [cleaned, PRODUCT_IMAGE_FALLBACK];
+    return cleaned;
   }
 
-  const normalized = cleaned.startsWith("products/")
-    ? `/${cleaned}`
-    : `/products/${cleaned}`;
-
-  const rootPath = `/${cleaned.replace(/^products\//, "")}`;
-
-  return Array.from(new Set([normalized, rootPath, PRODUCT_IMAGE_FALLBACK]));
-}
-
-function getImageUrl(value: string | null) {
-  return getImageCandidates(value)[0] || null;
+  return `/products/${cleaned}`;
 }
 
 function money(value: number | null | undefined) {
@@ -570,6 +563,31 @@ function calculateBudgetScore(
 }
 
 /* =========================================================
+   QUALITY SCORE
+========================================================= */
+
+function calculateQualityScore(product: Product) {
+  const rating = clamp((Number(product.rating) || 0) / 5 * 100);
+  const reviews = Math.max(0, Number(product.reviews_count) || 0);
+
+  // Reviews contribute with diminishing returns so a product with
+  // 20,000 reviews does not unfairly dominate a product with 2,000.
+  const reviewScore = clamp(
+    Math.round((Math.log10(reviews + 1) / 4) * 100)
+  );
+
+  const stockScore = product.stock > 0 ? 100 : 0;
+
+  return clamp(
+    Math.round(
+      rating * 0.68 +
+      reviewScore * 0.22 +
+      stockScore * 0.10
+    )
+  );
+}
+
+/* =========================================================
    SEARCH SCORE
 ========================================================= */
 
@@ -625,19 +643,6 @@ function calculateSearchScore(
   }
 
   return 25;
-}
-
-/* =========================================================
-   QUALITY MATCH
-========================================================= */
-
-function calculateQualityScore(product: Product) {
-  const rating = clamp((Number(product.rating) || 0) / 5 * 100);
-  const reviews = Math.max(0, Number(product.reviews_count) || 0);
-  const reviewConfidence = clamp((Math.log10(reviews + 1) / 4) * 100);
-
-  // Rating is the strongest quality signal; review volume adds confidence.
-  return Math.round(rating * 0.78 + reviewConfidence * 0.22);
 }
 
 /* =========================================================
@@ -747,15 +752,19 @@ function scoreProduct(
     brandScore = 25;
   }
 
-  /* QUALITY + RATING */
+  /* RATING */
 
-  const qualityScore = calculateQualityScore(product);
-
-  const rating = Number(product.rating) || 0;
+  const rating =
+    Number(product.rating) || 0;
 
   const ratingScore = clamp(
     Math.round((rating / 5) * 100)
   );
+
+  /* QUALITY */
+
+  const qualityScore =
+    calculateQualityScore(product);
 
   /* AVAILABILITY */
 
@@ -826,14 +835,22 @@ function scoreProduct(
   */
 
   const score =
-    purposeScore * 0.24 +
-    categoryScore * 0.18 +
-    budgetScore * normalizedBudget * 0.26 +
-    qualityScore * normalizedQuality * 0.12 +
-    brandScore * normalizedBrand * 0.08 +
-    ratingScore * normalizedRating * 0.06 +
-    availabilityScore * 0.02 +
-    searchScore * 0.04;
+    purposeScore * 0.20 +
+    categoryScore * 0.16 +
+    budgetScore *
+      normalizedBudget *
+      0.18 +
+    qualityScore *
+      normalizedQuality *
+      0.16 +
+    ratingScore *
+      normalizedRating *
+      0.10 +
+    brandScore *
+      normalizedBrand *
+      0.08 +
+    availabilityScore * 0.04 +
+    searchScore * 0.08;
 
   let finalScore =
     Math.round(score);
@@ -903,11 +920,13 @@ function scoreProduct(
   }
 
   if (qualityScore >= 90) {
-    reasons.push("Strong product quality signals");
-  }
-
-  if (ratingScore >= 90) {
-    reasons.push("Highly rated");
+    reasons.push(
+      "Strong overall quality"
+    );
+  } else if (ratingScore >= 90) {
+    reasons.push(
+      "Highly rated"
+    );
   }
 
   if (
@@ -1008,22 +1027,20 @@ function ProductImage({
   alt,
   className = "",
 }: {
-  src: string | null;
+  src?: string | null;
   alt: string;
   className?: string;
 }) {
-  const candidates = useMemo(() => getImageCandidates(src), [src]);
-  const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    setIndex(0);
-  }, [src]);
+  const imageSrc =
+    src || PRODUCT_IMAGE_FALLBACK;
 
-  const imageSrc = candidates[index] || PRODUCT_IMAGE_FALLBACK;
-
-  if (index >= candidates.length - 1 && imageSrc === PRODUCT_IMAGE_FALLBACK) {
+  if (failed) {
     return (
-      <div className={`flex items-center justify-center bg-[#faf8f3] text-[#c9a24d] ${className}`}>
+      <div
+        className={`flex items-center justify-center bg-[#faf8f3] text-[#c9a24d] ${className}`}
+      >
         <ShoppingBag size={42} />
       </div>
     );
@@ -1033,12 +1050,27 @@ function ProductImage({
     <img
       src={imageSrc}
       alt={alt}
-      onError={() => setIndex((current) => Math.min(current + 1, candidates.length - 1))}
+      onError={() => setFailed(true)}
       className={className}
-      loading="lazy"
-      decoding="async"
     />
   );
+}
+
+/* =========================================================
+   MATCH CONFIDENCE
+========================================================= */
+
+function matchConfidence(score: number) {
+  if (score >= 92) {
+    return { label: "Excellent match", tone: "bg-emerald-50 text-emerald-700" };
+  }
+  if (score >= 82) {
+    return { label: "Strong match", tone: "bg-[#fff4d6] text-[#8d6924]" };
+  }
+  if (score >= 70) {
+    return { label: "Good match", tone: "bg-blue-50 text-blue-700" };
+  }
+  return { label: "Potential match", tone: "bg-gray-100 text-gray-600" };
 }
 
 /* =========================================================
@@ -1806,11 +1838,14 @@ const [matchStage, setMatchStage] =
       search,
     ]);
 
-  // Keep the result set frozen after Find My Prime Match.
-  // Preference changes require Refresh Match, so the UI never silently changes its answer.
-  const results = matched ? matchedResults : [];
+  // Products stay hidden until the user explicitly runs PrimeMatch.
+  // After matching, we keep a snapshot so changing controls does not
+  // silently rewrite the already-presented recommendations.
+  const results =
+    matched ? matchedResults : [];
 
-  const topMatch = results[0] || null;
+  const topMatch =
+    results[0] || null;
 
   /* =====================================================
      SPECIAL RECOMMENDATIONS
@@ -1892,11 +1927,22 @@ const [matchStage, setMatchStage] =
     useMemo(() => {
       return (
         [...results]
-          .filter((product) => product.stock > 0)
+          .filter(
+            (product) =>
+              product.stock > 0
+          )
           .sort((a, b) => {
-            const premiumA = a.matchScore + Number(a.rating) * 7 + a.breakdown.quality * 0.12;
-            const premiumB = b.matchScore + Number(b.rating) * 7 + b.breakdown.quality * 0.12;
-            return premiumB - premiumA || Number(b.price) - Number(a.price);
+            const qualityA =
+              a.breakdown.quality * 0.55 +
+              a.breakdown.rating * 0.30 +
+              Math.min(100, a.reviews_count / 20) * 0.15;
+            const qualityB =
+              b.breakdown.quality * 0.55 +
+              b.breakdown.rating * 0.30 +
+              Math.min(100, b.reviews_count / 20) * 0.15;
+
+            return (qualityB - qualityA) ||
+              (b.matchScore - a.matchScore);
           })[0] || null
       );
     }, [results]);
@@ -1942,6 +1988,10 @@ const [matchStage, setMatchStage] =
     product: MatchProduct
   ) {
     try {
+      if (product.stock <= 0) {
+        setToast("This product is currently out of stock.");
+        return;
+      }
       const stored =
         localStorage.getItem(
           "primecart-cart"
@@ -1974,11 +2024,19 @@ const [matchStage, setMatchStage] =
             String(product.id)
         );
 
-      if (existingIndex >= 0) {
-        const currentQuantity = Number(current[existingIndex]?.quantity) || 0;
+      if (
+        existingIndex >= 0
+      ) {
+        const currentQuantity =
+          Number(
+            current[existingIndex]?.quantity
+          ) || 0;
 
-        if (product.stock > 0 && currentQuantity >= product.stock) {
-          setToast(`Only ${product.stock} item${product.stock === 1 ? "" : "s"} available.`);
+        if (
+          product.stock > 0 &&
+          currentQuantity >= product.stock
+        ) {
+          setToast(`Only ${product.stock} available in stock`);
           return;
         }
 
@@ -2175,33 +2233,61 @@ async function runMatch() {
 
   setMatching(true);
   setMatched(false);
+  setMatchedResults([]);
   setMatchStage(0);
+  setCompareIds([]);
+  setError("");
 
   const stages = [
-    1200,
-    1200,
-    1200,
-    1200,
-    1000,
+    900,
+    900,
+    900,
+    900,
+    850,
   ];
 
   for (let index = 0; index < stages.length; index++) {
     setMatchStage(index);
 
     await new Promise<void>((resolve) =>
-      window.setTimeout(
-        resolve,
-        stages[index]
-      )
+      window.setTimeout(resolve, stages[index])
     );
   }
 
+  // Freeze the exact recommendations generated from the current
+  // preferences. This makes the result screen stable and predictable.
+  setMatchedResults([...filteredResults]);
   setMatchStage(5);
-
-  // Snapshot the ranking produced from the exact preferences used for this run.
-  setMatchedResults(filteredResults);
   setMatched(true);
   setMatching(false);
+
+  try {
+    const history = JSON.parse(
+      localStorage.getItem("prime-match-history") || "[]"
+    );
+    const entry = {
+      purpose,
+      budget,
+      category,
+      brand,
+      search: search.trim(),
+      createdAt: Date.now(),
+    };
+    const next = [entry, ...(Array.isArray(history) ? history : [])]
+      .filter((item, index, arr) =>
+        index === arr.findIndex((other) =>
+          other.purpose === item.purpose &&
+          other.budget === item.budget &&
+          other.category === item.category &&
+          other.brand === item.brand &&
+          other.search === item.search
+        )
+      )
+      .slice(0, 5);
+    localStorage.setItem("prime-match-history", JSON.stringify(next));
+  } catch {
+    // Match history is optional and should never block recommendations.
+  }
 
   window.setTimeout(() => {
     document
@@ -2212,7 +2298,6 @@ async function runMatch() {
       });
   }, 150);
 }
-
   /* =====================================================
      RESET
   ===================================================== */
@@ -2907,7 +2992,7 @@ async function runMatch() {
 
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-gray-500">
             We are analysing your preferences,
-            budget, product quality, ratings and available inventory.
+            budget, product quality and ratings.
           </p>
 
           <div className="mx-auto mt-8 max-w-xl space-y-3 text-left">
@@ -3087,11 +3172,10 @@ async function runMatch() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setMatched(false);
-                      setMatchedResults([]);
-                      setCompareIds([]);
-                    }
+                    onClick={() =>
+                      setMatched(
+                        false
+                      )
                     }
                     className="flex items-center gap-2 text-xs font-black text-[#9b762b]"
                   >
@@ -3270,15 +3354,6 @@ async function runMatch() {
                           />
 
                           <ScoreBar
-                            label="Quality"
-                            value={
-                              topMatch
-                                .breakdown
-                                .quality
-                            }
-                          />
-
-                          <ScoreBar
                             label="Rating"
                             value={
                               topMatch
@@ -3376,64 +3451,6 @@ async function runMatch() {
                       </div>
                     </div>
                   </div>
-                </div>
-              </section>
-
-              {/* =================================================
-                  TOP 3 MATCHES
-              ================================================= */}
-
-              <section className="mt-10">
-                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                      Shortlist
-                    </p>
-                    <h2 className="mt-1 text-2xl font-black">Top matches for you</h2>
-                    <p className="mt-1 text-sm text-gray-500">The three highest-ranked products from this match.</p>
-                  </div>
-                  <span className="w-fit rounded-full bg-[#fff4d6] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
-                    {results.length} ranked products
-                  </span>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  {results.slice(0, 3).map((product, index) => (
-                    <Link
-                      key={product.id}
-                      href={`/dashboard/products/${product.id}`}
-                      className="group overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white transition hover:-translate-y-1 hover:border-[#d9bf7b] hover:shadow-[0_20px_50px_rgba(80,60,20,0.09)]"
-                    >
-                      <div className="relative h-52 bg-[#faf9f6]">
-                        <ProductImage
-                          src={getImageUrl(product.image_url)}
-                          alt={product.name}
-                          className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-105"
-                        />
-                        <span className="absolute left-4 top-4 rounded-full bg-[#171717] px-3 py-1.5 text-[10px] font-black text-white">
-                          #{index + 1}
-                        </span>
-                        <span className="absolute right-4 top-4 rounded-full bg-[#fff3ce] px-3 py-1.5 text-[10px] font-black text-[#916b22]">
-                          {product.matchScore}% Match
-                        </span>
-                      </div>
-                      <div className="p-5">
-                        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#a17b2f]">
-                          {product.categoryName}
-                        </p>
-                        <h3 className="mt-2 line-clamp-2 min-h-[48px] text-sm font-black leading-6">
-                          {product.name}
-                        </h3>
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="text-lg font-black">{money(Number(product.price))}</span>
-                          <span className="flex items-center gap-1 text-xs font-bold text-gray-500">
-                            <Star size={12} fill="currentColor" className="text-[#c9a24d]" />
-                            {Number(product.rating || 0).toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
                 </div>
               </section>
 
