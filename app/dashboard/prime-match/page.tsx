@@ -1008,13 +1008,10 @@ function ProductImage({
   alt,
   className = "",
 }: {
-  src?: string | null;
+  src: string | null;
   alt: string;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-
-  const imageSrc = src || PRODUCT_IMAGE_FALLBACK;
   const candidates = useMemo(() => getImageCandidates(src), [src]);
   const [index, setIndex] = useState(0);
 
