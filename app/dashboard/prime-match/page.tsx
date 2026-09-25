@@ -6,10 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Award,
   BadgeCheck,
   Check,
   ChevronDown,
   Heart,
+  History,
+  Lightbulb,
   Loader2,
   RefreshCw,
   Search,
@@ -84,6 +87,15 @@ type Importance = {
   quality: number;
   brand: number;
   rating: number;
+};
+
+type MatchHistoryEntry = {
+  purpose: string;
+  budget: string;
+  category: string;
+  brand: string;
+  search: string;
+  createdAt: number;
 };
 
 /* =========================================================
@@ -984,6 +996,31 @@ function scoreProduct(
 }
 
 /* =========================================================
+   MATCH PRESENTATION HELPERS
+========================================================= */
+
+function getMatchTier(score: number) {
+  if (score >= 92) return { label: "Excellent Match", tone: "excellent" };
+  if (score >= 84) return { label: "Strong Match", tone: "strong" };
+  if (score >= 72) return { label: "Good Match", tone: "good" };
+  return { label: "Potential Match", tone: "potential" };
+}
+
+function getSmartSearchHints(query: string) {
+  const value = normalize(query);
+  if (!value) return [];
+
+  const hints: string[] = [];
+  if (/\b(?:under|below|less than)\s*\d+/i.test(value)) hints.push("Budget detected");
+  if (/\b(?:running|gym|fitness|workout|sports)\b/i.test(value)) hints.push("Fitness intent");
+  if (/\b(?:study|office|work|laptop|desk)\b/i.test(value)) hints.push("Work & Study intent");
+  if (/\b(?:gaming|game|console|headset)\b/i.test(value)) hints.push("Entertainment intent");
+  if (/\b(?:fashion|shirt|dress|jacket|shoes|watch|bag)\b/i.test(value)) hints.push("Style intent");
+  if (/\b(?:home|kitchen|coffee|appliance|decor)\b/i.test(value)) hints.push("Home intent");
+  return hints;
+}
+
+/* =========================================================
    SCORE BAR
 ========================================================= */
 
@@ -1177,7 +1214,7 @@ function ProductCard({
         </Link>
 
         {/* RANK */}
-        <div className="absolute left-4 top-4 rounded-full bg-[#171717] px-3 py-1.5 text-[10px] font-black text-white shadow">
+        <div className="absolute left-4 top-4 rounded-full bg-[#fff0c8] px-3 py-1.5 text-[10px] font-black text-[#8f6b25] shadow-sm">
           #{rank}
         </div>
 
@@ -1217,7 +1254,7 @@ function ProductCard({
           )}
 
           {product.is_flash_sale && (
-            <span className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1.5 text-[10px] font-black text-white">
+            <span className="flex items-center gap-1 rounded-full bg-[#fff1d2] px-3 py-1.5 text-[10px] font-black text-[#9b762b]">
               <Zap size={10} />
               DEAL
             </span>
@@ -1241,7 +1278,7 @@ function ProductCard({
           href={`/dashboard/products/${product.id}`}
           className="mt-2 block"
         >
-          <h3 className="line-clamp-2 min-h-[48px] text-base font-black leading-6 text-gray-900 transition hover:text-[#a17b2f]">
+          <h3 className="line-clamp-2 min-h-[48px] text-base font-black leading-6 text-[#3f3525] transition hover:text-[#a17b2f]">
             {product.name}
           </h3>
         </Link>
@@ -1271,7 +1308,7 @@ function ProductCard({
 
         {/* PRICE */}
         <div className="mt-4 flex items-end gap-2">
-          <span className="text-xl font-black text-gray-950">
+          <span className="text-xl font-black text-[#3f3525]">
             {money(
               Number(product.price)
             )}
@@ -1322,8 +1359,8 @@ function ProductCard({
               product.stock <= 0
                 ? "cursor-not-allowed bg-gray-100 text-gray-400"
                 : added
-                ? "bg-green-600 text-white"
-                : "bg-[#171717] text-white hover:bg-[#2b2b2b]"
+                ? "bg-[#edf7f0] text-[#3d7a55] border border-[#cfe6d7]"
+                : "bg-[#c9a24d] text-white hover:bg-[#b58a32]"
             }`}
           >
             {added ? (
@@ -1493,6 +1530,9 @@ const [matchStage, setMatchStage] =
   const [compareIds, setCompareIds] =
     useState<string[]>([]);
 
+  const [history, setHistory] =
+    useState<MatchHistoryEntry[]>([]);
+
   /* =====================================================
      TOAST
   ===================================================== */
@@ -1508,6 +1548,17 @@ const [matchStage, setMatchStage] =
     return () =>
       window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem("prime-match-history") || "[]"
+      );
+      setHistory(Array.isArray(stored) ? stored.slice(0, 5) : []);
+    } catch {
+      setHistory([]);
+    }
+  }, []);
 
   /* =====================================================
      CART SYNC
@@ -1846,6 +1897,35 @@ const [matchStage, setMatchStage] =
 
   const topMatch =
     results[0] || null;
+
+  const matchTier = topMatch
+    ? getMatchTier(topMatch.matchScore)
+    : null;
+
+  const averageMatch = results.length
+    ? Math.round(
+        results.slice(0, Math.min(5, results.length))
+          .reduce((sum, item) => sum + item.matchScore, 0) /
+        Math.min(5, results.length)
+      )
+    : 0;
+
+  const bestSaving = results.length
+    ? Math.max(
+        0,
+        ...results.map((item) =>
+          Math.max(
+            0,
+            Number(item.original_price || 0) - Number(item.price || 0)
+          )
+        )
+      )
+    : 0;
+
+  const smartSearchHints = useMemo(
+    () => getSmartSearchHints(search),
+    [search]
+  );
 
   /* =====================================================
      SPECIAL RECOMMENDATIONS
@@ -2285,6 +2365,7 @@ async function runMatch() {
       )
       .slice(0, 5);
     localStorage.setItem("prime-match-history", JSON.stringify(next));
+    setHistory(next);
   } catch {
     // Match history is optional and should never block recommendations.
   }
@@ -2340,14 +2421,14 @@ async function runMatch() {
   ===================================================== */
 
   return (
-    <main className="min-h-screen bg-[#fcfbf8] text-gray-900">
+    <main className="min-h-screen bg-[#fcfbf8] text-[#3f3525]">
       {/* =================================================
           TOAST
       ================================================= */}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2">
-          <div className="flex max-w-[90vw] items-center gap-3 rounded-2xl border border-[#dec68b] bg-[#171717] px-5 py-3 text-sm font-bold text-white shadow-2xl">
+          <div className="flex max-w-[90vw] items-center gap-3 rounded-2xl border border-[#dec68b] bg-white px-5 py-3 text-sm font-bold text-[#6f582d] shadow-[0_18px_45px_rgba(151,116,45,0.18)]">
             <Check
               size={17}
               className="text-[#d5b15d]"
@@ -2482,7 +2563,7 @@ async function runMatch() {
               </div>
 
               <div className="mt-6 flex items-end gap-2">
-                <span className="text-5xl font-black text-gray-950">
+                <span className="text-5xl font-black text-[#3f3525]">
                   {livePotential}%
                 </span>
 
@@ -2507,6 +2588,60 @@ async function runMatch() {
             </div>
           </div>
         </section>
+
+        {/* =================================================
+            RECENT PRIME MATCHES
+        ================================================= */}
+
+        {history.length > 0 && !matched && (
+          <section className="mt-8">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <History size={14} className="text-[#b58a32]" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                    Your recent matches
+                  </p>
+                </div>
+                <h2 className="mt-1 text-xl font-black">Pick up where you left off</h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {history.map((item, index) => {
+                const purposeLabel = PURPOSES.find((p) => p.id === item.purpose)?.title || item.purpose;
+                const budgetLabel = BUDGETS.find((b) => b.id === item.budget)?.label || item.budget;
+                const categoryLabel = item.category === "all" ? "All Categories" : categories.find((c) => c.id === item.category)?.name || "Category";
+                return (
+                  <button
+                    key={`${item.createdAt}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setPurpose(item.purpose);
+                      setBudget(item.budget);
+                      setCategory(item.category);
+                      setBrand(item.brand);
+                      setSearch(item.search);
+                      setMatched(false);
+                      setMatchedResults([]);
+                      setToast("Previous PrimeMatch preferences restored");
+                    }}
+                    className="rounded-2xl border border-[#e9dfcc] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#c9a24d] hover:shadow-md"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff3d2] text-[#a17b2f]">
+                      <History size={15} />
+                    </span>
+                    <p className="mt-3 line-clamp-1 text-xs font-black text-[#4c4030]">{purposeLabel}</p>
+                    <p className="mt-1 line-clamp-1 text-[10px] font-semibold text-gray-400">{budgetLabel} · {categoryLabel}</p>
+                    {item.search && (
+                      <p className="mt-2 line-clamp-1 text-[10px] font-bold text-[#9b762b]">“{item.search}”</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* =================================================
             BUILDER
@@ -2637,6 +2772,18 @@ async function runMatch() {
                   </button>
                 )}
               </div>
+
+              {smartSearchHints.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {smartSearchHints.map((hint) => (
+                    <span key={hint} className="inline-flex items-center gap-1.5 rounded-full border border-[#ead9ad] bg-[#fff8e8] px-3 py-1.5 text-[10px] font-black text-[#8f6b25]">
+                      <Sparkles size={11} />
+                      {hint}
+                    </span>
+                  ))}
+                  <span className="text-[10px] font-semibold text-gray-400 self-center">PrimeMatch will use these signals while ranking.</span>
+                </div>
+              )}
             </div>
 
             {/* FILTER GRID */}
@@ -2933,7 +3080,7 @@ async function runMatch() {
                   loading ||
                   matching
                 }
-                className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#171717] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-black/10 transition hover:bg-[#2b2b2b] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#c9a24d] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-[#c9a24d]/20 transition hover:bg-[#b58a32] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {matching ? (
                   <>
@@ -3123,7 +3270,7 @@ async function runMatch() {
                 onClick={
                   loadData
                 }
-                className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-black text-white"
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#dec68b] bg-[#fff5dd] px-5 py-2.5 text-xs font-black text-[#8f6b25]"
               >
                 <RefreshCw
                   size={14}
@@ -3200,7 +3347,7 @@ async function runMatch() {
                         className="h-full min-h-[420px] w-full object-contain p-10"
                       />
 
-                      <div className="absolute left-6 top-6 rounded-full bg-[#171717] px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+                      <div className="absolute left-6 top-6 rounded-full bg-[#c9a24d] px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white">
                         #1 Prime Match
                       </div>
 
@@ -3227,7 +3374,7 @@ async function runMatch() {
                         )}
 
                         {topMatch.is_flash_sale && (
-                          <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-[10px] font-black text-red-600">
+                          <span className="flex items-center gap-1 rounded-full bg-[#fff1d2] px-3 py-1.5 text-[10px] font-black text-[#9b762b]">
                             <Zap
                               size={11}
                             />
@@ -3336,6 +3483,15 @@ async function runMatch() {
                           />
 
                           <ScoreBar
+                            label="Quality"
+                            value={
+                              topMatch
+                                .breakdown
+                                .quality
+                            }
+                          />
+
+                          <ScoreBar
                             label="Category"
                             value={
                               topMatch
@@ -3427,7 +3583,7 @@ async function runMatch() {
                               topMatch
                             )
                           }
-                          className="flex items-center justify-center gap-2 rounded-2xl bg-[#171717] px-5 py-3.5 text-xs font-black text-white transition hover:bg-[#2b2b2b] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                          className="flex items-center justify-center gap-2 rounded-2xl bg-[#c9a24d] px-5 py-3.5 text-xs font-black text-white transition hover:bg-[#b58a32] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
                         >
                           <ShoppingCart
                             size={16}
@@ -3451,6 +3607,106 @@ async function runMatch() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  TOP 3 PERSONALIZED MATCHES
+              ================================================= */}
+
+              <section className="mt-10">
+                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                      Personalized shortlist
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black">Your top 3 matches</h2>
+                    <p className="mt-1 text-sm text-gray-500">The strongest options from your current preferences.</p>
+                  </div>
+                  <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#fff4d6] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
+                    <Award size={13} />
+                    Avg. top match {averageMatch}%
+                  </span>
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-3">
+                  {results.slice(0, 3).map((product, index) => {
+                    const tier = getMatchTier(product.matchScore);
+                    return (
+                      <article key={product.id} className="overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(100,75,25,0.10)]">
+                        <div className="relative h-64 bg-[#faf8f2]">
+                          <ProductImage
+                            src={getImageUrl(product.image_url)}
+                            alt={product.name}
+                            className="h-full w-full object-contain p-7"
+                          />
+                          <div className="absolute left-4 top-4 flex items-center gap-2">
+                            <span className="rounded-full bg-[#fff0c8] px-3 py-1.5 text-[10px] font-black text-[#8f6b25]">#{index + 1}</span>
+                            <span className="rounded-full border border-[#ead9ad] bg-white/95 px-3 py-1.5 text-[10px] font-black text-[#956f27]">{tier.label}</span>
+                          </div>
+                        </div>
+                        <div className="p-5">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-2xl font-black text-[#9b762b]">{product.matchScore}%</span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#fffaf0] px-2.5 py-1 text-[10px] font-black text-[#8f6b25]">
+                              <Star size={11} fill="currentColor" /> {Number(product.rating || 0).toFixed(1)}
+                            </span>
+                          </div>
+                          <Link href={`/dashboard/products/${product.id}`} className="mt-2 block line-clamp-2 text-base font-black leading-6 hover:text-[#9b762b]">{product.name}</Link>
+                          <p className="mt-1 text-[10px] font-semibold text-gray-400">{product.categoryName} · {product.brand || "Any brand"}</p>
+                          <div className="mt-4 flex items-end justify-between gap-3">
+                            <span className="text-lg font-black">{money(Number(product.price))}</span>
+                            {discount(Number(product.price), product.original_price) > 0 && (
+                              <span className="rounded-full bg-[#fff4d6] px-2 py-1 text-[9px] font-black text-[#956f27]">{discount(Number(product.price), product.original_price)}% OFF</span>
+                            )}
+                          </div>
+                          <div className="mt-4 space-y-2">
+                            {product.reasons.slice(0, 2).map((reason) => (
+                              <div key={reason} className="flex items-center gap-2 text-[10px] font-semibold text-gray-500">
+                                <Check size={12} className="shrink-0 text-[#b58a32]" /> {reason}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-5 grid grid-cols-2 gap-2">
+                            <button type="button" disabled={product.stock <= 0} onClick={() => addToCart(product)} className="flex items-center justify-center gap-1.5 rounded-xl bg-[#c9a24d] px-3 py-2.5 text-[10px] font-black text-white transition hover:bg-[#b58a32] disabled:cursor-not-allowed disabled:bg-[#f1ede4] disabled:text-gray-400">
+                              <ShoppingCart size={13} /> {cartIds.includes(product.id) ? "Added" : "Add to Cart"}
+                            </button>
+                            <Link href={`/dashboard/products/${product.id}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#dfd3bf] bg-white px-3 py-2.5 text-[10px] font-black text-[#956f27] hover:bg-[#fff8e8]">
+                              View <ArrowRight size={13} />
+                            </Link>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* =================================================
+                  MATCH SUMMARY
+              ================================================= */}
+
+              <section className="mt-8 grid gap-4 md:grid-cols-3">
+                <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Target size={18} /></div>
+                    <div><p className="text-[10px] font-black uppercase tracking-wider text-[#a17b2f]">Match confidence</p><p className="mt-1 text-lg font-black">{matchTier?.label || "Ready"}</p></div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-gray-500">Your top recommendation scores {topMatch?.matchScore || 0}% across budget, purpose, quality, category and availability.</p>
+                </div>
+                <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Lightbulb size={18} /></div>
+                    <div><p className="text-[10px] font-black uppercase tracking-wider text-[#a17b2f]">Budget insight</p><p className="mt-1 text-lg font-black">{bestValue ? money(Number(bestValue.price)) : "—"}</p></div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-gray-500">Best-value recommendation balancing match quality, price, rating and active savings.</p>
+                </div>
+                <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Award size={18} /></div>
+                    <div><p className="text-[10px] font-black uppercase tracking-wider text-[#a17b2f]">Potential saving</p><p className="mt-1 text-lg font-black">{bestSaving > 0 ? money(bestSaving) : "No active saving"}</p></div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-gray-500">Largest current saving found among your matched products.</p>
                 </div>
               </section>
 
@@ -3954,7 +4210,7 @@ async function runMatch() {
                   onClick={
                     resetPreferences
                   }
-                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#171717] px-5 py-3 text-xs font-black text-white"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c9a24d] px-5 py-3 text-xs font-black text-white"
                 >
                   <RefreshCw
                     size={14}
@@ -4129,7 +4385,7 @@ async function runMatch() {
             FINAL CTA
         ================================================= */}
 
-        <section className="mt-8 rounded-[30px] bg-[#171717] px-6 py-10 text-white sm:px-10">
+        <section className="mt-8 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-10 text-gray-800 sm:px-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2 text-[#d8b866]">
