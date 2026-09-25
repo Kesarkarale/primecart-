@@ -2,36 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   ArrowLeft,
   ArrowRight,
-  Award,
-  BarChart3,
+  BadgeCheck,
   Check,
   ChevronDown,
-  CircleHelp,
-  Filter,
   Heart,
   Loader2,
-  Package,
+  RefreshCw,
   Search,
+  ShoppingBag,
   ShoppingCart,
   Sparkles,
   Star,
   Target,
   TrendingUp,
-  RotateCcw,
-  ShieldCheck,
-  Zap,
   X,
-  SlidersHorizontal,
-  Crown,
-  BadgeCheck,
-  Brain,
-  ScanSearch,
-  WalletCards,
-  Tags,
+  Zap,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -42,61 +31,58 @@ import { createClient } from "@/lib/supabase/client";
 
 type Product = {
   id: string;
-  category_id?: string | null;
+  category_id: string | null;
   name: string;
-  slug?: string | null;
-  short_description?: string | null;
-  description?: string | null;
+  slug: string;
+  short_description: string | null;
+  description: string | null;
   price: number;
-  original_price?: number | null;
-  stock?: number | null;
-  image_url?: string | null;
-  brand?: string | null;
-  rating?: number | null;
-  reviews_count?: number | null;
-  is_featured?: boolean | null;
-  is_flash_sale?: boolean | null;
-  is_active?: boolean | null;
+  original_price: number | null;
+  stock: number;
+  image_url: string | null;
+  brand: string | null;
+  rating: number;
+  reviews_count: number;
+  is_featured: boolean;
+  is_flash_sale: boolean;
+  is_active: boolean;
 };
 
 type Category = {
   id: string;
   name: string;
+  slug: string;
 };
 
-type BudgetKey =
-  | "under-1000"
-  | "1000-5000"
-  | "5000-15000"
-  | "15000-plus";
+type Breakdown = {
+  budget: number;
+  category: number;
+  purpose: number;
+  rating: number;
+  brand: number;
+  availability: number;
+  search: number;
+};
+
+type MatchProduct = Product & {
+  categoryName: string;
+  matchScore: number;
+  reasons: string[];
+  breakdown: Breakdown;
+};
+
+type Budget = {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+};
 
 type Importance = {
   budget: number;
   quality: number;
   brand: number;
   rating: number;
-};
-
-type ScoreBreakdown = {
-  purpose: number;
-  category: number;
-  budget: number;
-  quality: number;
-  brand: number;
-  rating: number;
-  availability: number;
-  search: number;
-};
-
-type MatchProduct = Product & {
-  score: number;
-  breakdown: ScoreBreakdown;
-  reasons: string[];
-};
-
-type MatchingStage = {
-  label: string;
-  icon: React.ElementType;
 };
 
 /* =========================================================
@@ -108,153 +94,66 @@ const PRODUCT_IMAGE_FALLBACK = "/product-placeholder.png";
 const PURPOSES = [
   {
     id: "everyday",
-    label: "Everyday",
-    description: "Daily essentials & useful products",
-    icon: "✨",
-    keywords: [
-      "daily",
-      "everyday",
-      "home",
-      "utility",
-      "essential",
-      "general",
-    ],
+    title: "Everyday",
+    subtitle: "Daily essentials",
+    icon: "✦",
   },
   {
     id: "work",
-    label: "Work & Study",
-    description: "Products for productivity",
-    icon: "💼",
-    keywords: [
-      "work",
-      "office",
-      "study",
-      "laptop",
-      "desk",
-      "book",
-      "computer",
-      "productivity",
-    ],
+    title: "Work & Study",
+    subtitle: "Productivity",
+    icon: "◫",
   },
   {
     id: "entertainment",
-    label: "Entertainment",
-    description: "Gaming, audio & fun",
-    icon: "🎮",
-    keywords: [
-      "gaming",
-      "game",
-      "entertainment",
-      "headphone",
-      "speaker",
-      "music",
-      "movie",
-      "console",
-    ],
+    title: "Entertainment",
+    subtitle: "Audio & gaming",
+    icon: "▶",
   },
   {
     id: "fitness",
-    label: "Fitness",
-    description: "Workout & active lifestyle",
-    icon: "🏃",
-    keywords: [
-      "fitness",
-      "gym",
-      "sports",
-      "running",
-      "workout",
-      "health",
-      "training",
-      "shoe",
-    ],
+    title: "Fitness",
+    subtitle: "Active lifestyle",
+    icon: "⌁",
   },
   {
     id: "style",
-    label: "Style",
-    description: "Fashion, watches & accessories",
-    icon: "✨",
-    keywords: [
-      "fashion",
-      "style",
-      "watch",
-      "bag",
-      "shoe",
-      "clothing",
-      "jacket",
-      "wallet",
-      "accessory",
-    ],
+    title: "Style",
+    subtitle: "Fashion & looks",
+    icon: "◇",
   },
   {
     id: "home",
-    label: "Home",
-    description: "Home & living products",
-    icon: "🏠",
-    keywords: [
-      "home",
-      "living",
-      "kitchen",
-      "appliance",
-      "furniture",
-      "coffee",
-      "decor",
-      "house",
-    ],
+    title: "Home",
+    subtitle: "Home essentials",
+    icon: "⌂",
   },
 ];
 
-const BUDGETS: {
-  id: BudgetKey;
-  label: string;
-  min: number;
-  max: number;
-}[] = [
+const BUDGETS: Budget[] = [
   {
     id: "under-1000",
-    label: "Under ₹1,000",
+    label: "Under ₹1K",
     min: 0,
     max: 1000,
   },
   {
     id: "1000-5000",
-    label: "₹1,000 – ₹5,000",
+    label: "₹1K – ₹5K",
     min: 1000,
     max: 5000,
   },
   {
     id: "5000-15000",
-    label: "₹5,000 – ₹15,000",
+    label: "₹5K – ₹15K",
     min: 5000,
     max: 15000,
   },
   {
     id: "15000-plus",
-    label: "₹15,000+",
+    label: "₹15K+",
     min: 15000,
     max: Infinity,
-  },
-];
-
-const MATCHING_STAGES: MatchingStage[] = [
-  {
-    label: "Understanding your preferences",
-    icon: Brain,
-  },
-  {
-    label: "Scanning available products",
-    icon: ScanSearch,
-  },
-  {
-    label: "Checking your budget",
-    icon: WalletCards,
-  },
-  {
-    label: "Comparing quality & ratings",
-    icon: Star,
-  },
-  {
-    label: "Finding your strongest matches",
-    icon: Target,
   },
 ];
 
@@ -262,170 +161,317 @@ const MATCHING_STAGES: MatchingStage[] = [
    HELPERS
 ========================================================= */
 
-function normalize(value: unknown) {
-  return String(value ?? "")
-    .toLowerCase()
-    .trim();
+function getimageUrl(value: string | null) {
+  if (!value?.trim()) return null;
+
+  const cleaned = value.trim();
+
+  if (
+    cleaned.startsWith("http://") ||
+    cleaned.startsWith("https://")
+  ) {
+    return cleaned;
+  }
+
+  if (cleaned.startsWith("/")) {
+    return cleaned;
+  }
+
+  return `/products/${cleaned}`;
 }
 
-function money(value: number) {
+function money(value: number | null | undefined) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(Number(value) || 0);
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function discount(product: Product) {
-  if (
-    !product.original_price ||
-    product.original_price <= product.price ||
-    product.original_price <= 0
-  ) {
+function discount(
+  price: number,
+  original: number | null
+) {
+  if (!original || original <= price) {
     return 0;
   }
 
   return Math.round(
-    ((product.original_price - product.price) /
-      product.original_price) *
-      100
+    ((original - price) / original) * 100
   );
 }
 
-/* =========================================================
-   IMAGE HANDLING
-========================================================= */
+function clamp(
+  value: number,
+  min = 0,
+  max = 100
+) {
+  return Math.max(min, Math.min(max, value));
+}
 
-function getImageUrl(imageUrl?: string | null) {
-  if (!imageUrl) return PRODUCT_IMAGE_FALLBACK;
-
-  const value = imageUrl.trim();
-
-  if (!value) return PRODUCT_IMAGE_FALLBACK;
-
-  // Full URL
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:")
-  ) {
-    return value;
-  }
-
-  // Already an absolute local path
-  if (value.startsWith("/")) {
-    return value;
-  }
-
-  // Supabase storage URL/path
-  if (value.includes("/storage/")) {
-    return value.startsWith("/")
-      ? value
-      : `/${value}`;
-  }
-
-  // DB contains only filename
-  return `/products/${value}`;
+function normalize(value: string | null | undefined) {
+  return String(value || "")
+    .toLowerCase()
+    .trim();
 }
 
 /* =========================================================
-   CATEGORY ALIASES
+   KEYWORDS
 ========================================================= */
 
-const CATEGORY_ALIASES: Record<string, string[]> = {
-  "home & living": [
-    "home",
-    "living",
-    "decor",
-    "furniture",
-    "kitchen",
-    "house",
-  ],
-  mobile: [
-    "mobile",
-    "smartphone",
-    "phone",
-    "android",
-    "iphone",
-  ],
-  appliance: [
-    "appliance",
-    "coffee",
-    "kitchen",
-    "electronic",
-    "electronics",
-  ],
-  footwear: [
-    "footwear",
-    "shoe",
-    "shoes",
-    "sneaker",
-    "running",
-    "sandals",
-  ],
-  watch: [
-    "watch",
-    "watches",
-    "smartwatch",
-    "accessory",
-  ],
-  bag: [
-    "bag",
-    "backpack",
-    "wallet",
-    "luggage",
-    "handbag",
-  ],
-  "toy & baby": [
-    "toy",
-    "baby",
-    "kids",
-    "child",
-    "game",
-  ],
-  automotive: [
-    "automotive",
-    "car",
-    "vehicle",
-    "bike",
-    "auto",
-  ],
-  fashion: [
-    "fashion",
-    "clothing",
-    "dress",
-    "jacket",
-    "shirt",
-    "jeans",
-    "style",
-  ],
-  gaming: [
-    "gaming",
-    "game",
-    "console",
-    "controller",
-    "headphone",
-  ],
-};
+function keywordsForPurpose(
+  purpose: string
+) {
+  const map: Record<string, string[]> = {
+    everyday: [
+      "mobile",
+      "phone",
+      "smartphone",
+      "watch",
+      "bag",
+      "wallet",
+      "bottle",
+      "headphone",
+      "earbuds",
+      "shirt",
+      "home",
+      "kitchen",
+      "daily",
+      "essential",
+    ],
+
+    work: [
+      "laptop",
+      "keyboard",
+      "mouse",
+      "monitor",
+      "office",
+      "book",
+      "study",
+      "desk",
+      "work",
+      "notebook",
+      "tablet",
+      "printer",
+      "headphone",
+      "backpack",
+    ],
+
+    entertainment: [
+      "gaming",
+      "speaker",
+      "headphone",
+      "headset",
+      "earbuds",
+      "bluetooth",
+      "game",
+      "console",
+      "tv",
+      "music",
+      "controller",
+      "keyboard",
+      "mouse",
+    ],
+
+    fitness: [
+      "fitness",
+      "gym",
+      "yoga",
+      "running",
+      "sports",
+      "shoe",
+      "shoes",
+      "training",
+      "workout",
+      "active",
+      "sportswear",
+      "dumbbell",
+      "fitness",
+    ],
+
+    style: [
+      "fashion",
+      "shirt",
+      "tshirt",
+      "hoodie",
+      "jacket",
+      "denim",
+      "dress",
+      "clothing",
+      "watch",
+      "bag",
+      "wallet",
+      "sunglasses",
+      "shoe",
+      "footwear",
+    ],
+
+    home: [
+      "home",
+      "living",
+      "kitchen",
+      "coffee",
+      "cookware",
+      "appliance",
+      "air fryer",
+      "kettle",
+      "decor",
+      "mixer",
+      "oven",
+      "furniture",
+      "storage",
+    ],
+  };
+
+  return map[purpose] || [];
+}
+
+function keywordsForCategory(
+  category: string
+) {
+  const value = normalize(category);
+
+  if (value.includes("mobile")) {
+    return [
+      "mobile",
+      "phone",
+      "smartphone",
+      "iphone",
+      "android",
+    ];
+  }
+
+  if (value.includes("fashion")) {
+    return [
+      "fashion",
+      "shirt",
+      "tshirt",
+      "hoodie",
+      "jacket",
+      "denim",
+      "clothing",
+      "dress",
+    ];
+  }
+
+  if (
+    value.includes("footwear") ||
+    value.includes("foot wear") ||
+    value.includes("shoe")
+  ) {
+    return [
+      "shoe",
+      "sneaker",
+      "footwear",
+      "running",
+      "sandals",
+      "slipper",
+    ];
+  }
+
+  if (value.includes("watch")) {
+    return [
+      "watch",
+      "smartwatch",
+      "time",
+    ];
+  }
+
+  if (value.includes("bag")) {
+    return [
+      "bag",
+      "backpack",
+      "luggage",
+      "wallet",
+    ];
+  }
+
+  if (
+    value.includes("gaming") ||
+    value.includes("game")
+  ) {
+    return [
+      "gaming",
+      "game",
+      "keyboard",
+      "mouse",
+      "controller",
+      "headset",
+      "console",
+    ];
+  }
+
+  if (value.includes("automotive")) {
+    return [
+      "car",
+      "automotive",
+      "bike",
+      "vehicle",
+      "motor",
+    ];
+  }
+
+  if (value.includes("appliance")) {
+    return [
+      "appliance",
+      "air fryer",
+      "kettle",
+      "coffee",
+      "oven",
+      "mixer",
+      "refrigerator",
+      "washing machine",
+    ];
+  }
+
+  if (
+    value.includes("toy") ||
+    value.includes("baby")
+  ) {
+    return [
+      "toy",
+      "baby",
+      "kids",
+      "children",
+      "game",
+    ];
+  }
+
+  if (
+    value.includes("home") ||
+    value.includes("living")
+  ) {
+    return [
+      "home",
+      "living",
+      "kitchen",
+      "cookware",
+      "decor",
+      "coffee",
+      "furniture",
+    ];
+  }
+
+  return [value];
+}
 
 /* =========================================================
-   PURPOSE SCORE
+   PURPOSE MATCH
 ========================================================= */
 
-function getPurposeScore(
+function calculatePurposeScore(
   product: Product,
   categoryName: string,
-  purposeId: string
+  purpose: string
 ) {
-  const purpose = PURPOSES.find((item) => item.id === purposeId);
+  if (!purpose) {
+    return 80;
+  }
 
-  if (!purpose) return 35;
+  const keywords =
+    keywordsForPurpose(purpose);
 
-  const searchable = normalize(
+  const text = normalize(
     [
       product.name,
       product.brand,
@@ -435,165 +481,167 @@ function getPurposeScore(
     ].join(" ")
   );
 
-  const hits = purpose.keywords.filter((keyword) =>
-    searchable.includes(normalize(keyword))
-  ).length;
+  if (!keywords.length) {
+    return 75;
+  }
 
-  if (hits >= 4) return 100;
-  if (hits === 3) return 92;
-  if (hits === 2) return 82;
-  if (hits === 1) return 65;
+  let hits = 0;
 
-  return 35;
+  keywords.forEach((keyword) => {
+    if (text.includes(normalize(keyword))) {
+      hits++;
+    }
+  });
+
+  if (hits >= 3) return 100;
+  if (hits === 2) return 92;
+  if (hits === 1) return 78;
+
+  return 48;
 }
 
 /* =========================================================
-   BUDGET SCORE
+   BUDGET MATCH
 ========================================================= */
 
-function getBudgetScore(product: Product, budget: BudgetKey) {
-  const selected = BUDGETS.find((item) => item.id === budget);
+function calculateBudgetScore(
+  productPrice: number,
+  budgetId: string
+) {
+  const selected =
+    BUDGETS.find(
+      (item) => item.id === budgetId
+    );
 
-  if (!selected) return 50;
+  if (!selected) {
+    return 80;
+  }
 
-  const price = Number(product.price || 0);
+  const price = Number(productPrice) || 0;
 
-  if (price >= selected.min && price <= selected.max) {
+  if (
+    price >= selected.min &&
+    price <= selected.max
+  ) {
     return 100;
   }
 
-  // For 15k+ products
-  if (selected.id === "15000-plus") {
-    if (price >= 15000) return 100;
-
-    if (price >= 12000) return 75;
-    if (price >= 10000) return 55;
-    return 30;
-  }
-
-  // Price below selected range
   if (price < selected.min) {
-    const distance = selected.min - price;
-    const percentage = selected.min
-      ? distance / selected.min
-      : 1;
+    const difference =
+      selected.min - price;
 
-    return clamp(90 - percentage * 80, 25, 90);
+    if (selected.min === 0) {
+      return 100;
+    }
+
+    const ratio =
+      difference / selected.min;
+
+    if (ratio <= 0.15) return 94;
+    if (ratio <= 0.30) return 86;
+    if (ratio <= 0.60) return 72;
+
+    return 55;
   }
 
-  // Price above selected range
-  const distance = price - selected.max;
-  const percentage = selected.max
-    ? distance / selected.max
-    : 1;
+  if (
+    selected.max !== Infinity
+  ) {
+    const difference =
+      price - selected.max;
 
-  return clamp(85 - percentage * 100, 10, 85);
-}
+    if (difference <= 500) return 94;
+    if (difference <= 1500) return 82;
+    if (difference <= 3000) return 68;
+    if (difference <= 5000) return 55;
 
-/* =========================================================
-   QUALITY SCORE
-========================================================= */
+    return 35;
+  }
 
-function getQualityScore(product: Product) {
-  const rating = Number(product.rating || 0);
-  const reviews = Number(product.reviews_count || 0);
-
-  const ratingScore = clamp((rating / 5) * 100, 0, 100);
-
-  let reviewConfidence = 40;
-
-  if (reviews >= 1000) reviewConfidence = 100;
-  else if (reviews >= 500) reviewConfidence = 90;
-  else if (reviews >= 200) reviewConfidence = 82;
-  else if (reviews >= 100) reviewConfidence = 75;
-  else if (reviews >= 50) reviewConfidence = 65;
-  else if (reviews >= 10) reviewConfidence = 55;
-
-  const featuredBonus = product.is_featured ? 5 : 0;
-
-  return clamp(
-    ratingScore * 0.72 +
-      reviewConfidence * 0.23 +
-      featuredBonus,
-    0,
-    100
-  );
+  return 90;
 }
 
 /* =========================================================
    SEARCH SCORE
 ========================================================= */
 
-function getSearchScore(
+function calculateSearchScore(
   product: Product,
   categoryName: string,
   search: string
 ) {
   const query = normalize(search);
 
-  if (!query) return 50;
-
-  const terms = query
-    .split(/\s+/)
-    .map((term) => term.trim())
-    .filter(Boolean);
-
-  if (!terms.length) return 50;
-
-  const fields = {
-    name: normalize(product.name),
-    brand: normalize(product.brand),
-    category: normalize(categoryName),
-    description: normalize(
-      `${product.short_description || ""} ${
-        product.description || ""
-      }`
-    ),
-  };
-
-  let total = 0;
-
-  for (const term of terms) {
-    if (fields.name.includes(term)) {
-      total += 100;
-    } else if (fields.brand.includes(term)) {
-      total += 92;
-    } else if (fields.category.includes(term)) {
-      total += 88;
-    } else if (fields.description.includes(term)) {
-      total += 65;
-    }
+  if (!query) {
+    return 80;
   }
 
-  return clamp(total / terms.length, 0, 100);
+  const name = normalize(product.name);
+  const brand = normalize(product.brand);
+  const category = normalize(
+    categoryName
+  );
+  const description = normalize(
+    `${product.short_description || ""} ${
+      product.description || ""
+    }`
+  );
+
+  if (name === query) return 100;
+  if (name.includes(query)) return 100;
+  if (brand === query) return 96;
+  if (brand.includes(query)) return 92;
+  if (category.includes(query)) return 90;
+  if (description.includes(query)) return 80;
+
+  const terms = query.split(/\s+/);
+
+  const matchedTerms =
+    terms.filter(
+      (term) =>
+        name.includes(term) ||
+        brand.includes(term) ||
+        category.includes(term) ||
+        description.includes(term)
+    ).length;
+
+  if (
+    terms.length > 0 &&
+    matchedTerms === terms.length
+  ) {
+    return 94;
+  }
+
+  if (matchedTerms > 0) {
+    return 65;
+  }
+
+  return 25;
 }
 
 /* =========================================================
-   CATEGORY SCORE
+   PRODUCT SCORING
 ========================================================= */
 
-function getCategoryScore(
+function scoreProduct(
   product: Product,
-  categoryName: string,
-  selectedCategory: string,
-  categories: Category[]
-) {
-  if (selectedCategory === "all") return 60;
+  categories: Category[],
+  purpose: string,
+  budget: string,
+  categoryId: string,
+  brand: string,
+  search: string,
+  importance: Importance
+): MatchProduct {
+  const categoryObject =
+    categories.find(
+      (item) =>
+        item.id === product.category_id
+    );
 
-  const selected = categories.find(
-    (category) => category.id === selectedCategory
-  );
-
-  if (!selected) return 50;
-
-  const selectedName = normalize(selected.name);
-  const currentName = normalize(categoryName);
-
-  if (currentName === selectedName) {
-    return 100;
-  }
-
-  const aliases = CATEGORY_ALIASES[selectedName] || [];
+  const categoryName =
+    categoryObject?.name ||
+    "PrimeCart";
 
   const searchable = normalize(
     [
@@ -605,276 +653,295 @@ function getCategoryScore(
     ].join(" ")
   );
 
-  const hits = aliases.filter((alias) =>
-    searchable.includes(normalize(alias))
-  ).length;
+  /* PURPOSE */
 
-  if (hits >= 3) return 90;
-  if (hits === 2) return 82;
-  if (hits === 1) return 68;
+  const purposeScore =
+    calculatePurposeScore(
+      product,
+      categoryName,
+      purpose
+    );
 
-  return 20;
-}
+  /* BUDGET */
 
-/* =========================================================
-   BRAND SCORE
-========================================================= */
+  const budgetScore =
+    calculateBudgetScore(
+      Number(product.price),
+      budget
+    );
 
-function getBrandScore(
-  product: Product,
-  selectedBrand: string
-) {
-  if (selectedBrand === "Any Brand") {
-    return 70;
+  /* CATEGORY */
+
+  let categoryScore = 80;
+
+  if (categoryId === "all") {
+    categoryScore = 80;
+  } else if (
+    product.category_id === categoryId
+  ) {
+    categoryScore = 100;
+  } else {
+    const selectedCategory =
+      categories.find(
+        (item) => item.id === categoryId
+      );
+
+    if (selectedCategory) {
+      const categoryKeywords =
+        keywordsForCategory(
+          selectedCategory.name
+        );
+
+      const matched =
+        categoryKeywords.some(
+          (keyword) =>
+            searchable.includes(
+              normalize(keyword)
+            )
+        );
+
+      categoryScore = matched
+        ? 68
+        : 25;
+    } else {
+      categoryScore = 25;
+    }
   }
 
-  if (!product.brand) return 25;
+  /* BRAND */
 
-  return normalize(product.brand) === normalize(selectedBrand)
-    ? 100
-    : 18;
-}
-
-/* =========================================================
-   REASONS
-========================================================= */
-
-function buildReasons(
-  product: Product,
-  categoryName: string,
-  breakdown: ScoreBreakdown,
-  purposeId: string,
-  budget: BudgetKey,
-  selectedBrand: string
-) {
-  const reasons: string[] = [];
-
-  const purpose = PURPOSES.find(
-    (item) => item.id === purposeId
-  );
-
-  if (breakdown.purpose >= 80 && purpose) {
-    reasons.push(`Strong fit for ${purpose.label.toLowerCase()}`);
-  }
-
-  if (breakdown.budget >= 85) {
-    reasons.push("Fits your selected budget");
-  } else if (breakdown.budget >= 65) {
-    reasons.push("Close to your preferred budget");
-  }
-
-  if (breakdown.quality >= 85) {
-    reasons.push("Strong quality signals");
-  }
-
-  if (breakdown.rating >= 85) {
-    reasons.push("Highly rated by shoppers");
-  }
-
-  if (breakdown.category >= 90) {
-    reasons.push(`Matches ${categoryName}`);
-  }
+  let brandScore = 80;
 
   if (
-    selectedBrand !== "Any Brand" &&
-    breakdown.brand >= 90
+    brand === "Any Brand" ||
+    brand === "all"
   ) {
-    reasons.push(`Matches your ${product.brand} preference`);
+    brandScore = 80;
+  } else if (
+    normalize(product.brand) ===
+    normalize(brand)
+  ) {
+    brandScore = 100;
+  } else {
+    brandScore = 25;
   }
 
-  if (product.is_flash_sale) {
-    reasons.push("Currently on flash sale");
-  } else if (discount(product) >= 20) {
-    reasons.push(`${discount(product)}% deal available`);
-  }
+  /* RATING */
 
-  if ((product.stock || 0) > 0) {
-    reasons.push("Currently in stock");
-  }
-
-  return reasons.slice(0, 4);
-}
-
-/* =========================================================
-   SCORE PRODUCT
-========================================================= */
-
-function scoreProduct(
-  product: Product,
-  categoryName: string,
-  preferences: {
-    purpose: string;
-    budget: BudgetKey;
-    category: string;
-    brand: string;
-    search: string;
-    importance: Importance;
-  },
-  categories: Category[]
-): MatchProduct {
-  const purposeScore = getPurposeScore(
-    product,
-    categoryName,
-    preferences.purpose
-  );
-
-  const categoryScore = getCategoryScore(
-    product,
-    categoryName,
-    preferences.category,
-    categories
-  );
-
-  const budgetScore = getBudgetScore(
-    product,
-    preferences.budget
-  );
-
-  const qualityScore = getQualityScore(product);
-
-  const brandScore = getBrandScore(
-    product,
-    preferences.brand
-  );
+  const rating =
+    Number(product.rating) || 0;
 
   const ratingScore = clamp(
-    (Number(product.rating || 0) / 5) * 100,
-    0,
-    100
+    Math.round((rating / 5) * 100)
   );
 
-  const availabilityScore =
-    Number(product.stock || 0) > 0 ? 100 : 0;
+  /* AVAILABILITY */
 
-  const searchScore = getSearchScore(
-    product,
-    categoryName,
-    preferences.search
-  );
+  let availabilityScore = 100;
 
-  const importance = preferences.importance;
+  if (product.stock <= 0) {
+    availabilityScore = 0;
+  } else if (product.stock <= 3) {
+    availabilityScore = 78;
+  } else if (product.stock <= 10) {
+    availabilityScore = 90;
+  }
 
-  /*
-    Dynamic weights.
-    Purpose/category/search/availability remain fixed.
-    User importance controls budget/quality/brand/rating.
-  */
+  /* SEARCH */
+
+  const searchScore =
+    calculateSearchScore(
+      product,
+      categoryName,
+      search
+    );
+
+  /* =====================================================
+     DYNAMIC WEIGHTS
+  ===================================================== */
 
   const rawWeights = {
-    budget: Math.max(importance.budget, 1),
-    quality: Math.max(importance.quality, 1),
-    brand: Math.max(importance.brand, 1),
-    rating: Math.max(importance.rating, 1),
+    budget: importance.budget,
+    quality: importance.quality,
+    brand: importance.brand,
+    rating: importance.rating,
   };
 
-  const dynamicTotal =
+  const totalPriority =
     rawWeights.budget +
     rawWeights.quality +
     rawWeights.brand +
     rawWeights.rating;
 
-  const dynamicArea = 0.60;
+  const normalizedBudget =
+    totalPriority > 0
+      ? rawWeights.budget /
+        totalPriority
+      : 0.25;
 
-  const budgetWeight =
-    (rawWeights.budget / dynamicTotal) * dynamicArea;
+  const normalizedQuality =
+    totalPriority > 0
+      ? rawWeights.quality /
+        totalPriority
+      : 0.25;
 
-  const qualityWeight =
-    (rawWeights.quality / dynamicTotal) * dynamicArea;
+  const normalizedBrand =
+    totalPriority > 0
+      ? rawWeights.brand /
+        totalPriority
+      : 0.25;
 
-  const brandWeight =
-    (rawWeights.brand / dynamicTotal) * dynamicArea;
+  const normalizedRating =
+    totalPriority > 0
+      ? rawWeights.rating /
+        totalPriority
+      : 0.25;
 
-  const ratingWeight =
-    (rawWeights.rating / dynamicTotal) * dynamicArea;
+  /*
+    Purpose + category always remain important.
+    User-controlled importance decides how
+    budget / quality / brand / rating are balanced.
+  */
 
-  const fixedScore =
-    purposeScore * 0.16 +
-    categoryScore * 0.10 +
-    searchScore * 0.04 +
-    availabilityScore * 0.02;
+  const score =
+    purposeScore * 0.24 +
+    categoryScore * 0.18 +
+    budgetScore *
+      normalizedBudget *
+      0.30 +
+    ratingScore *
+      normalizedRating *
+      0.16 +
+    brandScore *
+      normalizedBrand *
+      0.10 +
+    availabilityScore * 0.02 +
+    searchScore * 0.04;
 
-  let score =
-    fixedScore +
-    budgetScore * budgetWeight +
-    qualityScore * qualityWeight +
-    brandScore * brandWeight +
-    ratingScore * ratingWeight;
+  let finalScore =
+    Math.round(score);
 
-  // Small product signals
   if (product.is_featured) {
-    score += 2.5;
+    finalScore += 2;
   }
 
   if (product.is_flash_sale) {
-    score += 2;
+    finalScore += 2;
   }
 
-  if (discount(product) >= 30) {
-    score += 1.5;
+  if (product.stock <= 0) {
+    finalScore -= 20;
   }
 
-  // Out of stock should never dominate recommendations
-  if (Number(product.stock || 0) <= 0) {
-    score -= 12;
-  }
-
-  score = clamp(score, 20, 99);
-
-  const breakdown: ScoreBreakdown = {
-    purpose: Math.round(purposeScore),
-    category: Math.round(categoryScore),
-    budget: Math.round(budgetScore),
-    quality: Math.round(qualityScore),
-    brand: Math.round(brandScore),
-    rating: Math.round(ratingScore),
-    availability: Math.round(availabilityScore),
-    search: Math.round(searchScore),
-  };
-
-  const reasons = buildReasons(
-    product,
-    categoryName,
-    breakdown,
-    preferences.purpose,
-    preferences.budget,
-    preferences.brand
+  finalScore = clamp(
+    finalScore,
+    20,
+    99
   );
+
+  /* =====================================================
+     REASONS
+  ===================================================== */
+
+  const reasons: string[] = [];
+
+  if (budgetScore >= 95) {
+    reasons.push(
+      "Perfect budget fit"
+    );
+  } else if (budgetScore >= 80) {
+    reasons.push(
+      "Comfortably within your budget"
+    );
+  }
+
+  if (categoryScore >= 95) {
+    reasons.push(
+      "Exact category match"
+    );
+  } else if (
+    categoryScore >= 65
+  ) {
+    reasons.push(
+      "Related to your category"
+    );
+  }
+
+  if (purposeScore >= 90) {
+    reasons.push(
+      "Strongly fits your purpose"
+    );
+  } else if (
+    purposeScore >= 75
+  ) {
+    reasons.push(
+      "Good fit for your purpose"
+    );
+  }
+
+  if (brandScore >= 95) {
+    reasons.push(
+      "Preferred brand"
+    );
+  }
+
+  if (ratingScore >= 90) {
+    reasons.push(
+      "Highly rated"
+    );
+  }
+
+  if (
+    product.is_flash_sale &&
+    discount(
+      Number(product.price),
+      product.original_price
+    ) > 0
+  ) {
+    reasons.push(
+      "Great active deal"
+    );
+  }
+
+  if (
+    product.stock > 0 &&
+    product.stock <= 5
+  ) {
+    reasons.push(
+      "Limited stock"
+    );
+  }
+
+  if (searchScore >= 90) {
+    reasons.push(
+      "Matches your search"
+    );
+  }
+
+  if (!reasons.length) {
+    reasons.push(
+      "Good overall match"
+    );
+  }
 
   return {
     ...product,
-    score: Math.round(score),
-    breakdown,
-    reasons,
+    categoryName,
+    matchScore: finalScore,
+    reasons: Array.from(
+      new Set(reasons)
+    ).slice(0, 4),
+    breakdown: {
+      budget: budgetScore,
+      category: categoryScore,
+      purpose: purposeScore,
+      rating: ratingScore,
+      brand: brandScore,
+      availability:
+        availabilityScore,
+      search: searchScore,
+    },
   };
-}
-
-/* =========================================================
-   ANIMATED PRODUCT IMAGE
-========================================================= */
-
-function ProductImage({
-  product,
-  className = "",
-}: {
-  product: Product;
-  className?: string;
-}) {
-  const [src, setSrc] = useState(
-    getImageUrl(product.image_url)
-  );
-
-  return (
-    <img
-      src={src}
-      alt={product.name}
-      className={className}
-      onError={() => {
-        if (src !== PRODUCT_IMAGE_FALLBACK) {
-          setSrc(PRODUCT_IMAGE_FALLBACK);
-        }
-      }}
-    />
-  );
 }
 
 /* =========================================================
@@ -889,30 +956,127 @@ function ScoreBar({
   value: number;
 }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="font-medium text-slate-500">
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
           {label}
         </span>
 
-        <span className="font-bold text-slate-700">
+        <span className="text-[10px] font-black text-[#9b762b]">
           {value}%
         </span>
       </div>
 
-      <div className="h-1.5 overflow-hidden rounded-full bg-[#f2eee4]">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
-          transition={{
-            duration: 0.8,
-            ease: "easeOut",
+      <div className="h-1.5 overflow-hidden rounded-full bg-[#eee8dc]">
+        <div
+          className="h-full rounded-full bg-[#c9a24d] transition-all duration-700"
+          style={{
+            width: `${clamp(value)}%`,
           }}
-          className="h-full rounded-full bg-gradient-to-r from-[#b8872d] to-[#e1bd69]"
         />
       </div>
     </div>
   );
+}
+
+/* =========================================================
+   PRODUCT IMAGE
+========================================================= */
+
+function ProductImage({
+  src,
+  alt,
+  className = "",
+}: {
+  src: string | null;
+  alt: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  const imageSrc =
+    src || PRODUCT_IMAGE_FALLBACK;
+
+  if (failed) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-[#faf8f3] text-[#c9a24d] ${className}`}
+      >
+        <ShoppingBag size={42} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      onError={() => setFailed(true)}
+      className={className}
+    />
+  );
+}
+
+/* =========================================================
+   MATCH BADGE
+========================================================= */
+
+function MatchBadge({
+  product,
+}: {
+  product: MatchProduct;
+}) {
+  const discountValue =
+    discount(
+      Number(product.price),
+      product.original_price
+    );
+
+  if (
+    product.matchScore >= 90
+  ) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3ce] px-2.5 py-1 text-[10px] font-black text-[#916b22]">
+        <Sparkles size={11} />
+        Best Match
+      </span>
+    );
+  }
+
+  if (
+    discountValue >= 30
+  ) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-black text-red-600">
+        <Zap size={11} />
+        Best Deal
+      </span>
+    );
+  }
+
+  if (
+    Number(product.rating) >= 4.5
+  ) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-600">
+        <Star size={11} fill="currentColor" />
+        Top Rated
+      </span>
+    );
+  }
+
+  if (
+    Number(product.price) <= 2000
+  ) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-black text-green-700">
+        <Target size={11} />
+        Budget Pick
+      </span>
+    );
+  }
+
+  return null;
 }
 
 /* =========================================================
@@ -922,175 +1086,277 @@ function ScoreBar({
 function ProductCard({
   product,
   rank,
-  onAddToCart,
+  wished,
+  added,
   onWishlist,
-  isWishlisted,
-  compareIds,
-  onToggleCompare,
+  onCart,
 }: {
   product: MatchProduct;
   rank: number;
-  onAddToCart: (product: Product) => void;
-  onWishlist: (product: Product) => void;
-  isWishlisted: boolean;
-  compareIds: string[];
-  onToggleCompare: (id: string) => void;
+  wished: boolean;
+  added: boolean;
+  onWishlist: () => void;
+  onCart: () => void;
 }) {
-  const sale = discount(product);
-
-  const compared = compareIds.includes(product.id);
+  const off = discount(
+    Number(product.price),
+    product.original_price
+  );
 
   return (
-    <motion.div
-      layout
-      initial={{
-        opacity: 0,
-        y: 24,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-      }}
-      transition={{
-        duration: 0.45,
-        delay: Math.min(rank * 0.05, 0.25),
-      }}
-      whileHover={{
-        y: -5,
-      }}
-      className="group relative overflow-hidden rounded-3xl border border-[#eee5d3] bg-white shadow-[0_8px_30px_rgba(120,90,30,0.06)] transition-shadow hover:shadow-[0_16px_45px_rgba(120,90,30,0.12)]"
-    >
-      <div className="relative h-64 overflow-hidden bg-[#faf8f3]">
-        <ProductImage
-          product={product}
-          className="h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
-        />
+    <article className="group overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d9bf7b] hover:shadow-[0_22px_55px_rgba(80,60,20,0.10)]">
+      {/* IMAGE */}
+      <div className="relative h-[280px] overflow-hidden bg-[#faf9f6]">
+        <Link
+          href={`/dashboard/products/${product.id}`}
+          className="block h-full w-full"
+        >
+          <ProductImage
+            src={getImageUrl(
+              product.image_url
+            )}
+            alt={product.name}
+            className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-105"
+          />
+        </Link>
 
-        <div className="absolute left-4 top-4 flex items-center gap-2">
-          <span className="rounded-full bg-[#17130b] px-3 py-1.5 text-[11px] font-bold text-white shadow">
-            #{rank}
-          </span>
-
-          <span className="flex items-center gap-1 rounded-full bg-[#fff8e8] px-3 py-1.5 text-[11px] font-bold text-[#9a6c1e] ring-1 ring-[#ead19c]">
-            <Sparkles className="h-3 w-3" />
-            {product.score}% Match
-          </span>
+        {/* RANK */}
+        <div className="absolute left-4 top-4 rounded-full bg-[#171717] px-3 py-1.5 text-[10px] font-black text-white shadow">
+          #{rank}
         </div>
 
-        {sale > 0 && (
-          <span className="absolute bottom-4 left-4 rounded-full bg-[#fff0df] px-3 py-1.5 text-[11px] font-bold text-[#a65c1d]">
-            {sale}% OFF
-          </span>
-        )}
+        {/* MATCH */}
+        <div className="absolute left-4 top-14 flex items-center gap-1.5 rounded-full border border-[#eadfca] bg-white/95 px-3 py-1.5 text-[10px] font-black text-[#9b762b] shadow-sm">
+          <Sparkles size={11} />
+          {product.matchScore}% Match
+        </div>
 
+        {/* WISHLIST */}
         <button
           type="button"
-          onClick={() => onWishlist(product)}
-          className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition ${
-            isWishlisted
-              ? "border-[#e7c16c] text-[#b8872d]"
-              : "border-[#eee5d3] text-slate-500 hover:border-[#d7b35d] hover:text-[#b8872d]"
-          }`}
+          onClick={onWishlist}
           aria-label="Wishlist"
+          className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-sm transition ${
+            wished
+              ? "border-red-200 text-red-500"
+              : "border-[#e5dccb] text-gray-500 hover:border-red-200 hover:text-red-500"
+          }`}
         >
           <Heart
-            className="h-4 w-4"
-            fill={isWishlisted ? "currentColor" : "none"}
+            size={18}
+            fill={
+              wished
+                ? "currentColor"
+                : "none"
+            }
           />
         </button>
-      </div>
 
-      <div className="p-5">
-        <div className="mb-2 flex items-center gap-2 text-[11px]">
-          <span className="rounded-full bg-[#f8f4eb] px-2.5 py-1 font-semibold text-[#8f6b2b]">
-            {product.brand || "PrimeCart"}
-          </span>
-
-          {product.is_flash_sale && (
-            <span className="flex items-center gap-1 text-[#b86d23]">
-              <Zap className="h-3 w-3" />
-              Flash Deal
+        {/* DEALS */}
+        <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+          {off > 0 && (
+            <span className="rounded-full bg-[#c9a24d] px-3 py-1.5 text-[10px] font-black text-white">
+              {off}% OFF
             </span>
           )}
+
+          {product.is_flash_sale && (
+            <span className="flex items-center gap-1 rounded-full bg-red-500 px-3 py-1.5 text-[10px] font-black text-white">
+              <Zap size={10} />
+              DEAL
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="max-w-[65%] truncate text-[10px] font-black uppercase tracking-[0.14em] text-[#a17b2f]">
+            {product.categoryName}
+          </span>
+
+          <MatchBadge
+            product={product}
+          />
         </div>
 
         <Link
           href={`/dashboard/products/${product.id}`}
-          className="line-clamp-2 min-h-[48px] text-base font-bold leading-6 text-[#211c12] transition-colors hover:text-[#b8872d]"
+          className="mt-2 block"
         >
-          {product.name}
+          <h3 className="line-clamp-2 min-h-[48px] text-base font-black leading-6 text-gray-900 transition hover:text-[#a17b2f]">
+            {product.name}
+          </h3>
         </Link>
 
-        <div className="mt-2 flex items-center gap-2">
-          <div className="flex items-center gap-1 text-[#b8872d]">
-            <Star className="h-3.5 w-3.5 fill-current" />
-            <span className="text-xs font-bold text-slate-700">
-              {Number(product.rating || 0).toFixed(1)}
-            </span>
-          </div>
+        {product.brand && (
+          <p className="mt-1 text-xs font-semibold text-gray-400">
+            {product.brand}
+          </p>
+        )}
 
-          <span className="text-xs text-slate-400">
-            ({product.reviews_count || 0} reviews)
+        {/* RATING */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="flex items-center gap-1 rounded-md bg-[#fff7e4] px-2 py-1 text-[11px] font-black text-[#956f27]">
+            <Star
+              size={12}
+              fill="currentColor"
+            />
+            {Number(product.rating || 0).toFixed(
+              1
+            )}
+          </span>
+
+          <span className="text-[11px] text-gray-400">
+            {product.reviews_count || 0} reviews
           </span>
         </div>
 
+        {/* PRICE */}
         <div className="mt-4 flex items-end gap-2">
-          <span className="text-xl font-black text-[#211c12]">
-            {money(Number(product.price || 0))}
+          <span className="text-xl font-black text-gray-950">
+            {money(
+              Number(product.price)
+            )}
           </span>
 
           {product.original_price &&
-            product.original_price > product.price && (
-              <span className="pb-0.5 text-xs text-slate-400 line-through">
-                {money(Number(product.original_price))}
+            Number(
+              product.original_price
+            ) >
+              Number(product.price) && (
+              <span className="mb-0.5 text-xs text-gray-400 line-through">
+                {money(
+                  Number(
+                    product.original_price
+                  )
+                )}
               </span>
             )}
         </div>
 
-        <div className="mt-4 space-y-2 rounded-2xl bg-[#fcfaf5] p-3">
-          {product.reasons.slice(0, 2).map((reason) => (
-            <div
-              key={reason}
-              className="flex items-start gap-2 text-[11px] text-slate-600"
-            >
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#b8872d]" />
-              <span>{reason}</span>
-            </div>
-          ))}
+        {/* REASONS */}
+        <div className="mt-4 space-y-1.5">
+          {product.reasons
+            .slice(0, 3)
+            .map((reason) => (
+              <div
+                key={reason}
+                className="flex items-center gap-2 text-[11px] font-semibold text-gray-500"
+              >
+                <Check
+                  size={12}
+                  className="shrink-0 text-[#b58a32]"
+                />
+                <span>{reason}</span>
+              </div>
+            ))}
         </div>
 
-        <div className="mt-4">
-          <ScoreBar
-            label="Overall match"
-            value={product.score}
-          />
-        </div>
-
-        <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+        {/* ACTIONS */}
+        <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
           <button
             type="button"
-            onClick={() => onAddToCart(product)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#a77724] active:scale-[0.98]"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Add to Cart
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onToggleCompare(product.id)}
-            className={`flex items-center justify-center rounded-xl border px-3 transition ${
-              compared
-                ? "border-[#d6b15a] bg-[#fff8e8] text-[#9a6c1e]"
-                : "border-[#e7dfcf] bg-white text-slate-500 hover:border-[#d6b15a] hover:text-[#9a6c1e]"
+            disabled={
+              product.stock <= 0
+            }
+            onClick={onCart}
+            className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition ${
+              product.stock <= 0
+                ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                : added
+                ? "bg-green-600 text-white"
+                : "bg-[#171717] text-white hover:bg-[#2b2b2b]"
             }`}
-            title="Compare"
           >
-            <BarChart3 className="h-4 w-4" />
+            {added ? (
+              <>
+                <Check size={15} />
+                Added
+              </>
+            ) : product.stock <= 0 ? (
+              "Out of Stock"
+            ) : (
+              <>
+                <ShoppingCart size={15} />
+                Add to Cart
+              </>
+            )}
           </button>
+
+          <Link
+            href={`/dashboard/products/${product.id}`}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e4dac8] text-[#9b762b] transition hover:bg-[#fff9ed]"
+          >
+            <ArrowRight size={16} />
+          </Link>
         </div>
       </div>
-    </motion.div>
+    </article>
+  );
+}
+
+/* =========================================================
+   SKELETON
+========================================================= */
+
+function ProductSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[26px] border border-[#eee7db] bg-white">
+      <div className="h-[280px] animate-pulse bg-[#f3f0e9]" />
+
+      <div className="space-y-3 p-5">
+        <div className="h-3 w-1/3 animate-pulse rounded bg-[#eee8dc]" />
+        <div className="h-5 w-4/5 animate-pulse rounded bg-[#eee8dc]" />
+        <div className="h-5 w-3/5 animate-pulse rounded bg-[#eee8dc]" />
+        <div className="h-8 w-1/2 animate-pulse rounded bg-[#eee8dc]" />
+        <div className="h-11 animate-pulse rounded-xl bg-[#eee8dc]" />
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   IMPORTANCE SLIDER
+========================================================= */
+
+function ImportanceSlider({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (
+    value: number
+  ) => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#eee5d6] bg-[#fffdfa] p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-black text-gray-700">
+          {label}
+        </span>
+
+        <span className="rounded-full bg-[#fff4d6] px-2.5 py-1 text-[10px] font-black text-[#956f27]">
+          {value}%
+        </span>
+      </div>
+
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={value}
+        onChange={(event) =>
+          onChange(
+            Number(event.target.value)
+          )
+        }
+        className="w-full accent-[#c9a24d]"
+      />
+    </div>
   );
 }
 
@@ -1101,225 +1367,138 @@ function ProductCard({
 export default function PrimeMatchPage() {
   const supabase = createClient();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<string[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
-  const [cartIds, setCartIds] = useState<string[]>([]);
+  /* DATA */
 
-  const [loading, setLoading] = useState(true);
-  const [matching, setMatching] = useState(false);
-  const [matched, setMatched] = useState(false);
+  const [products, setProducts] =
+    useState<Product[]>([]);
 
-  const [matchStage, setMatchStage] = useState(0);
+  const [categories, setCategories] =
+    useState<Category[]>([]);
 
-  const [error, setError] = useState("");
-  const [toast, setToast] = useState("");
+  const [brands, setBrands] =
+    useState<string[]>([]);
 
-  const [purpose, setPurpose] = useState("everyday");
+  const [wishlist, setWishlist] =
+    useState<string[]>([]);
+
+  const [cartIds, setCartIds] =
+    useState<string[]>([]);
+
+  /* UI */
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [matching, setMatching] =
+    useState(false);
+
+  const [matched, setMatched] =
+    useState(false);
+
+const [matchStage, setMatchStage] =
+  useState(0);
+
+  const [error, setError] =
+    useState("");
+
+  const [toast, setToast] =
+    useState("");
+
+  /* PREFERENCES */
+
+  const [purpose, setPurpose] =
+    useState("everyday");
+
   const [budget, setBudget] =
-    useState<BudgetKey>("1000-5000");
-  const [category, setCategory] = useState("all");
-  const [brand, setBrand] = useState("Any Brand");
-  const [search, setSearch] = useState("");
+    useState("1000-5000");
 
-  const [importance, setImportance] = useState<Importance>({
-    budget: 70,
-    quality: 75,
-    brand: 40,
-    rating: 65,
-  });
+  const [category, setCategory] =
+    useState("all");
 
-  const [compareIds, setCompareIds] = useState<string[]>(
-    []
-  );
+  const [brand, setBrand] =
+    useState("Any Brand");
 
-  // Snapshot of preferences when Find My Prime Match is clicked
-  const [matchedPreferences, setMatchedPreferences] =
-    useState({
-      purpose: "everyday",
-      budget: "1000-5000" as BudgetKey,
-      category: "all",
-      brand: "Any Brand",
-      search: "",
-      importance: {
-        budget: 70,
-        quality: 75,
-        brand: 40,
-        rating: 65,
-      },
+  const [search, setSearch] =
+    useState("");
+
+  const [importance, setImportance] =
+    useState<Importance>({
+      budget: 70,
+      quality: 75,
+      brand: 40,
+      rating: 65,
     });
 
-  /* =======================================================
+  /* COMPARISON */
+
+  const [compareIds, setCompareIds] =
+    useState<string[]>([]);
+
+  /* =====================================================
      TOAST
-  ======================================================= */
+  ===================================================== */
 
   useEffect(() => {
     if (!toast) return;
 
-    const timer = setTimeout(() => {
-      setToast("");
-    }, 2800);
+    const timer =
+      window.setTimeout(() => {
+        setToast("");
+      }, 2200);
 
-    return () => clearTimeout(timer);
+    return () =>
+      window.clearTimeout(timer);
   }, [toast]);
 
-  /* =======================================================
-     LOAD DATA
-  ======================================================= */
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        setError("");
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        const [
-          productsResponse,
-          categoriesResponse,
-          wishlistResponse,
-        ] = await Promise.all([
-          supabase
-            .from("products")
-            .select("*")
-            .eq("is_active", true)
-            .order("created_at", {
-              ascending: false,
-            }),
-
-          supabase
-            .from("categories")
-            .select("id,name")
-            .order("name", {
-              ascending: true,
-            }),
-
-          supabase
-            .from("wishlist")
-            .select("product_id")
-            .eq("user_id", user.id),
-        ]);
-
-        if (productsResponse.error) {
-          throw productsResponse.error;
-        }
-
-        if (categoriesResponse.error) {
-          throw categoriesResponse.error;
-        }
-
-        setProducts(productsResponse.data || []);
-        setCategories(categoriesResponse.data || []);
-
-        setWishlist(
-          (wishlistResponse.data || [])
-            .map((item) => item.product_id)
-            .filter(Boolean)
-        );
-
-        const uniqueBrands = Array.from(
-          new Set(
-            (productsResponse.data || [])
-              .map((product) =>
-                String(product.brand || "").trim()
-              )
-              .filter(Boolean)
-          )
-        ).sort((a, b) => a.localeCompare(b));
-
-        setBrands(uniqueBrands);
-
-        try {
-          const storedCart = localStorage.getItem(
-            "primecart-cart"
-          );
-
-          if (storedCart) {
-            const parsed = JSON.parse(storedCart);
-
-            if (Array.isArray(parsed)) {
-              const ids = parsed
-                .map(
-                  (item: {
-                    product_id?: string;
-                    productId?: string;
-                    id?: string;
-                  }) =>
-                    item.product_id ||
-                    item.productId ||
-                    item.id
-                )
-                .filter(Boolean);
-
-              setCartIds(ids);
-            }
-          }
-        } catch {
-          // Ignore malformed cart
-        }
-      } catch (err) {
-        console.error(err);
-        setError(
-          "We couldn't load your PrimeMatch data. Please try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-  }, []);
-
-  /* =======================================================
+  /* =====================================================
      CART SYNC
-  ======================================================= */
+  ===================================================== */
 
-  useEffect(() => {
-    const handleCartUpdate = () => {
-      try {
-        const storedCart = localStorage.getItem(
+  function syncCart() {
+    try {
+      const stored =
+        localStorage.getItem(
           "primecart-cart"
         );
 
-        if (!storedCart) {
-          setCartIds([]);
-          return;
-        }
-
-        const parsed = JSON.parse(storedCart);
-
-        if (!Array.isArray(parsed)) {
-          setCartIds([]);
-          return;
-        }
-
-        setCartIds(
-          parsed
-            .map(
-              (item: {
-                product_id?: string;
-                productId?: string;
-                id?: string;
-              }) =>
-                item.product_id ||
-                item.productId ||
-                item.id
-            )
-            .filter(Boolean)
-        );
-      } catch {
+      if (!stored) {
         setCartIds([]);
+        return;
       }
-    };
+
+      const parsed =
+        JSON.parse(stored);
+
+      if (!Array.isArray(parsed)) {
+        setCartIds([]);
+        return;
+      }
+
+      const ids = parsed
+        .map((item: any) =>
+          String(
+            item?.product_id ??
+              item?.productId ??
+              item?.id ??
+              ""
+          )
+        )
+        .filter(Boolean);
+
+      setCartIds(ids);
+    } catch {
+      setCartIds([]);
+    }
+  }
+
+  useEffect(() => {
+    syncCart();
+
+    const handleCartUpdate =
+      () => syncCart();
+
+    const handleStorage =
+      () => syncCart();
 
     window.addEventListener(
       "cart-updated",
@@ -1328,7 +1507,7 @@ export default function PrimeMatchPage() {
 
     window.addEventListener(
       "storage",
-      handleCartUpdate
+      handleStorage
     );
 
     return () => {
@@ -1339,192 +1518,224 @@ export default function PrimeMatchPage() {
 
       window.removeEventListener(
         "storage",
-        handleCartUpdate
+        handleStorage
       );
     };
   }, []);
 
-  /* =======================================================
-     CATEGORY MAP
-  ======================================================= */
+  /* =====================================================
+     LOAD DATA
+  ===================================================== */
 
-  const categoryMap = useMemo(() => {
-    const map = new Map<string, string>();
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    categories.forEach((item) => {
-      map.set(item.id, item.name);
-    });
+  async function loadData() {
+    try {
+      setLoading(true);
+      setError("");
 
-    return map;
-  }, [categories]);
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
 
-  /* =======================================================
+      if (!user) {
+        window.location.href =
+          "/auth/login";
+        return;
+      }
+
+      const [
+        productResult,
+        categoryResult,
+        wishlistResult,
+      ] = await Promise.all([
+        supabase
+          .from("products")
+          .select(
+            `
+              id,
+              category_id,
+              name,
+              slug,
+              short_description,
+              description,
+              price,
+              original_price,
+              stock,
+              image_url,
+              brand,
+              rating,
+              reviews_count,
+              is_featured,
+              is_flash_sale,
+              is_active
+            `
+          )
+          .eq("is_active", true),
+
+        supabase
+          .from("categories")
+          .select(
+            "id,name,slug"
+          )
+          .order("name", {
+            ascending: true,
+          }),
+
+        supabase
+          .from("wishlist")
+          .select("product_id")
+          .eq(
+            "user_id",
+            user.id
+          ),
+      ]);
+
+      if (productResult.error) {
+        throw productResult.error;
+      }
+
+      if (categoryResult.error) {
+        throw categoryResult.error;
+      }
+
+      /*
+        Wishlist error should not block
+        the entire PrimeMatch page.
+      */
+      if (wishlistResult.error) {
+        console.warn(
+          "Wishlist could not be loaded:",
+          wishlistResult.error
+        );
+      }
+
+      const productData =
+        (productResult.data ||
+          []) as Product[];
+
+      const categoryData =
+        (categoryResult.data ||
+          []) as Category[];
+
+      setProducts(productData);
+      setCategories(categoryData);
+
+      const uniqueBrands =
+        Array.from(
+          new Set(
+            productData
+              .map((item) =>
+                item.brand?.trim()
+              )
+              .filter(
+                (
+                  item
+                ): item is string =>
+                  Boolean(item)
+              )
+          )
+        ).sort((a, b) =>
+          a.localeCompare(b)
+        );
+
+      setBrands(uniqueBrands);
+
+      setWishlist(
+        (
+          wishlistResult.data ||
+          []
+        ).map(
+          (item) =>
+            String(item.product_id)
+        )
+      );
+
+      syncCart();
+    } catch (err) {
+      console.error(
+        "PrimeMatch load error:",
+        err
+      );
+
+      setError(
+        "Something went wrong while loading PrimeMatch. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* =====================================================
      RESULTS
-  ======================================================= */
+  ===================================================== */
 
   const allResults = useMemo(() => {
     return products
-      .map((product) => {
-        const categoryName =
-          categoryMap.get(product.category_id || "") ||
-          "General";
-
-        return scoreProduct(
+      .map((product) =>
+        scoreProduct(
           product,
-          categoryName,
-          matchedPreferences,
-          categories
-        );
-      })
-      .sort((a, b) => {
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-
-        const ratingDiff =
-          Number(b.rating || 0) -
-          Number(a.rating || 0);
-
-        if (ratingDiff !== 0) {
-          return ratingDiff;
-        }
-
-        return (
-          Number(b.reviews_count || 0) -
-          Number(a.reviews_count || 0)
-        );
-      });
-  }, [
-    products,
-    categoryMap,
-    categories,
-    matchedPreferences,
-  ]);
-
-  const filteredResults = useMemo(() => {
-    return allResults.filter((product) => {
-      if (
-        matchedPreferences.search.trim() &&
-        product.breakdown.search < 40
-      ) {
-        return false;
-      }
-
-      if (
-        matchedPreferences.category !== "all" &&
-        product.breakdown.category < 50
-      ) {
-        return false;
-      }
-
-      if (
-        matchedPreferences.brand !== "Any Brand" &&
-        product.breakdown.brand < 80
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [allResults, matchedPreferences]);
-
-  /*
-    IMPORTANT:
-    Products are intentionally hidden until matching completes.
-  */
-  const results = matched ? filteredResults : [];
-
-  const topMatch = results[0] || null;
-
-  const bestValue = useMemo(() => {
-    return [...results]
-      .sort((a, b) => {
-        const valueA =
-          a.score +
-          discount(a) * 0.35 -
-          Number(a.price || 0) / 10000;
-
-        const valueB =
-          b.score +
-          discount(b) * 0.35 -
-          Number(b.price || 0) / 10000;
-
-        return valueB - valueA;
-      })
-      .find((item) => item.id !== topMatch?.id);
-  }, [results, topMatch]);
-
-  const budgetPick = useMemo(() => {
-    return [...results]
-      .sort(
-        (a, b) =>
-          b.breakdown.budget -
-          a.breakdown.budget
-      )
-      .find((item) => item.id !== topMatch?.id);
-  }, [results, topMatch]);
-
-  const topRated = useMemo(() => {
-    return [...results]
-      .sort(
-        (a, b) =>
-          Number(b.rating || 0) -
-          Number(a.rating || 0)
-      )
-      .find((item) => item.id !== topMatch?.id);
-  }, [results, topMatch]);
-
-  const premiumPick = useMemo(() => {
-    return [...results]
-      .sort(
-        (a, b) =>
-          Number(b.price || 0) -
-          Number(a.price || 0)
-      )
-      .find((item) => item.id !== topMatch?.id);
-  }, [results, topMatch]);
-
-  const compareProducts = compareIds
-    .map((id) =>
-      results.find((product) => product.id === id)
-    )
-    .filter(Boolean) as MatchProduct[];
-
-  /* =======================================================
-     LIVE POTENTIAL
-  ======================================================= */
-
-  const livePotential = useMemo(() => {
-    if (!products.length) return 0;
-
-    const preview = products.map((product) => {
-      const categoryName =
-        categoryMap.get(product.category_id || "") ||
-        "General";
-
-      return scoreProduct(
-        product,
-        categoryName,
-        {
+          categories,
           purpose,
           budget,
           category,
           brand,
           search,
-          importance,
-        },
-        categories
-      );
-    });
+          importance
+        )
+      )
+      .sort((a, b) => {
+        /*
+          In-stock products come first.
+        */
+        if (
+          a.stock > 0 &&
+          b.stock <= 0
+        ) {
+          return -1;
+        }
 
-    const sorted = [...preview].sort(
-      (a, b) => b.score - a.score
-    );
+        if (
+          a.stock <= 0 &&
+          b.stock > 0
+        ) {
+          return 1;
+        }
 
-    return sorted[0]?.score || 0;
+        if (
+          b.matchScore !==
+          a.matchScore
+        ) {
+          return (
+            b.matchScore -
+            a.matchScore
+          );
+        }
+
+        if (
+          Number(b.rating) !==
+          Number(a.rating)
+        ) {
+          return (
+            Number(b.rating) -
+            Number(a.rating)
+          );
+        }
+
+        return (
+          Number(
+            b.reviews_count
+          ) -
+          Number(
+            a.reviews_count
+          )
+        );
+      });
   }, [
     products,
-    categoryMap,
     categories,
     purpose,
     budget,
@@ -1534,484 +1745,658 @@ export default function PrimeMatchPage() {
     importance,
   ]);
 
-  /* =======================================================
-     MATCHING
-  ======================================================= */
+  const filteredResults =
+    useMemo(() => {
+      if (!search.trim()) {
+        return allResults;
+      }
 
-  async function runMatch() {
-    if (matching) return;
+      const query =
+        normalize(search);
 
-    setError("");
-    setMatched(false);
-    setMatchStage(0);
-    setCompareIds([]);
+      return allResults.filter(
+        (product) => {
+          const text =
+            normalize(
+              [
+                product.name,
+                product.brand,
+                product.categoryName,
+                product.short_description,
+                product.description,
+              ].join(" ")
+            );
 
-    setMatchedPreferences({
-      purpose,
-      budget,
-      category,
-      brand,
-      search: search.trim(),
-      importance: {
-        ...importance,
-      },
-    });
-
-    setMatching(true);
-
-    for (
-      let index = 0;
-      index < MATCHING_STAGES.length;
-      index++
-    ) {
-      setMatchStage(index);
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 650)
+          return query
+            .split(/\s+/)
+            .some((term) =>
+              text.includes(term)
+            );
+        }
       );
+    }, [
+      allResults,
+      search,
+    ]);
+
+  const results =
+    filteredResults;
+
+  const topMatch =
+    results[0] || null;
+
+  /* =====================================================
+     SPECIAL RECOMMENDATIONS
+  ===================================================== */
+
+  const bestValue =
+    useMemo(() => {
+      const available =
+        results.filter(
+          (product) =>
+            product.stock > 0
+        );
+
+      return (
+        [...available].sort(
+          (a, b) => {
+            const valueA =
+              a.matchScore +
+              Number(a.rating) * 5 +
+              discount(
+                Number(a.price),
+                a.original_price
+              ) *
+                0.4;
+
+            const valueB =
+              b.matchScore +
+              Number(b.rating) * 5 +
+              discount(
+                Number(b.price),
+                b.original_price
+              ) *
+                0.4;
+
+            return valueB - valueA;
+          }
+        )[0] || null
+      );
+    }, [results]);
+
+  const budgetPick =
+    useMemo(() => {
+      const available =
+        results.filter(
+          (product) =>
+            product.stock > 0
+        );
+
+      return (
+        [...available].sort(
+          (a, b) =>
+            Number(a.price) -
+              Number(b.price) ||
+            b.matchScore -
+              a.matchScore
+        )[0] || null
+      );
+    }, [results]);
+
+  const topRated =
+    useMemo(() => {
+      return (
+        [...results]
+          .filter(
+            (product) =>
+              product.stock > 0
+          )
+          .sort(
+            (a, b) =>
+              Number(b.rating) -
+                Number(a.rating) ||
+              b.reviews_count -
+                a.reviews_count
+          )[0] || null
+      );
+    }, [results]);
+
+  const premiumPick =
+    useMemo(() => {
+      return (
+        [...results]
+          .filter(
+            (product) =>
+              product.stock > 0
+          )
+          .sort(
+            (a, b) =>
+              Number(b.price) -
+                Number(a.price) ||
+              b.matchScore -
+                a.matchScore
+          )[0] || null
+      );
+    }, [results]);
+
+  const compareProducts =
+    useMemo(() => {
+      return compareIds
+        .map((id) =>
+          results.find(
+            (product) =>
+              product.id === id
+          )
+        )
+        .filter(
+          (
+            item
+          ): item is MatchProduct =>
+            Boolean(item)
+        );
+    }, [
+      compareIds,
+      results,
+    ]);
+
+  /* =====================================================
+     LIVE MATCH POTENTIAL
+  ===================================================== */
+
+  const livePotential =
+  useMemo(() => {
+    if (!matched || !topMatch) {
+      return 0;
     }
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, 350)
-    );
+    return topMatch.matchScore;
+  }, [matched, topMatch]);
 
-    setMatching(false);
-    setMatched(true);
+  /* =====================================================
+     CART
+  ===================================================== */
 
-    setTimeout(() => {
-      document
-        .getElementById("match-results")
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 150);
-  }
-
-  /* =======================================================
-     RESET
-  ======================================================= */
-
-  function resetPreferences() {
-    setPurpose("everyday");
-    setBudget("1000-5000");
-    setCategory("all");
-    setBrand("Any Brand");
-    setSearch("");
-
-    setImportance({
-      budget: 70,
-      quality: 75,
-      brand: 40,
-      rating: 65,
-    });
-
-    setMatched(false);
-    setMatching(false);
-    setMatchStage(0);
-    setCompareIds([]);
-    setError("");
-  }
-
-  /* =======================================================
-     ADD TO CART
-  ======================================================= */
-
-  function addToCart(product: Product) {
+  function addToCart(
+    product: MatchProduct
+  ) {
     try {
       const stored =
-        localStorage.getItem("primecart-cart");
+        localStorage.getItem(
+          "primecart-cart"
+        );
 
-      let cart: any[] = [];
+      let current: any[] = [];
 
       if (stored) {
-        const parsed = JSON.parse(stored);
+        try {
+          const parsed =
+            JSON.parse(stored);
 
-        if (Array.isArray(parsed)) {
-          cart = parsed;
+          if (Array.isArray(parsed)) {
+            current = parsed;
+          }
+        } catch {
+          current = [];
         }
       }
 
-      const existingIndex = cart.findIndex(
-        (item) =>
-          item.product_id === product.id ||
-          item.productId === product.id ||
-          item.id === product.id
-      );
+      const existingIndex =
+        current.findIndex(
+          (item) =>
+            String(
+              item?.product_id ??
+                item?.productId ??
+                item?.id ??
+                ""
+            ) ===
+            String(product.id)
+        );
 
-      if (existingIndex >= 0) {
-        cart[existingIndex] = {
-          ...cart[existingIndex],
+      if (
+        existingIndex >= 0
+      ) {
+        current[
+          existingIndex
+        ] = {
+          ...current[
+            existingIndex
+          ],
           quantity:
-            Number(cart[existingIndex].quantity || 1) + 1,
+            Number(
+              current[
+                existingIndex
+              ]?.quantity
+            ) + 1,
         };
       } else {
-        cart.push({
-          product_id: product.id,
-          productId: product.id,
+        current.push({
           id: product.id,
+          product_id:
+            product.id,
+          productId:
+            product.id,
           name: product.name,
-          price: product.price,
-          image_url: product.image_url,
-          image: product.image_url,
+          price: Number(
+            product.price
+          ),
+          image_url:
+            product.image_url,
+          image:
+            product.image_url,
           quantity: 1,
+          stock: product.stock,
         });
       }
 
       localStorage.setItem(
         "primecart-cart",
-        JSON.stringify(cart)
+        JSON.stringify(current)
       );
 
-      setCartIds((current) =>
-        current.includes(product.id)
-          ? current
-          : [...current, product.id]
+      setCartIds((previous) =>
+        previous.includes(
+          product.id
+        )
+          ? previous
+          : [
+              ...previous,
+              product.id,
+            ]
       );
 
       window.dispatchEvent(
         new Event("cart-updated")
       );
 
-      setToast(`${product.name} added to cart`);
+      setToast(
+        `${product.name} added to cart`
+      );
     } catch (err) {
-      console.error(err);
-      setToast("Unable to add product to cart");
+      console.error(
+        "Cart error:",
+        err
+      );
+
+      setToast(
+        "Could not add product to cart."
+      );
     }
   }
 
-  /* =======================================================
+  /* =====================================================
      WISHLIST
-  ======================================================= */
+  ===================================================== */
 
-  async function toggleWishlist(product: Product) {
+  async function toggleWishlist(
+    product: MatchProduct
+  ) {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } =
+        await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/auth/login";
+        window.location.href =
+          "/auth/login";
         return;
       }
 
-      const exists = wishlist.includes(product.id);
-
-      if (exists) {
-        const { error: deleteError } = await supabase
-          .from("wishlist")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("product_id", product.id);
-
-        if (deleteError) throw deleteError;
-
-        setWishlist((current) =>
-          current.filter((id) => id !== product.id)
+      const exists =
+        wishlist.includes(
+          product.id
         );
 
-        setToast("Removed from wishlist");
+      if (exists) {
+        const { error: deleteError } =
+          await supabase
+            .from("wishlist")
+            .delete()
+            .eq(
+              "user_id",
+              user.id
+            )
+            .eq(
+              "product_id",
+              product.id
+            );
+
+        if (deleteError) {
+          throw deleteError;
+        }
+
+        setWishlist((previous) =>
+          previous.filter(
+            (id) =>
+              id !== product.id
+          )
+        );
+
+        setToast(
+          "Removed from wishlist"
+        );
       } else {
-        const { error: insertError } = await supabase
-          .from("wishlist")
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-          });
+        const { error: insertError } =
+          await supabase
+            .from("wishlist")
+            .insert({
+              user_id: user.id,
+              product_id:
+                product.id,
+            });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          throw insertError;
+        }
 
-        setWishlist((current) => [
-          ...current,
+        setWishlist((previous) => [
+          ...previous,
           product.id,
         ]);
 
-        setToast("Added to wishlist");
+        setToast(
+          "Added to wishlist"
+        );
       }
     } catch (err) {
-      console.error(err);
-      setToast("Unable to update wishlist");
+      console.error(
+        "Wishlist error:",
+        err
+      );
+
+      setToast(
+        "Could not update wishlist."
+      );
     }
   }
 
-  /* =======================================================
+  /* =====================================================
      COMPARE
-  ======================================================= */
+  ===================================================== */
 
-  function toggleCompare(id: string) {
-    setCompareIds((current) => {
-      if (current.includes(id)) {
-        return current.filter((item) => item !== id);
+  function toggleCompare(
+    productId: string
+  ) {
+    setCompareIds(
+      (previous) => {
+        if (
+          previous.includes(
+            productId
+          )
+        ) {
+          return previous.filter(
+            (id) =>
+              id !== productId
+          );
+        }
+
+        if (
+          previous.length >= 3
+        ) {
+          setToast(
+            "You can compare up to 3 products."
+          );
+
+          return previous;
+        }
+
+        return [
+          ...previous,
+          productId,
+        ];
       }
-
-      if (current.length >= 3) {
-        setToast("You can compare up to 3 products");
-        return current;
-      }
-
-      return [...current, id];
-    });
-  }
-
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#fffdf9] text-[#211c12]">
-        <div className="flex min-h-screen items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center"
-          >
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-[#ead7aa] bg-white shadow-[0_15px_50px_rgba(120,90,30,0.10)]">
-              <div className="absolute inset-0 animate-ping rounded-3xl border border-[#d7b35d]/30" />
-
-              <Sparkles className="h-8 w-8 text-[#b8872d]" />
-            </div>
-
-            <p className="mt-5 text-sm font-bold text-slate-600">
-              Preparing PrimeMatch...
-            </p>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Loading products and preferences
-            </p>
-          </motion.div>
-        </div>
-      </div>
     );
   }
 
-  /* =======================================================
-     PAGE
-  ======================================================= */
+  /* =====================================================
+     RUN MATCH
+  ===================================================== */
+
+async function runMatch() {
+  if (loading || matching) return;
+
+  setMatching(true);
+  setMatched(false);
+  setMatchStage(0);
+
+  const stages = [
+    1200,
+    1200,
+    1200,
+    1200,
+    1000,
+  ];
+
+  for (let index = 0; index < stages.length; index++) {
+    setMatchStage(index);
+
+    await new Promise<void>((resolve) =>
+      window.setTimeout(
+        resolve,
+        stages[index]
+      )
+    );
+  }
+
+  setMatchStage(5);
+  setMatched(true);
+  setMatching(false);
+
+  window.setTimeout(() => {
+    document
+      .getElementById("match-results")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  }, 150);
+}
+
+  /* =====================================================
+     RESET
+  ===================================================== */
+
+ function resetPreferences() {
+  setPurpose("everyday");
+  setBudget("1000-5000");
+  setCategory("all");
+  setBrand("Any Brand");
+  setSearch("");
+
+  setImportance({
+    budget: 70,
+    quality: 75,
+    brand: 40,
+    rating: 65,
+  });
+
+  setMatching(false);
+  setMatched(false);
+  setMatchStage(0);
+  setCompareIds([]);
+}
+
+  /* =====================================================
+     SELECTED CATEGORY
+  ===================================================== */
+
+  const activeCategory =
+    category === "all"
+      ? null
+      : categories.find(
+          (item) =>
+            item.id === category
+        );
+
+  /* =====================================================
+     RENDER
+  ===================================================== */
 
   return (
-    <div className="min-h-screen bg-[#fffdf9] text-[#211c12]">
-      {/* ===================================================
+    <main className="min-h-screen bg-[#fcfbf8] text-gray-900">
+      {/* =================================================
           TOAST
-      =================================================== */}
+      ================================================= */}
 
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: -20,
-              scale: 0.95,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-            }}
-            exit={{
-              opacity: 0,
-              y: -20,
-              scale: 0.95,
-            }}
-            className="fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-2xl border border-[#e5d19f] bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-[0_18px_60px_rgba(0,0,0,0.12)]"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff7e3] text-[#b8872d]">
-              <Check className="h-4 w-4" />
-            </span>
-
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2">
+          <div className="flex max-w-[90vw] items-center gap-3 rounded-2xl border border-[#dec68b] bg-[#171717] px-5 py-3 text-sm font-bold text-white shadow-2xl">
+            <Check
+              size={17}
+              className="text-[#d5b15d]"
+            />
             {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
-      {/* ===================================================
+      {/* =================================================
           HEADER
-      =================================================== */}
+      ================================================= */}
 
-      <header className="sticky top-0 z-50 border-b border-[#eee5d3] bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfcb] bg-[#fffdf9] text-slate-600 transition hover:border-[#d6b15a] hover:text-[#b8872d]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+      <header className="sticky top-0 z-50 border-b border-[#eee5d6] bg-[#fcfbf8]/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-xs font-black text-gray-600 transition hover:text-[#a17b2f]"
+          >
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">
+              Dashboard
+            </span>
+          </Link>
 
-            <div className="hidden h-8 w-px bg-[#eadfcb] sm:block" />
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a17b2f]">
+              <Sparkles
+                size={18}
+              />
+            </div>
 
             <div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff5d9] text-[#b8872d]">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-
-                <h1 className="text-sm font-black tracking-tight text-[#211c12] sm:text-base">
-                  PrimeMatch
-                </h1>
-              </div>
-
-              <p className="hidden text-[10px] font-medium text-slate-400 sm:block">
-                Your personalized shopping assistant
+              <p className="text-sm font-black tracking-tight">
+                PrimeMatch
+              </p>
+              <p className="hidden text-[9px] font-bold uppercase tracking-[0.16em] text-gray-400 sm:block">
+                Smart shopping
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-full border border-[#eadfcb] bg-[#fffdf9] px-3 py-2 text-xs font-semibold text-slate-500 sm:flex">
-              <Target className="h-3.5 w-3.5 text-[#b8872d]" />
-              AI-powered matching
-            </div>
+          <Link
+            href="/dashboard/cart"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#e4dac8] bg-white text-gray-700 transition hover:border-[#c9a24d] hover:text-[#9b762b]"
+          >
+            <ShoppingCart size={18} />
 
-            <Link
-              href="/dashboard/cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfcb] bg-white text-slate-600 transition hover:border-[#d6b15a] hover:text-[#b8872d]"
-            >
-              <ShoppingCart className="h-4.5 w-4.5" />
-
-              {cartIds.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-black text-white">
-                  {cartIds.length}
-                </span>
-              )}
-            </Link>
-          </div>
+            {cartIds.length > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c9a24d] px-1 text-[9px] font-black text-white">
+                {cartIds.length}
+              </span>
+            )}
+          </Link>
         </div>
       </header>
 
-      {/* ===================================================
-          HERO
-      =================================================== */}
+      <div className="mx-auto max-w-[1500px] px-4 pb-16 pt-7 sm:px-6 lg:px-8">
+        {/* =================================================
+            HERO
+        ================================================= */}
 
-      <main>
-        <section className="relative overflow-hidden border-b border-[#eee5d3]">
-          <div className="absolute -left-32 -top-32 h-80 w-80 rounded-full bg-[#f7e9c5]/50 blur-3xl" />
-          <div className="absolute -right-32 top-10 h-96 w-96 rounded-full bg-[#f3e4bd]/40 blur-3xl" />
+        <section className="relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] via-white to-[#f9f5ea] px-6 py-9 shadow-sm sm:px-10 sm:py-12">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#e8cc83]/20 blur-3xl" />
 
-          <div className="relative mx-auto max-w-[1500px] px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-            <div className="grid items-center gap-10 lg:grid-cols-[1fr_360px]">
-              <div>
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#ead39c] bg-[#fff8e8] px-3 py-1.5 text-xs font-bold text-[#9a6c1e]"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Personalized shopping intelligence
-                </motion.div>
+          <div className="relative grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#e6d6af] bg-white/80 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#9b762b]">
+                <Sparkles size={12} />
+                Personalised shopping
+              </div>
 
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 }}
-                  className="max-w-3xl text-4xl font-black tracking-tight text-[#211c12] sm:text-5xl lg:text-6xl"
-                >
-                  Find products that{" "}
-                  <span className="bg-gradient-to-r from-[#9b6b1f] via-[#c79a3b] to-[#e0bd70] bg-clip-text text-transparent">
-                    actually fit you.
-                  </span>
-                </motion.h2>
+              <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
+                Find products that
+                <span className="block text-[#b58a32]">
+                  actually fit you.
+                </span>
+              </h1>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.16 }}
-                  className="mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base"
-                >
-                  Tell PrimeMatch what you need, how much you
-                  want to spend and what matters most. We'll
-                  analyze the available products and show you
-                  the strongest matches.
-                </motion.p>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-gray-500 sm:text-base">
+                Tell PrimeMatch what you need,
+                your budget, preferred category
+                and brand. We rank the available
+                products based on your priorities.
+              </p>
 
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <div className="flex items-center gap-2 rounded-xl border border-[#eee4d1] bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm">
-                    <ShieldCheck className="h-4 w-4 text-[#b8872d]" />
-                    Budget aware
-                  </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-gray-600 shadow-sm">
+                  <BadgeCheck
+                    size={15}
+                    className="text-[#b58a32]"
+                  />
+                  Smart ranking
+                </div>
 
-                  <div className="flex items-center gap-2 rounded-xl border border-[#eee4d1] bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm">
-                    <Star className="h-4 w-4 text-[#b8872d]" />
-                    Quality focused
-                  </div>
+                <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-gray-600 shadow-sm">
+                  <Target
+                    size={15}
+                    className="text-[#b58a32]"
+                  />
+                  Budget aware
+                </div>
 
-                  <div className="flex items-center gap-2 rounded-xl border border-[#eee4d1] bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm">
-                    <Target className="h-4 w-4 text-[#b8872d]" />
-                    Personalized
-                  </div>
+                <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-gray-600 shadow-sm">
+                  <Zap
+                    size={15}
+                    className="text-[#b58a32]"
+                  />
+                  Deal aware
+                </div>
+              </div>
+            </div>
+
+            {/* LIVE POTENTIAL */}
+            <div className="rounded-[28px] border border-[#e8d8b2] bg-white/90 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">
+                    Live Match Potential
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold text-gray-400">
+                    Based on your current preferences
+                  </p>
+                </div>
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff4d6] text-[#9b762b]">
+                  <TrendingUp
+                    size={19}
+                  />
                 </div>
               </div>
 
-              {/* Potential Card */}
-              <motion.div
-                initial={{
-                  opacity: 0,
-                  scale: 0.94,
-                  y: 15,
-                }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: 0.15,
-                  duration: 0.5,
-                }}
-                className="rounded-3xl border border-[#eadbbd] bg-white p-6 shadow-[0_20px_70px_rgba(120,90,30,0.09)]"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
-                      Live match potential
-                    </p>
+              <div className="mt-6 flex items-end gap-2">
+                <span className="text-5xl font-black text-gray-950">
+                  {livePotential}%
+                </span>
 
-                    <p className="mt-1 text-sm font-semibold text-slate-600">
-                      Based on your current choices
-                    </p>
-                  </div>
+                <span className="mb-2 text-xs font-bold text-gray-400">
+                  potential
+                </span>
+              </div>
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff7e3] text-[#b8872d]">
-                    <TrendingUp className="h-5 w-5" />
-                  </div>
-                </div>
+              <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#eee8dc]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#b58a32] to-[#e0c274] transition-all duration-700"
+                  style={{
+                    width: `${livePotential}%`,
+                  }}
+                />
+              </div>
 
-                <div className="mt-6 flex items-end justify-between">
-                  <div>
-                    <span className="text-5xl font-black text-[#211c12]">
-                      {livePotential}
-                    </span>
-                    <span className="ml-1 text-lg font-bold text-[#b8872d]">
-                      %
-                    </span>
-                  </div>
-
-                  <span className="mb-2 rounded-full bg-[#f6f1e6] px-3 py-1 text-[11px] font-bold text-[#80622e]">
-                    {livePotential >= 80
-                      ? "Excellent"
-                      : livePotential >= 65
-                      ? "Good"
-                      : "Needs tuning"}
-                  </span>
-                </div>
-
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#f2eee4]">
-                  <motion.div
-                    animate={{
-                      width: `${livePotential}%`,
-                    }}
-                    transition={{
-                      duration: 0.8,
-                    }}
-                    className="h-full rounded-full bg-gradient-to-r from-[#b8872d] to-[#e1bd69]"
-                  />
-                </div>
-
-                <p className="mt-4 text-xs leading-5 text-slate-400">
-                  Your score updates as you change the matching
-                  preferences.
-                </p>
-              </motion.div>
+              <p className="mt-4 text-xs leading-5 text-gray-500">
+                Adjust your preferences below
+                to change the ranking instantly.
+              </p>
             </div>
           </div>
         </section>
@@ -2020,1205 +2405,1616 @@ export default function PrimeMatchPage() {
             BUILDER
         ================================================= */}
 
-        <section className="mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8">
-          <div className="rounded-[32px] border border-[#eadfcb] bg-white p-5 shadow-[0_15px_55px_rgba(120,90,30,0.06)] sm:p-7 lg:p-8">
-            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff5d9] text-[#b8872d]">
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </span>
+        <section className="mt-8">
+          <div className="mb-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+              Step 1
+            </p>
 
-                  <h3 className="text-xl font-black text-[#211c12]">
-                    Build your shopping profile
+            <h2 className="mt-1 text-2xl font-black">
+              Tell us what you need
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              PrimeMatch uses these choices to
+              personalize your product ranking.
+            </p>
+          </div>
+
+          <div className="rounded-[28px] border border-[#e8dfcf] bg-white p-5 shadow-sm sm:p-7">
+            {/* PURPOSE */}
+
+            <div>
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-black">
+                    What is this for?
                   </h3>
+
+                  <p className="mt-1 text-xs text-gray-400">
+                    Choose the main purpose.
+                  </p>
                 </div>
 
-                <p className="mt-2 text-sm text-slate-400">
-                  Adjust these preferences before finding your
-                  Prime Match.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={resetPreferences}
-                className="flex items-center justify-center gap-2 rounded-xl border border-[#e7dfcf] px-4 py-2.5 text-xs font-bold text-slate-500 transition hover:border-[#d6b15a] hover:text-[#9a6c1e]"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset
-              </button>
-            </div>
-
-            {/* Purpose */}
-            <div className="mt-8">
-              <div className="mb-3 flex items-center justify-between">
-                <label className="text-sm font-bold text-[#211c12]">
-                  What are you shopping for?
-                </label>
-
-                <span className="text-xs text-slate-400">
-                  Choose one
+                <span className="rounded-full bg-[#fff6df] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
+                  Required
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                {PURPOSES.map((item) => {
-                  const selected = purpose === item.id;
+                {PURPOSES.map(
+                  (item) => {
+                    const selected =
+                      purpose ===
+                      item.id;
 
-                  return (
-                    <motion.button
-                      key={item.id}
-                      type="button"
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => {
-                        setPurpose(item.id);
-                        setMatched(false);
-                      }}
-                      className={`relative overflow-hidden rounded-2xl border p-4 text-left transition ${
-                        selected
-                          ? "border-[#d8b45e] bg-[#fff9eb] shadow-[0_8px_25px_rgba(190,145,45,0.12)]"
-                          : "border-[#eee5d3] bg-white hover:border-[#dcc487] hover:bg-[#fffdf8]"
-                      }`}
-                    >
-                      {selected && (
-                        <motion.div
-                          layoutId="purposeActive"
-                          className="absolute inset-0 rounded-2xl border-2 border-[#d8b45e]"
-                        />
-                      )}
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          setPurpose(
+                            item.id
+                          )
+                        }
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          selected
+                            ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm"
+                            : "border-[#eee5d6] bg-white hover:border-[#dbc58e] hover:bg-[#fffdfa]"
+                        }`}
+                      >
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-xl text-lg ${
+                            selected
+                              ? "bg-[#c9a24d] text-white"
+                              : "bg-[#f6f2e9] text-[#a17b2f]"
+                          }`}
+                        >
+                          {
+                            item.icon
+                          }
+                        </div>
 
-                      <div className="relative">
-                        <span className="text-xl">
-                          {item.icon}
-                        </span>
-
-                        <p className="mt-3 text-sm font-black text-[#211c12]">
-                          {item.label}
+                        <p className="mt-3 text-xs font-black">
+                          {
+                            item.title
+                          }
                         </p>
 
-                        <p className="mt-1 text-[10px] leading-4 text-slate-400">
-                          {item.description}
+                        <p className="mt-1 text-[10px] font-semibold text-gray-400">
+                          {
+                            item.subtitle
+                          }
                         </p>
-                      </div>
-                    </motion.button>
-                  );
-                })}
+                      </button>
+                    );
+                  }
+                )}
               </div>
             </div>
 
-            {/* Search */}
-            <div className="mt-8">
-              <label className="mb-3 block text-sm font-bold text-[#211c12]">
-                Looking for something specific?
+            {/* SEARCH */}
+            <div className="mt-7">
+              <label className="mb-2 block text-xs font-black text-gray-700">
+                Search for something specific
               </label>
 
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search
+                  size={17}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
 
                 <input
                   value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setMatched(false);
-                  }}
-                  placeholder="e.g. running shoes, smartphone, headphones..."
-                  className="h-12 w-full rounded-xl border border-[#e7dfcf] bg-[#fffdf9] pl-11 pr-4 text-sm text-[#211c12] outline-none transition placeholder:text-slate-400 focus:border-[#d3ae56] focus:ring-4 focus:ring-[#d3ae56]/10"
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="e.g. wireless headphones, running shoes, smartphone..."
+                  className="h-12 w-full rounded-2xl border border-[#e4dac8] bg-[#fffdfa] pl-11 pr-11 text-sm font-semibold outline-none transition placeholder:text-gray-400 focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                 />
+
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearch("")
+                    }
+                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  >
+                    <X
+                      size={14}
+                    />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Selects */}
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {/* Budget */}
+            {/* FILTER GRID */}
+            <div className="mt-7 grid gap-4 md:grid-cols-3">
+              {/* BUDGET */}
               <div>
-                <label className="mb-2 block text-xs font-bold text-slate-500">
+                <label className="mb-2 block text-xs font-black text-gray-700">
                   Budget
                 </label>
 
                 <div className="relative">
                   <select
                     value={budget}
-                    onChange={(event) => {
+                    onChange={(event) =>
                       setBudget(
-                        event.target.value as BudgetKey
-                      );
-                      setMatched(false);
-                    }}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#e7dfcf] bg-[#fffdf9] px-4 pr-10 text-sm font-semibold text-[#211c12] outline-none transition focus:border-[#d3ae56] focus:ring-4 focus:ring-[#d3ae56]/10"
+                        event.target
+                          .value
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                   >
-                    {BUDGETS.map((item) => (
-                      <option
-                        key={item.id}
-                        value={item.id}
-                      >
-                        {item.label}
-                      </option>
-                    ))}
+                    {BUDGETS.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {
+                            item.label
+                          }
+                        </option>
+                      )
+                    )}
                   </select>
 
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
                 </div>
               </div>
 
-              {/* Category */}
+              {/* CATEGORY */}
               <div>
-                <label className="mb-2 block text-xs font-bold text-slate-500">
+                <label className="mb-2 block text-xs font-black text-gray-700">
                   Category
                 </label>
 
                 <div className="relative">
                   <select
                     value={category}
-                    onChange={(event) => {
-                      setCategory(event.target.value);
-                      setMatched(false);
-                    }}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#e7dfcf] bg-[#fffdf9] px-4 pr-10 text-sm font-semibold text-[#211c12] outline-none transition focus:border-[#d3ae56] focus:ring-4 focus:ring-[#d3ae56]/10"
+                    onChange={(event) =>
+                      setCategory(
+                        event.target
+                          .value
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                   >
                     <option value="all">
                       All Categories
                     </option>
 
-                    {categories.map((item) => (
-                      <option
-                        key={item.id}
-                        value={item.id}
-                      >
-                        {item.name}
-                      </option>
-                    ))}
+                    {categories.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {
+                            item.name
+                          }
+                        </option>
+                      )
+                    )}
                   </select>
 
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
                 </div>
               </div>
 
-              {/* Brand */}
+              {/* BRAND */}
               <div>
-                <label className="mb-2 block text-xs font-bold text-slate-500">
+                <label className="mb-2 block text-xs font-black text-gray-700">
                   Brand
                 </label>
 
                 <div className="relative">
                   <select
                     value={brand}
-                    onChange={(event) => {
-                      setBrand(event.target.value);
-                      setMatched(false);
-                    }}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#e7dfcf] bg-[#fffdf9] px-4 pr-10 text-sm font-semibold text-[#211c12] outline-none transition focus:border-[#d3ae56] focus:ring-4 focus:ring-[#d3ae56]/10"
+                    onChange={(event) =>
+                      setBrand(
+                        event.target
+                          .value
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                   >
                     <option value="Any Brand">
                       Any Brand
                     </option>
 
-                    {brands.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
+                    {brands.map(
+                      (item) => (
+                        <option
+                          key={
+                            item
+                          }
+                          value={
+                            item
+                          }
+                        >
+                          {
+                            item
+                          }
+                        </option>
+                      )
+                    )}
                   </select>
 
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown
+                    size={16}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Importance */}
-            <div className="mt-8 rounded-2xl border border-[#eee5d3] bg-[#fcfaf5] p-5">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h4 className="text-sm font-black text-[#211c12]">
-                    What matters most to you?
-                  </h4>
+            {/* IMPORTANCE */}
+            <div className="mt-8 border-t border-[#eee5d6] pt-7">
+              <div className="mb-4">
+                <h3 className="text-sm font-black">
+                  What matters most to you?
+                </h3>
 
-                  <p className="mt-1 text-xs text-slate-400">
-                    PrimeMatch uses these weights while comparing
-                    products.
-                  </p>
-                </div>
-
-                <div className="mt-2 flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-[#9a6c1e] ring-1 ring-[#ead9ad] sm:mt-0">
-                  <Sparkles className="h-3 w-3" />
-                  Smart weighting
-                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  Move the sliders to personalize
+                  your recommendation weights.
+                </p>
               </div>
 
-              <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {(
-                  [
-                    ["budget", "Budget", WalletCards],
-                    ["quality", "Quality", Award],
-                    ["brand", "Brand", Tags],
-                    ["rating", "Rating", Star],
-                  ] as const
-                ).map(
-                  ([key, label, Icon]) => (
-                    <div key={key}>
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-3.5 w-3.5 text-[#b8872d]" />
-                          <span className="text-xs font-bold text-slate-600">
-                            {label}
-                          </span>
-                        </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ImportanceSlider
+                  label="Budget"
+                  value={
+                    importance.budget
+                  }
+                  onChange={(
+                    value
+                  ) =>
+                    setImportance(
+                      (
+                        previous
+                      ) => ({
+                        ...previous,
+                        budget:
+                          value,
+                      })
+                    )
+                  }
+                />
 
-                        <span className="text-xs font-black text-[#9a6c1e]">
-                          {importance[key]}%
-                        </span>
-                      </div>
+                <ImportanceSlider
+                  label="Quality"
+                  value={
+                    importance.quality
+                  }
+                  onChange={(
+                    value
+                  ) =>
+                    setImportance(
+                      (
+                        previous
+                      ) => ({
+                        ...previous,
+                        quality:
+                          value,
+                      })
+                    )
+                  }
+                />
 
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={importance[key]}
-                        onChange={(event) => {
-                          setImportance((current) => ({
-                            ...current,
-                            [key]: Number(
-                              event.target.value
-                            ),
-                          }));
+                <ImportanceSlider
+                  label="Brand"
+                  value={
+                    importance.brand
+                  }
+                  onChange={(
+                    value
+                  ) =>
+                    setImportance(
+                      (
+                        previous
+                      ) => ({
+                        ...previous,
+                        brand:
+                          value,
+                      })
+                    )
+                  }
+                />
 
-                          setMatched(false);
-                        }}
-                        className="w-full accent-[#b8872d]"
-                      />
-                    </div>
-                  )
-                )}
+                <ImportanceSlider
+                  label="Rating"
+                  value={
+                    importance.rating
+                  }
+                  onChange={(
+                    value
+                  ) =>
+                    setImportance(
+                      (
+                        previous
+                      ) => ({
+                        ...previous,
+                        rating:
+                          value,
+                      })
+                    )
+                  }
+                />
               </div>
             </div>
 
-            {/* Selected Chips */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              <span className="flex items-center gap-1.5 rounded-full border border-[#eadfcb] bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#b8872d]" />
+            {/* SELECTED FILTERS */}
+            <div className="mt-7 flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Selected:
+              </span>
+
+              <span className="rounded-full bg-[#fff4d6] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
                 {
                   PURPOSES.find(
-                    (item) => item.id === purpose
-                  )?.label
+                    (item) =>
+                      item.id ===
+                      purpose
+                  )?.title
                 }
               </span>
 
-              <span className="rounded-full border border-[#eadfcb] bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600">
+              <span className="rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black text-gray-600">
                 {
                   BUDGETS.find(
-                    (item) => item.id === budget
+                    (item) =>
+                      item.id ===
+                      budget
                   )?.label
                 }
               </span>
 
-              <span className="rounded-full border border-[#eadfcb] bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600">
-                {category === "all"
-                  ? "All Categories"
-                  : categories.find(
-                      (item) => item.id === category
-                    )?.name || "Category"}
+              <span className="rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black text-gray-600">
+                {activeCategory
+                  ?.name ||
+                  "All Categories"}
               </span>
 
-              <span className="rounded-full border border-[#eadfcb] bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600">
+              <span className="rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black text-gray-600">
                 {brand}
               </span>
+
+              <button
+                type="button"
+                onClick={
+                  resetPreferences
+                }
+                className="ml-auto flex items-center gap-1.5 text-[10px] font-black text-gray-400 transition hover:text-[#9b762b]"
+              >
+                <RefreshCw
+                  size={12}
+                />
+                Reset
+              </button>
             </div>
 
-            {/* Find Button */}
+            {/* FIND MATCH */}
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <motion.button
+              <button
                 type="button"
-                onClick={runMatch}
-                disabled={matching}
-                whileHover={
-                  !matching
-                    ? {
-                        y: -2,
-                      }
-                    : undefined
+                onClick={
+                  runMatch
                 }
-                whileTap={
-                  !matching
-                    ? {
-                        scale: 0.98,
-                      }
-                    : undefined
+                disabled={
+                  loading ||
+                  matching
                 }
-                className="flex h-14 flex-1 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#a87522] via-[#c79a3b] to-[#d8b35e] px-6 text-sm font-black text-white shadow-[0_12px_30px_rgba(183,135,45,0.25)] transition disabled:cursor-not-allowed disabled:opacity-80"
+                className="flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#171717] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-black/10 transition hover:bg-[#2b2b2b] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {matching ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Finding your Prime Match...
+                    <Loader2
+                      size={18}
+                      className="animate-spin"
+                    />
+                    Finding your match...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-5 w-5" />
+                    <Sparkles
+                      size={18}
+                    />
                     Find My Prime Match
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight
+                      size={17}
+                    />
                   </>
                 )}
-              </motion.button>
+              </button>
 
               <Link
                 href="/dashboard/products"
-                className="flex h-14 items-center justify-center gap-2 rounded-2xl border border-[#e4d9c4] bg-white px-6 text-sm font-bold text-slate-600 transition hover:border-[#d5b15b] hover:text-[#9a6c1e]"
+                className="flex h-13 items-center justify-center gap-2 rounded-2xl border border-[#dfd3bf] bg-white px-6 py-3.5 text-sm font-black text-gray-700 transition hover:border-[#c9a24d] hover:text-[#9b762b]"
               >
-                Browse All Products
+                Browse all products
               </Link>
             </div>
           </div>
         </section>
 
-        {/* =================================================
-            MATCHING ANIMATION
-        ================================================= */}
+              {/* MATCHING ANIMATION */}
 
-        <AnimatePresence>
-          {matching && (
-            <motion.section
-              initial={{
-                opacity: 0,
-                height: 0,
-              }}
-              animate={{
-                opacity: 1,
-                height: "auto",
-              }}
-              exit={{
-                opacity: 0,
-                height: 0,
-              }}
-              className="overflow-hidden"
-            >
-              <div className="mx-auto max-w-[1000px] px-4 pb-12 sm:px-6 lg:px-8">
-                <div className="rounded-[32px] border border-[#eadfcb] bg-white p-7 shadow-[0_20px_70px_rgba(120,90,30,0.08)] sm:p-10">
-                  <div className="text-center">
-                    <motion.div
-                      animate={{
-                        rotate: 360,
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5d9] text-[#b8872d]"
-                    >
-                      <Sparkles className="h-7 w-7" />
-                    </motion.div>
+{matching && (
+  <section className="mt-8">
+    <div className="overflow-hidden rounded-[30px] border border-[#e8dfcf] bg-white shadow-sm">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#fffaf0] via-white to-[#f8f3e7] px-6 py-12 sm:px-10 sm:py-16">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8cc83]/20 blur-3xl" />
 
-                    <h3 className="mt-5 text-2xl font-black text-[#211c12]">
-                      PrimeMatch is analyzing your choices
-                    </h3>
+        <div className="relative mx-auto max-w-2xl text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[26px] bg-[#fff1c8] text-[#a17b2f] shadow-sm">
+            <Sparkles
+              size={34}
+              className="animate-pulse"
+            />
+          </div>
 
-                    <p className="mt-2 text-sm text-slate-400">
-                      Comparing products across multiple signals...
-                    </p>
-                  </div>
+          <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-[#a17b2f]">
+            PrimeMatch Intelligence
+          </p>
 
-                  <div className="mx-auto mt-8 max-w-xl space-y-3">
-                    {MATCHING_STAGES.map(
-                      (stage, index) => {
-                        const Icon = stage.icon;
+          <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+            Finding your perfect match
+          </h2>
 
-                        const active =
-                          index === matchStage;
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-gray-500">
+            We are analysing your preferences,
+            budget, product quality and ratings.
+          </p>
 
-                        const complete =
-                          index < matchStage;
+          <div className="mx-auto mt-8 max-w-xl space-y-3 text-left">
+            {[
+              {
+                title: "Understanding your preferences",
+                icon: Target,
+              },
+              {
+                title: "Scanning available products",
+                icon: Search,
+              },
+              {
+                title: "Checking your budget",
+                icon: ShoppingBag,
+              },
+              {
+                title: "Comparing quality & ratings",
+                icon: Star,
+              },
+              {
+                title: "Finding your best matches",
+                icon: Sparkles,
+              },
+            ].map((stage, index) => {
+              const Icon = stage.icon;
 
-                        return (
-                          <motion.div
-                            key={stage.label}
-                            initial={{
-                              opacity: 0,
-                              x: -15,
-                            }}
-                            animate={{
-                              opacity: 1,
-                              x: 0,
-                            }}
-                            transition={{
-                              delay: index * 0.08,
-                            }}
-                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition ${
-                              active
-                                ? "border-[#dfc27d] bg-[#fff9eb]"
-                                : complete
-                                ? "border-[#e7dfcf] bg-[#fcfaf5]"
-                                : "border-transparent bg-[#faf9f6]"
-                            }`}
-                          >
-                            <div
-                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                                active
-                                  ? "bg-[#b8872d] text-white"
-                                  : complete
-                                  ? "bg-[#fff1c9] text-[#9a6c1e]"
-                                  : "bg-white text-slate-300"
-                              }`}
-                            >
-                              {complete ? (
-                                <Check className="h-4 w-4" />
-                              ) : active ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Icon className="h-4 w-4" />
-                              )}
-                            </div>
+              const active =
+                matchStage === index;
 
-                            <span
-                              className={`text-sm font-bold ${
-                                active ||
-                                complete
-                                  ? "text-[#211c12]"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              {stage.label}
-                            </span>
+              const completed =
+                matchStage > index;
 
-                            {active && (
-                              <motion.span
-                                initial={{
-                                  opacity: 0,
-                                }}
-                                animate={{
-                                  opacity: 1,
-                                }}
-                                className="ml-auto text-[10px] font-bold uppercase tracking-wider text-[#b8872d]"
-                              >
-                                Working
-                              </motion.span>
-                            )}
-                          </motion.div>
-                        );
-                      }
+              return (
+                <div
+                  key={stage.title}
+                  className={`flex items-center gap-4 rounded-2xl border p-4 transition-all duration-500 ${
+                    active
+                      ? "border-[#d8bd70] bg-[#fff8e8] shadow-sm"
+                      : completed
+                      ? "border-[#e7dcc5] bg-[#fffdfa]"
+                      : "border-[#eee7db] bg-white"
+                  }`}
+                >
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all ${
+                      active
+                        ? "bg-[#c9a24d] text-white"
+                        : completed
+                        ? "bg-[#fff0c8] text-[#a17b2f]"
+                        : "bg-[#f5f2eb] text-gray-400"
+                    }`}
+                  >
+                    {completed ? (
+                      <Check size={17} />
+                    ) : active ? (
+                      <Icon
+                        size={17}
+                        className="animate-pulse"
+                      />
+                    ) : (
+                      <Icon size={17} />
                     )}
                   </div>
+
+                  <div className="flex-1">
+                    <p
+                      className={`text-xs font-black ${
+                        active
+                          ? "text-[#8f6b25]"
+                          : completed
+                          ? "text-gray-700"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {stage.title}
+                    </p>
+
+                    {active && (
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfca]">
+                        <div className="h-full w-1/2 animate-[pulse_1s_ease-in-out_infinite] rounded-full bg-[#c9a24d]" />
+                      </div>
+                    )}
+                  </div>
+
+                  {completed && (
+                    <Check
+                      size={17}
+                      className="text-[#b58a32]"
+                    />
+                  )}
+
+                  {active && (
+                    <Loader2
+                      size={17}
+                      className="animate-spin text-[#b58a32]"
+                    />
+                  )}
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
+        {error && (
+          <div className="mt-7 rounded-[24px] border border-red-200 bg-red-50 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-red-700">
+                  PrimeMatch could not load.
+                </p>
+
+                <p className="mt-1 text-xs text-red-500">
+                  {error}
+                </p>
               </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
+
+              <button
+                type="button"
+                onClick={
+                  loadData
+                }
+                className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-black text-white"
+              >
+                <RefreshCw
+                  size={14}
+                />
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* =================================================
             RESULTS
         ================================================= */}
 
-        <section
-          id="match-results"
-          className="mx-auto max-w-[1500px] scroll-mt-24 px-4 pb-14 sm:px-6 lg:px-8"
-        >
-          {/* PRE-MATCH STATE */}
-          {!matched && !matching && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 15,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              className="rounded-[32px] border border-dashed border-[#dccb9e] bg-gradient-to-br from-[#fffaf0] to-white px-6 py-16 text-center sm:px-10"
-            >
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#fff3ce] text-[#b8872d] shadow-sm">
-                <Target className="h-9 w-9" />
-              </div>
-
-              <h3 className="mt-6 text-2xl font-black text-[#211c12]">
-                Your matches are waiting
-              </h3>
-
-              <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">
-                No products are shown yet. Set your preferences
-                above and click{" "}
-                <span className="font-bold text-[#9a6c1e]">
-                  Find My Prime Match
-                </span>{" "}
-                to start the personalized matching process.
-              </p>
-
-              <div className="mx-auto mt-7 flex max-w-md flex-wrap justify-center gap-2">
-                <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-[#eadfcb]">
-                  Budget
-                </span>
-
-                <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-[#eadfcb]">
-                  Quality
-                </span>
-
-                <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-[#eadfcb]">
-                  Rating
-                </span>
-
-                <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500 ring-1 ring-[#eadfcb]">
-                  Brand
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ERROR */}
-          {error && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 10,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {/* MATCHED */}
-          {matched && !matching && (
+        {!loading &&
+          matched &&
+          topMatch && (
             <>
-              {results.length === 0 ? (
-                <motion.div
-                  initial={{
-                    opacity: 0,
-                    scale: 0.98,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                  }}
-                  className="rounded-[32px] border border-[#eadfcb] bg-white px-6 py-16 text-center shadow-sm sm:px-10"
-                >
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#fff7e3] text-[#b8872d]">
-                    <Search className="h-8 w-8" />
-                  </div>
+              {/* TOP MATCH */}
+              <section
+                id="match-results"
+                className="mt-10 scroll-mt-24"
+              >
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Sparkles
+                        size={16}
+                        className="text-[#b58a32]"
+                      />
 
-                  <h3 className="mt-6 text-2xl font-black text-[#211c12]">
-                    We couldn't find an exact match
-                  </h3>
-
-                  <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-400">
-                    Try choosing{" "}
-                    <span className="font-bold">
-                      All Categories
-                    </span>{" "}
-                    or{" "}
-                    <span className="font-bold">
-                      Any Brand
-                    </span>
-                    , or use a broader search term.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategory("all");
-                      setBrand("Any Brand");
-                      setSearch("");
-                      setMatched(false);
-                    }}
-                    className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#b8872d] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#a77724]"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Adjust Preferences
-                  </button>
-                </motion.div>
-              ) : (
-                <>
-                  {/* TOP MATCH */}
-                  {topMatch && (
-                    <motion.div
-                      initial={{
-                        opacity: 0,
-                        y: 25,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                      }}
-                      transition={{
-                        duration: 0.5,
-                      }}
-                      className="overflow-hidden rounded-[32px] border border-[#ead9ad] bg-white shadow-[0_18px_65px_rgba(120,90,30,0.09)]"
-                    >
-                      <div className="border-b border-[#eee5d3] bg-gradient-to-r from-[#fffaf0] via-white to-[#fff8e8] px-5 py-4 sm:px-7">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d] text-white shadow-sm">
-                              <Crown className="h-5 w-5" />
-                            </div>
-
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a67826]">
-                                Your Prime Match
-                              </p>
-
-                              <p className="text-sm font-bold text-[#211c12]">
-                                Strongest match based on your preferences
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1.5 rounded-full bg-[#fff2c9] px-3 py-1.5 text-xs font-black text-[#93671d]">
-                              <Sparkles className="h-3.5 w-3.5" />
-                              {topMatch.score}% Match
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-                        {/* IMAGE */}
-                        <div className="relative min-h-[360px] overflow-hidden bg-[#faf8f3]">
-                          <ProductImage
-                            product={topMatch}
-                            className="h-full min-h-[360px] w-full object-contain p-10 transition-transform duration-700 hover:scale-105"
-                          />
-
-                          <div className="absolute bottom-5 left-5 flex flex-wrap gap-2">
-                            {discount(topMatch) > 0 && (
-                              <span className="rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-[#a65c1d] shadow-sm">
-                                {discount(topMatch)}% OFF
-                              </span>
-                            )}
-
-                            {topMatch.is_flash_sale && (
-                              <span className="flex items-center gap-1 rounded-full bg-[#17130b]/90 px-3 py-1.5 text-[11px] font-black text-white">
-                                <Zap className="h-3 w-3" />
-                                Flash Deal
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* CONTENT */}
-                        <div className="p-6 sm:p-8">
-                          <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-[#f8f4eb] px-3 py-1.5 text-[11px] font-bold text-[#8f6b2b]">
-                              {topMatch.brand ||
-                                "PrimeCart"}
-                            </span>
-
-                            <span className="text-xs text-slate-400">
-                              {categoryMap.get(
-                                topMatch.category_id || ""
-                              ) || "General"}
-                            </span>
-                          </div>
-
-                          <Link
-                            href={`/dashboard/products/${topMatch.id}`}
-                            className="mt-4 block text-2xl font-black leading-tight text-[#211c12] transition hover:text-[#b8872d] sm:text-3xl"
-                          >
-                            {topMatch.name}
-                          </Link>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-3">
-                            <span className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                              <Star className="h-4 w-4 fill-[#b8872d] text-[#b8872d]" />
-                              {Number(
-                                topMatch.rating || 0
-                              ).toFixed(1)}
-                            </span>
-
-                            <span className="text-xs text-slate-400">
-                              {topMatch.reviews_count || 0} reviews
-                            </span>
-
-                            {Number(
-                              topMatch.stock || 0
-                            ) > 0 && (
-                              <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-                                <Check className="h-3.5 w-3.5" />
-                                In stock
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-5 flex items-end gap-3">
-                            <span className="text-3xl font-black text-[#211c12]">
-                              {money(
-                                Number(topMatch.price || 0)
-                              )}
-                            </span>
-
-                            {topMatch.original_price &&
-                              topMatch.original_price >
-                                topMatch.price && (
-                                <span className="pb-1 text-sm text-slate-400 line-through">
-                                  {money(
-                                    Number(
-                                      topMatch.original_price
-                                    )
-                                  )}
-                                </span>
-                              )}
-                          </div>
-
-                          <div className="mt-7 rounded-2xl border border-[#eee5d3] bg-[#fcfaf5] p-4">
-                            <div className="mb-4 flex items-center justify-between">
-                              <div>
-                                <p className="text-xs font-black text-[#211c12]">
-                                  Why this matches
-                                </p>
-
-                                <p className="mt-1 text-[10px] text-slate-400">
-                                  Based on your current profile
-                                </p>
-                              </div>
-
-                              <div className="text-2xl font-black text-[#b8872d]">
-                                {topMatch.score}%
-                              </div>
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <ScoreBar
-                                label="Purpose"
-                                value={
-                                  topMatch.breakdown
-                                    .purpose
-                                }
-                              />
-
-                              <ScoreBar
-                                label="Budget"
-                                value={
-                                  topMatch.breakdown
-                                    .budget
-                                }
-                              />
-
-                              <ScoreBar
-                                label="Quality"
-                                value={
-                                  topMatch.breakdown
-                                    .quality
-                                }
-                              />
-
-                              <ScoreBar
-                                label="Rating"
-                                value={
-                                  topMatch.breakdown
-                                    .rating
-                                }
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mt-5 space-y-2">
-                            {topMatch.reasons.map(
-                              (reason) => (
-                                <div
-                                  key={reason}
-                                  className="flex items-center gap-2 text-xs font-semibold text-slate-600"
-                                >
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#fff2cf] text-[#a97825]">
-                                    <Check className="h-3 w-3" />
-                                  </span>
-                                  {reason}
-                                </div>
-                              )
-                            )}
-                          </div>
-
-                          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addToCart(topMatch)
-                              }
-                              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#b8872d] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#a77724]"
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                              Add to Cart
-                            </button>
-
-                            <Link
-                              href={`/dashboard/products/${topMatch.id}`}
-                              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#e2d7c2] px-5 py-3.5 text-sm font-black text-slate-600 transition hover:border-[#d2ad56] hover:text-[#9a6c1e]"
-                            >
-                              View Product
-                              <ArrowRight className="h-4 w-4" />
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* SMART ALTERNATIVES */}
-                  <div className="mt-10">
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a67826]">
-                          Smart alternatives
-                        </p>
-
-                        <h3 className="mt-1 text-2xl font-black text-[#211c12]">
-                          More ways to shop your match
-                        </h3>
-                      </div>
-
-                      <p className="text-xs text-slate-400">
-                        Different strengths, same personalized profile
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                        Your Prime Match
                       </p>
                     </div>
 
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                      {[
-                        {
-                          item: bestValue,
-                          title: "Best Value",
-                          icon: WalletCards,
-                          text: "Strong balance of price & match",
-                        },
-                        {
-                          item: budgetPick,
-                          title: "Budget Pick",
-                          icon: BadgeCheck,
-                          text: "Closest fit to your budget",
-                        },
-                        {
-                          item: topRated,
-                          title: "Top Rated",
-                          icon: Star,
-                          text: "Highest shopper rating",
-                        },
-                        {
-                          item: premiumPick,
-                          title: "Premium Pick",
-                          icon: Crown,
-                          text: "Higher-end option",
-                        },
-                      ].map(
-                        ({
-                          item,
-                          title,
-                          icon: Icon,
-                          text,
-                        }) => {
-                          if (!item) return null;
+                    <h2 className="mt-1 text-2xl font-black sm:text-3xl">
+                      We found a strong match.
+                    </h2>
 
-                          return (
-                            <motion.div
-                              key={`${title}-${item.id}`}
-                              whileHover={{
-                                y: -4,
-                              }}
-                              className="rounded-2xl border border-[#eee5d3] bg-white p-4 shadow-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d]">
-                                  <Icon className="h-4 w-4" />
-                                </span>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Based on your selected
+                      preferences and product data.
+                    </p>
+                  </div>
 
-                                <span className="text-lg font-black text-[#b8872d]">
-                                  {item.score}%
-                                </span>
-                              </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMatched(
+                        false
+                      )
+                    }
+                    className="flex items-center gap-2 text-xs font-black text-[#9b762b]"
+                  >
+                    Change preferences
+                    <ArrowRight
+                      size={14}
+                    />
+                  </button>
+                </div>
 
-                              <p className="mt-4 text-sm font-black text-[#211c12]">
-                                {title}
-                              </p>
-
-                              <p className="mt-1 text-[11px] text-slate-400">
-                                {text}
-                              </p>
-
-                              <div className="mt-3 flex items-center justify-between gap-3">
-                                <span className="line-clamp-1 text-xs font-semibold text-slate-600">
-                                  {item.name}
-                                </span>
-
-                                <Link
-                                  href={`/dashboard/products/${item.id}`}
-                                  className="shrink-0 text-[#b8872d]"
-                                >
-                                  <ArrowRight className="h-4 w-4" />
-                                </Link>
-                              </div>
-                            </motion.div>
-                          );
+                <div className="overflow-hidden rounded-[30px] border border-[#dec68b] bg-[#fffaf0] shadow-sm">
+                  <div className="grid lg:grid-cols-[.9fr_1.1fr]">
+                    {/* IMAGE */}
+                    <div className="relative min-h-[420px] bg-white">
+                      <ProductImage
+                        src={getImageUrl(
+                          topMatch.image_url
+                        )}
+                        alt={
+                          topMatch.name
                         }
-                      )}
-                    </div>
-                  </div>
+                        className="h-full min-h-[420px] w-full object-contain p-10"
+                      />
 
-                  {/* PRODUCTS */}
-                  <div className="mt-12">
-                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-[#b8872d]" />
-
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#a67826]">
-                            Matched products
-                          </p>
-                        </div>
-
-                        <h3 className="mt-1 text-2xl font-black text-[#211c12]">
-                          Products that fit your profile
-                        </h3>
-
-                        <p className="mt-1 text-sm text-slate-400">
-                          {results.length} personalized result
-                          {results.length === 1 ? "" : "s"} found
-                        </p>
+                      <div className="absolute left-6 top-6 rounded-full bg-[#171717] px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+                        #1 Prime Match
                       </div>
 
-                      <div className="flex items-center gap-2 rounded-full bg-[#f8f4eb] px-3 py-1.5 text-[11px] font-bold text-[#80622e]">
-                        <Filter className="h-3 w-3" />
-                        Sorted by match score
+                      <div className="absolute bottom-6 left-6 rounded-full border border-[#eadfca] bg-white/95 px-4 py-2 text-xs font-black text-[#9b762b] shadow-sm">
+                        {topMatch.matchScore}% Match
                       </div>
                     </div>
 
-                    <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {results.map((product, index) => (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          rank={index + 1}
-                          onAddToCart={addToCart}
-                          onWishlist={toggleWishlist}
-                          isWishlisted={wishlist.includes(
-                            product.id
-                          )}
-                          compareIds={compareIds}
-                          onToggleCompare={toggleCompare}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                    {/* DETAILS */}
+                    <div className="p-6 sm:p-9">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#9b762b]">
+                          {
+                            topMatch.categoryName
+                          }
+                        </span>
 
-                  {/* COMPARE */}
-                  <AnimatePresence>
-                    {compareProducts.length >= 2 && (
-                      <motion.div
-                        initial={{
-                          opacity: 0,
-                          y: 20,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        exit={{
-                          opacity: 0,
-                          y: 20,
-                        }}
-                        className="mt-12 overflow-hidden rounded-3xl border border-[#eadfcb] bg-white shadow-sm"
-                      >
-                        <div className="flex flex-col justify-between gap-3 border-b border-[#eee5d3] bg-[#fcfaf5] p-5 sm:flex-row sm:items-center">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <BarChart3 className="h-4 w-4 text-[#b8872d]" />
-
-                              <h3 className="text-lg font-black text-[#211c12]">
-                                Compare your matches
-                              </h3>
-                            </div>
-
-                            <p className="mt-1 text-xs text-slate-400">
-                              Compare up to 3 personalized recommendations.
-                            </p>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCompareIds([])
+                        {topMatch.brand && (
+                          <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-gray-600">
+                            {
+                              topMatch.brand
                             }
-                            className="text-xs font-bold text-slate-400 hover:text-[#9a6c1e]"
-                          >
-                            Clear comparison
-                          </button>
-                        </div>
+                          </span>
+                        )}
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full min-w-[720px] border-collapse">
-                            <thead>
-                              <tr>
-                                <th className="w-40 border-b border-[#eee5d3] p-4 text-left text-xs font-bold text-slate-400">
-                                  Feature
-                                </th>
+                        {topMatch.is_flash_sale && (
+                          <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-[10px] font-black text-red-600">
+                            <Zap
+                              size={11}
+                            />
+                            Flash Deal
+                          </span>
+                        )}
+                      </div>
 
-                                {compareProducts.map(
-                                  (product) => (
-                                    <th
-                                      key={product.id}
-                                      className="border-b border-[#eee5d3] p-4 text-left"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="h-12 w-12 shrink-0 rounded-xl bg-[#faf8f3] p-1">
-                                          <ProductImage
-                                            product={product}
-                                            className="h-full w-full object-contain"
-                                          />
-                                        </div>
+                      <h3 className="mt-4 text-3xl font-black leading-tight">
+                        {
+                          topMatch.name
+                        }
+                      </h3>
 
-                                        <div className="min-w-0">
-                                          <p className="line-clamp-2 text-xs font-black text-[#211c12]">
-                                            {product.name}
-                                          </p>
+                      {topMatch.short_description && (
+                        <p className="mt-3 max-w-xl text-sm leading-6 text-gray-500">
+                          {
+                            topMatch.short_description
+                          }
+                        </p>
+                      )}
 
-                                          <p className="mt-1 text-[11px] font-bold text-[#b8872d]">
-                                            {product.score}% match
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </th>
-                                  )
-                                )}
-                              </tr>
-                            </thead>
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <span className="flex items-center gap-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-[#956f27]">
+                          <Star
+                            size={13}
+                            fill="currentColor"
+                          />
+                          {Number(
+                            topMatch.rating ||
+                              0
+                          ).toFixed(
+                            1
+                          )}
+                        </span>
 
-                            <tbody>
-                              {[
-                                [
-                                  "Price",
-                                  (product: MatchProduct) =>
-                                    money(
-                                      Number(product.price || 0)
-                                    ),
-                                ],
-                                [
-                                  "Rating",
-                                  (product: MatchProduct) =>
-                                    `${Number(
-                                      product.rating || 0
-                                    ).toFixed(1)} / 5`,
-                                ],
-                                [
-                                  "Budget Fit",
-                                  (product: MatchProduct) =>
-                                    `${product.breakdown.budget}%`,
-                                ],
-                                [
-                                  "Quality",
-                                  (product: MatchProduct) =>
-                                    `${product.breakdown.quality}%`,
-                                ],
-                                [
-                                  "Purpose Fit",
-                                  (product: MatchProduct) =>
-                                    `${product.breakdown.purpose}%`,
-                                ],
-                              ].map(
-                                ([label, getValue]) => (
-                                  <tr key={String(label)}>
-                                    <td className="border-b border-[#f1ebdf] p-4 text-xs font-bold text-slate-500">
-                                      {label}
-                                    </td>
+                        <span className="text-xs text-gray-400">
+                          {
+                            topMatch.reviews_count
+                          }{" "}
+                          reviews
+                        </span>
 
-                                    {compareProducts.map(
-                                      (product) => (
-                                        <td
-                                          key={product.id}
-                                          className="border-b border-[#f1ebdf] p-4 text-sm font-black text-[#211c12]"
-                                        >
-                                          {(
-                                            getValue as (
-                                              product: MatchProduct
-                                            ) => string
-                                          )(product)}
-                                        </td>
-                                      )
-                                    )}
-                                  </tr>
+                        <span className="text-xs font-black text-green-600">
+                          {topMatch.stock >
+                          0
+                            ? "In stock"
+                            : "Out of stock"}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 flex items-end gap-3">
+                        <span className="text-3xl font-black">
+                          {money(
+                            Number(
+                              topMatch.price
+                            )
+                          )}
+                        </span>
+
+                        {topMatch.original_price &&
+                          Number(
+                            topMatch.original_price
+                          ) >
+                            Number(
+                              topMatch.price
+                            ) && (
+                            <span className="mb-1 text-sm text-gray-400 line-through">
+                              {money(
+                                Number(
+                                  topMatch.original_price
                                 )
                               )}
-                            </tbody>
-                          </table>
+                            </span>
+                          )}
+                      </div>
+
+                      {/* WHY */}
+                      <div className="mt-7">
+                        <div className="mb-4 flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0c8] text-[#9b762b]">
+                            <Target
+                              size={15}
+                            />
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-black">
+                              Why this matches
+                            </p>
+
+                            <p className="text-[10px] font-semibold text-gray-400">
+                              Your preference breakdown
+                            </p>
+                          </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <ScoreBar
+                            label="Budget fit"
+                            value={
+                              topMatch
+                                .breakdown
+                                .budget
+                            }
+                          />
+
+                          <ScoreBar
+                            label="Category"
+                            value={
+                              topMatch
+                                .breakdown
+                                .category
+                            }
+                          />
+
+                          <ScoreBar
+                            label="Purpose"
+                            value={
+                              topMatch
+                                .breakdown
+                                .purpose
+                            }
+                          />
+
+                          <ScoreBar
+                            label="Rating"
+                            value={
+                              topMatch
+                                .breakdown
+                                .rating
+                            }
+                          />
+
+                          <ScoreBar
+                            label="Brand"
+                            value={
+                              topMatch
+                                .breakdown
+                                .brand
+                            }
+                          />
+
+                          <ScoreBar
+                            label="Availability"
+                            value={
+                              topMatch
+                                .breakdown
+                                .availability
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {/* REASONS */}
+                      <div className="mt-6 rounded-2xl border border-[#eadfc8] bg-white/70 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a17b2f]">
+                          Match highlights
+                        </p>
+
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {topMatch.reasons.map(
+                            (
+                              reason
+                            ) => (
+                              <div
+                                key={
+                                  reason
+                                }
+                                className="flex items-center gap-2 text-xs font-semibold text-gray-600"
+                              >
+                                <Check
+                                  size={
+                                    14
+                                  }
+                                  className="text-[#b58a32]"
+                                />
+                                {
+                                  reason
+                                }
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ACTIONS */}
+                      <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_1fr]">
+                        <button
+                          type="button"
+                          disabled={
+                            topMatch.stock <=
+                            0
+                          }
+                          onClick={() =>
+                            addToCart(
+                              topMatch
+                            )
+                          }
+                          className="flex items-center justify-center gap-2 rounded-2xl bg-[#171717] px-5 py-3.5 text-xs font-black text-white transition hover:bg-[#2b2b2b] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                        >
+                          <ShoppingCart
+                            size={16}
+                          />
+                          {cartIds.includes(
+                            topMatch.id
+                          )
+                            ? "Added to Cart"
+                            : "Add to Cart"}
+                        </button>
+
+                        <Link
+                          href={`/dashboard/products/${topMatch.id}`}
+                          className="flex items-center justify-center gap-2 rounded-2xl border border-[#d9c79f] bg-white px-5 py-3.5 text-xs font-black text-[#956f27] transition hover:bg-[#fff8e8]"
+                        >
+                          View Product
+                          <ArrowRight
+                            size={15}
+                          />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  SMART PICKS
+              ================================================= */}
+
+              <section className="mt-10">
+                <div className="mb-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                    Smart alternatives
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-black">
+                    More ways to shop your match
+                  </h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {[
+                    {
+                      label: "Best Value",
+                      text: "Balanced price + match",
+                      product:
+                        bestValue,
+                      icon: (
+                        <TrendingUp
+                          size={17}
+                        />
+                      ),
+                    },
+                    {
+                      label: "Budget Pick",
+                      text: "Lower price option",
+                      product:
+                        budgetPick,
+                      icon: (
+                        <Target
+                          size={17}
+                        />
+                      ),
+                    },
+                    {
+                      label: "Top Rated",
+                      text: "Highest rated option",
+                      product:
+                        topRated,
+                      icon: (
+                        <Star
+                          size={17}
+                          fill="currentColor"
+                        />
+                      ),
+                    },
+                    {
+                      label: "Premium Pick",
+                      text: "Higher-end option",
+                      product:
+                        premiumPick,
+                      icon: (
+                        <Sparkles
+                          size={17}
+                        />
+                      ),
+                    },
+                  ].map(
+                    (item) => (
+                      <div
+                        key={
+                          item.label
+                        }
+                        className="overflow-hidden rounded-[24px] border border-[#e8dfcf] bg-white"
+                      >
+                        {item.product ? (
+                          <>
+                            <Link
+                              href={`/dashboard/products/${item.product.id}`}
+                              className="block"
+                            >
+                              <div className="relative h-44 bg-[#faf9f6]">
+                                <ProductImage
+                                  src={getImageUrl(
+                                    item
+                                      .product
+                                      .image_url
+                                  )}
+                                  alt={
+                                    item
+                                      .product
+                                      .name
+                                  }
+                                  className="h-full w-full object-contain p-5"
+                                />
+
+                                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[10px] font-black text-[#956f27] shadow-sm">
+                                  {
+                                    item.icon
+                                  }
+                                  {
+                                    item.label
+                                  }
+                                </div>
+                              </div>
+                            </Link>
+
+                            <div className="p-4">
+                              <p className="text-[10px] font-bold text-gray-400">
+                                {
+                                  item.text
+                                }
+                              </p>
+
+                              <Link
+                                href={`/dashboard/products/${item.product.id}`}
+                                className="mt-1 block line-clamp-2 text-sm font-black hover:text-[#9b762b]"
+                              >
+                                {
+                                  item
+                                    .product
+                                    .name
+                                }
+                              </Link>
+
+                              <div className="mt-3 flex items-center justify-between">
+                                <span className="text-sm font-black">
+                                  {money(
+                                    Number(
+                                      item
+                                        .product
+                                        .price
+                                    )
+                                  )}
+                                </span>
+
+                                <span className="rounded-full bg-[#fff4d6] px-2 py-1 text-[9px] font-black text-[#956f27]">
+                                  {
+                                    item
+                                      .product
+                                      .matchScore
+                                  }
+                                  %
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex h-64 items-center justify-center p-6 text-center">
+                            <div>
+                              <ShoppingBag
+                                size={
+                                  28
+                                }
+                                className="mx-auto text-gray-300"
+                              />
+
+                              <p className="mt-3 text-xs font-bold text-gray-400">
+                                No suitable
+                                product found
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+              </section>
+
+              {/* =================================================
+                  COMPARE
+              ================================================= */}
+
+              <section className="mt-10">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                      Compare
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black">
+                      Compare your shortlisted products
+                    </h2>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      Select up to 3 products from
+                      the results below.
+                    </p>
+                  </div>
+
+                  {compareProducts.length >
+                    0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCompareIds(
+                          []
+                        )
+                      }
+                      className="text-xs font-black text-gray-400 hover:text-red-500"
+                    >
+                      Clear comparison
+                    </button>
+                  )}
+                </div>
+
+                {compareProducts.length >
+                0 ? (
+                  <div className="overflow-x-auto rounded-[26px] border border-[#e8dfcf] bg-white">
+                    <table className="w-full min-w-[760px] text-left">
+                      <thead>
+                        <tr className="border-b border-[#eee5d6] bg-[#fffdfa]">
+                          <th className="w-40 px-5 py-4 text-[10px] font-black uppercase tracking-wide text-gray-400">
+                            Feature
+                          </th>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <th
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="line-clamp-2 text-xs font-black">
+                                    {
+                                      product.name
+                                    }
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      toggleCompare(
+                                        product.id
+                                      )
+                                    }
+                                    className="text-gray-400 hover:text-red-500"
+                                  >
+                                    <X
+                                      size={
+                                        14
+                                      }
+                                    />
+                                  </button>
+                                </div>
+                              </th>
+                            )
+                          )}
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        <tr className="border-b border-[#f0eadf]">
+                          <td className="px-5 py-4 text-xs font-black text-gray-500">
+                            Match
+                          </td>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <td
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4 text-sm font-black text-[#9b762b]"
+                              >
+                                {
+                                  product.matchScore
+                                }
+                                %
+                              </td>
+                            )
+                          )}
+                        </tr>
+
+                        <tr className="border-b border-[#f0eadf]">
+                          <td className="px-5 py-4 text-xs font-black text-gray-500">
+                            Price
+                          </td>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <td
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4 text-sm font-black"
+                              >
+                                {money(
+                                  Number(
+                                    product.price
+                                  )
+                                )}
+                              </td>
+                            )
+                          )}
+                        </tr>
+
+                        <tr className="border-b border-[#f0eadf]">
+                          <td className="px-5 py-4 text-xs font-black text-gray-500">
+                            Rating
+                          </td>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <td
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4 text-sm font-black"
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  <Star
+                                    size={
+                                      13
+                                    }
+                                    fill="currentColor"
+                                    className="text-[#c9a24d]"
+                                  />
+                                  {Number(
+                                    product.rating ||
+                                      0
+                                  ).toFixed(
+                                    1
+                                  )}
+                                </span>
+                              </td>
+                            )
+                          )}
+                        </tr>
+
+                        <tr className="border-b border-[#f0eadf]">
+                          <td className="px-5 py-4 text-xs font-black text-gray-500">
+                            Category
+                          </td>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <td
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4 text-xs font-bold text-gray-600"
+                              >
+                                {
+                                  product.categoryName
+                                }
+                              </td>
+                            )
+                          )}
+                        </tr>
+
+                        <tr>
+                          <td className="px-5 py-4 text-xs font-black text-gray-500">
+                            Brand
+                          </td>
+
+                          {compareProducts.map(
+                            (
+                              product
+                            ) => (
+                              <td
+                                key={
+                                  product.id
+                                }
+                                className="px-5 py-4 text-xs font-bold text-gray-600"
+                              >
+                                {product.brand ||
+                                  "Generic"}
+                              </td>
+                            )
+                          )}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="rounded-[26px] border border-dashed border-[#ddcfb5] bg-white p-8 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dd] text-[#b58a32]">
+                      <Target
+                        size={21}
+                      />
+                    </div>
+
+                    <p className="mt-3 text-sm font-black">
+                      No products selected
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-400">
+                      Use the Compare button on
+                      product cards below.
+                    </p>
+                  </div>
+                )}
+              </section>
             </>
           )}
+
+        {/* =================================================
+            PRODUCT RESULTS
+        ================================================= */}
+
+        <section className="mt-10">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles
+                  size={15}
+                  className="text-[#b58a32]"
+                />
+
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                  Ranked products
+                </p>
+              </div>
+
+              <h2 className="mt-1 text-2xl font-black">
+               {matched
+                 ? "Your ranked matches"
+                 : "Ready to find your match?"}
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                {loading
+                 ? "Loading PrimeCart intelligence..."
+                 : matched
+                 ? `${results.length} products matched to your preferences.`
+                : "Choose your preferences above and let PrimeMatch find the right products for you."}
+                </p>
+            </div>
+
+            {matched && (
+              <button
+                type="button"
+                onClick={
+                  runMatch
+                }
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#dfd3bf] bg-white px-4 py-2.5 text-xs font-black text-gray-600 transition hover:border-[#c9a24d] hover:text-[#9b762b]"
+              >
+                <RefreshCw
+                  size={14}
+                />
+                Refresh Match
+              </button>
+            )}
+          </div>
+
+          {/* LOADING */}
+          {loading && (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({
+                length: 8,
+              }).map(
+                (_, index) => (
+                  <ProductSkeleton
+                    key={
+                      index
+                    }
+                  />
+                )
+              )}
+            </div>
+          )}
+
+          {/* EMPTY */}
+          {!loading &&
+  matched &&
+  !matching &&
+  results.length === 0 && (
+
+              <div className="rounded-[28px] border border-dashed border-[#ddcfb5] bg-white px-6 py-14 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff5dd] text-[#b58a32]">
+                  <Search
+                    size={26}
+                  />
+                </div>
+
+                <h3 className="mt-5 text-xl font-black">
+                  No matching products found
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+                  Try changing the category,
+                  brand, budget or search term.
+                  PrimeMatch will automatically
+                  recalculate the results.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={
+                    resetPreferences
+                  }
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#171717] px-5 py-3 text-xs font-black text-white"
+                >
+                  <RefreshCw
+                    size={14}
+                  />
+                  Reset Preferences
+                </button>
+              </div>
+            )}
+
+          {/* PRODUCTS */}
+          {!loading &&
+  matched &&
+  !matching &&
+  results.length > 0 && (
+
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {results.map(
+                  (
+                    product,
+                    index
+                  ) => (
+                    <div
+                      key={
+                        product.id
+                      }
+                      className="relative"
+                    >
+                      <ProductCard
+                        product={
+                          product
+                        }
+                        rank={
+                          index + 1
+                        }
+                        wished={wishlist.includes(
+                          product.id
+                        )}
+                        added={cartIds.includes(
+                          product.id
+                        )}
+                        onWishlist={() =>
+                          toggleWishlist(
+                            product
+                          )
+                        }
+                        onCart={() =>
+                          addToCart(
+                            product
+                          )
+                        }
+                      />
+
+                      {/* COMPARE BUTTON */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleCompare(
+                            product.id
+                          )
+                        }
+                        className={`absolute bottom-[88px] right-5 rounded-lg px-2.5 py-1.5 text-[9px] font-black transition ${
+                          compareIds.includes(
+                            product.id
+                          )
+                            ? "bg-[#fff0c8] text-[#956f27]"
+                            : "bg-white/95 text-gray-500 shadow-sm hover:text-[#956f27]"
+                        }`}
+                      >
+                        {compareIds.includes(
+                          product.id
+                        )
+                          ? "✓ Comparing"
+                          : "Compare"}
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
         </section>
 
         {/* =================================================
             HOW IT WORKS
         ================================================= */}
 
-        <section className="border-y border-[#eee5d3] bg-[#fcfaf5]">
-          <div className="mx-auto max-w-[1500px] px-4 py-14 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a67826]">
-                How PrimeMatch works
-              </p>
+        <section className="mt-12 overflow-hidden rounded-[30px] border border-[#eadfc9] bg-white">
+          <div className="border-b border-[#eee5d6] bg-[#fffaf0] px-6 py-7 sm:px-8">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+              How PrimeMatch works
+            </p>
 
-              <h3 className="mt-2 text-3xl font-black text-[#211c12]">
-                From preference to product
-              </h3>
+            <h2 className="mt-1 text-2xl font-black">
+              Shopping, but more personal.
+            </h2>
+          </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-400">
-                PrimeMatch evaluates multiple signals instead of
-                relying on one simple filter.
-              </p>
-            </div>
+          <div className="grid gap-0 md:grid-cols-3">
+            {[
+              {
+                number: "01",
+                title: "Tell us what you need",
+                text: "Choose your purpose, budget, category and preferred brand.",
+                icon: (
+                  <Target
+                    size={19}
+                  />
+                ),
+              },
+              {
+                number: "02",
+                title: "Set your priorities",
+                text: "Tell PrimeMatch whether price, quality, brand or rating matters more.",
+                icon: (
+                  <TrendingUp
+                    size={19}
+                  />
+                ),
+              },
+              {
+                number: "03",
+                title: "Get ranked matches",
+                text: "Products are scored using your preferences, product data, ratings and availability.",
+                icon: (
+                  <Sparkles
+                    size={19}
+                  />
+                ),
+              },
+            ].map(
+              (item, index) => (
+                <div
+                  key={
+                    item.number
+                  }
+                  className={`p-6 sm:p-8 ${
+                    index <
+                    2
+                      ? "border-b md:border-b-0 md:border-r border-[#eee5d6]"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#c9a24d]">
+                      {item.number}
+                    </span>
 
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {[
-                {
-                  number: "01",
-                  icon: SlidersHorizontal,
-                  title: "Tell us what matters",
-                  text: "Choose purpose, budget, category, brand and importance levels.",
-                },
-                {
-                  number: "02",
-                  icon: Brain,
-                  title: "PrimeMatch analyzes",
-                  text: "Products are scored across purpose, budget, quality, rating, brand and availability.",
-                },
-                {
-                  number: "03",
-                  icon: Crown,
-                  title: "Get your match",
-                  text: "See your strongest match along with useful alternatives and comparisons.",
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <motion.div
-                    key={item.number}
-                    whileHover={{
-                      y: -4,
-                    }}
-                    className="rounded-3xl border border-[#eadfcb] bg-white p-6"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-[#d0ad5a]">
-                        {item.number}
-                      </span>
-
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d]">
-                        <Icon className="h-5 w-5" />
-                      </span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff5dc] text-[#a17b2f]">
+                      {
+                        item.icon
+                      }
                     </div>
+                  </div>
 
-                    <h4 className="mt-7 text-lg font-black text-[#211c12]">
-                      {item.title}
-                    </h4>
+                  <h3 className="mt-7 text-base font-black">
+                    {
+                      item.title
+                    }
+                  </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-400">
-                      {item.text}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    {
+                      item.text
+                    }
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </section>
 
@@ -3226,43 +4022,49 @@ export default function PrimeMatchPage() {
             FINAL CTA
         ================================================= */}
 
-        <section className="mx-auto max-w-[1500px] px-4 py-14 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-[32px] bg-[#211c12] px-6 py-12 text-center sm:px-10">
-            <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-[#c79a3b]/20 blur-3xl" />
-            <div className="absolute -bottom-20 -right-20 h-60 w-60 rounded-full bg-[#dcb969]/15 blur-3xl" />
+        <section className="mt-8 rounded-[30px] bg-[#171717] px-6 py-10 text-white sm:px-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[#d8b866]">
+                <Sparkles
+                  size={17}
+                />
 
-            <div className="relative">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c79a3b] text-white">
-                <Sparkles className="h-5 w-5" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  PrimeCart Intelligence
+                </span>
               </div>
 
-              <h3 className="mt-5 text-2xl font-black text-white sm:text-3xl">
-                Let PrimeMatch do the searching.
-              </h3>
+              <h2 className="mt-3 text-2xl font-black sm:text-3xl">
+                Still exploring?
+              </h2>
 
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/60">
-                Adjust your preferences anytime and run a fresh
-                match whenever your shopping needs change.
+              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-400">
+                Change your preferences and PrimeMatch
+                will recalculate the ranking for you.
               </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  document
-                    .getElementById("match-results")
-                    ?.scrollIntoView({
-                      behavior: "smooth",
-                    });
-                }}
-                className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-[#211c12] transition hover:bg-[#fff6df]"
-              >
-                <Target className="h-4 w-4 text-[#b8872d]" />
-                View My Match
-              </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({
+                  top: 0,
+                  behavior:
+                    "smooth",
+                });
+              }}
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#c9a24d] px-6 py-3.5 text-xs font-black text-white transition hover:bg-[#b58a32]"
+            >
+              <ArrowLeft
+                size={15}
+                className="rotate-90"
+              />
+              Change Preferences
+            </button>
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
