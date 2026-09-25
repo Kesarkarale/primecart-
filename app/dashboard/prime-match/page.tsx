@@ -161,22 +161,28 @@ const BUDGETS: Budget[] = [
    HELPERS
 ========================================================= */
 
-function getImageUrl(value: string | null) {
-  if (!value?.trim()) {
-    return PRODUCT_IMAGE_FALLBACK;
-  }
+function imageUrl(value: string | null) {
+  if (!value?.trim()) return null;
 
   const cleaned = value.trim();
 
+  // Full URL
   if (
     cleaned.startsWith("http://") ||
-    cleaned.startsWith("https://") ||
-    cleaned.startsWith("/")
+    cleaned.startsWith("https://")
   ) {
     return cleaned;
   }
 
-  return `/${cleaned}`;
+  // Already absolute public path
+  if (cleaned.startsWith("/")) {
+    return cleaned;
+  }
+
+  // IMPORTANT:
+  // If your images are inside:
+  // public/products/
+  return `/products/${cleaned}`;
 }
 
 function money(value: number | null | undefined) {
