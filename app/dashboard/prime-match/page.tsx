@@ -161,7 +161,7 @@ const BUDGETS: Budget[] = [
    HELPERS
 ========================================================= */
 
-function getimageUrl(value: string | null) {
+function getImageUrl(value: string | null) {
   if (!value?.trim()) return null;
 
   const cleaned = value.trim();
