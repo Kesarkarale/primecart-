@@ -996,6 +996,59 @@ function scoreProduct(
 }
 
 /* =========================================================
+   SMART SHOPPING INTELLIGENCE
+========================================================= */
+
+type SmartQuery = {
+  budgetMax: number | null;
+  purpose: string | null;
+  categoryHint: string | null;
+  keywords: string[];
+};
+
+function parseSmartQuery(query: string): SmartQuery {
+  const value = normalize(query);
+  const numberMatch = value.match(/(?:under|below|less than|upto|up to|within|under rs|under ₹|below rs|below ₹)\s*₹?\s*([\d,]+)/i)
+    || value.match(/₹\s*([\d,]+)/i)
+    || value.match(/(?:rs\.?|inr)\s*([\d,]+)/i);
+
+  const budgetMax = numberMatch
+    ? Number(String(numberMatch[1]).replace(/,/g, ""))
+    : null;
+
+  let purpose: string | null = null;
+  if (/\b(running|gym|fitness|workout|sports|yoga|training)\b/i.test(value)) purpose = "fitness";
+  else if (/\b(study|student|office|work|work from home|productivity|desk)\b/i.test(value)) purpose = "work";
+  else if (/\b(gaming|game|console|music|movie|movies|speaker|headset)\b/i.test(value)) purpose = "entertainment";
+  else if (/\b(fashion|shirt|dress|jacket|watch|bag|wallet|style)\b/i.test(value)) purpose = "style";
+  else if (/\b(home|kitchen|coffee|appliance|decor|furniture)\b/i.test(value)) purpose = "home";
+
+  let categoryHint: string | null = null;
+  if (/\b(shoes?|sneakers?|footwear|running shoes)\b/i.test(value)) categoryHint = "footwear";
+  else if (/\b(phone|mobile|smartphone|iphone|android)\b/i.test(value)) categoryHint = "mobile";
+  else if (/\b(laptop|notebook|computer)\b/i.test(value)) categoryHint = "work";
+  else if (/\b(headphones?|earbuds?|headset|speaker)\b/i.test(value)) categoryHint = "audio";
+  else if (/\b(watch|smartwatch)\b/i.test(value)) categoryHint = "watch";
+  else if (/\b(bag|backpack|wallet)\b/i.test(value)) categoryHint = "bag";
+
+  const stopWords = new Set(["mala","mujhe","i","need","want","for","under","below","less","than","rs","inr","the","a","an","with","and","please","pahije","chahiye","ke","liye","hai"]);
+  const keywords = value
+    .replace(/₹?\s*[\d,]+/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !stopWords.has(word))
+    .slice(0, 8);
+
+  return { budgetMax, purpose, categoryHint, keywords };
+}
+
+function getProfileLabel(value: number) {
+  if (value >= 85) return "Very high";
+  if (value >= 65) return "High";
+  if (value >= 40) return "Balanced";
+  return "Light";
+}
+
+/* =========================================================
    MATCH PRESENTATION HELPERS
 ========================================================= */
 
@@ -1533,6 +1586,9 @@ const [matchStage, setMatchStage] =
   const [history, setHistory] =
     useState<MatchHistoryEntry[]>([]);
 
+  const [surpriseId, setSurpriseId] =
+    useState<string | null>(null);
+
   /* =====================================================
      TOAST
   ===================================================== */
@@ -1927,6 +1983,53 @@ const [matchStage, setMatchStage] =
     [search]
   );
 
+  const smartQuery = useMemo(
+    () => parseSmartQuery(search),
+    [search]
+  );
+
+  const profile = useMemo(() => {
+    const quality = importance.quality;
+    const budgetFocus = importance.budget;
+    const brandFocus = importance.brand;
+    const ratingFocus = importance.rating;
+    return {
+      budget: budgetFocus,
+      quality,
+      brand: brandFocus,
+      rating: ratingFocus,
+      budgetLabel: getProfileLabel(budgetFocus),
+      qualityLabel: getProfileLabel(quality),
+      brandLabel: getProfileLabel(brandFocus),
+      ratingLabel: getProfileLabel(ratingFocus),
+    };
+  }, [importance]);
+
+  const budgetAdvisor = useMemo(() => {
+    if (!results.length) return null;
+    const selected = BUDGETS.find((item) => item.id === budget);
+    const available = results.filter((item) => item.stock > 0);
+    if (!selected || !available.length) return null;
+    const inRange = available.filter((item) => Number(item.price) >= selected.min && Number(item.price) <= selected.max);
+    const source = inRange.length ? inRange : available;
+    const best = [...source].sort((a, b) => b.matchScore - a.matchScore)[0];
+    const cheapest = [...available].sort((a, b) => Number(a.price) - Number(b.price))[0];
+    const avg = Math.round(source.slice(0, Math.min(10, source.length)).reduce((sum, item) => sum + Number(item.price), 0) / Math.min(10, source.length));
+    return { count: inRange.length, best, cheapest, avg, max: selected.max };
+  }, [results, budget]);
+
+  const matchAnalytics = useMemo(() => {
+    if (!results.length) return null;
+    return {
+      analysed: products.length,
+      matched: results.length,
+      inBudget: results.filter((item) => item.breakdown.budget >= 95).length,
+      highRated: results.filter((item) => Number(item.rating) >= 4.5).length,
+      deals: results.filter((item) => discount(Number(item.price), item.original_price) >= 20).length,
+      available: results.filter((item) => item.stock > 0).length,
+    };
+  }, [results, products.length]);
+
   /* =====================================================
      SPECIAL RECOMMENDATIONS
   ===================================================== */
@@ -2304,6 +2407,46 @@ const [matchStage, setMatchStage] =
     );
   }
 
+  function applySmartSearch() {
+    if (!search.trim()) {
+      setToast("Type what you are looking for first.");
+      return;
+    }
+
+    const parsed = smartQuery;
+    if (parsed.purpose) setPurpose(parsed.purpose);
+
+    if (parsed.budgetMax !== null) {
+      const match = BUDGETS.find((item) => parsed.budgetMax !== null && parsed.budgetMax <= item.max);
+      if (match) setBudget(match.id);
+    }
+
+    if (parsed.categoryHint) {
+      const categoryMatch = categories.find((item) => {
+        const name = normalize(item.name);
+        return name.includes(parsed.categoryHint || "") || keywordsForCategory(item.name).some((word) => parsed.categoryHint === "footwear" ? word.includes("shoe") || word.includes("foot") : name.includes(word));
+      });
+      if (categoryMatch) setCategory(categoryMatch.id);
+    }
+
+    setToast("PrimeMatch understood your search preferences.");
+  }
+
+  function surpriseMe() {
+    if (!results.length) {
+      setToast("Run PrimeMatch first to unlock Surprise Me.");
+      return;
+    }
+    const pool = results.filter((item) => item.stock > 0);
+    const candidates = pool.length ? pool : results;
+    const current = topMatch?.id;
+    const alternatives = candidates.filter((item) => item.id !== current);
+    const picked = alternatives[Math.floor(Math.random() * Math.max(1, alternatives.length))] || candidates[0];
+    setSurpriseId(picked.id);
+    setToast("✨ Surprise recommendation found for you.");
+    window.setTimeout(() => document.getElementById("surprise-match")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+  }
+
   /* =====================================================
      RUN MATCH
   ===================================================== */
@@ -2402,6 +2545,7 @@ async function runMatch() {
   setMatchedResults([]);
   setMatchStage(0);
   setCompareIds([]);
+  setSurpriseId(null);
 }
 
   /* =====================================================
@@ -2644,6 +2788,34 @@ async function runMatch() {
         )}
 
         {/* =================================================
+            SHOPPING PROFILE
+        ================================================= */}
+        <section className="mt-8 rounded-[28px] border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">Your shopping profile</p>
+              <h2 className="mt-1 text-xl font-black">What matters most to you</h2>
+              <p className="mt-1 text-sm text-gray-500">PrimeMatch uses these priorities to shape your recommendations.</p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3d2] text-[#9b762b]"><Target size={19} /></div>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Budget", profile.budget, profile.budgetLabel],
+              ["Quality", profile.quality, profile.qualityLabel],
+              ["Brand", profile.brand, profile.brandLabel],
+              ["Rating", profile.rating, profile.ratingLabel],
+            ].map(([label, value, level]) => (
+              <div key={String(label)} className="rounded-2xl border border-[#eee5d6] bg-[#fffdfa] p-4">
+                <div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-[#4c4030]">{label}</span><span className="text-[10px] font-black text-[#9b762b]">{level}</span></div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee8dc]"><div className="h-full rounded-full bg-gradient-to-r from-[#c9a24d] to-[#e5ca82]" style={{ width: `${Number(value)}%` }} /></div>
+                <p className="mt-2 text-[10px] font-bold text-gray-400">{Number(value)}% importance</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* =================================================
             BUILDER
         ================================================= */}
 
@@ -2764,7 +2936,7 @@ async function runMatch() {
                     onClick={() =>
                       setSearch("")
                     }
-                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:bg-[#fff8e8] hover:text-[#9b762b]"
                   >
                     <X
                       size={14}
@@ -2785,6 +2957,27 @@ async function runMatch() {
                 </div>
               )}
             </div>
+
+            {/* SMART SEARCH UNDERSTANDING */}
+            {search.trim() && (
+              <div className="mt-3 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b762b]">Smart search understanding</p>
+                    <p className="mt-1 text-xs font-semibold text-gray-500">PrimeMatch can translate your words into shopping preferences.</p>
+                  </div>
+                  <button type="button" onClick={applySmartSearch} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d8c38f] bg-white px-4 py-2.5 text-[10px] font-black text-[#8f6b24] transition hover:bg-[#fff4d6] sm:w-auto">
+                    <Sparkles size={13} /> Apply smart search
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {smartQuery.budgetMax !== null && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Budget ≤ {money(smartQuery.budgetMax)}</span>}
+                  {smartQuery.purpose && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Purpose: {PURPOSES.find((item) => item.id === smartQuery.purpose)?.title}</span>}
+                  {smartQuery.categoryHint && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Category: {smartQuery.categoryHint}</span>}
+                  {smartQuery.keywords.slice(0, 4).map((word) => <span key={word} className="rounded-full border border-[#eadfc9] bg-white px-3 py-1.5 text-[10px] font-bold text-gray-500">{word}</span>)}
+                </div>
+              </div>
+            )}
 
             {/* FILTER GRID */}
             <div className="mt-7 grid gap-4 md:grid-cols-3">
@@ -3711,6 +3904,46 @@ async function runMatch() {
               </section>
 
               {/* =================================================
+                  BUDGET ADVISOR + ANALYTICS
+              ================================================= */}
+              {budgetAdvisor && (
+                <section className="mt-8 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+                  <div className="rounded-[26px] border border-[#e8dfcf] bg-gradient-to-br from-[#fffaf0] to-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Budget advisor</p><h3 className="mt-1 text-xl font-black">Make the most of your budget</h3></div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><TrendingUp size={18} /></div>
+                    </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">In budget</p><p className="mt-1 text-xl font-black text-[#9b762b]">{budgetAdvisor.count}</p><p className="text-[10px] text-gray-400">matched products</p></div>
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Best match</p><p className="mt-1 text-xl font-black">{money(Number(budgetAdvisor.best.price))}</p><p className="text-[10px] text-gray-400">{budgetAdvisor.best.matchScore}% fit</p></div>
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Average price</p><p className="mt-1 text-xl font-black">{money(budgetAdvisor.avg)}</p><p className="text-[10px] text-gray-400">top available options</p></div>
+                    </div>
+                    <p className="mt-4 text-xs leading-5 text-gray-500">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "There are no exact in-budget products, so PrimeMatch is showing the closest alternatives."}</p>
+                  </div>
+
+                  {matchAnalytics && (
+                    <div className="rounded-[26px] border border-[#e8dfcf] bg-white p-6 shadow-sm">
+                      <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Award size={18} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Recommendation analytics</p><h3 className="mt-1 text-xl font-black">What PrimeMatch found</h3></div></div>
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        {[["Analysed", matchAnalytics.analysed],["Matched", matchAnalytics.matched],["In budget", matchAnalytics.inBudget],["Highly rated", matchAnalytics.highRated],["Great deals", matchAnalytics.deals],["Available", matchAnalytics.available]].map(([label,value]) => <div key={String(label)} className="rounded-2xl bg-[#fffaf0] p-3"><p className="text-[10px] font-bold text-gray-400">{label}</p><p className="mt-1 text-lg font-black text-[#8f6b24]">{value}</p></div>)}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* =================================================
+                  SMART SURPRISE
+              ================================================= */}
+              <section id="surprise-match" className="mt-8 rounded-[26px] border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Something unexpected</p><h3 className="mt-1 text-xl font-black">✨ Surprise me</h3><p className="mt-1 text-xs leading-5 text-gray-500">Get a relevant alternative from your matched products without changing your preferences.</p></div>
+                  <button type="button" onClick={surpriseMe} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d9c79f] bg-white px-5 py-3 text-xs font-black text-[#8f6b24] transition hover:bg-[#fff8e8]"><Sparkles size={15} /> Surprise Me</button>
+                </div>
+                {surpriseId && (() => { const product = results.find((item) => item.id === surpriseId); if (!product) return null; return <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4 sm:flex-row sm:items-center"><div className="h-28 w-full shrink-0 rounded-xl bg-white sm:w-28"><ProductImage src={getImageUrl(product.image_url)} alt={product.name} className="h-full w-full object-contain p-3" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#fff3d2] px-2.5 py-1 text-[9px] font-black text-[#8f6b24]">Surprise Pick</span><span className="text-[10px] font-black text-[#9b762b]">{product.matchScore}% match</span></div><Link href={`/dashboard/products/${product.id}`} className="mt-2 block truncate text-sm font-black hover:text-[#9b762b]">{product.name}</Link><p className="mt-1 text-[10px] text-gray-400">{product.categoryName} · {money(Number(product.price))} · {Number(product.rating || 0).toFixed(1)}★</p></div></div>; })()}
+              </section>
+
+              {/* =================================================
                   SMART PICKS
               ================================================= */}
 
@@ -4291,6 +4524,18 @@ async function runMatch() {
               </div>
             )}
         </section>
+
+        {/* =================================================
+            PRIMEPOINTS PREVIEW
+        ================================================= */}
+        {matched && topMatch && (
+          <section className="mt-8 rounded-[28px] border border-[#eadfc9] bg-gradient-to-r from-[#fffaf0] via-white to-[#fff7e4] p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div><div className="flex items-center gap-2 text-[#9b762b]"><Award size={17} /><span className="text-[10px] font-black uppercase tracking-[0.18em]">PrimePoints preview</span></div><h2 className="mt-2 text-2xl font-black">Earn {Math.max(20, Math.round(topMatch.matchScore * 1.25))} PrimePoints on this match</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">A small reward for discovering products through PrimeMatch. This is a preview UI and does not change your existing rewards database.</p></div>
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] border border-[#e6d4a7] bg-white text-2xl font-black text-[#b58a32] shadow-sm">{Math.max(20, Math.round(topMatch.matchScore * 1.25))}</div>
+            </div>
+          </section>
+        )}
 
         {/* =================================================
             HOW IT WORKS
