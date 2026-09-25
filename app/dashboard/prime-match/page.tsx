@@ -58,6 +58,7 @@ type Breakdown = {
   budget: number;
   category: number;
   purpose: number;
+  quality: number;
   rating: number;
   brand: number;
   availability: number;
@@ -161,23 +162,30 @@ const BUDGETS: Budget[] = [
    HELPERS
 ========================================================= */
 
-function getImageUrl(value: string | null) {
-  if (!value?.trim()) return null;
+function getImageCandidates(value: string | null) {
+  if (!value?.trim()) return [PRODUCT_IMAGE_FALLBACK];
 
   const cleaned = value.trim();
 
-  if (
-    cleaned.startsWith("http://") ||
-    cleaned.startsWith("https://")
-  ) {
-    return cleaned;
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return [cleaned, PRODUCT_IMAGE_FALLBACK];
   }
 
   if (cleaned.startsWith("/")) {
-    return cleaned;
+    return [cleaned, PRODUCT_IMAGE_FALLBACK];
   }
 
-  return `/products/${cleaned}`;
+  const normalized = cleaned.startsWith("products/")
+    ? `/${cleaned}`
+    : `/products/${cleaned}`;
+
+  const rootPath = `/${cleaned.replace(/^products\//, "")}`;
+
+  return Array.from(new Set([normalized, rootPath, PRODUCT_IMAGE_FALLBACK]));
+}
+
+function getImageUrl(value: string | null) {
+  return getImageCandidates(value)[0] || null;
 }
 
 function money(value: number | null | undefined) {
@@ -620,6 +628,19 @@ function calculateSearchScore(
 }
 
 /* =========================================================
+   QUALITY MATCH
+========================================================= */
+
+function calculateQualityScore(product: Product) {
+  const rating = clamp((Number(product.rating) || 0) / 5 * 100);
+  const reviews = Math.max(0, Number(product.reviews_count) || 0);
+  const reviewConfidence = clamp((Math.log10(reviews + 1) / 4) * 100);
+
+  // Rating is the strongest quality signal; review volume adds confidence.
+  return Math.round(rating * 0.78 + reviewConfidence * 0.22);
+}
+
+/* =========================================================
    PRODUCT SCORING
 ========================================================= */
 
@@ -726,10 +747,11 @@ function scoreProduct(
     brandScore = 25;
   }
 
-  /* RATING */
+  /* QUALITY + RATING */
 
-  const rating =
-    Number(product.rating) || 0;
+  const qualityScore = calculateQualityScore(product);
+
+  const rating = Number(product.rating) || 0;
 
   const ratingScore = clamp(
     Math.round((rating / 5) * 100)
@@ -806,15 +828,10 @@ function scoreProduct(
   const score =
     purposeScore * 0.24 +
     categoryScore * 0.18 +
-    budgetScore *
-      normalizedBudget *
-      0.30 +
-    ratingScore *
-      normalizedRating *
-      0.16 +
-    brandScore *
-      normalizedBrand *
-      0.10 +
+    budgetScore * normalizedBudget * 0.26 +
+    qualityScore * normalizedQuality * 0.12 +
+    brandScore * normalizedBrand * 0.08 +
+    ratingScore * normalizedRating * 0.06 +
     availabilityScore * 0.02 +
     searchScore * 0.04;
 
@@ -885,10 +902,12 @@ function scoreProduct(
     );
   }
 
+  if (qualityScore >= 90) {
+    reasons.push("Strong product quality signals");
+  }
+
   if (ratingScore >= 90) {
-    reasons.push(
-      "Highly rated"
-    );
+    reasons.push("Highly rated");
   }
 
   if (
@@ -935,6 +954,7 @@ function scoreProduct(
       budget: budgetScore,
       category: categoryScore,
       purpose: purposeScore,
+      quality: qualityScore,
       rating: ratingScore,
       brand: brandScore,
       availability:
@@ -992,16 +1012,18 @@ function ProductImage({
   alt: string;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const candidates = useMemo(() => getImageCandidates(src), [src]);
+  const [index, setIndex] = useState(0);
 
-  const imageSrc =
-    src || PRODUCT_IMAGE_FALLBACK;
+  useEffect(() => {
+    setIndex(0);
+  }, [src]);
 
-  if (failed) {
+  const imageSrc = candidates[index] || PRODUCT_IMAGE_FALLBACK;
+
+  if (index >= candidates.length - 1 && imageSrc === PRODUCT_IMAGE_FALLBACK) {
     return (
-      <div
-        className={`flex items-center justify-center bg-[#faf8f3] text-[#c9a24d] ${className}`}
-      >
+      <div className={`flex items-center justify-center bg-[#faf8f3] text-[#c9a24d] ${className}`}>
         <ShoppingBag size={42} />
       </div>
     );
@@ -1011,8 +1033,10 @@ function ProductImage({
     <img
       src={imageSrc}
       alt={alt}
-      onError={() => setFailed(true)}
+      onError={() => setIndex((current) => Math.min(current + 1, candidates.length - 1))}
       className={className}
+      loading="lazy"
+      decoding="async"
     />
   );
 }
@@ -1394,6 +1418,9 @@ export default function PrimeMatchPage() {
 
   const [matched, setMatched] =
     useState(false);
+
+  const [matchedResults, setMatchedResults] =
+    useState<MatchProduct[]>([]);
 
 const [matchStage, setMatchStage] =
   useState(0);
@@ -1779,11 +1806,11 @@ const [matchStage, setMatchStage] =
       search,
     ]);
 
-  const results =
-    filteredResults;
+  // Keep the result set frozen after Find My Prime Match.
+  // Preference changes require Refresh Match, so the UI never silently changes its answer.
+  const results = matched ? matchedResults : [];
 
-  const topMatch =
-    results[0] || null;
+  const topMatch = results[0] || null;
 
   /* =====================================================
      SPECIAL RECOMMENDATIONS
@@ -1865,17 +1892,12 @@ const [matchStage, setMatchStage] =
     useMemo(() => {
       return (
         [...results]
-          .filter(
-            (product) =>
-              product.stock > 0
-          )
-          .sort(
-            (a, b) =>
-              Number(b.price) -
-                Number(a.price) ||
-              b.matchScore -
-                a.matchScore
-          )[0] || null
+          .filter((product) => product.stock > 0)
+          .sort((a, b) => {
+            const premiumA = a.matchScore + Number(a.rating) * 7 + a.breakdown.quality * 0.12;
+            const premiumB = b.matchScore + Number(b.rating) * 7 + b.breakdown.quality * 0.12;
+            return premiumB - premiumA || Number(b.price) - Number(a.price);
+          })[0] || null
       );
     }, [results]);
 
@@ -1952,21 +1974,17 @@ const [matchStage, setMatchStage] =
             String(product.id)
         );
 
-      if (
-        existingIndex >= 0
-      ) {
-        current[
-          existingIndex
-        ] = {
-          ...current[
-            existingIndex
-          ],
-          quantity:
-            Number(
-              current[
-                existingIndex
-              ]?.quantity
-            ) + 1,
+      if (existingIndex >= 0) {
+        const currentQuantity = Number(current[existingIndex]?.quantity) || 0;
+
+        if (product.stock > 0 && currentQuantity >= product.stock) {
+          setToast(`Only ${product.stock} item${product.stock === 1 ? "" : "s"} available.`);
+          return;
+        }
+
+        current[existingIndex] = {
+          ...current[existingIndex],
+          quantity: currentQuantity + 1,
         };
       } else {
         current.push({
@@ -2179,6 +2197,9 @@ async function runMatch() {
   }
 
   setMatchStage(5);
+
+  // Snapshot the ranking produced from the exact preferences used for this run.
+  setMatchedResults(filteredResults);
   setMatched(true);
   setMatching(false);
 
@@ -2212,6 +2233,7 @@ async function runMatch() {
 
   setMatching(false);
   setMatched(false);
+  setMatchedResults([]);
   setMatchStage(0);
   setCompareIds([]);
 }
@@ -2885,7 +2907,7 @@ async function runMatch() {
 
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-gray-500">
             We are analysing your preferences,
-            budget, product quality and ratings.
+            budget, product quality, ratings and available inventory.
           </p>
 
           <div className="mx-auto mt-8 max-w-xl space-y-3 text-left">
@@ -3065,10 +3087,11 @@ async function runMatch() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setMatched(
-                        false
-                      )
+                    onClick={() => {
+                      setMatched(false);
+                      setMatchedResults([]);
+                      setCompareIds([]);
+                    }
                     }
                     className="flex items-center gap-2 text-xs font-black text-[#9b762b]"
                   >
@@ -3247,6 +3270,15 @@ async function runMatch() {
                           />
 
                           <ScoreBar
+                            label="Quality"
+                            value={
+                              topMatch
+                                .breakdown
+                                .quality
+                            }
+                          />
+
+                          <ScoreBar
                             label="Rating"
                             value={
                               topMatch
@@ -3344,6 +3376,64 @@ async function runMatch() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  TOP 3 MATCHES
+              ================================================= */}
+
+              <section className="mt-10">
+                <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
+                      Shortlist
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black">Top matches for you</h2>
+                    <p className="mt-1 text-sm text-gray-500">The three highest-ranked products from this match.</p>
+                  </div>
+                  <span className="w-fit rounded-full bg-[#fff4d6] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
+                    {results.length} ranked products
+                  </span>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {results.slice(0, 3).map((product, index) => (
+                    <Link
+                      key={product.id}
+                      href={`/dashboard/products/${product.id}`}
+                      className="group overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white transition hover:-translate-y-1 hover:border-[#d9bf7b] hover:shadow-[0_20px_50px_rgba(80,60,20,0.09)]"
+                    >
+                      <div className="relative h-52 bg-[#faf9f6]">
+                        <ProductImage
+                          src={getImageUrl(product.image_url)}
+                          alt={product.name}
+                          className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-105"
+                        />
+                        <span className="absolute left-4 top-4 rounded-full bg-[#171717] px-3 py-1.5 text-[10px] font-black text-white">
+                          #{index + 1}
+                        </span>
+                        <span className="absolute right-4 top-4 rounded-full bg-[#fff3ce] px-3 py-1.5 text-[10px] font-black text-[#916b22]">
+                          {product.matchScore}% Match
+                        </span>
+                      </div>
+                      <div className="p-5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#a17b2f]">
+                          {product.categoryName}
+                        </p>
+                        <h3 className="mt-2 line-clamp-2 min-h-[48px] text-sm font-black leading-6">
+                          {product.name}
+                        </h3>
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-lg font-black">{money(Number(product.price))}</span>
+                          <span className="flex items-center gap-1 text-xs font-bold text-gray-500">
+                            <Star size={12} fill="currentColor" className="text-[#c9a24d]" />
+                            {Number(product.rating || 0).toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </section>
 
