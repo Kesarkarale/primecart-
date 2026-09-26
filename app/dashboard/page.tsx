@@ -11,6 +11,7 @@ import {
   Bell,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock3,
@@ -293,6 +294,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(true);
+
+  const heroBanners = [
+    "/hero-banner.png",
+    "/hero-banner-2.png",
+    "/hero-banner-3.png",
+    "/hero-banner-4.png",
+    "/hero-banner-5.png",
+    "/hero-banner-6.png",
+    "/hero-banner-7.png",
+    "/hero-banner-8.png",
+  ];
+
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+
 
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -317,36 +334,6 @@ export default function DashboardPage() {
   const [dealMessage, setDealMessage] = useState(
     "Your mystery deal is waiting."
   );
-
-  const [heroSlide, setHeroSlide] = useState(0);
-  const heroBanners = [
-    "/hero-banner.png",
-    "/hero-banner-2.png",
-    "/hero-banner-3.png",
-    "/hero-banner-4.png",
-    "/hero-banner-5.png",
-    "/hero-banner-6.png",
-    "/hero-banner-7.png",
-    "/hero-banner-8.png",
-  ];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setHeroSlide((current) => (current + 1) % heroBanners.length);
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const previousHero = () => {
-    setHeroSlide((current) =>
-      current === 0 ? heroBanners.length - 1 : current - 1
-    );
-  };
-
-  const nextHero = () => {
-    setHeroSlide((current) => (current + 1) % heroBanners.length);
-  };
 
   /* =======================================================
      LOAD DASHBOARD
@@ -483,6 +470,34 @@ export default function DashboardPage() {
       mounted = false;
     };
   }, [supabase]);
+
+  /* =======================================================
+     HERO BANNER AUTOPLAY
+  ======================================================= */
+
+  useEffect(() => {
+    if (heroPaused) return;
+
+    const timer = window.setInterval(() => {
+      setHeroSlide((current) =>
+        current === heroBanners.length - 1 ? 0 : current + 1
+      );
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [heroPaused, heroBanners.length]);
+
+  function previousHero() {
+    setHeroSlide((current) =>
+      current === 0 ? heroBanners.length - 1 : current - 1
+    );
+  }
+
+  function nextHero() {
+    setHeroSlide((current) =>
+      current === heroBanners.length - 1 ? 0 : current + 1
+    );
+  }
 
   /* =======================================================
      RECENTLY VIEWED
@@ -798,30 +813,91 @@ export default function DashboardPage() {
             {sidebarItems.map((item) => {
               const Icon = item.icon;
 
+              if (item.label !== "Categories") {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`sidebar-link ${
+                      item.href === "/dashboard"
+                        ? "sidebar-link-active"
+                        : ""
+                    }`}
+                    onClick={() => setMobileMenu(false)}
+                  >
+                    <span className="sidebar-icon">
+                      <Icon size={18} />
+                    </span>
+
+                    <span>{item.label}</span>
+
+                    {item.label === "Wishlist" &&
+                      wishlistCount > 0 && (
+                        <span className="sidebar-count">
+                          {wishlistCount}
+                        </span>
+                      )}
+                  </Link>
+                );
+              }
+
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`sidebar-link ${
-                    item.href === "/dashboard"
-                      ? "sidebar-link-active"
-                      : ""
-                  }`}
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <span className="sidebar-icon">
-                    <Icon size={18} />
-                  </span>
-
-                  <span>{item.label}</span>
-
-                  {item.label === "Wishlist" &&
-                    wishlistCount > 0 && (
-                      <span className="sidebar-count">
-                        {wishlistCount}
+                <div key={item.href} className="sidebar-category-group">
+                  <div className="sidebar-category-row">
+                    <Link
+                      href={item.href}
+                      className="sidebar-link sidebar-category-main"
+                      onClick={() => setMobileMenu(false)}
+                    >
+                      <span className="sidebar-icon">
+                        <Icon size={18} />
                       </span>
-                    )}
-                </Link>
+                      <span>Categories</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      className={`sidebar-category-toggle ${
+                        categoryMenuOpen ? "open" : ""
+                      }`}
+                      onClick={() => setCategoryMenuOpen((value) => !value)}
+                      aria-label="Toggle categories"
+                      aria-expanded={categoryMenuOpen}
+                    >
+                      <ChevronDown size={15} />
+                    </button>
+                  </div>
+
+                  <div
+                    className={`sidebar-category-list ${
+                      categoryMenuOpen ? "open" : ""
+                    }`}
+                  >
+                    <Link
+                      href="/dashboard/categories"
+                      className="sidebar-category-item all-category"
+                      onClick={() => setMobileMenu(false)}
+                    >
+                      <span className="category-mini-icon">✨</span>
+                      <span>All Categories</span>
+                    </Link>
+
+                    {categories.map((category) => (
+                      <Link
+                        key={category.id}
+                        href={`/dashboard/categories/${category.slug}`}
+                        className="sidebar-category-item"
+                        onClick={() => setMobileMenu(false)}
+                      >
+                        <span className="category-mini-icon">
+                          {categoryIcons[category.slug] || "🛍️"}
+                        </span>
+                        <span>{category.name}</span>
+                        <ChevronRight size={13} />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               );
             })}
           </nav>
@@ -1153,29 +1229,33 @@ export default function DashboardPage() {
 
         <div className="dashboard-content">
           {/* ===============================================
-              WELCOME HERO
+              PREMIUM HERO BANNERS
           =============================================== */}
 
           <section
-            className="welcome-hero hero-banner-carousel"
-            aria-label="PrimeCart featured banners"
+            className="welcome-hero premium-banner-hero"
+            aria-label="PrimeCart featured offers"
+            onMouseEnter={() => setHeroPaused(true)}
+            onMouseLeave={() => setHeroPaused(false)}
+            onFocus={() => setHeroPaused(true)}
+            onBlur={() => setHeroPaused(false)}
           >
-            <div className="hero-banner-track">
+            <div className="premium-banner-track">
               {heroBanners.map((banner, index) => (
                 <div
                   key={banner}
-                  className={`hero-banner-slide ${
+                  className={`premium-banner-slide ${
                     index === heroSlide ? "active" : ""
                   }`}
                   aria-hidden={index !== heroSlide}
                 >
                   <Image
                     src={banner}
-                    alt={`PrimeCart banner ${index + 1}`}
+                    alt={`PrimeCart promotional banner ${index + 1}`}
                     fill
                     priority={index === 0}
-                    sizes="(max-width: 700px) 100vw, 1680px"
-                    className="hero-banner-image"
+                    sizes="(max-width: 700px) 100vw, (max-width: 1200px) 94vw, 1450px"
+                    className="premium-banner-image"
                   />
                 </div>
               ))}
@@ -1183,113 +1263,36 @@ export default function DashboardPage() {
 
             <button
               type="button"
-              className="hero-banner-arrow hero-banner-prev"
+              className="premium-banner-arrow premium-banner-prev"
               onClick={previousHero}
               aria-label="Previous banner"
             >
-              <ChevronRight size={20} />
+              <ChevronLeft size={19} />
             </button>
 
             <button
               type="button"
-              className="hero-banner-arrow hero-banner-next"
+              className="premium-banner-arrow premium-banner-next"
               onClick={nextHero}
               aria-label="Next banner"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={19} />
             </button>
 
-            <div className="hero-banner-dots" aria-label="Banner navigation">
+            <div className="premium-banner-dots" aria-label="Banner navigation">
               {heroBanners.map((banner, index) => (
                 <button
                   key={`${banner}-dot`}
                   type="button"
-                  className={`hero-banner-dot ${
+                  className={`premium-banner-dot ${
                     index === heroSlide ? "active" : ""
                   }`}
                   onClick={() => setHeroSlide(index)}
-                  aria-label={`Go to banner ${index + 1}`}
+                  aria-label={`Show banner ${index + 1}`}
                   aria-current={index === heroSlide ? "true" : undefined}
                 />
               ))}
             </div>
-          </section>
-
-          {/* ===============================================
-              QUICK STATS
-          =============================================== */}
-
-          <section className="stats-grid">
-            <Link
-              href="/dashboard/orders"
-              className="stat-card"
-            >
-              <div className="stat-icon gold-icon">
-                <ShoppingBag size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>Total Orders</span>
-                <strong>{orders.length}</strong>
-                <small>
-                  {orders.length
-                    ? "Your shopping history"
-                    : "Start your first order"}
-                </small>
-              </div>
-
-              <ChevronRight size={17} />
-            </Link>
-
-            <Link
-              href="/dashboard/wishlist"
-              className="stat-card"
-            >
-              <div className="stat-icon rose-icon">
-                <Heart size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>Wishlist</span>
-                <strong>{wishlistCount}</strong>
-                <small>
-                  {wishlistCount
-                    ? "Items saved for later"
-                    : "Save products you love"}
-                </small>
-              </div>
-
-              <ChevronRight size={17} />
-            </Link>
-
-            <div className="stat-card">
-              <div className="stat-icon green-icon">
-                <CircleDollarSign size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>Total Spent</span>
-                <strong>{formatPrice(totalSpent)}</strong>
-                <small>Across all orders</small>
-              </div>
-            </div>
-
-            <Link
-              href="/dashboard/prime-points"
-              className="stat-card"
-            >
-              <div className="stat-icon purple-icon">
-                <Crown size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>PrimePoints</span>
-                <strong>{primePoints}</strong>
-                <small>Rewards earned</small>
-              </div>
-
-              <ChevronRight size={17} />
-            </Link>
           </section>
 
           {/* ===============================================
@@ -3108,112 +3111,236 @@ export default function DashboardPage() {
         .welcome-hero {
           position: relative;
           min-height: 285px;
-          height: 285px;
           overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 39px 42px;
           border: 1px solid rgba(190, 153, 83, 0.22);
           border-radius: 27px;
-          background: #f5ead5;
+          background:
+            radial-gradient(
+              circle at 80% 20%,
+              rgba(255, 255, 255, 0.35),
+              transparent 23%
+            ),
+            linear-gradient(
+              120deg,
+              #f1dfb9 0%,
+              #e5cb91 48%,
+              #d6b66b 100%
+            );
           box-shadow:
             0 22px 50px rgba(130, 94, 35, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.55);
           animation: heroIn 0.55s ease both;
         }
 
-        .hero-banner-track,
-        .hero-banner-slide {
+        .hero-content {
+          position: relative;
+          z-index: 3;
+          max-width: 570px;
+        }
+
+        .hero-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 13px;
+          color: #7b5d2e;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .hero-eyebrow-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #96702f;
+          box-shadow: 0 0 0 4px rgba(150, 112, 47, 0.12);
+        }
+
+        .hero-content h1 {
+          margin: 0;
+          color: #453620;
+          font-size: clamp(30px, 3.5vw, 47px);
+          line-height: 1.05;
+          letter-spacing: -1.8px;
+        }
+
+        .hero-content h1 span {
+          color: #805d27;
+        }
+
+        .hero-content p {
+          max-width: 510px;
+          margin: 13px 0 20px;
+          color: #705d40;
+          font-size: 12px;
+          line-height: 1.65;
+        }
+
+        .hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+        }
+
+        .hero-primary,
+        .hero-secondary {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 15px;
+          border-radius: 11px;
+          font-size: 11px;
+          font-weight: 750;
+          transition: 0.2s ease;
+        }
+
+        .hero-primary {
+          background: #4c3b25;
+          color: #fff;
+          box-shadow: 0 10px 20px rgba(73, 55, 30, 0.16);
+        }
+
+        .hero-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 25px rgba(73, 55, 30, 0.22);
+        }
+
+        .hero-secondary {
+          border: 1px solid rgba(96, 70, 30, 0.2);
+          background: rgba(255, 255, 255, 0.32);
+          color: #654a24;
+        }
+
+        .hero-secondary:hover {
+          background: rgba(255, 255, 255, 0.52);
+          transform: translateY(-2px);
+        }
+
+        .hero-decoration {
+          position: absolute;
+          right: 28%;
+          top: 50%;
+          width: 330px;
+          height: 330px;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .hero-ring {
           position: absolute;
           inset: 0;
-          width: 100%;
-          height: 100%;
+          border: 1px solid rgba(115, 82, 27, 0.13);
+          border-radius: 50%;
         }
 
-        .hero-banner-slide {
-          opacity: 0;
-          visibility: hidden;
-          transition: opacity 0.65s ease, visibility 0.65s ease;
+        .ring-one {
+          animation: rotateSlow 18s linear infinite;
         }
 
-        .hero-banner-slide.active {
-          opacity: 1;
-          visibility: visible;
-          z-index: 1;
+        .ring-two {
+          inset: 38px;
+          border-style: dashed;
+          animation: rotateSlowReverse 14s linear infinite;
         }
 
-        .hero-banner-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center;
-          display: block;
-        }
-
-        .hero-banner-arrow {
+        .hero-glow {
           position: absolute;
-          top: 50%;
-          z-index: 5;
+          inset: 100px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          filter: blur(18px);
+        }
+
+        .hero-points-card {
+          position: relative;
+          z-index: 4;
+          width: 230px;
+          padding: 17px;
+          border: 1px solid rgba(255, 255, 255, 0.48);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.52);
+          box-shadow:
+            0 18px 35px rgba(103, 75, 29, 0.11),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(10px);
+          animation: floating 4s ease-in-out infinite;
+        }
+
+        .points-card-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .points-icon {
           width: 39px;
           height: 39px;
           display: grid;
           place-items: center;
-          border: 1px solid rgba(255, 255, 255, 0.62);
-          border-radius: 50%;
-          background: rgba(57, 43, 25, 0.32);
-          color: #fff;
-          backdrop-filter: blur(8px);
-          transform: translateY(-50%);
-          transition: 0.2s ease;
-          cursor: pointer;
+          border-radius: 11px;
+          background: #fff9eb;
+          color: #9b732f;
         }
 
-        .hero-banner-arrow:hover {
-          background: rgba(57, 43, 25, 0.58);
-          transform: translateY(-50%) scale(1.05);
+        .points-card-top > div:nth-child(2) {
+          flex: 1;
         }
 
-        .hero-banner-prev {
-          left: 16px;
-          transform: translateY(-50%) rotate(180deg);
+        .points-card-top span {
+          display: block;
+          color: #80683f;
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.1px;
         }
 
-        .hero-banner-prev:hover {
-          transform: translateY(-50%) rotate(180deg) scale(1.05);
+        .points-card-top strong {
+          display: block;
+          margin-top: 2px;
+          color: #4b3821;
+          font-size: 20px;
         }
 
-        .hero-banner-next {
-          right: 16px;
+        .points-card-top > a {
+          width: 27px;
+          height: 27px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.6);
+          color: #806335;
         }
 
-        .hero-banner-dots {
-          position: absolute;
-          left: 50%;
-          bottom: 14px;
-          z-index: 5;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 9px;
-          border: 1px solid rgba(255, 255, 255, 0.45);
-          border-radius: 999px;
-          background: rgba(45, 34, 21, 0.2);
-          backdrop-filter: blur(8px);
-          transform: translateX(-50%);
-        }
-
-        .hero-banner-dot {
-          width: 6px;
+        .points-progress {
           height: 6px;
-          padding: 0;
-          border: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.58);
-          cursor: pointer;
-          transition: 0.25s ease;
+          margin-top: 16px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(117, 87, 39, 0.12);
         }
 
-        .hero-banner-dot.active {
-          width: 20px;
-          border-radius: 999px;
-          background: #fff;
+        .points-progress span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #96702e;
+          transition: width 0.7s ease;
+        }
+
+        .points-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 7px;
+          color: #876f4a;
+          font-size: 8px;
         }
 
         /* =================================================
@@ -4932,8 +5059,16 @@ export default function DashboardPage() {
           }
 
           .welcome-hero {
-            min-height: 285px;
-            height: 285px;
+            min-height: 300px;
+          }
+
+          .hero-points-card {
+            width: 205px;
+          }
+
+          .hero-decoration {
+            right: 21%;
+            opacity: 0.7;
           }
 
           .product-grid {
@@ -5010,41 +5145,34 @@ export default function DashboardPage() {
           }
 
           .welcome-hero {
-            min-height: 220px;
-            height: 220px;
+            min-height: 370px;
+            align-items: flex-start;
+            padding: 25px 21px;
             border-radius: 21px;
           }
 
-          .hero-banner-image {
-            object-position: center center;
+          .hero-content h1 {
+            font-size: 34px;
           }
 
-          .hero-banner-arrow {
-            width: 33px;
-            height: 33px;
+          .hero-content p {
+            max-width: 90%;
+            font-size: 10px;
           }
 
-          .hero-banner-prev {
-            left: 10px;
+          .hero-decoration {
+            right: -90px;
+            top: 67%;
+            opacity: 0.45;
+            transform: translateY(-50%) scale(0.75);
           }
 
-          .hero-banner-next {
-            right: 10px;
-          }
-
-          .hero-banner-dots {
-            bottom: 10px;
-            gap: 5px;
-            padding: 5px 7px;
-          }
-
-          .hero-banner-dot {
-            width: 5px;
-            height: 5px;
-          }
-
-          .hero-banner-dot.active {
-            width: 16px;
+          .hero-points-card {
+            position: absolute;
+            left: 21px;
+            right: 21px;
+            bottom: 19px;
+            width: auto;
           }
 
           .stats-grid {
@@ -5319,8 +5447,7 @@ export default function DashboardPage() {
           }
 
           .welcome-hero {
-            min-height: 220px;
-            height: 220px;
+            min-height: 365px;
           }
         }
 
@@ -5336,6 +5463,265 @@ export default function DashboardPage() {
             animation-iteration-count: 1 !important;
             scroll-behavior: auto !important;
             transition-duration: 0.01ms !important;
+          }
+        }
+
+        /* =================================================
+           PRIME CART PREMIUM HERO + CATEGORY SIDEBAR
+           Only overrides the old hero presentation.
+        ================================================= */
+
+        .premium-banner-hero {
+          position: relative;
+          min-height: 0 !important;
+          height: clamp(250px, 25vw, 430px);
+          padding: 0 !important;
+          overflow: hidden;
+          border-radius: 24px !important;
+          border: 1px solid rgba(203, 174, 111, 0.25);
+          background: #f8f4ea;
+          box-shadow: 0 18px 45px rgba(84, 62, 30, 0.09);
+          isolation: isolate;
+        }
+
+        .premium-banner-track {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+        }
+
+        .premium-banner-slide {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          visibility: hidden;
+          transform: scale(1.015);
+          transition: opacity 0.55s ease, transform 0.8s ease, visibility 0.55s ease;
+        }
+
+        .premium-banner-slide.active {
+          opacity: 1;
+          visibility: visible;
+          transform: scale(1);
+          z-index: 1;
+        }
+
+        .premium-banner-image {
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .premium-banner-arrow {
+          position: absolute;
+          z-index: 5;
+          top: 50%;
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255,255,255,0.78);
+          border-radius: 50%;
+          background: rgba(255,255,255,0.84);
+          color: #70511f;
+          box-shadow: 0 10px 25px rgba(60,45,22,0.12);
+          backdrop-filter: blur(10px);
+          transform: translateY(-50%);
+          cursor: pointer;
+          transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+        }
+
+        .premium-banner-arrow:hover {
+          background: #fff;
+          box-shadow: 0 13px 28px rgba(60,45,22,0.17);
+        }
+
+        .premium-banner-prev { left: 18px; }
+        .premium-banner-next { right: 18px; }
+
+        .premium-banner-dots {
+          position: absolute;
+          z-index: 6;
+          left: 50%;
+          bottom: 15px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 9px;
+          border: 1px solid rgba(255,255,255,0.6);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.5);
+          backdrop-filter: blur(9px);
+          transform: translateX(-50%);
+        }
+
+        .premium-banner-dot {
+          width: 7px;
+          height: 7px;
+          padding: 0;
+          border: 0;
+          border-radius: 999px;
+          background: rgba(106, 80, 36, 0.32);
+          cursor: pointer;
+          transition: width .25s ease, background .25s ease;
+        }
+
+        .premium-banner-dot.active {
+          width: 22px;
+          background: #c79a3b;
+        }
+
+        .sidebar-category-group {
+          margin-top: 2px;
+        }
+
+        .sidebar-category-row {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .sidebar-category-main {
+          flex: 1;
+        }
+
+        .sidebar-category-toggle {
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 34px;
+          border-radius: 9px;
+          color: #9a7a3c;
+          cursor: pointer;
+          transition: transform .2s ease, background .2s ease;
+        }
+
+        .sidebar-category-toggle:hover {
+          background: #fff8ea;
+        }
+
+        .sidebar-category-toggle.open svg {
+          transform: rotate(180deg);
+        }
+
+        .sidebar-category-list {
+          display: grid;
+          gap: 3px;
+          max-height: 0;
+          overflow: hidden;
+          opacity: 0;
+          transition: max-height .3s ease, opacity .2s ease;
+        }
+
+        .sidebar-category-list.open {
+          max-height: 500px;
+          opacity: 1;
+          margin: 2px 0 5px 15px;
+          padding-left: 11px;
+          border-left: 1px solid #eadfc9;
+        }
+
+        .sidebar-category-item {
+          min-height: 34px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 8px;
+          border-radius: 9px;
+          color: #776b59;
+          font-size: 11px;
+          font-weight: 650;
+          transition: background .18s ease, color .18s ease, transform .18s ease;
+        }
+
+        .sidebar-category-item:hover {
+          color: #9a742e;
+          background: #fffaf1;
+          transform: translateX(2px);
+        }
+
+        .sidebar-category-item > span:nth-child(2) {
+          flex: 1;
+        }
+
+        .sidebar-category-item.all-category {
+          color: #a27b32;
+          font-weight: 750;
+          background: rgba(201,163,92,.08);
+        }
+
+        .category-mini-icon {
+          width: 24px;
+          height: 24px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 24px;
+          border-radius: 7px;
+          background: #fff;
+          border: 1px solid #eee5d6;
+          font-size: 13px;
+        }
+
+        @media (max-width: 1180px) {
+          .premium-banner-hero {
+            height: clamp(240px, 27vw, 360px);
+          }
+        }
+
+        @media (max-width: 980px) {
+          .premium-banner-hero {
+            height: clamp(230px, 43vw, 340px);
+            border-radius: 20px !important;
+          }
+        }
+
+        @media (max-width: 700px) {
+          .premium-banner-hero {
+            height: clamp(190px, 53vw, 270px);
+            border-radius: 17px !important;
+          }
+
+          .premium-banner-image {
+            object-position: center center;
+          }
+
+          .premium-banner-arrow {
+            width: 34px;
+            height: 34px;
+          }
+
+          .premium-banner-prev { left: 9px; }
+          .premium-banner-next { right: 9px; }
+
+          .premium-banner-dots {
+            bottom: 8px;
+            gap: 5px;
+            padding: 5px 7px;
+          }
+
+          .premium-banner-dot {
+            width: 6px;
+            height: 6px;
+          }
+
+          .premium-banner-dot.active {
+            width: 17px;
+          }
+        }
+
+        @media (max-width: 430px) {
+          .premium-banner-hero {
+            height: 205px;
+          }
+
+          .premium-banner-arrow {
+            width: 30px;
+            height: 30px;
+          }
+
+          .premium-banner-arrow svg {
+            width: 16px;
+            height: 16px;
           }
         }
       `}</style>
