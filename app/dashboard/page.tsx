@@ -835,7 +835,7 @@ export default function FilesPage() {
 
           {/* =====================================
               FILE WORKSPACE
-          ====================================== */
+          ====================================== */}
           <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="relative w-full xl:max-w-xl">
