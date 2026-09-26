@@ -25,6 +25,7 @@ import {
   AlertCircle,
   CloudUpload,
 } from "lucide-react";
+
 import type {
   ChangeEvent,
   DragEvent,
@@ -33,6 +34,7 @@ import type {
   ReactNode,
   RefObject,
 } from "react";
+
 import {
   useCallback,
   useEffect,
@@ -40,8 +42,6 @@ import {
   useRef,
   useState,
 } from "react";
-
-import DashboardShell from "../components/DashboardShell";
 
 type FileType =
   | "folder"
@@ -164,19 +164,19 @@ export default function FilesPage() {
       const token = getToken();
 
       if (!token) {
-        throw new Error("Please login again to access your files.");
+        throw new Error(
+          "Please login again to access your files."
+        );
       }
 
       const headers = new Headers(
         options.headers
       );
 
-      if (token) {
-        headers.set(
-          "Authorization",
-          `Bearer ${token}`
-        );
-      }
+      headers.set(
+        "Authorization",
+        `Bearer ${token}`
+      );
 
       const response = await fetch(
         `${API_URL}${endpoint}`,
@@ -288,8 +288,12 @@ export default function FilesPage() {
           typeof rawType === "string"
             ? rawType
             : undefined,
-        modified: formatModifiedDate(modified),
-        modifiedAt: getTimestamp(modified),
+        modified:
+          formatModifiedDate(
+            modified
+          ),
+        modifiedAt:
+          getTimestamp(modified),
       };
     },
     []
@@ -311,7 +315,9 @@ export default function FilesPage() {
         }
 
         const response =
-          await apiRequest("/api/files");
+          await apiRequest(
+            "/api/files"
+          );
 
         const data =
           await response.json();
@@ -705,374 +711,359 @@ export default function FilesPage() {
   }, [uploading]);
 
   return (
-    <DashboardShell>
-      <div className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
-
-        {/* =====================================
-            PRIME CART HERO BANNER - UI ONLY
-        ====================================== */}
-        <section className="mb-6 overflow-hidden rounded-[28px] border border-[#eadfca] bg-[#fffdf8] shadow-[0_12px_40px_rgba(120,90,30,0.10)] dark:border-[#3a3120] dark:bg-[#11100d]">
-          <div className="relative w-full overflow-hidden">
-            <img
-              src="/banner/hero-banner.png"
-              alt="PrimeCart shopping banner"
-              className="block h-auto max-h-[400px] min-h-[170px] w-full object-cover object-center sm:min-h-[230px] md:min-h-[290px] lg:min-h-[350px]"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fffdf8]/10 via-transparent to-[#fffdf8]/5 dark:from-black/10 dark:to-black/20" />
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 sm:bottom-5">
-              <span className="h-2 w-7 rounded-full bg-white shadow-sm" />
-              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================
-            PAGE HEADER
-        ====================================== */}
-
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
-                <HardDrive className="h-4 w-4 text-[#b8872d] dark:text-[#d4af37]" />
-              </div>
-
-              <span className="text-sm font-semibold text-[#b8872d] dark:text-[#d4af37]">
-                Cloud Storage
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-              My Files
-            </h1>
-
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Securely store, organize and
-              manage your files from one
-              place.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                setShowUpload(true)
-              }
-              disabled={uploading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-
-              {uploading
-                ? "Uploading..."
-                : "Upload files"}
-            </button>
-          </div>
-        </div>
-
-        {/* =====================================
-            STORAGE
-        ====================================== */}
-
-        <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-
-          <div className="p-5 sm:p-6">
-
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
-              <div className="flex items-center gap-4">
-
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
-                  <HardDrive className="h-5 w-5 text-[#b8872d] dark:text-[#d4af37]" />
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Storage
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    {formatBytes(
-                      usedBytes
-                    )}{" "}
-                    used of 10 GB
-                  </p>
-                </div>
-              </div>
-
-              <div className="w-full lg:max-w-xl">
-
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="text-slate-400">
-                    {storagePercentage.toFixed(
-                      1
-                    )}
-                    % used
-                  </span>
-
-                  <span className="font-medium text-slate-600 dark:text-slate-300">
-                    {formatBytes(
-                      freeBytes
-                    )}{" "}
-                    free
-                  </span>
-                </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-[#c99718] transition-all duration-500"
-                    style={{
-                      width: `${storagePercentage}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================
-            TOOLBAR
-        ====================================== */}
-
-        <div className="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-
-          <div className="relative w-full xl:max-w-xl">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder="Search your files..."
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c99718] focus:ring-4 focus:ring-[#c99718]/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
-            />
-
-            {search && (
-              <button
-                type="button"
-                onClick={() =>
-                  setSearch("")
-                }
-                className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(
-                    event.target
-                      .value as
-                      | "recent"
-                      | "name"
-                      | "size"
-                  )
-                }
-                className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-[#c99718] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-              >
-                <option value="recent">
-                  Recently modified
-                </option>
-
-                <option value="name">
-                  Name
-                </option>
-
-                <option value="size">
-                  Largest first
-                </option>
-              </select>
-
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                loadFiles(true)
-              }
-              disabled={
-                refreshing ||
-                loading
-              }
-              title="Refresh"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  refreshing
-                    ? "animate-spin"
-                    : ""
-                }`}
-              />
-            </button>
-
-            <div className="flex h-11 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-white/5">
-
-              <button
-                type="button"
-                onClick={() =>
-                  setView("grid")
-                }
-                aria-label="Grid view"
-                className={`flex w-10 items-center justify-center rounded-lg transition ${
-                  view === "grid"
-                    ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400"
-                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                }`}
-              >
-                <Grid2X2 className="h-4 w-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setView("list")
-                }
-                aria-label="List view"
-                className={`flex w-10 items-center justify-center rounded-lg transition ${
-                  view === "list"
-                    ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400"
-                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                }`}
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================
-            BREADCRUMB
-        ====================================== */}
-
-        <div className="mt-7 flex items-center gap-2 text-sm">
-          <FolderOpen className="h-4 w-4 text-[#b8872d]" />
-
-          <span className="font-semibold text-slate-900 dark:text-white">
-            My Files
-          </span>
-
-          <span className="text-slate-300 dark:text-slate-700">
-            /
-          </span>
-
-          <span className="text-slate-400">
-            All Files
-          </span>
-        </div>
-
-        {/* =====================================
-            CONTENT
-        ====================================== */}
-
-        {loading ? (
-          <LoadingState view={view} />
-        ) : filteredFiles.length ===
-          0 ? (
-          <EmptyState
-            search={search}
-            onUpload={() =>
-              setShowUpload(true)
-            }
-          />
-        ) : view === "grid" ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredFiles.map(
-              (file) => (
-                <FileCard
-                  key={file.id}
-                  file={file}
-                  onClick={() =>
-                    setSelectedFile(
-                      file
-                    )
-                  }
-                  onDownload={() =>
-                    downloadFile(
-                      file
-                    )
-                  }
-                  onDelete={() =>
-                    deleteFile(file)
-                  }
-                  downloading={
-                    downloadingId ===
-                    file.id
-                  }
-                  deleting={
-                    deletingId ===
-                    file.id
-                  }
-                />
-              )
-            )}
-          </div>
-        ) : (
-          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-
-            <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
-              <span>Name</span>
-              <span>Size</span>
-              <span>Modified</span>
-              <span />
-            </div>
-
-            {filteredFiles.map(
-              (file) => (
-                <ListFile
-                  key={file.id}
-                  file={file}
-                  onClick={() =>
-                    setSelectedFile(
-                      file
-                    )
-                  }
-                  onDownload={() =>
-                    downloadFile(
-                      file
-                    )
-                  }
-                  onDelete={() =>
-                    deleteFile(file)
-                  }
-                  downloading={
-                    downloadingId ===
-                    file.id
-                  }
-                  deleting={
-                    deletingId ===
-                    file.id
-                  }
-                />
-              )
-            )}
-          </div>
-        )}
-      </div>
+    <div className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
 
       {/* =====================================
-          UPLOAD MODAL
+          PRIME CART HERO BANNER
       ====================================== */}
+
+      <section className="mb-6 overflow-hidden rounded-[28px] border border-[#eadfca] bg-[#fffdf8] shadow-[0_12px_40px_rgba(120,90,30,0.10)] dark:border-[#3a3120] dark:bg-[#11100d]">
+        <div className="relative w-full overflow-hidden">
+          <img
+            src="/banner/hero-banner.png"
+            alt="PrimeCart shopping banner"
+            className="block h-auto max-h-[400px] min-h-[170px] w-full object-cover object-center sm:min-h-[230px] md:min-h-[290px] lg:min-h-[350px]"
+          />
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fffdf8]/10 via-transparent to-[#fffdf8]/5 dark:from-black/10 dark:to-black/20" />
+
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 sm:bottom-5">
+            <span className="h-2 w-7 rounded-full bg-white shadow-sm" />
+            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
+            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
+            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
+          </div>
+        </div>
+      </section>
+
+      {/* PAGE HEADER */}
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
+              <HardDrive className="h-4 w-4 text-[#b8872d] dark:text-[#d4af37]" />
+            </div>
+
+            <span className="text-sm font-semibold text-[#b8872d] dark:text-[#d4af37]">
+              Cloud Storage
+            </span>
+          </div>
+
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            My Files
+          </h1>
+
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Securely store, organize and
+            manage your files from one
+            place.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              setShowUpload(true)
+            }
+            disabled={uploading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+
+            {uploading
+              ? "Uploading..."
+              : "Upload files"}
+          </button>
+        </div>
+      </div>
+
+      {/* STORAGE */}
+
+      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
+                <HardDrive className="h-5 w-5 text-[#b8872d] dark:text-[#d4af37]" />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Storage
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  {formatBytes(
+                    usedBytes
+                  )}{" "}
+                  used of 10 GB
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full lg:max-w-xl">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="text-slate-400">
+                  {storagePercentage.toFixed(
+                    1
+                  )}
+                  % used
+                </span>
+
+                <span className="font-medium text-slate-600 dark:text-slate-300">
+                  {formatBytes(
+                    freeBytes
+                  )}{" "}
+                  free
+                </span>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[#c99718] transition-all duration-500"
+                  style={{
+                    width: `${storagePercentage}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TOOLBAR */}
+
+      <div className="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+
+        <div className="relative w-full xl:max-w-xl">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Search your files..."
+            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c99718] focus:ring-4 focus:ring-[#c99718]/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
+          />
+
+          {search && (
+            <button
+              type="button"
+              onClick={() =>
+                setSearch("")
+              }
+              className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(event) =>
+                setSortBy(
+                  event.target
+                    .value as
+                    | "recent"
+                    | "name"
+                    | "size"
+                )
+              }
+              className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-[#c99718] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+            >
+              <option value="recent">
+                Recently modified
+              </option>
+
+              <option value="name">
+                Name
+              </option>
+
+              <option value="size">
+                Largest first
+              </option>
+            </select>
+
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              loadFiles(true)
+            }
+            disabled={
+              refreshing ||
+              loading
+            }
+            title="Refresh"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${
+                refreshing
+                  ? "animate-spin"
+                  : ""
+              }`}
+            />
+          </button>
+
+          <div className="flex h-11 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-white/5">
+
+            <button
+              type="button"
+              onClick={() =>
+                setView("grid")
+              }
+              aria-label="Grid view"
+              className={`flex w-10 items-center justify-center rounded-lg transition ${
+                view === "grid"
+                  ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              }`}
+            >
+              <Grid2X2 className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setView("list")
+              }
+              aria-label="List view"
+              className={`flex w-10 items-center justify-center rounded-lg transition ${
+                view === "list"
+                  ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]"
+                  : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* BREADCRUMB */}
+
+      <div className="mt-7 flex items-center gap-2 text-sm">
+        <FolderOpen className="h-4 w-4 text-[#b8872d]" />
+
+        <span className="font-semibold text-slate-900 dark:text-white">
+          My Files
+        </span>
+
+        <span className="text-slate-300 dark:text-slate-700">
+          /
+        </span>
+
+        <span className="text-slate-400">
+          All Files
+        </span>
+      </div>
+
+      {/* CONTENT */}
+
+      {loading ? (
+        <LoadingState view={view} />
+      ) : filteredFiles.length ===
+        0 ? (
+        <EmptyState
+          search={search}
+          onUpload={() =>
+            setShowUpload(true)
+          }
+        />
+      ) : view === "grid" ? (
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredFiles.map(
+            (file) => (
+              <FileCard
+                key={file.id}
+                file={file}
+                onClick={() =>
+                  setSelectedFile(
+                    file
+                  )
+                }
+                onDownload={() =>
+                  downloadFile(
+                    file
+                  )
+                }
+                onDelete={() =>
+                  deleteFile(file)
+                }
+                downloading={
+                  downloadingId ===
+                  file.id
+                }
+                deleting={
+                  deletingId ===
+                  file.id
+                }
+              />
+            )
+          )}
+        </div>
+      ) : (
+        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+
+          <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
+            <span>Name</span>
+            <span>Size</span>
+            <span>Modified</span>
+            <span />
+          </div>
+
+          {filteredFiles.map(
+            (file) => (
+              <ListFile
+                key={file.id}
+                file={file}
+                onClick={() =>
+                  setSelectedFile(
+                    file
+                  )
+                }
+                onDownload={() =>
+                  downloadFile(
+                    file
+                  )
+                }
+                onDelete={() =>
+                  deleteFile(file)
+                }
+                downloading={
+                  downloadingId ===
+                  file.id
+                }
+                deleting={
+                  deletingId ===
+                  file.id
+                }
+              />
+            )
+          )}
+        </div>
+      )}
+
+      {/* UPLOAD MODAL */}
 
       {showUpload && (
         <UploadModal
@@ -1107,9 +1098,7 @@ export default function FilesPage() {
         />
       )}
 
-      {/* =====================================
-          FILE DETAILS
-      ====================================== */}
+      {/* FILE DETAILS */}
 
       {selectedFile && (
         <FileDetailsModal
@@ -1138,9 +1127,7 @@ export default function FilesPage() {
         />
       )}
 
-      {/* =====================================
-          TOAST
-      ====================================== */}
+      {/* TOAST */}
 
       {toast && (
         <Toast
@@ -1150,7 +1137,7 @@ export default function FilesPage() {
           }
         />
       )}
-    </DashboardShell>
+    </div>
   );
 }
 
@@ -1181,7 +1168,7 @@ function FileCard({
         <button
           type="button"
           onClick={onClick}
-          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#faf4df] group-hover:text-[#b8872d] dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#faf4df]0/10 dark:group-hover:text-blue-400"
+          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#faf4df] group-hover:text-[#b8872d] dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#b8872d]/10 dark:group-hover:text-[#d4af37]"
         >
           <FileIcon
             type={file.type}
@@ -1189,7 +1176,6 @@ function FileCard({
         </button>
 
         <div className="relative">
-
           <button
             type="button"
             onClick={onClick}
@@ -1235,7 +1221,7 @@ function FileCard({
             downloading ||
             deleting
           }
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-[#b8872d] disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-blue-400"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-[#b8872d] disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-[#d4af37]"
         >
           {downloading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1333,7 +1319,7 @@ function ListFile({
             deleting
           }
           title="Download"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#faf4df] hover:text-[#b8872d] disabled:opacity-50 dark:hover:bg-[#faf4df]0/10 dark:hover:text-blue-400"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#faf4df] hover:text-[#b8872d] disabled:opacity-50 dark:hover:bg-[#b8872d]/10 dark:hover:text-[#d4af37]"
         >
           {downloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1442,7 +1428,7 @@ function EmptyState({
         <button
           type="button"
           onClick={onUpload}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d]"
         >
           <Upload className="h-4 w-4" />
           Upload files
@@ -1592,7 +1578,7 @@ function UploadModal({
                 onClick={() =>
                   inputRef.current?.click()
                 }
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#faf4df]0"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b8872d]"
               >
                 <Upload className="h-4 w-4" />
                 Choose files
@@ -1663,7 +1649,7 @@ function FileDetailsModal({
 
       <div className="flex items-start gap-4 pr-8">
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]">
           <FileIcon
             type={file.type}
           />
@@ -1720,7 +1706,7 @@ function FileDetailsModal({
             downloading ||
             deleting
           }
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c99718] py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c99718] py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d] disabled:opacity-60"
         >
           {downloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1754,7 +1740,7 @@ function FileDetailsModal({
         </button>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ead9a8] bg-[#faf4df] p-3 text-xs text-blue-700 dark:border-[#c99718]/10 dark:bg-[#faf4df]0/5 dark:text-[#e0c46a]">
+      <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ead9a8] bg-[#faf4df] p-3 text-xs text-[#8a6818] dark:border-[#c99718]/10 dark:bg-[#c99718]/5 dark:text-[#e0c46a]">
         <Share2 className="h-4 w-4 shrink-0" />
 
         <span>
@@ -2009,11 +1995,21 @@ function formatBytes(
   )} ${units[index]}`;
 }
 
-function getTimestamp(value: unknown) {
+function getTimestamp(
+  value: unknown
+) {
   if (!value) return 0;
 
-  const timestamp = new Date(String(value)).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
+  const timestamp =
+    new Date(
+      String(value)
+    ).getTime();
+
+  return Number.isNaN(
+    timestamp
+  )
+    ? 0
+    : timestamp;
 }
 
 function formatModifiedDate(
@@ -2024,7 +2020,9 @@ function formatModifiedDate(
   }
 
   const date =
-    new Date(String(value));
+    new Date(
+      String(value)
+    );
 
   if (
     Number.isNaN(
@@ -2047,14 +2045,12 @@ function formatModifiedDate(
 
   const hours =
     Math.floor(
-      difference /
-        3600000
+      difference / 3600000
     );
 
   const days =
     Math.floor(
-      difference /
-        86400000
+      difference / 86400000
     );
 
   if (minutes < 1) {
