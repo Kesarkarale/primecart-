@@ -25,6 +25,8 @@ import {
   AlertCircle,
   CloudUpload,
 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type {
   ChangeEvent,
   DragEvent,
@@ -74,7 +76,19 @@ const API_URL = (
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
+const HERO_BANNERS = [
+  { image: "/banner/hero-banner.png", link: "/categories/fashion" },
+  { image: "/banner/hero-banner2.png", link: "/categories/electronics" },
+  { image: "/banner/hero-banner3.png", link: "/categories/home-living" },
+  { image: "/banner/hero-banner4.png", link: "/categories/beauty" },
+  { image: "/banner/hero-banner5.png", link: "/categories/fashion" },
+  { image: "/banner/hero-banner6.png", link: "/categories/electronics" },
+];
+
 export default function FilesPage() {
+  const router = useRouter();
+  const [heroCurrent, setHeroCurrent] = useState(0);
+
   const [files, setFiles] = useState<FileItem[]>([]);
 
   const [search, setSearch] = useState("");
@@ -118,6 +132,14 @@ export default function FilesPage() {
 
   const fileInputRef =
     useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setHeroCurrent((prev) => (prev + 1) % HERO_BANNERS.length);
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   const showToast = useCallback(
     (
@@ -706,301 +728,422 @@ export default function FilesPage() {
 
   return (
     <DashboardShell>
-      <div className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-        <div className="space-y-6 lg:space-y-7">
+      <div className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
 
-          {/* =====================================
-              HERO BANNER
-          ====================================== */}
-          <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_18px_55px_-28px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-950 dark:shadow-black/30">
-            <div className="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-              <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-32 right-1/4 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
+        {/* =====================================
+            HERO BANNER
+        ====================================== */}
 
-              <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.2fr_.8fr]">
-                <div className="max-w-2xl">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50 backdrop-blur-sm">
-                    <CloudUpload className="h-3.5 w-3.5" />
-                    CloudVault Storage
-                  </div>
+        <section className="mb-7 overflow-hidden rounded-[30px] shadow-xl">
+          <div className="relative w-full overflow-hidden rounded-[30px] aspect-[16/6] min-h-[150px] sm:min-h-[190px] md:min-h-[240px] lg:min-h-[300px] xl:min-h-[340px]">
+            {HERO_BANNERS.map((banner, index) => (
+              <Image
+                key={banner.image}
+                src={banner.image}
+                alt={`PrimeCart banner ${index + 1}`}
+                fill
+                priority={index === 0}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 92vw, 1500px"
+                onClick={() => router.push(banner.link)}
+                className={`cursor-pointer object-cover transition-opacity duration-700 ${
+                  heroCurrent === index ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
 
-                  <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                    Your files. One secure workspace. Always within reach.
-                  </h1>
-
-                  <p className="mt-4 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">
-                    Upload, organize, download and manage your files from a clean cloud workspace built for speed and simplicity.
-                  </p>
-
-                  <div className="mt-7 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowUpload(true)}
-                      disabled={uploading}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
-                      {uploading ? "Uploading..." : "Upload files"}
-                    </button>
-
-                    <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-blue-50 backdrop-blur-sm">
-                      <span className="font-semibold text-white">100 MB</span> max per file
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative mx-auto w-full max-w-md lg:ml-auto">
-                  <div className="rounded-[26px] border border-white/15 bg-white/10 p-3 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-4">
-                    <div className="rounded-[22px] border border-white/10 bg-slate-950/30 p-5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-                            <HardDrive className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">Storage overview</p>
-                            <p className="mt-0.5 text-xs text-blue-100">Your CloudVault space</p>
-                          </div>
-                        </div>
-                        <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
-                          Active
-                        </span>
-                      </div>
-
-                      <div className="mt-6">
-                        <div className="mb-2 flex items-center justify-between text-xs">
-                          <span className="text-blue-100">{storagePercentage.toFixed(1)}% used</span>
-                          <span className="font-semibold text-white">10 GB limit</span>
-                        </div>
-                        <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="h-full rounded-full bg-white transition-all duration-500"
-                            style={{ width: `${storagePercentage}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3">
-                          <p className="text-[11px] text-blue-100">Used</p>
-                          <p className="mt-1 text-base font-bold text-white">{formatBytes(usedBytes)}</p>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3">
-                          <p className="text-[11px] text-blue-100">Available</p>
-                          <p className="mt-1 text-base font-bold text-white">{formatBytes(freeBytes)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:bottom-5">
+              {HERO_BANNERS.map((banner, index) => (
+                <button
+                  key={`${banner.image}-dot`}
+                  type="button"
+                  aria-label={`Show banner ${index + 1}`}
+                  onClick={() => setHeroCurrent(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    heroCurrent === index
+                      ? "w-8 bg-white"
+                      : "w-2 bg-white/60 hover:bg-white/80"
+                  }`}
+                />
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* =====================================
-              STORAGE CONTAINER
-          ====================================== */}
-          <section className="rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
+        {/* =====================================
+            PAGE HEADER
+        ====================================== */}
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10">
+                <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                Cloud Storage
+              </span>
+            </div>
+
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              My Files
+            </h1>
+
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Securely store, organize and
+              manage your files from one
+              place.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                setShowUpload(true)
+              }
+              disabled={uploading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+
+              {uploading
+                ? "Uploading..."
+                : "Upload files"}
+            </button>
+          </div>
+        </div>
+
+        {/* =====================================
+            STORAGE
+        ====================================== */}
+
+        <div className="mt-8 overflow-hidden rounded-2xl border border-[#ececec] bg-white shadow-sm dark:border-[#222] dark:bg-[#0d0d0d]">
+
+          <div className="p-5 sm:p-6">
+
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10">
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10">
                   <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
+
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Storage</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Storage
+                  </p>
+
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatBytes(usedBytes)} used of 10 GB
+                    {formatBytes(
+                      usedBytes
+                    )}{" "}
+                    used of 10 GB
                   </p>
                 </div>
               </div>
 
               <div className="w-full lg:max-w-xl">
+
                 <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="text-slate-400">{storagePercentage.toFixed(1)}% used</span>
-                  <span className="font-medium text-slate-600 dark:text-slate-300">{formatBytes(freeBytes)} free</span>
+                  <span className="text-slate-400">
+                    {storagePercentage.toFixed(
+                      1
+                    )}
+                    % used
+                  </span>
+
+                  <span className="font-medium text-slate-600 dark:text-slate-300">
+                    {formatBytes(
+                      freeBytes
+                    )}{" "}
+                    free
+                  </span>
                 </div>
+
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                   <div
                     className="h-full rounded-full bg-blue-600 transition-all duration-500"
-                    style={{ width: `${storagePercentage}%` }}
+                    style={{
+                      width: `${storagePercentage}%`,
+                    }}
                   />
                 </div>
               </div>
             </div>
-          </section>
-
-          {/* =====================================
-              FILE WORKSPACE
-          ====================================== */}
-          <section className="rounded-[26px] border border-slate-200/80 bg-white p-4 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="relative w-full xl:max-w-xl">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search your files..."
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/[0.07]"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={(event) =>
-                      setSortBy(event.target.value as "recent" | "name" | "size")
-                    }
-                    className="h-11 appearance-none rounded-2xl border border-slate-200 bg-slate-50/70 px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                  >
-                    <option value="recent">Recently modified</option>
-                    <option value="name">Name</option>
-                    <option value="size">Largest first</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => loadFiles(true)}
-                  disabled={refreshing || loading}
-                  title="Refresh"
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/70 text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                </button>
-
-                <div className="flex h-11 rounded-2xl border border-slate-200 bg-slate-50/70 p-1 dark:border-white/10 dark:bg-white/5">
-                  <button
-                    type="button"
-                    onClick={() => setView("grid")}
-                    aria-label="Grid view"
-                    className={`flex w-10 items-center justify-center rounded-lg transition ${
-                      view === "grid"
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                        : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                    }`}
-                  >
-                    <Grid2X2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("list")}
-                    aria-label="List view"
-                    className={`flex w-10 items-center justify-center rounded-lg transition ${
-                      view === "list"
-                        ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                        : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                    }`}
-                  >
-                    <List className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowUpload(true)}
-                  disabled={uploading}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  {uploading ? "Uploading..." : "Upload"}
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 border-t border-slate-100 pt-5 dark:border-white/5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <FolderOpen className="h-4 w-4 text-blue-500" />
-                  <span className="font-semibold text-slate-900 dark:text-white">My Files</span>
-                  <span className="text-slate-300 dark:text-slate-700">/</span>
-                  <span className="text-slate-400">All Files</span>
-                </div>
-                <span className="text-xs font-medium text-slate-400">
-                  {filteredFiles.length} {filteredFiles.length === 1 ? "item" : "items"}
-                </span>
-              </div>
-            </div>
-
-            {loading ? (
-              <LoadingState view={view} />
-            ) : filteredFiles.length === 0 ? (
-              <EmptyState
-                search={search}
-                onUpload={() => setShowUpload(true)}
-              />
-            ) : view === "grid" ? (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredFiles.map((file) => (
-                  <FileCard
-                    key={file.id}
-                    file={file}
-                    onClick={() => setSelectedFile(file)}
-                    onDownload={() => downloadFile(file)}
-                    onDelete={() => deleteFile(file)}
-                    downloading={downloadingId === file.id}
-                    deleting={deletingId === file.id}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Modified</span>
-                  <span />
-                </div>
-                {filteredFiles.map((file) => (
-                  <ListFile
-                    key={file.id}
-                    file={file}
-                    onClick={() => setSelectedFile(file)}
-                    onDownload={() => downloadFile(file)}
-                    onDelete={() => deleteFile(file)}
-                    downloading={downloadingId === file.id}
-                    deleting={deletingId === file.id}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          </div>
         </div>
+
+        {/* =====================================
+            TOOLBAR
+        ====================================== */}
+
+        <div className="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+
+          <div className="relative w-full xl:max-w-xl">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+            <input
+              type="search"
+              value={search}
+              onChange={(event) =>
+                setSearch(
+                  event.target.value
+                )
+              }
+              placeholder="Search your files..."
+              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() =>
+                  setSearch("")
+                }
+                className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  setSortBy(
+                    event.target
+                      .value as
+                      | "recent"
+                      | "name"
+                      | "size"
+                  )
+                }
+                className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+              >
+                <option value="recent">
+                  Recently modified
+                </option>
+
+                <option value="name">
+                  Name
+                </option>
+
+                <option value="size">
+                  Largest first
+                </option>
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                loadFiles(true)
+              }
+              disabled={
+                refreshing ||
+                loading
+              }
+              title="Refresh"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${
+                  refreshing
+                    ? "animate-spin"
+                    : ""
+                }`}
+              />
+            </button>
+
+            <div className="flex h-11 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-white/5">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setView("grid")
+                }
+                aria-label="Grid view"
+                className={`flex w-10 items-center justify-center rounded-lg transition ${
+                  view === "grid"
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                }`}
+              >
+                <Grid2X2 className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setView("list")
+                }
+                aria-label="List view"
+                className={`flex w-10 items-center justify-center rounded-lg transition ${
+                  view === "list"
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                }`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* =====================================
+            BREADCRUMB
+        ====================================== */}
+
+        <div className="mt-7 flex items-center gap-2 text-sm">
+          <FolderOpen className="h-4 w-4 text-blue-500" />
+
+          <span className="font-semibold text-slate-900 dark:text-white">
+            My Files
+          </span>
+
+          <span className="text-slate-300 dark:text-slate-700">
+            /
+          </span>
+
+          <span className="text-slate-400">
+            All Files
+          </span>
+        </div>
+
+        {/* =====================================
+            CONTENT
+        ====================================== */}
+
+        {loading ? (
+          <LoadingState view={view} />
+        ) : filteredFiles.length ===
+          0 ? (
+          <EmptyState
+            search={search}
+            onUpload={() =>
+              setShowUpload(true)
+            }
+          />
+        ) : view === "grid" ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredFiles.map(
+              (file) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  onClick={() =>
+                    setSelectedFile(
+                      file
+                    )
+                  }
+                  onDownload={() =>
+                    downloadFile(
+                      file
+                    )
+                  }
+                  onDelete={() =>
+                    deleteFile(file)
+                  }
+                  downloading={
+                    downloadingId ===
+                    file.id
+                  }
+                  deleting={
+                    deletingId ===
+                    file.id
+                  }
+                />
+              )
+            )}
+          </div>
+        ) : (
+          <div className="mt-5 overflow-hidden rounded-2xl border border-[#ececec] bg-white shadow-sm dark:border-[#222] dark:bg-[#0d0d0d]">
+
+            <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
+              <span>Name</span>
+              <span>Size</span>
+              <span>Modified</span>
+              <span />
+            </div>
+
+            {filteredFiles.map(
+              (file) => (
+                <ListFile
+                  key={file.id}
+                  file={file}
+                  onClick={() =>
+                    setSelectedFile(
+                      file
+                    )
+                  }
+                  onDownload={() =>
+                    downloadFile(
+                      file
+                    )
+                  }
+                  onDelete={() =>
+                    deleteFile(file)
+                  }
+                  downloading={
+                    downloadingId ===
+                    file.id
+                  }
+                  deleting={
+                    deletingId ===
+                    file.id
+                  }
+                />
+              )
+            )}
+          </div>
+        )}
       </div>
 
       {/* =====================================
           UPLOAD MODAL
       ====================================== */}
+
       {showUpload && (
         <UploadModal
           inputRef={fileInputRef}
           uploading={uploading}
-          progress={uploadProgress}
-          dragActive={dragActive}
+          progress={
+            uploadProgress
+          }
+          dragActive={
+            dragActive
+          }
           onClose={() => {
             if (!uploading) {
-              setShowUpload(false);
+              setShowUpload(
+                false
+              );
             }
           }}
-          onUpload={handleFileUpload}
-          onDragEnter={() => setDragActive(true)}
-          onDragLeave={() => setDragActive(false)}
-          onDragOver={(event) => event.preventDefault()}
+          onUpload={
+            handleFileUpload
+          }
+          onDragEnter={() =>
+            setDragActive(true)
+          }
+          onDragLeave={() =>
+            setDragActive(false)
+          }
+          onDragOver={(event) =>
+            event.preventDefault()
+          }
           onDrop={handleDrop}
         />
       )}
@@ -1008,24 +1151,44 @@ export default function FilesPage() {
       {/* =====================================
           FILE DETAILS
       ====================================== */}
+
       {selectedFile && (
         <FileDetailsModal
           file={selectedFile}
-          downloading={downloadingId === selectedFile.id}
-          deleting={deletingId === selectedFile.id}
-          onClose={() => setSelectedFile(null)}
-          onDownload={() => downloadFile(selectedFile)}
-          onDelete={() => deleteFile(selectedFile)}
+          downloading={
+            downloadingId ===
+            selectedFile.id
+          }
+          deleting={
+            deletingId ===
+            selectedFile.id
+          }
+          onClose={() =>
+            setSelectedFile(null)
+          }
+          onDownload={() =>
+            downloadFile(
+              selectedFile
+            )
+          }
+          onDelete={() =>
+            deleteFile(
+              selectedFile
+            )
+          }
         />
       )}
 
       {/* =====================================
           TOAST
       ====================================== */}
+
       {toast && (
         <Toast
           toast={toast}
-          onClose={() => setToast(null)}
+          onClose={() =>
+            setToast(null)
+          }
         />
       )}
     </DashboardShell>
@@ -1052,14 +1215,14 @@ function FileCard({
   deleting: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-200/50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-blue-500/30 dark:hover:shadow-black/20">
+    <div className="group relative overflow-hidden rounded-2xl border border-[#ececec] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37] hover:shadow-lg hover:shadow-[#D4AF37]/10 dark:border-[#222] dark:bg-[#0d0d0d] dark:hover:border-[#D4AF37]/50 dark:hover:shadow-black/20">
 
       <div className="flex items-start justify-between">
 
         <button
           type="button"
           onClick={onClick}
-          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-blue-500/10 dark:group-hover:text-blue-400"
+          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#D4AF37] group-hover:text-white dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#D4AF37] dark:group-hover:text-white"
         >
           <FileIcon
             type={file.type}
