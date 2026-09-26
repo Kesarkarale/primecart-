@@ -1,17 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  LayoutDashboard, ShoppingBag, Grid2X2, ClipboardList, Heart, Sparkles,
-  Wallet, UserRound, Settings, Search, Bell, Menu, X, ChevronRight,
-  Star, Zap, ArrowRight, ShoppingCart, Package, Truck, ShieldCheck,
-  Headphones, LogOut, Home, Smartphone, Footprints, BriefcaseBusiness,
-  Baby, Car, Shirt, Monitor, TrendingUp, RefreshCw, Gamepad2, Eye,
-  BookOpen, Palette, Laptop, Flame, Clock3, CheckCircle2, Plus, Minus,
-  ArrowUpRight, SlidersHorizontal, ChevronLeft, Tag, Award
+  ArrowRight,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Eye,
+  Heart,
+  Home,
+  Laptop,
+  Menu,
+  Moon,
+  Search,
+  ShoppingBag,
+  ShoppingCart,
+  Smartphone,
+  Sparkles,
+  Star,
+  Sun,
+  Tag,
+  Truck,
+  UserRound,
+  Watch,
+  ShieldCheck,
+  RotateCcw,
+  Headphones,
+  Package,
+  Shirt,
+  Footprints,
+  Baby,
+  Dumbbell,
+  Car,
+  BookOpen,
+  Palette,
+  Gamepad2,
+  Monitor,
+  X,
+  LogOut,
+  Settings,
+  User,
+  Zap,
 } from "lucide-react";
 
 type Product = {
@@ -34,13 +67,28 @@ type Product = {
   created_at?: string | null;
 };
 
-type Category = { id: string | number; name: string };
-type UserInfo = { name: string; email: string };
+type Category = {
+  id: string | number;
+  name: string;
+};
 
-type CartItem = { id: string | number; name: string; price: number; image_url?: string | null; quantity: number };
+type CartItem = {
+  id: string | number;
+  name: string;
+  price: number;
+  image_url?: string | null;
+  quantity: number;
+};
+
+type UserInfo = {
+  name: string;
+  email: string;
+};
 
 const CART_KEY = "primecart-cart";
 const WISHLIST_KEY = "primecart-wishlist";
+const THEME_KEY = "primecart-theme";
+
 const HERO_BANNERS = [
   "/banner/hero-banner.png",
   "/banner/hero-banner-2.png",
@@ -52,107 +100,238 @@ const HERO_BANNERS = [
   "/banner/hero-banner-8.png",
 ];
 
-function imageUrl(value?: string | null) {
+const CATEGORY_ORDER = [
+  "Mobile",
+  "Electronics",
+  "Home & Kitchen",
+  "Fashion",
+  "Footwear",
+  "Beauty",
+  "Beauty & Personal Care",
+  "Toy & Baby",
+  "Toys & Baby",
+  "Sports & Fitness",
+  "Appliance",
+  "Appliances",
+  "Automotive",
+  "Eyewear",
+  "Books",
+  "Gaming",
+  "Watch",
+  "Bag",
+];
+
+function getImageUrl(value?: string | null) {
   if (!value?.trim()) return "";
   const v = value.trim();
   if (/^https?:\/\//i.test(v) || v.startsWith("/")) return v;
   return `/${v}`;
 }
 
-function price(value: number | null | undefined) {
+function formatPrice(value: number | null | undefined) {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
-function discount(priceValue: number | null | undefined, original: number | null | undefined) {
-  if (!priceValue || !original || original <= priceValue) return 0;
-  return Math.round(((original - priceValue) / original) * 100);
+function getDiscount(price: number | null | undefined, original: number | null | undefined) {
+  if (!price || !original || original <= price) return 0;
+  return Math.round(((original - price) / original) * 100);
 }
 
 function slugify(value: string) {
-  return value.toLowerCase().trim().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
-function categoryIcon(name: string) {
+function getCategoryIcon(name: string) {
   const n = name.toLowerCase();
-  if (n.includes("mobile")) return <Smartphone size={19} />;
-  if (n.includes("foot")) return <Footprints size={19} />;
-  if (n.includes("fashion")) return <Shirt size={19} />;
-  if (n.includes("baby") || n.includes("toy")) return <Baby size={19} />;
-  if (n.includes("auto")) return <Car size={19} />;
-  if (n.includes("gaming")) return <Gamepad2 size={19} />;
-  if (n.includes("home")) return <Home size={19} />;
-  if (n.includes("watch")) return <Clock3 size={19} />;
-  if (n.includes("bag")) return <BriefcaseBusiness size={19} />;
-  if (n.includes("appliance")) return <Monitor size={19} />;
-  if (n.includes("eye")) return <Eye size={19} />;
-  if (n.includes("book")) return <BookOpen size={19} />;
-  if (n.includes("beauty")) return <Palette size={19} />;
-  if (n.includes("electronic")) return <Laptop size={19} />;
-  return <ShoppingBag size={19} />;
+  if (n.includes("mobile")) return Smartphone;
+  if (n.includes("electronic")) return Laptop;
+  if (n.includes("home") || n.includes("kitchen")) return Home;
+  if (n.includes("fashion")) return Shirt;
+  if (n.includes("foot")) return Footprints;
+  if (n.includes("beauty")) return Sparkles;
+  if (n.includes("toy") || n.includes("baby")) return Baby;
+  if (n.includes("sport")) return Dumbbell;
+  if (n.includes("appliance")) return Monitor;
+  if (n.includes("auto")) return Car;
+  if (n.includes("eye")) return Eye;
+  if (n.includes("book")) return BookOpen;
+  if (n.includes("gaming")) return Gamepad2;
+  if (n.includes("watch")) return Watch;
+  if (n.includes("bag")) return ShoppingBag;
+  return Package;
+}
+
+function ProductCard({
+  product,
+  category,
+  wished,
+  onWishlist,
+  onCart,
+  onOpen,
+}: {
+  product: Product;
+  category: string;
+  wished: boolean;
+  onWishlist: () => void;
+  onCart: () => void;
+  onOpen: () => void;
+}) {
+  const discount = getDiscount(product.price, product.original_price);
+
+  return (
+    <article className="product-card">
+      <button className="wish-btn" aria-label="Wishlist" onClick={onWishlist}>
+        <Heart size={17} fill={wished ? "currentColor" : "none"} />
+      </button>
+
+      {discount > 0 && <span className="discount-badge">{discount}% OFF</span>}
+      {product.is_featured && <span className="mini-badge">Bestseller</span>}
+
+      <button className="product-image-wrap" onClick={onOpen} aria-label={`Open ${product.name}`}>
+        {product.image_url ? (
+          <img
+            src={getImageUrl(product.image_url)}
+            alt={product.name}
+            className="product-image"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.dataset.fallback) {
+                target.dataset.fallback = "1";
+                target.src = "/product-placeholder.png";
+              }
+            }}
+          />
+        ) : (
+          <ShoppingBag size={48} strokeWidth={1.2} />
+        )}
+      </button>
+
+      <div className="product-copy">
+        <div className="product-category">{category}</div>
+        <button className="product-name" onClick={onOpen}>{product.name}</button>
+
+        <div className="rating-row">
+          <span className="rating-pill">
+            {Number(product.rating || 0).toFixed(1)} <Star size={11} fill="currentColor" />
+          </span>
+          <span className="review-count">({Number(product.reviews_count || 0).toLocaleString("en-IN")})</span>
+        </div>
+
+        <div className="price-row">
+          <strong>{formatPrice(product.price)}</strong>
+          {product.original_price && product.original_price > Number(product.price || 0) && (
+            <del>{formatPrice(product.original_price)}</del>
+          )}
+        </div>
+
+        <button className="add-cart-btn" onClick={onCart}>
+          Add to Cart
+        </button>
+      </div>
+    </article>
+  );
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const categoryRailRef = useRef<HTMLDivElement>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [userInfo, setUserInfo] = useState<UserInfo>({ name: "PrimeCart User", email: "" });
+  const [userInfo, setUserInfo] = useState<UserInfo>({ name: "", email: "" });
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | number | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [wishlist, setWishlist] = useState<Array<string | number>>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [toast, setToast] = useState("");
-  const [categoryScroll, setCategoryScroll] = useState(0);
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      setLoading(true);
-      setErrorMessage("");
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!mounted) return;
-        if (!user) { router.replace("/auth/login"); return; }
-        const meta = user.user_metadata || {};
-        setUserInfo({
-          name: meta.full_name || meta.name || user.email?.split("@")[0] || "PrimeCart User",
-          email: user.email || "",
-        });
 
-        const [{ data: p, error: pe }, { data: c, error: ce }] = await Promise.all([
-          supabase.from("products").select("id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at").eq("is_active", true).order("created_at", { ascending: false }).limit(80),
+    async function loadDashboard() {
+      try {
+        setLoading(true);
+        setErrorMessage("");
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!mounted) return;
+
+        if (user) {
+          setUserLoggedIn(true);
+          const meta = user.user_metadata || {};
+          setUserInfo({
+            name: meta.full_name || meta.name || user.email?.split("@")[0] || "PrimeCart User",
+            email: user.email || "",
+          });
+        }
+
+        const [{ data: productData, error: productError }, { data: categoryData, error: categoryError }] = await Promise.all([
+          supabase
+            .from("products")
+            .select(
+              "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
+            )
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(100),
           supabase.from("categories").select("id,name").order("name", { ascending: true }),
         ]);
+
+        if (productError) throw productError;
+        if (categoryError) console.warn(categoryError.message);
+
         if (!mounted) return;
-        if (pe) setErrorMessage(pe.message);
-        if (ce) console.error(ce);
-        setProducts(p || []);
-        setCategories(c || []);
-      } catch (e) {
-        console.error(e);
-        if (mounted) setErrorMessage("Something went wrong while loading your dashboard.");
+        setProducts(productData || []);
+        setCategories(categoryData || []);
+      } catch (error) {
+        console.error(error);
+        if (mounted) setErrorMessage("Unable to load products right now. Please try again.");
       } finally {
         if (mounted) setLoading(false);
       }
     }
-    load();
+
+    loadDashboard();
+
     try {
-      const savedWishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
       const savedCart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-      if (Array.isArray(savedWishlist)) setWishlist(savedWishlist);
+      const savedWishlist = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
+      const savedTheme = localStorage.getItem(THEME_KEY);
       if (Array.isArray(savedCart)) setCart(savedCart);
+      if (Array.isArray(savedWishlist)) setWishlist(savedWishlist);
+      if (savedTheme === "dark") setTheme("dark");
     } catch {}
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, [router, supabase]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setHeroIndex((v) => (v + 1) % HERO_BANNERS.length), 5000);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((current) => (current + 1) % HERO_BANNERS.length);
+    }, 5200);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -164,60 +343,113 @@ export default function DashboardPage() {
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
-    categories.forEach((c) => map.set(String(c.id), c.name));
+    categories.forEach((category) => map.set(String(category.id), category.name));
     return map;
   }, [categories]);
 
-  const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return products.filter((p) => {
-      const cat = categoryMap.get(String(p.category_id)) || "";
-      const text = `${p.name} ${p.brand || ""} ${cat}`.toLowerCase();
-      return (!q || text.includes(q)) && (selectedCategory === null || String(p.category_id) === String(selectedCategory));
+  const visibleCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const ai = CATEGORY_ORDER.findIndex((x) => x.toLowerCase() === a.name.toLowerCase());
+      const bi = CATEGORY_ORDER.findIndex((x) => x.toLowerCase() === b.name.toLowerCase());
+      if (ai === -1 && bi === -1) return a.name.localeCompare(b.name);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
     });
-  }, [products, categoryMap, search, selectedCategory]);
+  }, [categories]);
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return products
+      .filter((product) => {
+        const category = categoryMap.get(String(product.category_id)) || "";
+        return `${product.name} ${product.brand || ""} ${category}`.toLowerCase().includes(q);
+      })
+      .slice(0, 6);
+  }, [search, products, categoryMap]);
 
   const featuredProducts = useMemo(() => {
-    const list = filteredProducts.filter((p) => p.is_featured);
-    return (list.length ? list : filteredProducts).slice(0, 8);
-  }, [filteredProducts]);
+    const featured = products.filter((product) => product.is_featured);
+    return (featured.length ? featured : products).slice(0, 5);
+  }, [products]);
 
   const flashProducts = useMemo(() => {
-    const list = filteredProducts.filter((p) => p.is_flash_sale);
-    const source = list.length ? list : filteredProducts.filter((p) => discount(p.price, p.original_price) >= 10);
-    return source.slice(0, 6);
-  }, [filteredProducts]);
+    const flash = products.filter((product) => product.is_flash_sale);
+    const discounted = products.filter((product) => getDiscount(product.price, product.original_price) >= 10);
+    return (flash.length ? flash : discounted.length ? discounted : products).slice(0, 5);
+  }, [products]);
 
-  const trendingProducts = useMemo(() => {
-    return [...filteredProducts].sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)) || (Number(b.reviews_count || 0) - Number(a.reviews_count || 0))).slice(0, 8);
-  }, [filteredProducts]);
+  const topDeals = useMemo(() => {
+    return [...products]
+      .sort((a, b) => getDiscount(b.price, b.original_price) - getDiscount(a.price, a.original_price))
+      .slice(0, 3);
+  }, [products]);
 
-  const stats = useMemo(() => ({
-    products: products.length,
-    categories: categories.length,
-    deals: products.filter((p) => p.is_flash_sale || discount(p.price, p.original_price) >= 10).length,
-    featured: products.filter((p) => p.is_featured).length,
-  }), [products, categories]);
+  const categoryCards = visibleCategories.slice(0, 10);
+
+  const cartCount = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+  function showToast(message: string) {
+    setToast(message);
+  }
 
   function toggleWishlist(id: string | number) {
-    setWishlist((old) => {
-      const next = old.includes(id) ? old.filter((x) => x !== id) : [...old, id];
+    setWishlist((current) => {
+      const exists = current.some((value) => String(value) === String(id));
+      const next = exists
+        ? current.filter((value) => String(value) !== String(id))
+        : [...current, id];
       localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-      setToast(old.includes(id) ? "Removed from wishlist" : "Added to wishlist");
+      showToast(exists ? "Removed from Wishlist" : "Added to Wishlist");
       return next;
     });
   }
 
   function addToCart(product: Product) {
-    setCart((old) => {
-      const existing = old.find((x) => String(x.id) === String(product.id));
-      const next = existing
-        ? old.map((x) => String(x.id) === String(product.id) ? { ...x, quantity: x.quantity + 1 } : x)
-        : [...old, { id: product.id, name: product.name, price: Number(product.price || 0), image_url: product.image_url, quantity: 1 }];
+    setCart((current) => {
+      const exists = current.find((item) => String(item.id) === String(product.id));
+      const next = exists
+        ? current.map((item) =>
+            String(item.id) === String(product.id)
+              ? { ...item, quantity: Math.min(item.quantity + 1, Number(product.stock || 999)) }
+              : item
+          )
+        : [
+            ...current,
+            {
+              id: product.id,
+              name: product.name,
+              price: Number(product.price || 0),
+              image_url: product.image_url,
+              quantity: 1,
+            },
+          ];
       localStorage.setItem(CART_KEY, JSON.stringify(next));
       return next;
     });
-    setToast("Added to cart");
+    showToast("Added to Cart");
+  }
+
+  function openProduct(product: Product) {
+    router.push(`/dashboard/products/${product.id}`);
+  }
+
+  function openCategory(category: Category) {
+    router.push(`/dashboard/categories/${slugify(category.name)}`);
+  }
+
+  function submitSearch(event: React.FormEvent) {
+    event.preventDefault();
+    if (!search.trim()) return;
+    router.push(`/dashboard/products?search=${encodeURIComponent(search.trim())}`);
+  }
+
+  function scrollCategories(direction: "left" | "right") {
+    categoryRailRef.current?.scrollBy({
+      left: direction === "left" ? -450 : 450,
+      behavior: "smooth",
+    });
   }
 
   async function logout() {
@@ -225,176 +457,720 @@ export default function DashboardPage() {
     router.replace("/auth/login");
   }
 
-  function openProduct(p: Product) { router.push(`/dashboard/products/${p.id}`); }
-  function openCategory(c: Category) { router.push(`/dashboard/categories/${slugify(c.name)}`); }
-
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="page">
-      {sidebarOpen && <button className="overlay" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
+    <main className="store-shell">
+      <div className="top-strip">
+        <div className="container strip-inner">
+          <div className="strip-left">
+            <span><Truck size={15} /> Free Shipping above ₹499</span>
+            <i />
+            <span><RotateCcw size={15} /> Easy Returns</span>
+            <i />
+            <span><ShieldCheck size={15} /> Secure Shopping</span>
+          </div>
+          <div className="strip-right">
+            <span>Get 10% OFF on your first order</span>
+            <i />
+            <span>Use code: <b>WELCOME10</b></span>
+          </div>
+        </div>
+      </div>
 
-      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="brand-row">
-          <Link href="/dashboard" className="brand">
-            <span className="brand-logo">P</span>
-            <span><b>PrimeCart</b><small>SMART SHOPPING</small></span>
+      <header className="main-header">
+        <div className="container header-main">
+          <Link href="/dashboard" className="logo-wrap" aria-label="PrimeCart home">
+            <div className="logo-mark"><ShoppingBag size={27} /></div>
+            <div>
+              <div className="logo-text">PrimeCart</div>
+              <div className="logo-tagline">Shop Smart · Live Better</div>
+            </div>
           </Link>
-          <button className="close-mobile" onClick={() => setSidebarOpen(false)}><X size={19}/></button>
-        </div>
 
-        <div className="side-label">SHOP</div>
-        <nav className="nav">
-          <Link className="nav-active" href="/dashboard"><LayoutDashboard size={18}/>Dashboard</Link>
-          <Link href="/dashboard/products"><ShoppingBag size={18}/>Products</Link>
-          <Link href="/dashboard/categories"><Grid2X2 size={18}/>Categories</Link>
-          <Link href="/dashboard/orders"><ClipboardList size={18}/>My Orders</Link>
-          <Link href="/dashboard/wishlist"><Heart size={18}/>Wishlist</Link>
-        </nav>
+          <form className="search-box" onSubmit={submitSearch}>
+            <Search size={19} />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onFocus={() => setSearchOpen(true)}
+              placeholder="Search for products, brands and more..."
+              aria-label="Search products"
+            />
+            <button type="submit">Search</button>
 
-        <div className="side-label smart-label">SMART TOOLS</div>
-        <nav className="nav">
-          <Link href="/dashboard/prime-match"><Sparkles size={18}/>PrimeMatch</Link>
-          <Link href="/dashboard/budget-builder"><Wallet size={18}/>Budget Builder</Link>
-          <Link href="/dashboard/setup-builder"><Monitor size={18}/>Build My Setup</Link>
-        </nav>
+            {searchOpen && search.trim() && (
+              <div className="search-dropdown">
+                {searchResults.length ? (
+                  searchResults.map((product) => (
+                    <button
+                      key={String(product.id)}
+                      type="button"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        openProduct(product);
+                      }}
+                    >
+                      <span className="suggestion-image">
+                        {product.image_url ? <img src={getImageUrl(product.image_url)} alt="" /> : <ShoppingBag size={18} />}
+                      </span>
+                      <span>
+                        <strong>{product.name}</strong>
+                        <small>{formatPrice(product.price)}</small>
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="no-suggestions">No products found</div>
+                )}
+              </div>
+            )}
+          </form>
 
-        <div className="side-bottom">
-          <Link href="/dashboard/settings"><Settings size={18}/>Settings</Link>
-          <button className="signout" onClick={logout}><LogOut size={18}/>Sign out</button>
-          <div className="help"><span><Headphones size={17}/></span><div><b>Need help?</b><small>We're here for you.</small></div></div>
-        </div>
-      </aside>
+          <div className="header-actions">
+            {userLoggedIn ? (
+              <div className="account-area">
+                <button className="header-action" onClick={() => setProfileOpen((value) => !value)}>
+                  <UserRound size={22} />
+                  <span>Account</span>
+                </button>
+                {profileOpen && (
+                  <div className="profile-dropdown">
+                    <div className="profile-top">
+                      <div className="profile-avatar"><UserRound size={20} /></div>
+                      <div>
+                        <strong>{userInfo.name}</strong>
+                        <small>{userInfo.email}</small>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/profile"><User size={16} /> My Profile</Link>
+                    <Link href="/dashboard/orders"><Package size={16} /> My Orders</Link>
+                    <Link href="/dashboard/settings"><Settings size={16} /> Settings</Link>
+                    <button onClick={logout}><LogOut size={16} /> Sign Out</button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth/login" className="header-action">
+                <UserRound size={22} />
+                <span>Login / Register</span>
+              </Link>
+            )}
 
-      <main className="main">
-        <header className="topbar">
-          <div className="top-left">
-            <button className="mobile-menu" onClick={() => setSidebarOpen(true)}><Menu size={21}/></button>
-            <div><b>PrimeCart</b><span>Smart shopping, made personal.</span></div>
-          </div>
-          <div className="top-right">
-            <div className="search-box">
-              <Search size={17}/>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, brands & categories..." />
-              {search && <button onClick={() => setSearch("")}><X size={14}/></button>}
-            </div>
-            <Link className="top-icon" href="/dashboard/wishlist"><Heart size={18}/>{wishlist.length > 0 && <i>{wishlist.length}</i>}</Link>
-            <Link className="top-icon cart" href="/dashboard/cart"><ShoppingCart size={18}/>{cart.length > 0 && <i>{cart.reduce((a, x) => a + x.quantity, 0)}</i>}</Link>
-            <button className="top-icon"><Bell size={18}/><em/></button>
-            <div className="profile-wrap">
-              <button className="profile" onClick={() => setProfileOpen((v) => !v)}>
-                <span className="avatar">{userInfo.name.charAt(0).toUpperCase()}</span>
-                <span className="profile-text"><b>{userInfo.name}</b><small>Prime Member</small></span>
-                <ChevronRight size={14} className={profileOpen ? "rotate" : ""}/>
-              </button>
-              {profileOpen && <div className="profile-menu">
-                <div className="menu-user"><span className="avatar big">{userInfo.name.charAt(0).toUpperCase()}</span><div><b>{userInfo.name}</b><small>{userInfo.email}</small></div></div>
-                <hr/>
-                <Link href="/dashboard/profile"><UserRound size={16}/>Profile</Link>
-                <Link href="/dashboard/orders"><ClipboardList size={16}/>Orders</Link>
-                <Link href="/dashboard/settings"><Settings size={16}/>Settings</Link>
-                <hr/>
-                <button onClick={logout}><LogOut size={16}/>Sign out</button>
-              </div>}
-            </div>
-          </div>
-        </header>
-
-        <div className="body">
-          {errorMessage && <div className="error"><div><b>Some products could not be loaded</b><span>{errorMessage}</span></div><button onClick={() => location.reload()}><RefreshCw size={15}/>Retry</button></div>}
-
-          <div className="category-rail">
-            <button className="rail-arrow" onClick={() => setCategoryScroll(Math.max(0, categoryScroll - 1))}><ChevronLeft size={17}/></button>
-            <div className="rail-scroll">
-              <button className={!selectedCategory ? "rail-item active" : "rail-item"} onClick={() => setSelectedCategory(null)}><ShoppingBag size={17}/><span>All</span></button>
-              {categories.map((c) => <button key={String(c.id)} className={String(selectedCategory) === String(c.id) ? "rail-item active" : "rail-item"} onClick={() => setSelectedCategory(c.id)}>{categoryIcon(c.name)}<span>{c.name}</span></button>)}
-            </div>
-            <Link className="rail-all" href="/dashboard/categories">View all <ArrowRight size={14}/></Link>
-          </div>
-
-          <section className="hero-market">
-            <button className="hero-arrow left" onClick={() => setHeroIndex((heroIndex - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)}><ChevronLeft size={22}/></button>
-            <Link href="/dashboard/products" className="hero-link">
-              <img src={HERO_BANNERS[heroIndex]} alt="PrimeCart offer banner" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            <Link href="/dashboard/wishlist" className="header-action wishlist-action">
+              <span className="icon-with-badge">
+                <Heart size={23} />
+                {wishlist.length > 0 && <b>{wishlist.length}</b>}
+              </span>
+              <span>Wishlist</span>
             </Link>
-            <button className="hero-arrow right" onClick={() => setHeroIndex((heroIndex + 1) % HERO_BANNERS.length)}><ChevronRight size={22}/></button>
-            <div className="hero-dots">{HERO_BANNERS.map((_, i) => <button key={i} className={i === heroIndex ? "dot active" : "dot"} onClick={() => setHeroIndex(i)} />)}</div>
-          </section>
 
-          <section className="quick-actions">
-            <Link href="/dashboard/products?type=flash" className="quick-card"><span className="quick-icon flame"><Flame size={21}/></span><div><b>Flash Deals</b><small>Limited-time offers</small></div><ArrowUpRight size={16}/></Link>
-            <Link href="/dashboard/prime-match" className="quick-card"><span className="quick-icon"><Sparkles size={21}/></span><div><b>PrimeMatch</b><small>Find your perfect pick</small></div><ArrowUpRight size={16}/></Link>
-            <Link href="/dashboard/budget-builder" className="quick-card"><span className="quick-icon"><Wallet size={21}/></span><div><b>Budget Builder</b><small>Shop within budget</small></div><ArrowUpRight size={16}/></Link>
-            <Link href="/dashboard/setup-builder" className="quick-card"><span className="quick-icon"><Monitor size={21}/></span><div><b>Build My Setup</b><small>Create your setup</small></div><ArrowUpRight size={16}/></Link>
-          </section>
+            <Link href="/dashboard/cart" className="header-action cart-action">
+              <span className="icon-with-badge">
+                <ShoppingCart size={24} />
+                {cartCount > 0 && <b>{cartCount > 99 ? "99+" : cartCount}</b>}
+              </span>
+              <span>Cart</span>
+            </Link>
+          </div>
 
-          <section className="section-head"><div><span>EXPLORE PRIME CART</span><h1>Shop smarter, every day.</h1><p>Discover deals, trending products and picks curated around your needs.</p></div><div className="mini-stats"><span><b>{stats.products}+</b> Products</span><span><b>{stats.categories}</b> Categories</span><span><b>{stats.deals}+</b> Deals</span></div></section>
-
-          {flashProducts.length > 0 && <section className="deal-section">
-            <div className="deal-head"><div className="deal-title"><span className="deal-badge"><Zap size={14} fill="currentColor"/> DEALS</span><h2>Flash Deals</h2><p>Prices you'll want to grab before they disappear.</p></div><Link href="/dashboard/products?type=flash">View all deals <ArrowRight size={15}/></Link></div>
-            <div className="deal-grid">{flashProducts.map((p) => <ProductCard key={String(p.id)} product={p} categoryMap={categoryMap} liked={wishlist.includes(p.id)} onLike={toggleWishlist} onCart={addToCart} onOpen={openProduct} compact/>)}</div>
-          </section>}
-
-          <section className="section">
-            <div className="section-title"><div><span>SHOP BY CATEGORY</span><h2>What are you looking for?</h2></div><Link href="/dashboard/categories">View all <ChevronRight size={15}/></Link></div>
-            <div className="category-cards">{categories.slice(0, 12).map((c) => <button key={String(c.id)} onClick={() => openCategory(c)}><span className="cat-circle">{categoryIcon(c.name)}</span><b>{c.name}</b><small>Explore</small></button>)}</div>
-          </section>
-
-          <section className="section">
-            <div className="section-title"><div><span>PRIMECART PICKS</span><h2>Featured for you</h2><p>Popular products selected from our collection.</p></div><Link href="/dashboard/products">View all <ChevronRight size={15}/></Link></div>
-            {featuredProducts.length ? <div className="product-grid">{featuredProducts.map((p) => <ProductCard key={String(p.id)} product={p} categoryMap={categoryMap} liked={wishlist.includes(p.id)} onLike={toggleWishlist} onCart={addToCart} onOpen={openProduct}/>)}</div> : <EmptyProducts onClear={() => {setSearch("");setSelectedCategory(null)}}/>}
-          </section>
-
-          {trendingProducts.length > 0 && <section className="section"><div className="section-title"><div><span>TRENDING NOW</span><h2>Customers are loving these</h2><p>Highly rated products with strong customer interest.</p></div><Link href="/dashboard/products">Explore <ChevronRight size={15}/></Link></div><div className="product-grid">{trendingProducts.map((p) => <ProductCard key={String(p.id)} product={p} categoryMap={categoryMap} liked={wishlist.includes(p.id)} onLike={toggleWishlist} onCart={addToCart} onOpen={openProduct}/>)}</div></section>}
-
-          <section className="smart-banner"><div className="smart-copy"><span>PERSONALIZED SHOPPING</span><h2>Not sure what to buy?</h2><p>Tell PrimeMatch your needs, budget and priorities. We'll help you discover products that fit.</p><Link href="/dashboard/prime-match">Try PrimeMatch <ArrowRight size={16}/></Link></div><div className="smart-orbit"><Sparkles size={42}/><div><b>PrimeMatch</b><span>Smart recommendations</span></div></div></section>
-
-          <section className="benefits"><div><span><Truck size={19}/></span><b>Fast Delivery</b><small>Reliable doorstep delivery</small></div><div><span><ShieldCheck size={19}/></span><b>Secure Shopping</b><small>Protected checkout experience</small></div><div><span><RefreshCw size={19}/></span><b>Easy Returns</b><small>Simple return process</small></div><div><span><Headphones size={19}/></span><b>Customer Support</b><small>We're here when you need us</small></div></section>
-
-          <footer><div><b>PrimeCart</b><span>Smart shopping, made personal.</span></div><span>© {new Date().getFullYear()} PrimeCart</span></footer>
+          <button className="mobile-menu-button" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
+            <Menu size={25} />
+          </button>
         </div>
-      </main>
+      </header>
 
-      {toast && <div className="toast"><CheckCircle2 size={17}/><span>{toast}</span></div>}
+      <nav className="nav-bar">
+        <div className="container nav-inner">
+          <button className="all-category-btn" onClick={() => router.push("/dashboard/categories")}>
+            <Menu size={19} /> All Categories
+          </button>
+          <Link href="/dashboard">Home</Link>
+          <Link href="/dashboard/products?deal=flash">Deals</Link>
+          <Link href="/dashboard/products?sort=bestseller">Best Sellers</Link>
+          <Link href="/dashboard/products?sort=newest">New Arrivals</Link>
+          <Link href="/dashboard/prime-points">PrimePoints</Link>
+          <Link href="/dashboard/prime-match" className="nav-new">PrimeMatch <em>New</em></Link>
+          <Link href="/dashboard/setup-builder" className="nav-new">Build My Setup <em>New</em></Link>
+          <button className="more-nav" onClick={() => router.push("/dashboard/categories")}>More <ChevronDown size={15} /></button>
+          <div className="nav-spacer" />
+          <button className="theme-switch" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label="Toggle theme">
+            {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+            <span>{theme === "light" ? "☼" : "☾"}</span>
+          </button>
+        </div>
+      </nav>
 
-      <style jsx global>{CSS}</style>
+      <div className="mobile-nav-panel">
+        {mobileMenuOpen && (
+          <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
+            <div className="mobile-menu-card" onClick={(event) => event.stopPropagation()}>
+              <div className="mobile-menu-head">
+                <strong>PrimeCart</strong>
+                <button onClick={() => setMobileMenuOpen(false)}><X /></button>
+              </div>
+              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+              <Link href="/dashboard/products?deal=flash" onClick={() => setMobileMenuOpen(false)}>Deals</Link>
+              <Link href="/dashboard/products?sort=bestseller" onClick={() => setMobileMenuOpen(false)}>Best Sellers</Link>
+              <Link href="/dashboard/products?sort=newest" onClick={() => setMobileMenuOpen(false)}>New Arrivals</Link>
+              <Link href="/dashboard/prime-points" onClick={() => setMobileMenuOpen(false)}>PrimePoints</Link>
+              <Link href="/dashboard/prime-match" onClick={() => setMobileMenuOpen(false)}>PrimeMatch</Link>
+              <Link href="/dashboard/setup-builder" onClick={() => setMobileMenuOpen(false)}>Build My Setup</Link>
+              <Link href="/dashboard/categories" onClick={() => setMobileMenuOpen(false)}>All Categories</Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="container page-content" onClick={() => setSearchOpen(false)}>
+        {errorMessage && (
+          <div className="error-box">
+            <span>{errorMessage}</span>
+            <button onClick={() => window.location.reload()}>Retry</button>
+          </div>
+        )}
+
+        <section className="hero-layout">
+          <div className="hero-carousel">
+            <div className="hero-image-frame">
+              {HERO_BANNERS.map((banner, index) => (
+                <img
+                  key={banner}
+                  src={banner}
+                  alt={`PrimeCart promotional banner ${index + 1}`}
+                  className={`hero-banner ${index === heroIndex ? "active" : ""}`}
+                />
+              ))}
+
+              <button className="hero-arrow hero-left" onClick={() => setHeroIndex((heroIndex - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)} aria-label="Previous banner">
+                <ChevronLeft size={24} />
+              </button>
+              <button className="hero-arrow hero-right" onClick={() => setHeroIndex((heroIndex + 1) % HERO_BANNERS.length)} aria-label="Next banner">
+                <ChevronRight size={24} />
+              </button>
+
+              <div className="hero-dots">
+                {HERO_BANNERS.map((_, index) => (
+                  <button
+                    key={index}
+                    className={index === heroIndex ? "active" : ""}
+                    onClick={() => setHeroIndex(index)}
+                    aria-label={`Show banner ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="right-rail">
+            <div className="welcome-card">
+              <div className="welcome-user">
+                <div className="welcome-avatar"><UserRound size={27} /></div>
+                <div>
+                  <strong>{userLoggedIn ? `Hello, ${userInfo.name.split(" ")[0]}!` : "Hello!"}</strong>
+                  <span>{userLoggedIn ? "Welcome back to PrimeCart" : "Welcome to PrimeCart"}</span>
+                </div>
+              </div>
+              <Link href={userLoggedIn ? "/dashboard/profile" : "/auth/login"} className="login-gold-btn">
+                {userLoggedIn ? "View My Account" : "Login / Register"}
+              </Link>
+
+              <div className="service-list">
+                <Service icon={<Truck />} title="Free Shipping" text="Above ₹499" />
+                <Service icon={<RotateCcw />} title="Easy Returns" text="Within 7 Days" />
+                <Service icon={<ShieldCheck />} title="Secure Shopping" text="100% Safe & Secure" />
+                <Service icon={<Headphones />} title="24/7 Customer Support" text="We're here to help" />
+              </div>
+            </div>
+
+            <div className="prime-points-card">
+              <div>
+                <strong>PrimePoints</strong>
+                <span>Earn Points & Get Rewards</span>
+                <Link href="/dashboard/prime-points">Learn More <ArrowRight size={14} /></Link>
+              </div>
+              <div className="gift-art">🎁</div>
+            </div>
+
+            <div className="top-deals-card">
+              <div className="rail-heading">
+                <strong>Top Deals</strong>
+                <Link href="/dashboard/products?deal=top">View All <ArrowRight size={13} /></Link>
+              </div>
+              {topDeals.map((product) => (
+                <button className="mini-deal" key={String(product.id)} onClick={() => openProduct(product)}>
+                  <div className="mini-deal-image">
+                    {product.image_url ? <img src={getImageUrl(product.image_url)} alt="" /> : <ShoppingBag size={25} />}
+                  </div>
+                  <div className="mini-deal-copy">
+                    <strong>{product.name}</strong>
+                    <span>{product.short_description || "Everyday favourite"}</span>
+                    <div><del>{formatPrice(product.original_price)}</del><b>{formatPrice(product.price)}</b><em>{getDiscount(product.price, product.original_price)}% OFF</em></div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </aside>
+        </section>
+
+        <section className="category-section">
+          <div className="category-rail-wrap">
+            <button className="rail-control" onClick={() => scrollCategories("left")} aria-label="Previous categories"><ChevronLeft /></button>
+            <div className="category-rail" ref={categoryRailRef}>
+              {categoryCards.map((category) => {
+                const Icon = getCategoryIcon(category.name);
+                return (
+                  <button className="category-item" key={String(category.id)} onClick={() => openCategory(category)}>
+                    <span className="category-icon"><Icon size={25} /></span>
+                    <span>{category.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="rail-control" onClick={() => scrollCategories("right")} aria-label="Next categories"><ChevronRight /></button>
+          </div>
+        </section>
+
+        <SectionHeader icon={<Sparkles size={20} />} title="Best Deals for You" href="/dashboard/products?deal=best" />
+        <section className="products-grid five-columns">
+          {featuredProducts.map((product) => (
+            <ProductCard
+              key={String(product.id)}
+              product={product}
+              category={categoryMap.get(String(product.category_id)) || "Featured"}
+              wished={wishlist.some((value) => String(value) === String(product.id))}
+              onWishlist={() => toggleWishlist(product.id)}
+              onCart={() => addToCart(product)}
+              onOpen={() => openProduct(product)}
+            />
+          ))}
+        </section>
+
+        {flashProducts.length > 0 && (
+          <section className="deal-banner-row">
+            <div className="deal-banner flash-banner">
+              <div>
+                <span><Zap size={18} fill="currentColor" /> Flash Deals</span>
+                <strong>Up to 70% OFF</strong>
+                <Link href="/dashboard/products?deal=flash">Shop Now <ArrowRight size={14} /></Link>
+              </div>
+              {flashProducts[0]?.image_url && <img src={getImageUrl(flashProducts[0].image_url)} alt="Flash deal" />}
+            </div>
+            <div className="deal-banner home-banner">
+              <div>
+                <strong>Home Essentials</strong>
+                <span>For a Better Tomorrow</span>
+                <Link href="/dashboard/categories/home-and-living">Explore Now <ArrowRight size={14} /></Link>
+              </div>
+              {flashProducts[1]?.image_url && <img src={getImageUrl(flashProducts[1].image_url)} alt="Home essentials" />}
+            </div>
+            <div className="deal-banner fashion-banner">
+              <div>
+                <strong>Fashion Collection</strong>
+                <span>Trendy Styles, Every Day</span>
+                <Link href="/dashboard/categories/fashion">Shop Now <ArrowRight size={14} /></Link>
+              </div>
+              {flashProducts[2]?.image_url && <img src={getImageUrl(flashProducts[2].image_url)} alt="Fashion collection" />}
+            </div>
+          </section>
+        )}
+
+        <SectionHeader icon={<FlameIcon />} title="Trending Now" href="/dashboard/products?sort=trending" />
+        <section className="products-grid five-columns trending-grid">
+          {products
+            .slice()
+            .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
+            .slice(0, 5)
+            .map((product) => (
+              <ProductCard
+                key={String(product.id)}
+                product={product}
+                category={categoryMap.get(String(product.category_id)) || "Trending"}
+                wished={wishlist.some((value) => String(value) === String(product.id))}
+                onWishlist={() => toggleWishlist(product.id)}
+                onCart={() => addToCart(product)}
+                onOpen={() => openProduct(product)}
+              />
+            ))}
+        </section>
+
+        <section className="trust-strip">
+          <TrustItem icon={<Truck />} title="Free Shipping" text="On orders above ₹499" />
+          <TrustItem icon={<RotateCcw />} title="Easy Returns" text="7-day hassle-free returns" />
+          <TrustItem icon={<ShieldCheck />} title="Secure Payments" text="100% secure checkout" />
+          <TrustItem icon={<Headphones />} title="Customer Support" text="We're here to help" />
+        </section>
+      </div>
+
+      {toast && <div className="toast"><span>✓</span>{toast}</div>}
+
+      <style jsx global>{`
+        :root {
+          --gold: #b88924;
+          --gold-2: #d6a947;
+          --gold-soft: #fbf3df;
+          --gold-pale: #fff9ed;
+          --ink: #171717;
+          --muted: #747474;
+          --line: #ece9e2;
+          --paper: #ffffff;
+          --page: #fdfdfc;
+          --green: #3b8b55;
+          --shadow: 0 5px 20px rgba(49, 37, 13, .06);
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--page); color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
+        button, input { font: inherit; }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        button { cursor: pointer; }
+        a { color: inherit; text-decoration: none; }
+
+        html.dark body { background: #17140f; color: #f8f1df; }
+        html.dark .main-header,
+        html.dark .nav-bar,
+        html.dark .product-card,
+        html.dark .welcome-card,
+        html.dark .top-deals-card,
+        html.dark .trust-strip { background: #211d16; border-color: #3c3425; }
+        html.dark .search-box,
+        html.dark .profile-dropdown,
+        html.dark .search-dropdown,
+        html.dark .mobile-menu-card { background: #211d16; border-color: #493d29; color: #fff; }
+        html.dark .product-name, html.dark .rail-heading strong, html.dark .category-item { color: #fff; }
+        html.dark .product-category, html.dark .review-count, html.dark .strip-right, html.dark .mini-deal-copy span, html.dark .service-list small { color: #cfc6b5; }
+
+        .store-shell { min-height: 100vh; }
+        .container { width: min(1410px, calc(100% - 48px)); margin: 0 auto; }
+
+        .top-strip { background: #b98925; color: #fff; font-size: 12px; }
+        .strip-inner { height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .strip-left, .strip-right { display: flex; align-items: center; gap: 16px; }
+        .strip-left span { display: inline-flex; align-items: center; gap: 7px; }
+        .strip-inner i { width: 1px; height: 14px; background: rgba(255,255,255,.55); }
+        .strip-right b { font-weight: 800; }
+
+        .main-header { background: #fff; border-bottom: 1px solid #f0eee9; }
+        .header-main { min-height: 84px; display: flex; align-items: center; gap: 34px; }
+        .logo-wrap { display: flex; align-items: center; gap: 11px; min-width: 250px; }
+        .logo-mark { width: 43px; height: 43px; border: 2px solid var(--gold); border-radius: 10px 10px 13px 13px; color: var(--gold); display: grid; place-items: center; position: relative; }
+        .logo-mark:before { content: ""; position: absolute; width: 17px; height: 9px; border: 2px solid var(--gold); border-bottom: 0; border-radius: 12px 12px 0 0; top: -8px; left: 11px; }
+        .logo-text { color: var(--gold); font-size: 29px; line-height: 1; font-weight: 800; letter-spacing: -.8px; }
+        .logo-tagline { color: #8c8c8c; font-size: 11px; margin-top: 4px; letter-spacing: .2px; }
+
+        .search-box { height: 43px; border: 1px solid #e6e4df; border-radius: 7px; display: flex; align-items: center; flex: 1; max-width: 730px; position: relative; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.025); }
+        .search-box > svg { margin-left: 15px; color: #9c9c9c; flex: none; }
+        .search-box input { flex: 1; height: 100%; border: 0; outline: 0; padding: 0 12px; background: transparent; min-width: 0; color: var(--ink); font-size: 13px; }
+        .search-box button { height: 35px; margin-right: 4px; padding: 0 25px; border: 0; border-radius: 5px; background: var(--gold); color: #fff; font-size: 12px; font-weight: 700; }
+        .search-dropdown { position: absolute; top: 48px; left: 0; right: 0; z-index: 80; background: #fff; border: 1px solid #ebe7dd; border-radius: 10px; box-shadow: 0 14px 35px rgba(0,0,0,.12); overflow: hidden; }
+        .search-dropdown button { width: 100%; height: auto; margin: 0; padding: 10px 13px; border: 0; background: transparent; color: #222; display: flex; gap: 12px; text-align: left; align-items: center; }
+        .search-dropdown button:hover { background: #fff9ee; }
+        .suggestion-image { width: 45px; height: 45px; border-radius: 7px; background: #faf8f3; display: grid; place-items: center; flex: none; }
+        .suggestion-image img { width: 100%; height: 100%; object-fit: contain; }
+        .search-dropdown strong, .search-dropdown small { display: block; }
+        .search-dropdown strong { font-size: 13px; }
+        .search-dropdown small { color: var(--gold); margin-top: 4px; }
+        .no-suggestions { padding: 18px; color: #888; font-size: 13px; }
+
+        .header-actions { display: flex; align-items: center; gap: 24px; margin-left: auto; white-space: nowrap; }
+        .header-action { border: 0; background: transparent; display: inline-flex; align-items: center; gap: 8px; color: #171717; font-size: 12px; padding: 8px 0; }
+        .header-action svg { stroke-width: 1.7; }
+        .icon-with-badge { position: relative; display: inline-flex; }
+        .icon-with-badge b { position: absolute; top: -10px; right: -10px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 20px; background: #d6ad58; color: #fff; border: 2px solid #fff; font-size: 9px; display: grid; place-items: center; }
+        .account-area { position: relative; }
+        .profile-dropdown { position: absolute; z-index: 100; right: -10px; top: 44px; width: 240px; background: #fff; border: 1px solid #ece7db; border-radius: 11px; box-shadow: 0 15px 40px rgba(0,0,0,.12); padding: 9px; }
+        .profile-top { display: flex; gap: 10px; padding: 10px; border-bottom: 1px solid #eeeae1; margin-bottom: 5px; }
+        .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--gold-soft); color: var(--gold); display: grid; place-items: center; }
+        .profile-top strong, .profile-top small { display: block; }
+        .profile-top strong { font-size: 13px; }
+        .profile-top small { font-size: 10px; color: #8b8b8b; margin-top: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+        .profile-dropdown a, .profile-dropdown button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; border: 0; background: transparent; border-radius: 7px; font-size: 12px; text-align: left; }
+        .profile-dropdown a:hover, .profile-dropdown button:hover { background: #fff8e8; color: var(--gold); }
+
+        .mobile-menu-button { display: none; border: 0; background: transparent; color: #222; }
+
+        .nav-bar { background: #fff; border-bottom: 1px solid #ededeb; }
+        .nav-inner { height: 52px; display: flex; align-items: center; gap: 34px; }
+        .nav-inner > a, .more-nav { font-size: 12px; border: 0; background: transparent; color: #252525; white-space: nowrap; }
+        .nav-inner > a:hover, .more-nav:hover { color: var(--gold); }
+        .all-category-btn { border: 0; background: transparent; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 12px; margin-right: 20px; }
+        .nav-new { position: relative; }
+        .nav-new em { position: absolute; top: -17px; right: -16px; background: var(--gold); color: #fff; font-style: normal; border-radius: 5px; font-size: 8px; padding: 3px 5px; }
+        .more-nav { display: inline-flex; align-items: center; gap: 4px; }
+        .nav-spacer { flex: 1; }
+        .theme-switch { width: 49px; height: 26px; border: 1px solid #ded7c9; background: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: space-around; color: var(--gold); }
+        .theme-switch span { font-size: 15px; }
+
+        .page-content { padding: 12px 0 50px; }
+        .error-box { margin-bottom: 12px; padding: 12px 15px; background: #fff4e8; border: 1px solid #efd8bd; border-radius: 8px; display: flex; justify-content: space-between; font-size: 13px; }
+        .error-box button { border: 0; background: var(--gold); color: #fff; border-radius: 5px; padding: 6px 12px; }
+
+        .hero-layout { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 22px; align-items: stretch; }
+        .hero-carousel { min-width: 0; }
+        .hero-image-frame { position: relative; width: 100%; aspect-ratio: 2.55 / 1; min-height: 300px; border-radius: 9px; overflow: hidden; background: #f5eee0; box-shadow: 0 3px 10px rgba(0,0,0,.04); }
+        .hero-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .55s ease; pointer-events: none; }
+        .hero-banner.active { opacity: 1; pointer-events: auto; }
+        .hero-arrow { position: absolute; z-index: 4; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.86); color: #9b711b; display: grid; place-items: center; box-shadow: 0 4px 13px rgba(0,0,0,.08); }
+        .hero-left { left: 17px; }
+        .hero-right { right: 17px; }
+        .hero-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 7px; z-index: 5; }
+        .hero-dots button { width: 8px; height: 8px; padding: 0; border: 1px solid #c89b40; border-radius: 50%; background: rgba(255,255,255,.7); }
+        .hero-dots button.active { width: 22px; border-radius: 10px; background: var(--gold); }
+
+        .right-rail { display: flex; flex-direction: column; gap: 13px; }
+        .welcome-card, .top-deals-card { background: #fff; border: 1px solid #efede8; border-radius: 9px; box-shadow: var(--shadow); }
+        .welcome-card { padding: 14px 15px 11px; }
+        .welcome-user { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
+        .welcome-avatar { width: 43px; height: 43px; border-radius: 50%; background: #fff8e8; color: var(--gold); display: grid; place-items: center; }
+        .welcome-user strong, .welcome-user span { display: block; }
+        .welcome-user strong { font-size: 14px; }
+        .welcome-user span { font-size: 10px; color: #7b7b7b; margin-top: 3px; }
+        .login-gold-btn { height: 35px; background: var(--gold); color: #fff; display: grid; place-items: center; border-radius: 7px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+        .service-list { display: grid; gap: 1px; }
+        .service-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+        .service-icon { width: 36px; height: 36px; border-radius: 50%; background: #fff9ec; color: var(--gold); display: grid; place-items: center; flex: none; }
+        .service-row strong, .service-row small { display: block; }
+        .service-row strong { font-size: 11px; }
+        .service-row small { color: #777; font-size: 10px; margin-top: 3px; }
+
+        .prime-points-card { min-height: 104px; border-radius: 9px; padding: 15px 16px; background: linear-gradient(105deg, #fff7e6, #fff0cd); border: 1px solid #f0dfb9; display: flex; align-items: center; justify-content: space-between; overflow: hidden; }
+        .prime-points-card strong, .prime-points-card span { display: block; }
+        .prime-points-card strong { font-size: 15px; }
+        .prime-points-card span { font-size: 10px; margin-top: 5px; color: #725e3a; }
+        .prime-points-card a { margin-top: 9px; display: inline-flex; align-items: center; gap: 5px; background: var(--gold); color: #fff; padding: 7px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .gift-art { font-size: 43px; transform: rotate(-4deg); }
+
+        .top-deals-card { padding: 14px 14px 8px; }
+        .rail-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .rail-heading strong { font-size: 14px; }
+        .rail-heading a { display: inline-flex; align-items: center; gap: 4px; color: #8b6418; font-size: 10px; }
+        .mini-deal { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px 0; border: 0; border-top: 1px solid #f0ede7; background: transparent; text-align: left; }
+        .mini-deal-image { width: 66px; height: 66px; background: #faf9f6; border-radius: 6px; display: grid; place-items: center; flex: none; }
+        .mini-deal-image img { width: 100%; height: 100%; object-fit: contain; }
+        .mini-deal-copy { min-width: 0; }
+        .mini-deal-copy strong, .mini-deal-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mini-deal-copy strong { font-size: 10px; }
+        .mini-deal-copy span { color: #777; font-size: 9px; margin-top: 3px; }
+        .mini-deal-copy > div { margin-top: 7px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .mini-deal-copy del { color: #a1a1a1; font-size: 8px; }
+        .mini-deal-copy b { font-size: 10px; }
+        .mini-deal-copy em { font-style: normal; color: #4f965f; background: #eef8ef; border-radius: 10px; padding: 3px 6px; font-size: 8px; }
+
+        .category-section { margin: 22px 0 26px; }
+        .category-rail-wrap { display: flex; align-items: center; gap: 6px; }
+        .category-rail { display: flex; align-items: flex-start; justify-content: space-between; gap: 9px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+        .category-rail::-webkit-scrollbar { display: none; }
+        .category-item { min-width: 102px; flex: 1; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 9px; color: #222; font-size: 10px; text-align: center; }
+        .category-icon { width: 58px; height: 58px; border-radius: 50%; background: #fff9ed; color: var(--gold); display: grid; place-items: center; box-shadow: 0 1px 0 #f2e7d0; }
+        .category-item:hover .category-icon { background: #f9edcf; transform: translateY(-2px); }
+        .category-icon, .category-item { transition: .2s ease; }
+        .rail-control { width: 28px; height: 28px; border: 1px solid #ece5d7; background: #fff; color: #8d671e; border-radius: 50%; display: grid; place-items: center; flex: none; }
+
+        .section-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 13px; }
+        .section-title { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 800; }
+        .section-title > span { color: var(--gold); }
+        .section-head > a { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
+        .section-head > a:hover { color: var(--gold); }
+
+        .products-grid { display: grid; gap: 17px; }
+        .five-columns { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .product-card { position: relative; background: #fff; border: 1px solid #eceae5; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.025); transition: transform .2s ease, box-shadow .2s ease; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(45,35,17,.09); }
+        .wish-btn { position: absolute; z-index: 5; right: 10px; top: 9px; border: 0; background: transparent; color: #888; padding: 4px; }
+        .wish-btn:hover { color: #c58e22; }
+        .discount-badge { position: absolute; z-index: 4; top: 10px; left: 10px; color: #4d9659; background: #eff8ef; border-radius: 4px; font-size: 8px; padding: 4px 6px; font-weight: 700; }
+        .mini-badge { position: absolute; z-index: 4; top: 10px; left: 10px; transform: translateY(24px); color: #735400; background: #ffe063; border-radius: 4px; font-size: 8px; padding: 4px 6px; font-weight: 700; }
+        .product-image-wrap { width: 100%; height: 173px; border: 0; background: #fff; padding: 16px 20px 7px; display: grid; place-items: center; }
+        .product-image { width: 100%; height: 100%; object-fit: contain; transition: transform .25s ease; }
+        .product-card:hover .product-image { transform: scale(1.035); }
+        .product-copy { padding: 3px 11px 12px; }
+        .product-category { color: #777; font-size: 9px; min-height: 12px; }
+        .product-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; border: 0; background: transparent; color: #252525; font-size: 11px; font-weight: 500; line-height: 1.4; padding: 0; text-align: left; width: 100%; min-height: 31px; margin-top: 2px; }
+        .rating-row { display: flex; align-items: center; gap: 5px; margin: 7px 0; }
+        .rating-pill { background: #f1f8f1; color: #3c7c48; border-radius: 4px; padding: 3px 5px; font-size: 9px; display: inline-flex; align-items: center; gap: 2px; }
+        .review-count { color: #8a8a8a; font-size: 8px; }
+        .price-row { display: flex; align-items: baseline; gap: 7px; margin-bottom: 9px; }
+        .price-row strong { font-size: 14px; }
+        .price-row del { font-size: 9px; color: #999; }
+        .add-cart-btn { width: 100%; height: 28px; border: 0; border-radius: 5px; background: linear-gradient(180deg, #d1a442, #b78720); color: #fff; font-size: 10px; font-weight: 700; }
+        .add-cart-btn:hover { filter: brightness(.97); }
+
+        .deal-banner-row { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: 17px; margin: 28px 0 33px; }
+        .deal-banner { min-height: 125px; border-radius: 9px; overflow: hidden; position: relative; display: flex; align-items: center; padding: 18px 22px; }
+        .deal-banner > div { position: relative; z-index: 2; max-width: 60%; }
+        .deal-banner strong, .deal-banner span { display: block; }
+        .deal-banner strong { font-size: 18px; }
+        .deal-banner span { font-size: 11px; margin-bottom: 5px; }
+        .deal-banner a { display: inline-flex; align-items: center; gap: 5px; margin-top: 13px; background: #fff; color: #222; border-radius: 15px; padding: 6px 11px; font-size: 9px; font-weight: 700; }
+        .deal-banner img { position: absolute; right: 8px; bottom: 2px; width: 43%; height: 96%; object-fit: contain; z-index: 1; }
+        .flash-banner { background: linear-gradient(110deg, #b57c0c, #d3a23f); color: #fff; }
+        .flash-banner span { display: flex; align-items: center; gap: 5px; }
+        .home-banner { background: linear-gradient(110deg, #fbf1dd, #f0e2c5); }
+        .fashion-banner { background: linear-gradient(110deg, #f5eee2, #ead9bb); }
+
+        .trending-grid { margin-bottom: 32px; }
+        .trust-strip { background: #fff; border: 1px solid #eeeae2; border-radius: 9px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 10px 5px; margin-top: 35px; }
+        .trust-item { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 10px; border-right: 1px solid #eeeae2; }
+        .trust-item:last-child { border-right: 0; }
+        .trust-item > span { width: 38px; height: 38px; display: grid; place-items: center; color: var(--gold); background: #fff8e8; border-radius: 50%; }
+        .trust-item strong, .trust-item small { display: block; }
+        .trust-item strong { font-size: 11px; }
+        .trust-item small { color: #777; font-size: 9px; margin-top: 3px; }
+
+        .toast { position: fixed; z-index: 200; right: 25px; bottom: 25px; background: #222; color: #fff; border-radius: 8px; padding: 11px 15px; box-shadow: 0 10px 35px rgba(0,0,0,.22); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+        .toast span { color: #d7ae51; font-weight: 800; }
+
+        .mobile-menu-overlay { position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.3); }
+        .mobile-menu-card { width: min(310px, 85vw); height: 100%; background: #fff; padding: 22px; box-shadow: 10px 0 35px rgba(0,0,0,.16); display: flex; flex-direction: column; gap: 4px; }
+        .mobile-menu-head { display: flex; justify-content: space-between; align-items: center; color: var(--gold); font-size: 20px; padding-bottom: 18px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+        .mobile-menu-head button { border: 0; background: transparent; }
+        .mobile-menu-card a { padding: 13px 5px; border-bottom: 1px solid #f0ede6; font-size: 13px; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-screen { min-height: 100vh; background: #fffdf8; display: grid; place-items: center; }
+        .loading-inner { text-align: center; }
+        .loading-logo { width: 58px; height: 58px; border: 2px solid var(--gold); color: var(--gold); border-radius: 14px; display: grid; place-items: center; margin: 0 auto 14px; animation: pulse 1.4s ease-in-out infinite; }
+        .loading-inner strong { color: var(--gold); font-size: 22px; }
+        .loading-inner span { display: block; color: #999; font-size: 11px; margin-top: 5px; }
+        .loading-bar { width: 190px; height: 3px; background: #f0e7d5; margin: 18px auto 0; overflow: hidden; border-radius: 5px; }
+        .loading-bar:after { content: ""; display: block; width: 45%; height: 100%; background: var(--gold); animation: loading 1.1s ease-in-out infinite; }
+        @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+        @keyframes pulse { 50% { transform: scale(1.05); } }
+
+        @media (max-width: 1200px) {
+          .container { width: min(1160px, calc(100% - 32px)); }
+          .header-main { gap: 20px; }
+          .logo-wrap { min-width: 205px; }
+          .header-actions { gap: 15px; }
+          .nav-inner { gap: 22px; }
+          .hero-layout { grid-template-columns: minmax(0, 1fr) 265px; }
+          .five-columns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .five-columns .product-card:nth-child(5) { display: none; }
+          .category-item { min-width: 88px; }
+        }
+
+        @media (max-width: 950px) {
+          .strip-right { display: none; }
+          .header-main { min-height: 72px; }
+          .logo-wrap { min-width: auto; }
+          .logo-text { font-size: 24px; }
+          .search-box { max-width: none; }
+          .header-actions { display: none; }
+          .mobile-menu-button { display: block; }
+          .nav-bar { display: none; }
+          .hero-layout { grid-template-columns: 1fr; }
+          .right-rail { display: grid; grid-template-columns: 1fr 1fr; }
+          .welcome-card { grid-row: span 2; }
+          .top-deals-card { grid-column: 2; }
+          .prime-points-card { grid-column: 1; }
+          .five-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .five-columns .product-card:nth-child(4), .five-columns .product-card:nth-child(5) { display: none; }
+          .deal-banner-row { grid-template-columns: 1fr 1fr; }
+          .deal-banner:last-child { display: none; }
+        }
+
+        @media (max-width: 680px) {
+          .container { width: calc(100% - 20px); }
+          .top-strip { font-size: 10px; }
+          .strip-inner { height: 31px; }
+          .strip-left { gap: 9px; overflow: hidden; white-space: nowrap; }
+          .strip-left span:nth-of-type(3), .strip-left i:nth-of-type(2) { display: none; }
+          .header-main { flex-wrap: wrap; gap: 8px; padding: 10px 0; }
+          .logo-wrap { flex: 1; }
+          .logo-mark { width: 37px; height: 37px; }
+          .logo-text { font-size: 22px; }
+          .logo-tagline { font-size: 9px; }
+          .search-box { order: 3; flex-basis: 100%; height: 40px; }
+          .search-box button { padding: 0 17px; }
+          .page-content { padding-top: 10px; }
+          .hero-image-frame { aspect-ratio: 1.35 / 1; min-height: 235px; border-radius: 7px; }
+          .hero-arrow { width: 32px; height: 32px; }
+          .hero-left { left: 8px; }
+          .hero-right { right: 8px; }
+          .right-rail { grid-template-columns: 1fr; }
+          .welcome-card { grid-row: auto; }
+          .prime-points-card, .top-deals-card { grid-column: auto; }
+          .category-section { margin: 18px 0 22px; }
+          .category-item { min-width: 80px; font-size: 9px; }
+          .category-icon { width: 50px; height: 50px; }
+          .rail-control { display: none; }
+          .section-title { font-size: 16px; }
+          .five-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .five-columns .product-card:nth-child(n) { display: block; }
+          .product-image-wrap { height: 155px; padding: 14px; }
+          .product-copy { padding-left: 9px; padding-right: 9px; }
+          .product-name { font-size: 10px; }
+          .price-row strong { font-size: 13px; }
+          .deal-banner-row { grid-template-columns: 1fr; gap: 10px; }
+          .deal-banner { min-height: 115px; }
+          .deal-banner:last-child { display: flex; }
+          .trust-strip { grid-template-columns: 1fr 1fr; }
+          .trust-item:nth-child(2) { border-right: 0; }
+          .trust-item:nth-child(-n+2) { border-bottom: 1px solid #eeeae2; }
+          .toast { left: 15px; right: 15px; bottom: 15px; justify-content: center; }
+        }
+
+        @media (max-width: 430px) {
+          .hero-image-frame { aspect-ratio: 1.05 / 1; }
+          .product-image-wrap { height: 140px; }
+          .product-category { font-size: 8px; }
+          .section-head > a { font-size: 9px; }
+          .deal-banner > div { max-width: 68%; }
+          .deal-banner strong { font-size: 16px; }
+          .deal-banner img { width: 38%; }
+        }
+      `}</style>
+    </main>
+  );
+}
+
+function Service({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="service-row">
+      <span className="service-icon">{icon}</span>
+      <span>
+        <strong>{title}</strong>
+        <small>{text}</small>
+      </span>
     </div>
   );
 }
 
-function LoadingScreen() {
-  return <div className="loading"><div className="loading-mark">P</div><b>PrimeCart</b><span>Preparing your shopping experience...</span><div className="loading-line"><i/></div><style jsx>{`.loading{min-height:100vh;background:#fffdf8;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#27231c}.loading-mark{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#d8b15a,#ae7b22);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:900;box-shadow:0 15px 35px rgba(174,123,34,.22);animation:float 2s ease-in-out infinite}.loading b{margin-top:14px;font-size:22px}.loading span{margin-top:5px;color:#999184;font-size:11px}.loading-line{margin-top:20px;width:190px;height:4px;border-radius:99px;background:#eee7d8;overflow:hidden}.loading-line i{display:block;width:45%;height:100%;background:#c79a3b;border-radius:inherit;animation:load 1.2s infinite}@keyframes load{from{transform:translateX(-140%)}to{transform:translateX(500%)}}@keyframes float{50%{transform:translateY(-5px)}}`}</style></div>;
-}
-
-function EmptyProducts({ onClear }: { onClear: () => void }) {
-  return <div className="empty"><Package size={30}/><b>No products found</b><span>Try another search or category.</span><button onClick={onClear}>Clear filters</button></div>;
-}
-
-function ProductCard({ product, categoryMap, liked, onLike, onCart, onOpen, compact = false }: { product: Product; categoryMap: Map<string,string>; liked: boolean; onLike: (id:string|number)=>void; onCart:(p:Product)=>void; onOpen:(p:Product)=>void; compact?: boolean }) {
-  const d = discount(product.price, product.original_price);
-  return <article className={`card ${compact ? "compact" : ""}`}>
-    <button className="image-click" onClick={() => onOpen(product)} aria-label={`Open ${product.name}`}>
-      {d > 0 && <span className="discount">{d}% OFF</span>}
-      {product.is_flash_sale && <span className="flash-tag"><Zap size={11} fill="currentColor"/> FLASH</span>}
-      <button className={`heart ${liked ? "liked" : ""}`} onClick={(e) => {e.stopPropagation();onLike(product.id)}} aria-label="Wishlist"><Heart size={17} fill={liked ? "currentColor":"none"}/></button>
-      {product.image_url ? <img src={imageUrl(product.image_url)} alt={product.name} onError={(e) => {e.currentTarget.style.display="none"; e.currentTarget.parentElement?.querySelector(".fallback")?.classList.add("show")}}/> : null}
-      <div className="fallback"><Package size={28}/><span>No image</span></div>
-      <span className="view-chip">View details <ArrowUpRight size={13}/></span>
-    </button>
-    <div className="card-info">
-      <small>{categoryMap.get(String(product.category_id)) || "Product"}</small>
-      <h3 title={product.name}>{product.name}</h3>
-      {product.brand && <p>{product.brand}</p>}
-      <div className="rating"><span><Star size={12} fill="currentColor"/>{Number(product.rating || 0).toFixed(1)}</span><em>({product.reviews_count || 0})</em></div>
-      <div className="card-bottom"><div><b>{price(product.price)}</b>{product.original_price && product.original_price > Number(product.price || 0) && <del>{price(product.original_price)}</del>}</div><button className="add" onClick={() => onCart(product)}><Plus size={15}/><span>Add</span></button></div>
+function SectionHeader({ icon, title, href }: { icon: React.ReactNode; title: string; href: string }) {
+  return (
+    <div className="section-head">
+      <div className="section-title"><span>{icon}</span>{title}</div>
+      <Link href={href}>View All <ArrowRight size={14} /></Link>
     </div>
-  </article>;
+  );
 }
 
-const CSS = `
-*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fffdf8}body{color:#28241d;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{text-decoration:none;color:inherit}button,input{font:inherit}button{cursor:pointer}.page{min-height:100vh;background:#fffdf8}.sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:#fff;border-right:1px solid #eee7da;padding:21px 15px;display:flex;flex-direction:column;z-index:100}.brand-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px 30px}.brand{display:flex;align-items:center;gap:10px}.brand-logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#d7af58,#ae7b22);color:#fff;font-size:19px;font-weight:900;box-shadow:0 8px 20px rgba(174,123,34,.2)}.brand>span:last-child{display:flex;flex-direction:column}.brand b{font-size:17px;letter-spacing:-.4px}.brand small{margin-top:4px;color:#b1853b;font-size:7px;font-weight:900;letter-spacing:1.5px}.close-mobile{display:none;border:0;background:#f8f3e9;width:35px;height:35px;border-radius:10px}.side-label{padding:0 11px 8px;color:#aaa195;font-size:8px;font-weight:900;letter-spacing:1.5px}.smart-label{margin-top:24px}.nav{display:flex;flex-direction:column;gap:3px}.nav a,.side-bottom>a,.signout{min-height:43px;padding:0 12px;border-radius:11px;display:flex;align-items:center;gap:11px;color:#777066;font-size:12px;font-weight:650;transition:.2s}.nav a:hover,.side-bottom>a:hover,.signout:hover{background:#fbf7ee;color:#a87826;transform:translateX(2px)}.nav a.nav-active{color:#a67524;background:linear-gradient(90deg,#fbf3e2,#fffaf2);font-weight:800}.side-bottom{margin-top:auto}.signout{width:100%;border:0;background:transparent;color:#8f6666;text-align:left}.help{margin-top:15px;padding:11px;border:1px solid #eee6d7;background:#fbf8f1;border-radius:13px;display:flex;align-items:center;gap:9px}.help>span{width:32px;height:32px;border-radius:9px;background:#f7edda;color:#ad7c27;display:grid;place-items:center}.help div{display:flex;flex-direction:column;min-width:0}.help b{font-size:10px}.help small{margin-top:2px;color:#a19a8e;font-size:8px}.main{margin-left:250px;min-height:100vh}.topbar{position:sticky;top:0;z-index:60;height:72px;padding:0 30px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,253,248,.94);backdrop-filter:blur(16px);border-bottom:1px solid #eee7da}.top-left{display:flex;align-items:center;gap:10px}.top-left>div{display:flex;flex-direction:column}.top-left b{font-size:15px}.top-left span{margin-top:3px;color:#a0998d;font-size:9px}.mobile-menu{display:none;border:1px solid #eee6d9;background:#fff;width:38px;height:38px;border-radius:10px}.top-right{display:flex;align-items:center;gap:8px}.search-box{width:330px;height:40px;background:#fff;border:1px solid #ebe4d7;border-radius:11px;display:flex;align-items:center;gap:8px;padding:0 11px;color:#a29a8d}.search-box:focus-within{border-color:#d5b675;box-shadow:0 0 0 3px rgba(199,154,59,.08)}.search-box input{border:0;outline:0;background:transparent;min-width:0;flex:1;font-size:11px;color:#29251f}.search-box input::placeholder{color:#aaa399}.search-box button{border:0;background:#f5f0e7;color:#7e776c;width:22px;height:22px;border-radius:7px;display:grid;place-items:center}.top-icon{position:relative;width:40px;height:40px;border:1px solid #ebe4d7;border-radius:11px;background:#fff;display:grid;place-items:center;color:#6e675d}.top-icon:hover{color:#a87826;border-color:#dbc18d}.top-icon i{position:absolute;right:-4px;top:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:#b78328;color:#fff;border:2px solid #fffdf8;font-style:normal;font-size:7px;font-weight:900;display:grid;place-items:center}.top-icon em{position:absolute;right:8px;top:7px;width:6px;height:6px;border-radius:50%;background:#c38c2c}.profile-wrap{position:relative}.profile{height:40px;border:1px solid #ebe4d7;background:#fff;border-radius:11px;padding:3px 8px 3px 4px;display:flex;align-items:center;gap:7px}.avatar{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#d8b35f,#b57e25);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:900}.profile-text{display:flex;flex-direction:column;text-align:left;min-width:72px}.profile-text b{font-size:10px;max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.profile-text small{margin-top:2px;color:#aa9f8e;font-size:7px}.rotate{transform:rotate(90deg)}.profile-menu{position:absolute;right:0;top:48px;width:235px;padding:8px;background:#fff;border:1px solid #eee6d8;border-radius:14px;box-shadow:0 18px 45px rgba(56,45,28,.14);animation:menuIn .18s ease both}.menu-user{padding:9px;display:flex;align-items:center;gap:9px}.menu-user>div{display:flex;flex-direction:column;min-width:0}.menu-user b{font-size:11px}.menu-user small{margin-top:3px;color:#9d9589;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px}.avatar.big{width:38px;height:38px}.profile-menu hr{border:0;border-top:1px solid #f0e9df;margin:6px 0}.profile-menu a,.profile-menu button{width:100%;height:37px;border:0;background:transparent;border-radius:8px;display:flex;align-items:center;gap:9px;padding:0 10px;color:#6d665b;font-size:10px;font-weight:650;text-align:left}.profile-menu a:hover,.profile-menu button:hover{background:#fbf7ef;color:#a87826}.body{max-width:1540px;margin:auto;padding:17px 30px 45px}.error{margin-bottom:14px;border:1px solid #f0d6d6;background:#fff7f7;border-radius:12px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between}.error div{display:flex;flex-direction:column}.error b{color:#9b4f4f;font-size:10px}.error span{margin-top:3px;color:#a97878;font-size:8px}.error button{border:0;background:#fff;color:#995050;padding:7px 9px;border-radius:8px;font-size:9px;font-weight:800;display:flex;gap:5px;align-items:center}.category-rail{height:64px;background:#fff;border:1px solid #eee7da;border-radius:15px;display:flex;align-items:center;gap:6px;padding:6px;box-shadow:0 5px 18px rgba(61,48,28,.03);overflow:hidden}.rail-scroll{display:flex;align-items:center;gap:4px;overflow-x:auto;scroll-behavior:smooth;flex:1;scrollbar-width:none}.rail-scroll::-webkit-scrollbar{display:none}.rail-item{height:50px;min-width:92px;padding:0 11px;border:0;border-radius:10px;background:transparent;color:#746d62;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:8px;font-weight:750;white-space:nowrap}.rail-item:hover{background:#fbf6eb;color:#a87826}.rail-item.active{background:#fbf1dc;color:#a67623}.rail-arrow{width:30px;height:34px;flex:0 0 30px;border:1px solid #eee6d8;background:#fffaf1;border-radius:8px;color:#9b722b;display:grid;place-items:center}.rail-all{height:34px;padding:0 11px;border-radius:9px;background:#faf4e7;color:#a37425;font-size:9px;font-weight:800;display:flex;align-items:center;gap:4px;white-space:nowrap}.hero-market{position:relative;margin-top:16px;height:min(31vw,350px);min-height:220px;overflow:hidden;border-radius:19px;background:#f5eee1;border:1px solid #eadfc9;box-shadow:0 12px 35px rgba(67,51,26,.06)}.hero-link,.hero-link img{width:100%;height:100%;display:block}.hero-link img{object-fit:cover;object-position:center}.hero-arrow{position:absolute;z-index:3;top:50%;transform:translateY(-50%);width:38px;height:38px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.82);color:#765a29;border-radius:50%;display:grid;place-items:center;box-shadow:0 7px 18px rgba(52,39,21,.1)}.hero-arrow.left{left:13px}.hero-arrow.right{right:13px}.hero-dots{position:absolute;bottom:13px;left:0;right:0;display:flex;justify-content:center;gap:5px}.dot{width:7px;height:7px;border:0;border-radius:99px;padding:0;background:rgba(255,255,255,.6);transition:.2s}.dot.active{width:20px;background:#bd8b30}.quick-actions{margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.quick-card{min-height:74px;border:1px solid #eee7da;background:#fff;border-radius:13px;padding:11px;display:flex;align-items:center;gap:10px;transition:.22s}.quick-card:hover{transform:translateY(-3px);border-color:#dfc99e;box-shadow:0 12px 25px rgba(62,48,27,.07)}.quick-icon{width:38px;height:38px;border-radius:11px;background:#fbf2df;color:#a97827;display:grid;place-items:center;flex:0 0 38px}.quick-icon.flame{background:#fff0d9;color:#c17e22}.quick-card div{display:flex;flex-direction:column;flex:1;min-width:0}.quick-card b{font-size:10px}.quick-card small{margin-top:3px;color:#a09a90;font-size:8px}.quick-card>svg{color:#b6ac9d}.section-head{margin:30px 0 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.section-head>div:first-child>span,.section-title>div>span{color:#b18438;font-size:7px;font-weight:900;letter-spacing:1.4px}.section-head h1{margin:5px 0 4px;font-size:27px;letter-spacing:-1px}.section-head p{margin:0;color:#9b9387;font-size:10px}.mini-stats{display:flex;gap:6px}.mini-stats span{padding:9px 11px;background:#fff;border:1px solid #eee7da;border-radius:10px;color:#9b9387;font-size:8px}.mini-stats b{color:#a77825;margin-right:3px}.deal-section{padding:20px;border:1px solid #eadcc0;border-radius:18px;background:linear-gradient(135deg,#fff7e6,#fffdf8);margin-top:18px}.deal-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}.deal-title h2{margin:5px 0 3px;font-size:20px}.deal-title p{margin:0;color:#9c9385;font-size:9px}.deal-badge{display:inline-flex;align-items:center;gap:5px;color:#b07c24;font-size:8px;font-weight:900;letter-spacing:1px}.deal-head>a,.section-title>a{display:flex;align-items:center;gap:4px;color:#a57625;font-size:9px;font-weight:850}.deal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.section{margin-top:40px}.section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:15px}.section-title h2{margin:5px 0 4px;font-size:20px;letter-spacing:-.5px}.section-title p{margin:0;color:#9b9388;font-size:9px}.category-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}.category-cards button{min-height:112px;border:1px solid #eee7da;background:#fff;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#6e675d;transition:.22s}.category-cards button:hover{transform:translateY(-3px);border-color:#dfc99e;background:#fffaf2;box-shadow:0 10px 23px rgba(60,48,27,.06)}.cat-circle{width:39px;height:39px;border-radius:12px;background:#fbf3e3;color:#a97928;display:grid;place-items:center}.category-cards b{font-size:9px}.category-cards small{color:#aaa195;font-size:7px}.product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.card{overflow:hidden;background:#fff;border:1px solid #eee7da;border-radius:15px;transition:.25s}.card:hover{transform:translateY(-5px);border-color:#dfc89b;box-shadow:0 17px 35px rgba(57,44,25,.09)}.image-click{position:relative;width:100%;height:218px;padding:0;border:0;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}.image-click>img{width:100%;height:100%;object-fit:contain;display:block}.card.compact .image-click{height:145px}.discount{position:absolute;z-index:3;left:9px;top:9px;background:#b9852a;color:#fff;border-radius:6px;padding:5px 6px;font-size:7px;font-weight:900}.flash-tag{position:absolute;z-index:3;left:9px;bottom:9px;background:#fff2db;color:#a97420;border:1px solid #efd7ac;border-radius:6px;padding:4px 6px;font-size:7px;font-weight:900;display:flex;align-items:center;gap:3px}.heart{position:absolute;z-index:4;right:9px;top:9px;width:31px;height:31px;border:1px solid #eee7da;background:rgba(255,255,255,.94);color:#8f877b;border-radius:9px;display:grid;place-items:center}.heart.liked{color:#b37926;background:#fff8eb;border-color:#e0c38b}.view-chip{position:absolute;left:50%;bottom:10px;transform:translate(-50%,8px);opacity:0;padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.95);color:#9f7227;font-size:7px;font-weight:850;box-shadow:0 6px 16px rgba(55,43,25,.1);transition:.2s;white-space:nowrap;display:flex;align-items:center;gap:3px}.image-click:hover .view-chip{opacity:1;transform:translate(-50%,0)}.fallback{display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:5px;color:#aaa195;background:#faf8f4;font-size:8px}.fallback.show{display:flex}.card-info{padding:11px 12px 12px}.card-info>small{color:#b1843a;text-transform:uppercase;font-size:7px;font-weight:900;letter-spacing:.7px}.card-info h3{margin:5px 0 2px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#302c25}.card-info>p{margin:0;color:#aaa196;font-size:8px}.rating{display:flex;align-items:center;gap:5px;margin-top:7px}.rating span{display:flex;align-items:center;gap:2px;color:#a87927;font-size:8px;font-weight:850}.rating em{color:#b2aaa0;font-size:7px;font-style:normal}.card-bottom{margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:5px}.card-bottom>div{display:flex;align-items:baseline;gap:6px}.card-bottom b{font-size:13px}.card-bottom del{color:#aaa197;font-size:7px}.add{height:29px;padding:0 8px;border:1px solid #e2cd9f;border-radius:8px;background:#fff9ee;color:#a77725;display:flex;align-items:center;gap:3px;font-size:8px;font-weight:850}.add:hover{background:#b8872d;color:#fff;border-color:#b8872d}.smart-banner{margin-top:40px;min-height:210px;border-radius:19px;border:1px solid #e6d5b0;background:radial-gradient(circle at 85% 35%,rgba(212,172,91,.24),transparent 30%),linear-gradient(120deg,#fff7e7,#fbf3e3);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;overflow:hidden}.smart-copy>span{color:#b0802e;font-size:7px;font-weight:900;letter-spacing:1.4px}.smart-copy h2{margin:7px 0 5px;font-size:23px}.smart-copy p{max-width:560px;margin:0;color:#8f877b;font-size:10px;line-height:1.7}.smart-copy a{margin-top:17px;width:max-content;padding:9px 12px;border-radius:9px;background:#b8872d;color:#fff;display:flex;align-items:center;gap:6px;font-size:9px;font-weight:850}.smart-orbit{width:190px;height:150px;border-radius:50%;border:1px dashed #d5b879;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a87827;background:rgba(255,255,255,.48);box-shadow:0 0 0 18px rgba(201,160,77,.04),0 0 0 36px rgba(201,160,77,.025);flex:0 0 auto}.smart-orbit div{margin-top:8px;display:flex;flex-direction:column;text-align:center}.smart-orbit b{font-size:11px}.smart-orbit span{margin-top:3px;color:#9c9386;font-size:7px}.benefits{margin-top:22px;padding:15px;background:#fff;border:1px solid #eee7da;border-radius:15px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.benefits>div{display:flex;align-items:center;gap:9px;padding:8px}.benefits span{width:36px;height:36px;border-radius:10px;background:#fbf3e3;color:#a87928;display:grid;place-items:center}.benefits div div{display:flex;flex-direction:column}.benefits b{font-size:9px}.benefits small{margin-top:3px;color:#a19a8f;font-size:7px}footer{margin-top:35px;padding-top:18px;border-top:1px solid #eee7da;display:flex;justify-content:space-between;color:#aaa196;font-size:8px}footer div{display:flex;gap:8px;align-items:center}footer b{color:#a87927}.empty{min-height:220px;border:1px dashed #ddd3c2;border-radius:15px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a39a8c}.empty b{margin-top:10px;color:#4d473e;font-size:12px}.empty span{margin-top:4px;font-size:9px}.empty button{margin-top:12px;border:0;border-radius:8px;padding:8px 11px;background:#b8872d;color:#fff;font-size:8px;font-weight:850}.toast{position:fixed;z-index:300;right:24px;bottom:24px;padding:11px 14px;border-radius:11px;background:#30291f;color:#fff;display:flex;align-items:center;gap:8px;box-shadow:0 15px 35px rgba(39,31,20,.2);font-size:10px;animation:toast .25s ease both}.toast svg{color:#dfb75e}@keyframes toast{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes menuIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}.overlay{display:none}
-@media(max-width:1200px){.search-box{width:250px}.product-grid{grid-template-columns:repeat(3,1fr)}.category-cards{grid-template-columns:repeat(4,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}.deal-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:900px){.sidebar{width:235px;transform:translateX(-105%);transition:.25s;box-shadow:15px 0 35px rgba(40,31,18,.1)}.sidebar.open{transform:translateX(0)}.close-mobile{display:block}.main{margin-left:0}.mobile-menu{display:grid;place-items:center}.overlay{display:block;position:fixed;inset:0;z-index:90;border:0;background:rgba(28,23,16,.25);backdrop-filter:blur(2px)}.topbar{padding:0 17px}.body{padding:15px 17px 40px}.profile-text{display:none}.profile{padding-right:4px}.hero-market{height:34vw;min-height:190px}.mini-stats{display:none}.section-head{margin-top:25px}.category-cards{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:650px){.top-left span{display:none}.top-right{gap:5px}.search-box{width:40px;padding:0;justify-content:center}.search-box input,.search-box button{display:none}.top-icon{width:37px;height:37px}.profile{width:37px;height:37px;padding:2px;justify-content:center}.profile>svg{display:none}.hero-market{height:48vw;min-height:170px;border-radius:14px}.hero-arrow{width:31px;height:31px}.category-rail{height:60px}.rail-item{min-width:75px;height:48px}.rail-all{display:none}.section-head{display:block}.section-head h1{font-size:23px}.quick-actions{grid-template-columns:1fr 1fr}.quick-card{min-height:68px;padding:9px}.quick-card small{display:none}.quick-icon{width:34px;height:34px;flex-basis:34px}.deal-section{padding:15px}.deal-grid{grid-template-columns:1fr}.section-title{align-items:flex-start}.section-title h2{font-size:18px}.section-title p{line-height:1.5}.category-cards{grid-template-columns:repeat(3,1fr)}.category-cards button{min-height:96px}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.image-click{height:165px}.card.compact .image-click{height:130px}.card-info{padding:9px}.card-info h3{font-size:10px}.card-bottom b{font-size:11px}.add{padding:0 7px}.add span{display:none}.smart-banner{padding:22px;min-height:200px}.smart-orbit{display:none}.benefits{grid-template-columns:1fr 1fr}.benefits>div{padding:6px}.benefits small{display:none}footer{flex-direction:column;gap:7px}.toast{right:12px;bottom:12px}.profile-menu{right:-4px}.error{align-items:flex-start;gap:10px}}
-@media(max-width:400px){.category-cards{grid-template-columns:repeat(2,1fr)}.quick-card>svg{display:none}.benefits{grid-template-columns:1fr}.product-grid{gap:7px}.image-click{height:150px}.card-bottom>div{min-width:0}.card-bottom del{display:none}}
-`;
+function TrustItem({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="trust-item">
+      <span>{icon}</span>
+      <div>
+        <strong>{title}</strong>
+        <small>{text}</small>
+      </div>
+    </div>
+  );
+}
+
+function FlameIcon() {
+  return <span style={{ display: "inline-flex", fontSize: 20 }}>♛</span>;
+}
+
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-inner">
+        <div className="loading-logo"><ShoppingBag size={28} /></div>
+        <strong>PrimeCart</strong>
+        <span>Preparing your shopping experience...</span>
+        <div className="loading-bar" />
+      </div>
+    </div>
+  );
+}
