@@ -41,6 +41,8 @@ import {
   useState,
 } from "react";
 
+import DashboardShell from "../components/DashboardShell";
+
 type FileType =
   | "folder"
   | "pdf"
@@ -704,30 +706,30 @@ export default function FilesPage() {
 
   return (
     <DashboardShell>
-      <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-6 lg:py-8">
-        <div className="space-y-8">
+      <div className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        <div className="space-y-6 lg:space-y-7">
 
           {/* =====================================
               HERO BANNER
           ====================================== */}
-          <section className="relative overflow-hidden rounded-3xl shadow-lg shadow-slate-200/40 dark:shadow-black/20">
-            <div className="relative isolate overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_18px_55px_-28px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-950 dark:shadow-black/30">
+            <div className="relative isolate overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
               <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
               <div className="pointer-events-none absolute -bottom-32 right-1/4 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
 
               <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.2fr_.8fr]">
                 <div className="max-w-2xl">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50 backdrop-blur-sm">
                     <CloudUpload className="h-3.5 w-3.5" />
                     CloudVault Storage
                   </div>
 
                   <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                    Your files, secure and always within reach.
+                    Your files. One secure workspace. Always within reach.
                   </h1>
 
                   <p className="mt-4 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">
-                    Upload, organize, download and manage everything from one clean cloud workspace. Your existing file actions and storage stay exactly the same.
+                    Upload, organize, download and manage your files from a clean cloud workspace built for speed and simplicity.
                   </p>
 
                   <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -735,7 +737,7 @@ export default function FilesPage() {
                       type="button"
                       onClick={() => setShowUpload(true)}
                       disabled={uploading}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-700 shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {uploading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -752,8 +754,8 @@ export default function FilesPage() {
                 </div>
 
                 <div className="relative mx-auto w-full max-w-md lg:ml-auto">
-                  <div className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-md sm:p-5">
-                    <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-5">
+                  <div className="rounded-[26px] border border-white/15 bg-white/10 p-3 shadow-2xl shadow-black/20 backdrop-blur-md sm:p-4">
+                    <div className="rounded-[22px] border border-white/10 bg-slate-950/30 p-5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
@@ -764,7 +766,7 @@ export default function FilesPage() {
                             <p className="mt-0.5 text-xs text-blue-100">Your CloudVault space</p>
                           </div>
                         </div>
-                        <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
+                        <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
                           Active
                         </span>
                       </div>
@@ -783,11 +785,11 @@ export default function FilesPage() {
                       </div>
 
                       <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3">
                           <p className="text-[11px] text-blue-100">Used</p>
                           <p className="mt-1 text-base font-bold text-white">{formatBytes(usedBytes)}</p>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3">
                           <p className="text-[11px] text-blue-100">Available</p>
                           <p className="mt-1 text-base font-bold text-white">{formatBytes(freeBytes)}</p>
                         </div>
@@ -802,7 +804,7 @@ export default function FilesPage() {
           {/* =====================================
               STORAGE CONTAINER
           ====================================== */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
+          <section className="rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10">
@@ -834,7 +836,7 @@ export default function FilesPage() {
           {/* =====================================
               FILE WORKSPACE
           ====================================== */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
+          <section className="rounded-[26px] border border-slate-200/80 bg-white p-4 shadow-[0_14px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6 dark:border-white/10 dark:bg-white/[0.04]">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="relative w-full xl:max-w-xl">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -843,7 +845,7 @@ export default function FilesPage() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search your files..."
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/[0.07]"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:bg-white/[0.07]"
                 />
                 {search && (
                   <button
@@ -863,7 +865,7 @@ export default function FilesPage() {
                     onChange={(event) =>
                       setSortBy(event.target.value as "recent" | "name" | "size")
                     }
-                    className="h-11 appearance-none rounded-xl border border-slate-200 bg-slate-50/70 px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                    className="h-11 appearance-none rounded-2xl border border-slate-200 bg-slate-50/70 px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
                   >
                     <option value="recent">Recently modified</option>
                     <option value="name">Name</option>
@@ -877,12 +879,12 @@ export default function FilesPage() {
                   onClick={() => loadFiles(true)}
                   disabled={refreshing || loading}
                   title="Refresh"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50/70 text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/70 text-slate-500 transition hover:bg-white hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
                 >
                   <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 </button>
 
-                <div className="flex h-11 rounded-xl border border-slate-200 bg-slate-50/70 p-1 dark:border-white/10 dark:bg-white/5">
+                <div className="flex h-11 rounded-2xl border border-slate-200 bg-slate-50/70 p-1 dark:border-white/10 dark:bg-white/5">
                   <button
                     type="button"
                     onClick={() => setView("grid")}
@@ -913,7 +915,7 @@ export default function FilesPage() {
                   type="button"
                   onClick={() => setShowUpload(true)}
                   disabled={uploading}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   {uploading ? "Uploading..." : "Upload"}
@@ -1026,8 +1028,9 @@ export default function FilesPage() {
           onClose={() => setToast(null)}
         />
       )}
+    </DashboardShell>
   );
-
+}
 
 /* =====================================================
    FILE CARD
@@ -1060,7 +1063,7 @@ function FileCard({
         >
           <FileIcon
             type={file.type}
-          />A
+          />
         </button>
 
         <div className="relative">
