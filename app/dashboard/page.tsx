@@ -7,13 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   ArrowRight,
-  BarChart3,
   Bell,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
-  Clock3,
   Crown,
   Flame,
   Heart,
@@ -36,10 +33,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-
-/* =========================================================
-   TYPES
-========================================================= */
 
 type Product = {
   id: string;
@@ -80,15 +73,6 @@ type Profile = {
   avatar_url?: string | null;
 };
 
-type RecentProduct = {
-  id: string;
-  viewedAt: number;
-};
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
 const categoryIcons: Record<string, string> = {
   "home-living": "🏠",
   mobile: "📱",
@@ -100,6 +84,9 @@ const categoryIcons: Record<string, string> = {
   automotive: "🚗",
   fashion: "👕",
   gaming: "🎮",
+  beauty: "💄",
+  books: "📚",
+  electronics: "🎧",
 };
 
 const sidebarItems = [
@@ -130,49 +117,6 @@ const sidebarItems = [
   },
 ];
 
-  const heroBanners = [
-    {
-      image: "/banner/hero-banner.png",
-      alt: "PrimeCart shopping offer",
-      href: "/dashboard/products",
-    },
-    {
-      image: "/banner/hero-banner2.png",
-      alt: "PrimeCart featured collection",
-      href: "/dashboard/products",
-    },
-    {
-      image: "/banner/hero-banner3.png",
-      alt: "PrimeCart smart shopping",
-      href: "/dashboard/prime-match",
-    },
-    {
-      image: "/banner/hero-banner4.png",
-      alt: "PrimeCart flash deals",
-      href: "/dashboard/products",
-    },
-    {
-      image: "/banner/hero-banner5.png",
-      alt: "PrimeCart shopping deals",
-      href: "/dashboard/products",
-    },
-    {
-      image: "/banner/hero-banner6.png",
-      alt: "PrimeCart curated picks",
-      href: "/dashboard/products",
-    },
-    {
-      image: "/banner/hero-banner7.png",
-      alt: "PrimeCart PrimeMatch",
-      href: "/dashboard/prime-match",
-    },
-    {
-      image: "/banner/hero-banner8.png",
-      alt: "PrimeCart rewards",
-      href: "/dashboard/prime-points",
-    },
-  ];
-
 const smartTools = [
   {
     label: "PrimeMatch",
@@ -198,15 +142,11 @@ const smartTools = [
   {
     label: "PrimePoints",
     href: "/dashboard/prime-points",
-    description: "Track your rewards and shopping points.",
+    description: "Track your shopping rewards.",
     badge: "REWARDS",
     icon: Crown,
   },
 ];
-
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function getImageCandidates(value: string | null) {
   if (!value) return [];
@@ -244,7 +184,9 @@ function discountPercentage(
 ) {
   if (!originalPrice || originalPrice <= price) return 0;
 
-  return Math.round(((originalPrice - price) / originalPrice) * 100);
+  return Math.round(
+    ((originalPrice - price) / originalPrice) * 100
+  );
 }
 
 function getInitials(name: string) {
@@ -279,12 +221,6 @@ function formatOrderStatus(status: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-/* =========================================================
-   PRODUCT IMAGE
-   IMPORTANT:
-   object-contain => COMPLETE IMAGE VISIBLE
-========================================================= */
-
 function ProductImage({
   product,
   className = "",
@@ -293,7 +229,6 @@ function ProductImage({
   className?: string;
 }) {
   const candidates = getImageCandidates(product.image_url);
-
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -302,80 +237,50 @@ function ProductImage({
 
   if (!candidates.length || index >= candidates.length) {
     return (
-      <div className={`product-image-fallback ${className}`}>
-        <ShoppingBag size={38} strokeWidth={1.4} />
-        <span>No image</span>
+      <div className={`image-fallback ${className}`}>
+        <ShoppingBag size={30} />
       </div>
     );
   }
 
   return (
-    <div className={`product-image-wrapper ${className}`}>
+    <div className={`product-image ${className}`}>
       <Image
         src={candidates[index]}
         alt={product.name}
         fill
-        priority={false}
-        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 260px"
-        className="product-image-full"
-        onError={() => {
-          setIndex((current) => current + 1);
-        }}
+        sizes="(max-width: 640px) 80vw, (max-width: 1100px) 40vw, 250px"
+        className="product-image-inner"
+        onError={() => setIndex((current) => current + 1)}
       />
     </div>
   );
 }
 
-/* =========================================================
-   MAIN DASHBOARD
-========================================================= */
-
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
-
   const [mobileMenu, setMobileMenu] = useState(false);
 
   const [profile, setProfile] = useState<Profile | null>(null);
-
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-
   const [wishlistCount, setWishlistCount] = useState(0);
 
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState("all");
-
-  const [recentlyViewed, setRecentlyViewed] = useState<RecentProduct[]>(
-    []
-  );
+  const [activeCategory, setActiveCategory] =
+    useState("all");
 
   const [dealMessage, setDealMessage] = useState(
     "Your mystery deal is waiting."
   );
-
-  const [activeHero, setActiveHero] = useState(0);
-
-  useEffect(() => {
-    if (heroBanners.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setActiveHero((current) => (current + 1) % heroBanners.length);
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, [heroBanners.length]);
-
-  /* =======================================================
-     LOAD DASHBOARD
-  ======================================================= */
 
   useEffect(() => {
     let mounted = true;
@@ -430,18 +335,26 @@ export default function DashboardPage() {
               `
             )
             .eq("is_active", true)
-            .order("created_at", { ascending: false }),
+            .order("created_at", {
+              ascending: false,
+            }),
 
           supabase
             .from("categories")
             .select("id,name,slug")
-            .order("name", { ascending: true }),
+            .order("name", {
+              ascending: true,
+            }),
 
           supabase
             .from("orders")
-            .select("id,status,total_amount,created_at")
+            .select(
+              "id,status,total_amount,created_at"
+            )
             .eq("user_id", user.id)
-            .order("created_at", { ascending: false }),
+            .order("created_at", {
+              ascending: false,
+            }),
 
           supabase
             .from("wishlist")
@@ -452,7 +365,8 @@ export default function DashboardPage() {
         if (!mounted) return;
 
         const metadataName =
-          typeof user.user_metadata?.full_name === "string"
+          typeof user.user_metadata?.full_name ===
+          "string"
             ? user.user_metadata.full_name
             : "";
 
@@ -464,7 +378,8 @@ export default function DashboardPage() {
             "PrimeCart User",
           email: user.email || null,
           avatar_url:
-            typeof user.user_metadata?.avatar_url === "string"
+            typeof user.user_metadata?.avatar_url ===
+            "string"
               ? user.user_metadata.avatar_url
               : null,
         };
@@ -478,23 +393,44 @@ export default function DashboardPage() {
             : fallbackProfile
         );
 
-        if (!productsResult.error && productsResult.data) {
-          setProducts(productsResult.data as Product[]);
+        if (
+          !productsResult.error &&
+          productsResult.data
+        ) {
+          setProducts(
+            productsResult.data as Product[]
+          );
         }
 
-        if (!categoriesResult.error && categoriesResult.data) {
-          setCategories(categoriesResult.data as Category[]);
+        if (
+          !categoriesResult.error &&
+          categoriesResult.data
+        ) {
+          setCategories(
+            categoriesResult.data as Category[]
+          );
         }
 
-        if (!ordersResult.error && ordersResult.data) {
+        if (
+          !ordersResult.error &&
+          ordersResult.data
+        ) {
           setOrders(ordersResult.data as Order[]);
         }
 
-        if (!wishlistResult.error && wishlistResult.data) {
-          setWishlistCount(wishlistResult.data.length);
+        if (
+          !wishlistResult.error &&
+          wishlistResult.data
+        ) {
+          setWishlistCount(
+            wishlistResult.data.length
+          );
         }
       } catch (error) {
-        console.error("Dashboard loading error:", error);
+        console.error(
+          "Dashboard loading error:",
+          error
+        );
       } finally {
         if (mounted) {
           setLoading(false);
@@ -509,38 +445,14 @@ export default function DashboardPage() {
     };
   }, [supabase]);
 
-  /* =======================================================
-     RECENTLY VIEWED
-  ======================================================= */
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(
-        "primecart_recently_viewed"
-      );
-
-      if (stored) {
-        const parsed = JSON.parse(stored);
-
-        if (Array.isArray(parsed)) {
-          setRecentlyViewed(parsed);
-        }
-      }
-    } catch {
-      setRecentlyViewed([]);
-    }
-  }, []);
-
-  /* =======================================================
-     DERIVED DATA
-  ======================================================= */
-
   const featuredProducts = useMemo(() => {
     const featured = products.filter(
       (product) => product.is_featured
     );
 
-    return (featured.length ? featured : products).slice(0, 6);
+    return (
+      featured.length ? featured : products
+    ).slice(0, 8);
   }, [products]);
 
   const flashProducts = useMemo(() => {
@@ -548,21 +460,25 @@ export default function DashboardPage() {
       (product) => product.is_flash_sale
     );
 
-    return (flash.length ? flash : products).slice(0, 4);
+    return (
+      flash.length ? flash : products
+    ).slice(0, 6);
   }, [products]);
 
-  const latestProducts = useMemo(() => {
-    return products.slice(0, 8);
-  }, [products]);
+  const latestProducts = useMemo(
+    () => products.slice(0, 8),
+    [products]
+  );
 
-  const filteredCategoryProducts = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     if (activeCategory === "all") {
       return products.slice(0, 8);
     }
 
     return products
       .filter(
-        (product) => product.category_id === activeCategory
+        (product) =>
+          product.category_id === activeCategory
       )
       .slice(0, 8);
   }, [products, activeCategory]);
@@ -574,10 +490,15 @@ export default function DashboardPage() {
 
     return products
       .filter((product) => {
-        const name = product.name?.toLowerCase() || "";
-        const brand = product.brand?.toLowerCase() || "";
+        const name =
+          product.name?.toLowerCase() || "";
+
+        const brand =
+          product.brand?.toLowerCase() || "";
+
         const description =
-          product.short_description?.toLowerCase() || "";
+          product.short_description?.toLowerCase() ||
+          "";
 
         return (
           name.includes(query) ||
@@ -585,15 +506,18 @@ export default function DashboardPage() {
           description.includes(query)
         );
       })
-      .slice(0, 6);
+      .slice(0, 7);
   }, [products, search]);
 
-  const totalSpent = useMemo(() => {
-    return orders.reduce(
-      (sum, order) => sum + Number(order.total_amount || 0),
-      0
-    );
-  }, [orders]);
+  const totalSpent = useMemo(
+    () =>
+      orders.reduce(
+        (sum, order) =>
+          sum + Number(order.total_amount || 0),
+        0
+      ),
+    [orders]
+  );
 
   const primePoints = Math.floor(totalSpent / 10);
 
@@ -604,25 +528,10 @@ export default function DashboardPage() {
 
   const firstName = userName.split(" ")[0];
 
-  const recentProducts = useMemo(() => {
-    return recentlyViewed
-      .map((item) => products.find((product) => product.id === item.id))
-      .filter(Boolean) as Product[];
-  }, [recentlyViewed, products]);
-
-  const visibleRecentProducts =
-    recentProducts.length > 0
-      ? recentProducts.slice(0, 4)
-      : latestProducts.slice(0, 4);
-
   const pointsProgress = Math.min(
     100,
     ((primePoints % 1000) / 1000) * 100
   );
-
-  /* =======================================================
-     ACTIONS
-  ======================================================= */
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -631,18 +540,21 @@ export default function DashboardPage() {
 
   function openProduct(product: Product) {
     try {
-      const current: RecentProduct[] = JSON.parse(
+      const current = JSON.parse(
         localStorage.getItem(
           "primecart_recently_viewed"
         ) || "[]"
       );
 
-      const updated: RecentProduct[] = [
+      const updated = [
         {
           id: product.id,
           viewedAt: Date.now(),
         },
-        ...current.filter((item) => item.id !== product.id),
+        ...current.filter(
+          (item: { id: string }) =>
+            item.id !== product.id
+        ),
       ].slice(0, 10);
 
       localStorage.setItem(
@@ -650,7 +562,7 @@ export default function DashboardPage() {
         JSON.stringify(updated)
       );
     } catch {
-      // ignore local storage errors
+      // ignore localStorage errors
     }
   }
 
@@ -662,95 +574,81 @@ export default function DashboardPage() {
       "PrimeCart found something special for you.",
     ];
 
-    const random =
-      deals[Math.floor(Math.random() * deals.length)];
-
-    setDealMessage(random);
+    setDealMessage(
+      deals[Math.floor(Math.random() * deals.length)]
+    );
   }
-
-  /* =======================================================
-     LOADING
-  ======================================================= */
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="loading-logo">
-          <div className="loading-logo-mark">P</div>
+      <div className="loading-screen">
+        <div className="loader-logo">
+          <div className="loader-mark">P</div>
           <div>
             <strong>PrimeCart</strong>
             <span>Smart shopping</span>
           </div>
         </div>
 
-        <div className="loading-spinner" />
+        <div className="spinner" />
 
-        <p>Preparing your shopping dashboard...</p>
+        <p>Preparing your shopping experience...</p>
 
         <style jsx>{`
-          .dashboard-loading {
+          .loading-screen {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 18px;
-            background:
-              radial-gradient(
-                circle at top left,
-                rgba(199, 154, 59, 0.1),
-                transparent 35%
-              ),
-              #fbf8f2;
-            color: #4a4034;
+            background: #fffdf8;
+            color: #3e3428;
           }
 
-          .loading-logo {
+          .loader-logo {
             display: flex;
             align-items: center;
             gap: 12px;
           }
 
-          .loading-logo-mark {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+          .loader-mark {
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
             display: grid;
             place-items: center;
+            color: white;
+            font-size: 21px;
+            font-weight: 900;
             background: linear-gradient(
               135deg,
-              #d7b66a,
-              #9c7430
+              #d8b76d,
+              #a87929
             );
-            color: white;
+          }
+
+          .loader-logo strong {
+            display: block;
             font-size: 20px;
-            font-weight: 800;
-            box-shadow: 0 10px 30px rgba(155, 113, 46, 0.2);
           }
 
-          .loading-logo strong {
-            display: block;
-            font-size: 19px;
-          }
-
-          .loading-logo span {
-            display: block;
-            color: #9b907f;
+          .loader-logo span {
             font-size: 11px;
-            margin-top: 2px;
+            color: #9a8d7b;
           }
 
-          .loading-spinner {
-            width: 34px;
-            height: 34px;
+          .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #eadfcf;
+            border-top-color: #b8872d;
             border-radius: 50%;
-            border: 3px solid #eadfcb;
-            border-top-color: #b9975b;
             animation: spin 0.8s linear infinite;
           }
 
-          .dashboard-loading p {
-            color: #9b907f;
+          .loading-screen p {
+            color: #9a8d7b;
             font-size: 13px;
           }
 
@@ -764,16 +662,8 @@ export default function DashboardPage() {
     );
   }
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
-
   return (
-    <div className="prime-dashboard">
-      {/* ===================================================
-          MOBILE OVERLAY
-      =================================================== */}
-
+    <div className="primecart-dashboard">
       {mobileMenu && (
         <button
           className="mobile-overlay"
@@ -782,42 +672,41 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* ===================================================
-          SIDEBAR
-      =================================================== */}
+      {/* SIDEBAR */}
 
       <aside
-        className={`dashboard-sidebar ${
+        className={`sidebar ${
           mobileMenu ? "sidebar-open" : ""
         }`}
       >
         <div className="sidebar-brand">
           <Link
             href="/dashboard"
-            className="brand-link"
+            className="brand"
             onClick={() => setMobileMenu(false)}
           >
             <div className="brand-mark">
-              <span>P</span>
+              P
             </div>
 
-            <div className="brand-copy">
+            <div>
               <strong>PrimeCart</strong>
               <span>Smart shopping</span>
             </div>
           </Link>
 
           <button
-            className="mobile-close"
+            className="close-sidebar"
             onClick={() => setMobileMenu(false)}
-            aria-label="Close menu"
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="sidebar-scroll">
-          <div className="sidebar-label">MAIN MENU</div>
+          <span className="sidebar-title">
+            SHOP
+          </span>
 
           <nav className="sidebar-nav">
             {sidebarItems.map((item) => {
@@ -829,12 +718,14 @@ export default function DashboardPage() {
                   href={item.href}
                   className={`sidebar-link ${
                     item.href === "/dashboard"
-                      ? "sidebar-link-active"
+                      ? "active"
                       : ""
                   }`}
-                  onClick={() => setMobileMenu(false)}
+                  onClick={() =>
+                    setMobileMenu(false)
+                  }
                 >
-                  <span className="sidebar-icon">
+                  <span className="sidebar-link-icon">
                     <Icon size={18} />
                   </span>
 
@@ -842,18 +733,18 @@ export default function DashboardPage() {
 
                   {item.label === "Wishlist" &&
                     wishlistCount > 0 && (
-                      <span className="sidebar-count">
+                      <b>
                         {wishlistCount}
-                      </span>
+                      </b>
                     )}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="sidebar-label smart-label">
-            SMART TOOLS
-          </div>
+          <span className="sidebar-title smart-title">
+            PRIME TOOLS
+          </span>
 
           <div className="smart-sidebar">
             {smartTools.map((tool) => {
@@ -861,56 +752,51 @@ export default function DashboardPage() {
 
               return (
                 <Link
-                  href={tool.href}
                   key={tool.href}
-                  className="smart-sidebar-item"
-                  onClick={() => setMobileMenu(false)}
+                  href={tool.href}
+                  className="smart-sidebar-link"
+                  onClick={() =>
+                    setMobileMenu(false)
+                  }
                 >
-                  <span className="smart-sidebar-icon">
+                  <span className="smart-icon">
                     <Icon size={16} />
                   </span>
 
-                  <span className="smart-sidebar-content">
+                  <span>
                     <strong>{tool.label}</strong>
                     <small>{tool.badge}</small>
                   </span>
 
-                  <ChevronRight size={15} />
+                  <ChevronRight size={14} />
                 </Link>
               );
             })}
           </div>
 
-          <div className="sidebar-help">
-            <div className="sidebar-help-icon">
-              <ShieldCheck size={20} />
-            </div>
+          <div className="safe-box">
+            <ShieldCheck size={20} />
 
             <strong>Safe shopping</strong>
 
             <p>
-              Secure checkout, protected payments and easy
-              returns.
+              Secure checkout, protected payments
+              and easy returns.
             </p>
-
-            <Link href="/dashboard/orders">
-              Learn more
-              <ArrowRight size={13} />
-            </Link>
           </div>
         </div>
 
         <div className="sidebar-bottom">
           <Link
             href="/dashboard/settings"
-            className="sidebar-bottom-link"
+            className="bottom-link"
           >
             <Settings size={18} />
             Settings
           </Link>
 
           <button
-            className="sidebar-bottom-link logout-button"
+            className="bottom-link"
             onClick={handleLogout}
           >
             <LogOut size={18} />
@@ -919,153 +805,183 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* ===================================================
-          MAIN
-      =================================================== */}
+      {/* MAIN */}
 
-      <main className="dashboard-main">
-        {/* =================================================
-            HEADER
-        ================================================= */}
+      <main className="main">
+        {/* HEADER */}
 
-        <header className="dashboard-header">
+        <header className="top-header">
           <div className="header-left">
             <button
-              className="mobile-menu-button"
+              className="mobile-menu"
               onClick={() => setMobileMenu(true)}
-              aria-label="Open menu"
             >
               <Menu size={21} />
             </button>
 
-            <div className="header-search-wrap">
-              <Search
-                size={18}
-                className="header-search-icon"
-              />
+            <Link
+              href="/dashboard"
+              className="mobile-brand"
+            >
+              <span>P</span>
+              PrimeCart
+            </Link>
+
+            <div className="search-box">
+              <Search size={18} />
 
               <input
                 value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
+                onChange={(e) =>
+                  setSearch(e.target.value)
                 }
-                onFocus={() => setSearchFocused(true)}
-                placeholder="Search products, brands & categories..."
-                className="header-search"
+                onFocus={() =>
+                  setSearchFocused(true)
+                }
+                placeholder="Search for products, brands and more"
               />
 
               {search && (
                 <button
-                  className="search-clear"
                   onClick={() => setSearch("")}
-                  aria-label="Clear search"
                 >
                   <X size={15} />
                 </button>
               )}
 
-              {searchFocused && search.trim() && (
-                <div className="search-results">
-                  <div className="search-results-head">
-                    <span>Search results</span>
-                    <small>
-                      {searchResults.length} found
-                    </small>
-                  </div>
+              {searchFocused &&
+                search.trim() && (
+                  <div className="search-dropdown">
+                    <div className="search-dropdown-head">
+                      <strong>
+                        Search results
+                      </strong>
 
-                  {searchResults.length > 0 ? (
-                    searchResults.map((product) => (
-                      <Link
-                        key={product.id}
-                        href={`/dashboard/products/${product.id}`}
-                        className="search-result-item"
-                        onClick={() => {
-                          openProduct(product);
-                          setSearchFocused(false);
-                        }}
-                      >
-                        <div className="search-result-image">
-                          <ProductImage product={product} />
-                        </div>
-
-                        <div className="search-result-info">
-                          <strong>{product.name}</strong>
-
-                          <span>
-                            {product.brand || "PrimeCart"}
-                          </span>
-
-                          <b>
-                            {formatPrice(product.price)}
-                          </b>
-                        </div>
-
-                        <ChevronRight size={16} />
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="search-empty">
-                      <Search size={25} />
-                      <strong>No products found</strong>
                       <span>
-                        Try another product or brand name.
+                        {searchResults.length} found
                       </span>
                     </div>
-                  )}
 
-                  {searchResults.length > 0 && (
-                    <Link
-                      href="/dashboard/products"
-                      className="search-view-all"
-                      onClick={() =>
-                        setSearchFocused(false)
-                      }
-                    >
-                      View all products
-                      <ArrowRight size={15} />
-                    </Link>
-                  )}
-                </div>
-              )}
+                    {searchResults.length ? (
+                      searchResults.map(
+                        (product) => (
+                          <Link
+                            key={product.id}
+                            href={`/dashboard/products/${product.id}`}
+                            className="search-item"
+                            onClick={() => {
+                              openProduct(
+                                product
+                              );
+                              setSearchFocused(
+                                false
+                              );
+                            }}
+                          >
+                            <div className="search-image">
+                              <ProductImage
+                                product={product}
+                              />
+                            </div>
+
+                            <div>
+                              <strong>
+                                {product.name}
+                              </strong>
+
+                              <span>
+                                {product.brand ||
+                                  "PrimeCart"}
+                              </span>
+
+                              <b>
+                                {formatPrice(
+                                  product.price
+                                )}
+                              </b>
+                            </div>
+
+                            <ChevronRight
+                              size={16}
+                            />
+                          </Link>
+                        )
+                      )
+                    ) : (
+                      <div className="no-results">
+                        <Search size={25} />
+                        <strong>
+                          No products found
+                        </strong>
+                        <span>
+                          Try another product or
+                          brand.
+                        </span>
+                      </div>
+                    )}
+
+                    {searchResults.length > 0 && (
+                      <Link
+                        href="/dashboard/products"
+                        className="search-all"
+                        onClick={() =>
+                          setSearchFocused(false)
+                        }
+                      >
+                        View all products
+                        <ArrowRight size={15} />
+                      </Link>
+                    )}
+                  </div>
+                )}
             </div>
           </div>
 
-          <div className="header-right">
+          <div className="header-actions">
             <button
-              className="header-icon-button"
+              className="header-button"
               onClick={() =>
-                setNotificationOpen(!notificationOpen)
+                setNotificationOpen(
+                  !notificationOpen
+                )
               }
-              aria-label="Notifications"
             >
               <Bell size={19} />
-              <span className="notification-dot" />
+              <i />
             </button>
 
             <Link
               href="/dashboard/wishlist"
-              className="header-icon-button desktop-action"
-              aria-label="Wishlist"
+              className="header-button desktop-only"
             >
               <Heart size={19} />
+
               {wishlistCount > 0 && (
-                <span className="header-count">
-                  {wishlistCount > 9 ? "9+" : wishlistCount}
-                </span>
+                <b>
+                  {wishlistCount > 9
+                    ? "9+"
+                    : wishlistCount}
+                </b>
               )}
             </Link>
 
             <Link
               href="/dashboard/orders"
-              className="header-icon-button desktop-action"
-              aria-label="Orders"
+              className="header-button desktop-only"
             >
               <ShoppingBag size={19} />
             </Link>
 
-            <div className="header-profile-wrap">
+            <Link
+              href="/dashboard/products"
+              className="header-button cart-button"
+            >
+              <ShoppingCart size={19} />
+            </Link>
+
+            <div className="profile-wrapper">
               <button
-                className="header-profile"
+                className="profile-button"
                 onClick={() =>
                   setProfileOpen(!profileOpen)
                 }
@@ -1076,62 +992,59 @@ export default function DashboardPage() {
                     alt={userName}
                     width={38}
                     height={38}
-                    className="avatar-image"
+                    className="avatar-img"
                   />
                 ) : (
-                  <div className="avatar">
+                  <span className="avatar">
                     {getInitials(userName)}
-                  </div>
+                  </span>
                 )}
 
-                <span className="header-profile-copy">
+                <span className="profile-name">
                   <strong>{firstName}</strong>
-                  <small>Prime member</small>
+                  <small>
+                    Prime member
+                  </small>
                 </span>
 
-                <ChevronDown size={15} />
+                <ChevronDown size={14} />
               </button>
 
               {profileOpen && (
-                <div className="profile-dropdown">
-                  <div className="profile-dropdown-head">
+                <div className="profile-menu">
+                  <div className="profile-menu-head">
                     <div className="avatar large">
                       {getInitials(userName)}
                     </div>
 
                     <div>
-                      <strong>{userName}</strong>
-                      <span>{profile?.email}</span>
+                      <strong>
+                        {userName}
+                      </strong>
+                      <span>
+                        {profile?.email}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="profile-divider" />
-
-                  <Link
-                    href="/profile"
-                    onClick={() => setProfileOpen(false)}
-                  >
+                  <Link href="/profile">
                     <User size={16} />
                     My Profile
                   </Link>
 
-                  <Link
-                    href="/dashboard/orders"
-                    onClick={() => setProfileOpen(false)}
-                  >
+                  <Link href="/dashboard/orders">
                     <Package size={16} />
                     My Orders
                   </Link>
 
-                  <Link
-                    href="/dashboard/settings"
-                    onClick={() => setProfileOpen(false)}
-                  >
+                  <Link href="/dashboard/settings">
                     <Settings size={16} />
                     Settings
                   </Link>
 
-                  <button onClick={handleLogout}>
+                  <button
+                    onClick={handleLogout}
+                  >
                     <LogOut size={16} />
                     Sign out
                   </button>
@@ -1141,32 +1054,38 @@ export default function DashboardPage() {
           </div>
 
           {notificationOpen && (
-            <div className="notification-dropdown">
+            <div className="notification-menu">
               <div className="notification-head">
-                <strong>Notifications</strong>
+                <strong>
+                  Notifications
+                </strong>
                 <span>2 new</span>
               </div>
 
-              <div className="notification-item">
-                <div className="notification-icon gold">
+              <div className="notification">
+                <div className="notification-icon">
                   <Zap size={15} />
                 </div>
 
                 <div>
-                  <strong>Flash deals are live</strong>
+                  <strong>
+                    Flash deals are live
+                  </strong>
                   <span>
                     Discover limited-time offers.
                   </span>
                 </div>
               </div>
 
-              <div className="notification-item">
-                <div className="notification-icon green">
-                  <CheckCircle2 size={15} />
+              <div className="notification">
+                <div className="notification-icon">
+                  <Crown size={15} />
                 </div>
 
                 <div>
-                  <strong>PrimePoints updated</strong>
+                  <strong>
+                    PrimePoints updated
+                  </strong>
                   <span>
                     Your shopping rewards are ready.
                   </span>
@@ -1176,287 +1095,205 @@ export default function DashboardPage() {
           )}
         </header>
 
-        <div className="dashboard-content">
-          {/* ===============================================
-              HERO BANNER CAROUSEL
-          =============================================== */}
+        {/* SHOPPING BENEFITS BAR */}
 
-          <section className="hero-banner-section">
-            <div className="hero-banner-frame">
-              <Link
-                href={heroBanners[activeHero].href}
-                className="hero-banner-link"
-                aria-label={heroBanners[activeHero].alt}
-              >
-                <Image
-                  key={heroBanners[activeHero].image}
-                  src={heroBanners[activeHero].image}
-                  alt={heroBanners[activeHero].alt}
-                  fill
-                  priority={activeHero === 0}
-                  sizes="(max-width: 700px) 94vw, (max-width: 1200px) 92vw, 1600px"
-                  className="hero-banner-image"
-                />
-              </Link>
+        <div className="benefits-bar">
+          <div>
+            <Truck size={17} />
+            <span>
+              Free delivery on eligible orders
+            </span>
+          </div>
 
-              {heroBanners.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="hero-banner-arrow hero-banner-prev"
-                    onClick={() =>
-                      setActiveHero(
-                        (current) =>
-                          (current - 1 + heroBanners.length) %
-                          heroBanners.length
-                      )
-                    }
-                    aria-label="Previous banner"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
+          <div>
+            <ShieldCheck size={17} />
+            <span>
+              Secure payments
+            </span>
+          </div>
 
-                  <button
-                    type="button"
-                    className="hero-banner-arrow hero-banner-next"
-                    onClick={() =>
-                      setActiveHero(
-                        (current) => (current + 1) % heroBanners.length
-                      )
-                    }
-                    aria-label="Next banner"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
+          <div>
+            <Package size={17} />
+            <span>
+              Easy returns
+            </span>
+          </div>
 
-                  <div className="hero-banner-dots" aria-label="Banner navigation">
-                    {heroBanners.map((banner, index) => (
-                      <button
-                        key={banner.image}
-                        type="button"
-                        className={`hero-banner-dot ${
-                          activeHero === index ? "active" : ""
-                        }`}
-                        onClick={() => setActiveHero(index)}
-                        aria-label={`Show banner ${index + 1}`}
-                        aria-current={activeHero === index ? "true" : undefined}
-                      />
-                    ))}
-                  </div>
+          <div>
+            <Crown size={17} />
+            <span>
+              Earn PrimePoints
+            </span>
+          </div>
+        </div>
 
-                  <div className="hero-banner-count">
-                    <span>{String(activeHero + 1).padStart(2, "0")}</span>
-                    <i />
-                    <span>{String(heroBanners.length).padStart(2, "0")}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
+        <div className="content">
+          {/* AMAZON / MEESHO STYLE HERO */}
 
-          {/* ===============================================
-              QUICK STATS
-          =============================================== */}
+          <section className="hero">
+            <div className="hero-copy">
+              <span className="hero-badge">
+                <Sparkles size={14} />
+                SMART SHOPPING EXPERIENCE
+              </span>
 
-          <section className="stats-grid">
-            <Link
-              href="/dashboard/orders"
-              className="stat-card"
-            >
-              <div className="stat-icon gold-icon">
-                <ShoppingBag size={20} />
+              <h1>
+                Shop smarter.
+                <br />
+                <span>Live better.</span>
+              </h1>
+
+              <p>
+                Discover products, exclusive deals
+                and personalized recommendations
+                designed around your needs.
+              </p>
+
+              <div className="hero-buttons">
+                <Link
+                  href="/dashboard/products"
+                  className="primary-button"
+                >
+                  Shop Now
+                  <ArrowRight size={17} />
+                </Link>
+
+                <Link
+                  href="/dashboard/prime-match"
+                  className="secondary-button"
+                >
+                  <Target size={16} />
+                  Find My Match
+                </Link>
               </div>
 
-              <div className="stat-content">
-                <span>Total Orders</span>
-                <strong>{orders.length}</strong>
-                <small>
-                  {orders.length
-                    ? "Your shopping history"
-                    : "Start your first order"}
-                </small>
-              </div>
+              <div className="hero-trust">
+                <span>
+                  <CheckMark />
+                  Verified products
+                </span>
 
-              <ChevronRight size={17} />
-            </Link>
+                <span>
+                  <CheckMark />
+                  Secure checkout
+                </span>
 
-            <Link
-              href="/dashboard/wishlist"
-              className="stat-card"
-            >
-              <div className="stat-icon rose-icon">
-                <Heart size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>Wishlist</span>
-                <strong>{wishlistCount}</strong>
-                <small>
-                  {wishlistCount
-                    ? "Items saved for later"
-                    : "Save products you love"}
-                </small>
-              </div>
-
-              <ChevronRight size={17} />
-            </Link>
-
-            <div className="stat-card">
-              <div className="stat-icon green-icon">
-                <CircleDollarSign size={20} />
-              </div>
-
-              <div className="stat-content">
-                <span>Total Spent</span>
-                <strong>{formatPrice(totalSpent)}</strong>
-                <small>Across all orders</small>
+                <span>
+                  <CheckMark />
+                  Easy returns
+                </span>
               </div>
             </div>
 
-            <Link
-              href="/dashboard/prime-points"
-              className="stat-card"
-            >
-              <div className="stat-icon purple-icon">
-                <Crown size={20} />
+            <div className="hero-visual">
+              <div className="hero-circle circle-one" />
+              <div className="hero-circle circle-two" />
+
+              <div className="hero-product-card">
+                <div className="hero-product-icon">
+                  🛍️
+                </div>
+
+                <div>
+                  <span>
+                    PRIMECART PICKS
+                  </span>
+
+                  <strong>
+                    Curated just for you
+                  </strong>
+                </div>
+
+                <ArrowRight size={18} />
               </div>
 
-              <div className="stat-content">
-                <span>PrimePoints</span>
-                <strong>{primePoints}</strong>
-                <small>Rewards earned</small>
+              <div className="floating-card deal-floating">
+                <Flame size={18} />
+                <div>
+                  <strong>
+                    Flash Deals
+                  </strong>
+                  <span>
+                    Up to 60% OFF
+                  </span>
+                </div>
               </div>
 
-              <ChevronRight size={17} />
-            </Link>
+              <div className="floating-card points-floating">
+                <Crown size={18} />
+                <div>
+                  <strong>
+                    {primePoints}
+                  </strong>
+                  <span>
+                    PrimePoints
+                  </span>
+                </div>
+              </div>
+            </div>
           </section>
 
-          {/* ===============================================
-              SMART TOOLS
-          =============================================== */}
+          {/* CATEGORY STRIP */}
 
           <section className="section">
             <div className="section-heading">
               <div>
-                <span className="section-kicker">
-                  SMART SHOPPING
-                </span>
-
-                <h2>
-                  Shop smarter with PrimeCart
-                </h2>
-
-                <p>
-                  Tools designed to make your shopping
-                  easier.
-                </p>
-              </div>
-
-              <Sparkles
-                className="heading-sparkle"
-                size={23}
-              />
-            </div>
-
-            <div className="smart-tools-grid">
-              {smartTools.map((tool, index) => {
-                const Icon = tool.icon;
-
-                return (
-                  <Link
-                    href={tool.href}
-                    key={tool.href}
-                    className="smart-tool-card"
-                    style={{
-                      animationDelay: `${index * 70}ms`,
-                    }}
-                  >
-                    <div className="smart-tool-top">
-                      <span className="smart-tool-badge">
-                        {tool.badge}
-                      </span>
-
-                      <span className="smart-tool-arrow">
-                        <ArrowRight size={15} />
-                      </span>
-                    </div>
-
-                    <div className="smart-tool-icon">
-                      <Icon size={22} />
-                    </div>
-
-                    <h3>{tool.label}</h3>
-
-                    <p>{tool.description}</p>
-
-                    <span className="smart-tool-link">
-                      Explore tool
-                      <ChevronRight size={14} />
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* ===============================================
-              CATEGORIES
-          =============================================== */}
-
-          <section className="section">
-            <div className="section-heading compact">
-              <div>
-                <span className="section-kicker">
+                <span className="eyebrow">
                   EXPLORE
                 </span>
-
                 <h2>Shop by category</h2>
               </div>
 
               <Link
                 href="/dashboard/categories"
-                className="view-all-link"
+                className="view-all"
               >
                 View all
                 <ArrowRight size={15} />
               </Link>
             </div>
 
-            <div className="category-strip">
+            <div className="category-scroll">
               <button
-                className={`category-card ${
+                className={`category ${
                   activeCategory === "all"
-                    ? "category-card-active"
+                    ? "selected"
                     : ""
                 }`}
-                onClick={() => setActiveCategory("all")}
+                onClick={() =>
+                  setActiveCategory("all")
+                }
               >
-                <span className="category-emoji">
-                  ✨
-                </span>
-
+                <span>✨</span>
                 <strong>All</strong>
-
-                <small>{products.length} items</small>
+                <small>
+                  {products.length} items
+                </small>
               </button>
 
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  className={`category-card ${
+                  className={`category ${
                     activeCategory === category.id
-                      ? "category-card-active"
+                      ? "selected"
                       : ""
                   }`}
                   onClick={() =>
-                    setActiveCategory(category.id)
+                    setActiveCategory(
+                      category.id
+                    )
                   }
                 >
-                  <span className="category-emoji">
-                    {categoryIcons[category.slug] || "🛍️"}
+                  <span>
+                    {categoryIcons[
+                      category.slug
+                    ] || "🛍️"}
                   </span>
 
-                  <strong>{category.name}</strong>
+                  <strong>
+                    {category.name}
+                  </strong>
 
                   <small>
                     {
@@ -1473,97 +1310,261 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* ===============================================
-              FLASH DEALS
-          =============================================== */}
+          {/* DEAL BANNERS */}
+
+          <section className="deal-banner-grid">
+            <Link
+              href="/dashboard/products"
+              className="deal-banner gold-banner"
+            >
+              <div>
+                <span>
+                  LIMITED TIME OFFER
+                </span>
+
+                <h2>
+                  Big savings.
+                  <br />
+                  Better shopping.
+                </h2>
+
+                <p>
+                  Explore today's handpicked
+                  offers.
+                </p>
+
+                <strong>
+                  Shop deals
+                  <ArrowRight size={15} />
+                </strong>
+              </div>
+
+              <div className="deal-art">
+                🛍️
+              </div>
+            </Link>
+
+            <Link
+              href="/dashboard/prime-match"
+              className="deal-banner cream-banner"
+            >
+              <div>
+                <span>
+                  PERSONALIZED SHOPPING
+                </span>
+
+                <h2>
+                  Let PrimeMatch
+                  <br />
+                  choose for you.
+                </h2>
+
+                <p>
+                  Match products to your needs
+                  and budget.
+                </p>
+
+                <strong>
+                  Try PrimeMatch
+                  <ArrowRight size={15} />
+                </strong>
+              </div>
+
+              <div className="deal-art">
+                ✨
+              </div>
+            </Link>
+          </section>
+
+          {/* QUICK STATS */}
+
+          <section className="stats">
+            <Link
+              href="/dashboard/orders"
+              className="stat"
+            >
+              <div className="stat-icon gold">
+                <ShoppingBag size={20} />
+              </div>
+
+              <div>
+                <span>Total Orders</span>
+                <strong>
+                  {orders.length}
+                </strong>
+                <small>
+                  Shopping history
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="stat"
+            >
+              <div className="stat-icon rose">
+                <Heart size={20} />
+              </div>
+
+              <div>
+                <span>Wishlist</span>
+                <strong>
+                  {wishlistCount}
+                </strong>
+                <small>
+                  Saved products
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <div className="stat">
+              <div className="stat-icon green">
+                <CircleDollarSign size={20} />
+              </div>
+
+              <div>
+                <span>Total Spent</span>
+                <strong>
+                  {formatPrice(totalSpent)}
+                </strong>
+                <small>
+                  Across all orders
+                </small>
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/prime-points"
+              className="stat"
+            >
+              <div className="stat-icon purple">
+                <Crown size={20} />
+              </div>
+
+              <div>
+                <span>PrimePoints</span>
+                <strong>
+                  {primePoints}
+                </strong>
+                <small>
+                  Rewards earned
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+          </section>
+
+          {/* FLASH DEALS */}
 
           <section className="section">
-            <div className="section-heading compact">
+            <div className="section-heading">
               <div>
-                <div className="title-with-live">
-                  <span className="section-kicker red">
-                    LIMITED TIME
-                  </span>
-
-                  <span className="live-badge">
-                    <span />
-                    LIVE
-                  </span>
-                </div>
+                <span className="eyebrow danger">
+                  <Flame size={13} />
+                  LIMITED TIME
+                </span>
 
                 <h2>Flash Deals</h2>
 
                 <p>
-                  Grab selected deals before they disappear.
+                  Grab selected deals before
+                  they disappear.
                 </p>
               </div>
 
               <Link
                 href="/dashboard/products"
-                className="view-all-link"
+                className="view-all"
               >
                 View deals
                 <ArrowRight size={15} />
               </Link>
             </div>
 
-            <div className="flash-grid">
+            <div className="product-grid flash-grid">
               {flashProducts.map((product) => {
-                const discount = discountPercentage(
-                  product.price,
-                  product.original_price
-                );
+                const discount =
+                  discountPercentage(
+                    product.price,
+                    product.original_price
+                  );
 
                 return (
                   <Link
-                    href={`/dashboard/products/${product.id}`}
                     key={product.id}
-                    className="flash-card"
-                    onClick={() => openProduct(product)}
+                    href={`/dashboard/products/${product.id}`}
+                    className="product-card"
+                    onClick={() =>
+                      openProduct(product)
+                    }
                   >
-                    <div className="flash-image">
-                      <ProductImage product={product} />
+                    <div className="product-image-wrap">
+                      <ProductImage
+                        product={product}
+                      />
 
                       {discount > 0 && (
-                        <span className="discount-badge">
+                        <span className="discount">
                           -{discount}%
                         </span>
                       )}
 
-                      <span className="flash-label">
+                      <span className="flash-tag">
                         <Flame size={12} />
                         FLASH
                       </span>
+
+                      <button
+                        className="heart-button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          window.location.href =
+                            "/dashboard/wishlist";
+                        }}
+                      >
+                        <Heart size={16} />
+                      </button>
                     </div>
 
-                    <div className="flash-info">
-                      <span className="product-brand">
+                    <div className="product-body">
+                      <span className="brand">
                         {product.brand ||
-                          "PrimeCart Exclusive"}
+                          "PrimeCart"}
                       </span>
 
                       <h3>{product.name}</h3>
 
-                      <div className="rating-row">
+                      <div className="rating">
                         <Star
                           size={13}
                           fill="currentColor"
                         />
 
                         <span>
-                          {Number(product.rating || 0).toFixed(
-                            1
-                          )}
+                          {Number(
+                            product.rating || 0
+                          ).toFixed(1)}
                         </span>
 
                         <small>
-                          ({product.reviews_count || 0})
+                          (
+                          {product.reviews_count ||
+                            0}
+                          )
                         </small>
                       </div>
 
-                      <div className="price-row">
+                      <div className="price">
                         <strong>
-                          {formatPrice(product.price)}
+                          {formatPrice(
+                            product.price
+                          )}
                         </strong>
 
                         {product.original_price &&
@@ -1576,6 +1577,11 @@ export default function DashboardPage() {
                             </del>
                           )}
                       </div>
+
+                      <span className="buy-row">
+                        View product
+                        <ArrowRight size={14} />
+                      </span>
                     </div>
                   </Link>
                 );
@@ -1583,28 +1589,26 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* ===============================================
-              PRIME CART PICKS
-          =============================================== */}
+          {/* PRIME PICKS */}
 
           <section className="section">
-            <div className="section-heading compact">
+            <div className="section-heading">
               <div>
-                <span className="section-kicker">
+                <span className="eyebrow">
                   CURATED FOR YOU
                 </span>
 
                 <h2>PrimeCart Picks</h2>
 
                 <p>
-                  Popular products selected from our
-                  catalogue.
+                  Popular products selected from
+                  our catalogue.
                 </p>
               </div>
 
               <Link
                 href="/dashboard/products"
-                className="view-all-link"
+                className="view-all"
               >
                 View all products
                 <ArrowRight size={15} />
@@ -1613,57 +1617,49 @@ export default function DashboardPage() {
 
             <div className="product-grid">
               {featuredProducts.map((product) => {
-                const discount = discountPercentage(
-                  product.price,
-                  product.original_price
-                );
+                const discount =
+                  discountPercentage(
+                    product.price,
+                    product.original_price
+                  );
 
                 return (
                   <Link
-                    href={`/dashboard/products/${product.id}`}
                     key={product.id}
+                    href={`/dashboard/products/${product.id}`}
                     className="product-card"
-                    onClick={() => openProduct(product)}
+                    onClick={() =>
+                      openProduct(product)
+                    }
                   >
-                    <div className="product-card-image">
-                      <ProductImage product={product} />
+                    <div className="product-image-wrap">
+                      <ProductImage
+                        product={product}
+                      />
 
                       {discount > 0 && (
-                        <span className="product-discount">
+                        <span className="discount">
                           {discount}% OFF
                         </span>
                       )}
 
                       <button
-                        className="product-heart"
+                        className="heart-button"
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
                           window.location.href =
                             "/dashboard/wishlist";
                         }}
-                        aria-label="Wishlist"
                       >
-                        <Heart size={17} />
+                        <Heart size={16} />
                       </button>
-
-                      {product.stock <= 5 &&
-                        product.stock > 0 && (
-                          <span className="low-stock">
-                            Only {product.stock} left
-                          </span>
-                        )}
-
-                      {product.stock <= 0 && (
-                        <span className="out-stock">
-                          Out of stock
-                        </span>
-                      )}
                     </div>
 
-                    <div className="product-card-body">
-                      <span className="product-brand">
-                        {product.brand || "PrimeCart"}
+                    <div className="product-body">
+                      <span className="brand">
+                        {product.brand ||
+                          "PrimeCart"}
                       </span>
 
                       <h3>{product.name}</h3>
@@ -1674,44 +1670,48 @@ export default function DashboardPage() {
                           "Premium product selected for you."}
                       </p>
 
-                      <div className="rating-row">
+                      <div className="rating">
                         <Star
                           size={13}
                           fill="currentColor"
                         />
 
                         <span>
-                          {Number(product.rating || 0).toFixed(
-                            1
-                          )}
+                          {Number(
+                            product.rating || 0
+                          ).toFixed(1)}
                         </span>
 
                         <small>
-                          ({product.reviews_count || 0})
+                          (
+                          {product.reviews_count ||
+                            0}
+                          )
                         </small>
                       </div>
 
-                      <div className="product-bottom">
-                        <div className="product-price">
-                          <strong>
-                            {formatPrice(product.price)}
-                          </strong>
+                      <div className="price">
+                        <strong>
+                          {formatPrice(
+                            product.price
+                          )}
+                        </strong>
 
-                          {product.original_price &&
-                            product.original_price >
-                              product.price && (
-                              <del>
-                                {formatPrice(
-                                  product.original_price
-                                )}
-                              </del>
-                            )}
-                        </div>
-
-                        <span className="product-arrow">
-                          <ArrowRight size={15} />
-                        </span>
+                        {product.original_price &&
+                          product.original_price >
+                            product.price && (
+                            <del>
+                              {formatPrice(
+                                product.original_price
+                              )}
+                            </del>
+                          )}
                       </div>
+
+                      <span className="buy-row">
+                        View product
+                        <ArrowRight size={14} />
+                      </span>
                     </div>
                   </Link>
                 );
@@ -1719,149 +1719,198 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* ===============================================
-              CATEGORY PRODUCT FILTER
-          =============================================== */}
+          {/* CATEGORY PRODUCTS */}
 
           {activeCategory !== "all" && (
-            <section className="section category-products-section">
-              <div className="section-heading compact">
+            <section className="section">
+              <div className="section-heading">
                 <div>
-                  <span className="section-kicker">
+                  <span className="eyebrow">
                     CATEGORY
                   </span>
 
                   <h2>
                     {categories.find(
                       (category) =>
-                        category.id === activeCategory
-                    )?.name || "Products"}
+                        category.id ===
+                        activeCategory
+                    )?.name ||
+                      "Products"}
                   </h2>
-
-                  <p>
-                    Products available in this category.
-                  </p>
                 </div>
 
                 <Link
-                  href={`/dashboard/categories/${categories.find(
-                    (category) =>
-                      category.id === activeCategory
-                  )?.slug || ""}`}
-                  className="view-all-link"
+                  href={`/dashboard/categories/${
+                    categories.find(
+                      (category) =>
+                        category.id ===
+                        activeCategory
+                    )?.slug || ""
+                  }`}
+                  className="view-all"
                 >
                   Open category
                   <ArrowRight size={15} />
                 </Link>
               </div>
 
-              {filteredCategoryProducts.length > 0 ? (
-                <div className="mini-product-grid">
-                  {filteredCategoryProducts
+              {filteredProducts.length ? (
+                <div className="mini-grid">
+                  {filteredProducts
                     .slice(0, 4)
                     .map((product) => (
                       <Link
-                        href={`/dashboard/products/${product.id}`}
                         key={product.id}
-                        className="mini-product-card"
-                        onClick={() => openProduct(product)}
+                        href={`/dashboard/products/${product.id}`}
+                        className="mini-card"
                       >
-                        <div className="mini-product-image">
+                        <div>
                           <ProductImage
                             product={product}
                           />
                         </div>
 
-                        <div>
-                          <span>
-                            {product.brand ||
-                              "PrimeCart"}
-                          </span>
+                        <span>
+                          {product.brand ||
+                            "PrimeCart"}
+                        </span>
 
-                          <strong>{product.name}</strong>
+                        <strong>
+                          {product.name}
+                        </strong>
 
-                          <b>
-                            {formatPrice(product.price)}
-                          </b>
-                        </div>
+                        <b>
+                          {formatPrice(
+                            product.price
+                          )}
+                        </b>
                       </Link>
                     ))}
                 </div>
               ) : (
-                <div className="empty-category">
+                <div className="empty">
                   <Package size={28} />
-                  <strong>No products in this category</strong>
-                  <span>
-                    Try another category.
-                  </span>
+                  <strong>
+                    No products available
+                  </strong>
                 </div>
               )}
             </section>
           )}
 
-          {/* ===============================================
-              FEATURE GRID
-          =============================================== */}
+          {/* SMART TOOLS */}
 
-          <section className="feature-grid">
-            {/* PRIME MATCH */}
-            <Link
-              href="/dashboard/prime-match"
-              className="feature-panel prime-match-panel"
-            >
-              <div className="feature-panel-glow" />
-
-              <div className="feature-panel-content">
-                <span className="feature-kicker">
-                  AI-POWERED SHOPPING
+          <section className="section">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">
+                  SMART SHOPPING
                 </span>
 
-                <div className="feature-icon">
-                  <Target size={21} />
-                </div>
-
                 <h2>
-                  Find your
-                  <br />
-                  perfect match.
+                  Shop smarter with PrimeCart
                 </h2>
 
                 <p>
-                  Tell PrimeMatch what you need, your
-                  budget and priorities. We&apos;ll help
-                  narrow your choices.
+                  Tools designed around the way
+                  you shop.
                 </p>
-
-                <span className="feature-cta">
-                  Start PrimeMatch
-                  <ArrowRight size={16} />
-                </span>
               </div>
 
-              <div className="match-orbit">
-                <div className="orbit-dot one" />
-                <div className="orbit-dot two" />
-                <div className="orbit-dot three" />
+              <Sparkles size={24} />
+            </div>
 
-                <div className="orbit-center">
-                  <Sparkles size={23} />
-                </div>
+            <div className="tools-grid">
+              {smartTools.map((tool) => {
+                const Icon = tool.icon;
+
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    className="tool-card"
+                  >
+                    <div className="tool-top">
+                      <span>
+                        {tool.badge}
+                      </span>
+
+                      <ArrowRight size={15} />
+                    </div>
+
+                    <div className="tool-icon">
+                      <Icon size={22} />
+                    </div>
+
+                    <h3>{tool.label}</h3>
+
+                    <p>
+                      {tool.description}
+                    </p>
+
+                    <strong>
+                      Explore tool
+                      <ChevronRight
+                        size={14}
+                      />
+                    </strong>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* PRIME MATCH + BUDGET */}
+
+          <section className="large-feature-grid">
+            <Link
+              href="/dashboard/prime-match"
+              className="large-feature prime-match"
+            >
+              <span>
+                AI-POWERED SHOPPING
+              </span>
+
+              <div className="large-icon">
+                <Target size={22} />
+              </div>
+
+              <h2>
+                Find your
+                <br />
+                perfect match.
+              </h2>
+
+              <p>
+                Tell PrimeMatch your needs,
+                budget and priorities.
+              </p>
+
+              <strong>
+                Start PrimeMatch
+                <ArrowRight size={16} />
+              </strong>
+
+              <div className="orbit">
+                <div />
+                <div />
+                <div />
+                <span>
+                  <Sparkles size={22} />
+                </span>
               </div>
             </Link>
 
-            {/* BUDGET */}
             <Link
               href="/dashboard/budget-builder"
-              className="feature-panel budget-panel"
+              className="large-feature budget"
             >
-              <div className="budget-panel-top">
-                <div className="feature-icon">
-                  <WalletCards size={21} />
-                </div>
+              <span>
+                PLAN YOUR SPEND
+              </span>
 
-                <span className="feature-kicker">
-                  PLAN YOUR SPEND
-                </span>
+              <div className="large-icon">
+                <WalletCards size={22} />
               </div>
 
               <h2>
@@ -1871,77 +1920,70 @@ export default function DashboardPage() {
               </h2>
 
               <p>
-                Set a limit and plan exactly where your
-                money should go.
+                Set a limit and plan exactly
+                where your money should go.
               </p>
 
-              <div className="budget-visual">
-                <div className="budget-line">
-                  <span />
-                </div>
-
-                <div className="budget-labels">
-                  <span>₹0</span>
-                  <strong>₹25K</strong>
-                </div>
+              <div className="budget-line">
+                <span />
               </div>
 
-              <span className="feature-cta">
+              <div className="budget-values">
+                <span>₹0</span>
+                <strong>₹25K</strong>
+              </div>
+
+              <strong>
                 Open Budget Builder
                 <ArrowRight size={16} />
-              </span>
+              </strong>
             </Link>
           </section>
 
-          {/* ===============================================
-              SETUP + POINTS + MYSTERY
-          =============================================== */}
+          {/* SMALL FEATURES */}
 
-          <section className="triple-feature-grid">
+          <section className="small-feature-grid">
             <Link
               href="/dashboard/setup-builder"
-              className="small-feature-card setup-card"
+              className="small-feature setup"
             >
-              <div className="small-feature-icon">
-                <Sparkles size={19} />
-              </div>
+              <Sparkles size={20} />
 
-              <span className="small-feature-label">
+              <span>
                 CURATED SETUPS
               </span>
 
-              <h3>Build My Setup</h3>
+              <h3>
+                Build My Setup
+              </h3>
 
               <p>
-                Gaming, college, work, fitness and more.
+                Gaming, college, work, fitness
+                and more.
               </p>
 
-              <span className="small-feature-arrow">
+              <strong>
                 Explore
                 <ArrowRight size={15} />
-              </span>
+              </strong>
             </Link>
 
             <Link
               href="/dashboard/prime-points"
-              className="small-feature-card points-card"
+              className="small-feature points"
             >
-              <div className="small-feature-icon">
-                <Crown size={19} />
-              </div>
+              <Crown size={20} />
 
-              <span className="small-feature-label">
-                REWARDS
-              </span>
+              <span>REWARDS</span>
 
               <h3>PrimePoints</h3>
 
               <p>
                 You currently have{" "}
-                <strong>{primePoints}</strong> points.
+                <b>{primePoints}</b> points.
               </p>
 
-              <div className="points-mini-bar">
+              <div className="points-bar">
                 <span
                   style={{
                     width: `${pointsProgress}%`,
@@ -1949,27 +1991,26 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <span className="small-feature-arrow">
+              <strong>
                 View rewards
                 <ArrowRight size={15} />
-              </span>
+              </strong>
             </Link>
 
-            <div className="small-feature-card mystery-card">
-              <div className="small-feature-icon">
-                <TicketPercent size={19} />
-              </div>
+            <div className="small-feature mystery">
+              <TicketPercent size={20} />
 
-              <span className="small-feature-label">
+              <span>
                 JUST FOR YOU
               </span>
 
-              <h3>Mystery Deal</h3>
+              <h3>
+                Mystery Deal
+              </h3>
 
               <p>{dealMessage}</p>
 
               <button
-                className="mystery-button"
                 onClick={revealMysteryDeal}
               >
                 Reveal deal
@@ -1978,138 +2019,88 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* ===============================================
-              RECENTLY VIEWED
-          =============================================== */}
-
-          <section className="section">
-            <div className="section-heading compact">
-              <div>
-                <span className="section-kicker">
-                  YOUR ACTIVITY
-                </span>
-
-                <h2>Recently viewed</h2>
-
-                <p>
-                  Continue exploring products you checked
-                  recently.
-                </p>
-              </div>
-
-              <Link
-                href="/dashboard/products"
-                className="view-all-link"
-              >
-                Explore more
-                <ArrowRight size={15} />
-              </Link>
-            </div>
-
-            <div className="recent-grid">
-              {visibleRecentProducts.map((product) => (
-                <Link
-                  href={`/dashboard/products/${product.id}`}
-                  key={product.id}
-                  className="recent-card"
-                  onClick={() => openProduct(product)}
-                >
-                  <div className="recent-image">
-                    <ProductImage product={product} />
-                  </div>
-
-                  <div className="recent-info">
-                    <span>
-                      {product.brand || "PrimeCart"}
-                    </span>
-
-                    <strong>{product.name}</strong>
-
-                    <b>{formatPrice(product.price)}</b>
-                  </div>
-
-                  <ChevronRight size={16} />
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* ===============================================
-              BOTTOM AREA
-          =============================================== */}
+          {/* RECENT ORDERS */}
 
           <section className="bottom-grid">
-            {/* ORDERS */}
-            <div className="dashboard-panel">
+            <div className="panel">
               <div className="panel-heading">
                 <div>
-                  <span className="section-kicker">
+                  <span className="eyebrow">
                     ACTIVITY
                   </span>
 
-                  <h2>Recent orders</h2>
+                  <h2>
+                    Recent orders
+                  </h2>
                 </div>
 
                 <Link
                   href="/dashboard/orders"
-                  className="panel-link"
+                  className="view-all"
                 >
                   View all
                   <ArrowRight size={14} />
                 </Link>
               </div>
 
-              {orders.length > 0 ? (
-                <div className="orders-list">
-                  {orders.slice(0, 5).map((order) => (
-                    <Link
-                      href="/dashboard/orders"
-                      className="order-row"
-                      key={order.id}
-                    >
-                      <div className="order-icon">
-                        <Package size={17} />
-                      </div>
+              {orders.length ? (
+                <div className="orders">
+                  {orders
+                    .slice(0, 5)
+                    .map((order) => (
+                      <Link
+                        key={order.id}
+                        href="/dashboard/orders"
+                        className="order"
+                      >
+                        <div className="order-icon">
+                          <Package size={17} />
+                        </div>
 
-                      <div className="order-info">
-                        <strong>
-                          Order #
-                          {order.id.slice(0, 8).toUpperCase()}
-                        </strong>
+                        <div>
+                          <strong>
+                            Order #
+                            {order.id
+                              .slice(0, 8)
+                              .toUpperCase()}
+                          </strong>
 
-                        <span>
-                          {formatDate(order.created_at)}
+                          <span>
+                            {formatDate(
+                              order.created_at
+                            )}
+                          </span>
+                        </div>
+
+                        <span className="status">
+                          {formatOrderStatus(
+                            order.status
+                          )}
                         </span>
-                      </div>
 
-                      <div className="order-status">
-                        <span
-                          className={`status-dot ${order.status
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}`}
+                        <b>
+                          {formatPrice(
+                            order.total_amount
+                          )}
+                        </b>
+
+                        <ChevronRight
+                          size={15}
                         />
-
-                        {formatOrderStatus(order.status)}
-                      </div>
-
-                      <strong className="order-price">
-                        {formatPrice(order.total_amount)}
-                      </strong>
-
-                      <ChevronRight size={15} />
-                    </Link>
-                  ))}
+                      </Link>
+                    ))}
                 </div>
               ) : (
-                <div className="empty-panel">
-                  <div className="empty-panel-icon">
-                    <ShoppingBag size={24} />
-                  </div>
+                <div className="empty-orders">
+                  <ShoppingBag size={26} />
 
-                  <strong>No orders yet</strong>
+                  <strong>
+                    No orders yet
+                  </strong>
 
                   <span>
-                    Your recent orders will appear here.
+                    Your orders will appear
+                    here.
                   </span>
 
                   <Link href="/dashboard/products">
@@ -2120,228 +2111,91 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* SHOPPING INSIGHTS */}
-            <div className="dashboard-panel insights-panel">
+            {/* INSIGHTS */}
+
+            <div className="panel insights">
               <div className="panel-heading">
                 <div>
-                  <span className="section-kicker">
+                  <span className="eyebrow">
                     YOUR SHOPPING
                   </span>
 
-                  <h2>Quick insights</h2>
+                  <h2>
+                    Quick insights
+                  </h2>
                 </div>
 
-                <BarChart3 size={19} />
+                <Sparkles size={19} />
               </div>
 
               <div className="insight-list">
-                <div className="insight-row">
-                  <div className="insight-icon">
-                    <ShoppingBag size={17} />
-                  </div>
-
-                  <div>
-                    <span>Orders placed</span>
-                    <strong>{orders.length}</strong>
-                  </div>
+                <div>
+                  <ShoppingBag size={17} />
+                  <span>
+                    Orders placed
+                  </span>
+                  <strong>
+                    {orders.length}
+                  </strong>
                 </div>
 
-                <div className="insight-row">
-                  <div className="insight-icon">
-                    <Heart size={17} />
-                  </div>
-
-                  <div>
-                    <span>Saved products</span>
-                    <strong>{wishlistCount}</strong>
-                  </div>
+                <div>
+                  <Heart size={17} />
+                  <span>
+                    Saved products
+                  </span>
+                  <strong>
+                    {wishlistCount}
+                  </strong>
                 </div>
 
-                <div className="insight-row">
-                  <div className="insight-icon">
-                    <Crown size={17} />
-                  </div>
-
-                  <div>
-                    <span>Reward points</span>
-                    <strong>{primePoints}</strong>
-                  </div>
+                <div>
+                  <Crown size={17} />
+                  <span>
+                    Reward points
+                  </span>
+                  <strong>
+                    {primePoints}
+                  </strong>
                 </div>
 
-                <div className="insight-row">
-                  <div className="insight-icon">
-                    <Clock3 size={17} />
-                  </div>
-
-                  <div>
-                    <span>Products available</span>
-                    <strong>{products.length}</strong>
-                  </div>
+                <div>
+                  <Package size={17} />
+                  <span>
+                    Products available
+                  </span>
+                  <strong>
+                    {products.length}
+                  </strong>
                 </div>
               </div>
 
               <Link
                 href="/dashboard/prime-match"
-                className="insight-cta"
+                className="insight-button"
               >
-                Personalize your shopping
+                Personalize shopping
                 <ArrowRight size={14} />
               </Link>
             </div>
           </section>
-
-          {/* ===============================================
-              BENEFITS
-          =============================================== */}
-
-          <section className="benefits-strip">
-            <div className="benefit-item">
-              <div className="benefit-icon">
-                <Truck size={19} />
-              </div>
-
-              <div>
-                <strong>Fast delivery</strong>
-                <span>
-                  Reliable delivery on eligible orders
-                </span>
-              </div>
-            </div>
-
-            <div className="benefit-divider" />
-
-            <div className="benefit-item">
-              <div className="benefit-icon">
-                <ShieldCheck size={19} />
-              </div>
-
-              <div>
-                <strong>Secure payments</strong>
-                <span>
-                  Your payment information stays protected
-                </span>
-              </div>
-            </div>
-
-            <div className="benefit-divider" />
-
-            <div className="benefit-item">
-              <div className="benefit-icon">
-                <TicketPercent size={19} />
-              </div>
-
-              <div>
-                <strong>Exclusive deals</strong>
-                <span>
-                  Discover member-only shopping benefits
-                </span>
-              </div>
-            </div>
-
-            <div className="benefit-divider" />
-
-            <div className="benefit-item">
-              <div className="benefit-icon">
-                <CircleDollarSign size={19} />
-              </div>
-
-              <div>
-                <strong>Easy returns</strong>
-                <span>
-                  Shop confidently with simple returns
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* ===============================================
-              FOOTER
-          =============================================== */}
-
-          <footer className="dashboard-footer">
-            <div className="footer-brand">
-              <div className="footer-logo">P</div>
-
-              <div>
-                <strong>PrimeCart</strong>
-                <span>
-                  Smart shopping, made personal.
-                </span>
-              </div>
-            </div>
-
-            <div className="footer-links">
-              <Link href="/dashboard/products">
-                Products
-              </Link>
-
-              <Link href="/dashboard/categories">
-                Categories
-              </Link>
-
-              <Link href="/dashboard/orders">
-                Orders
-              </Link>
-
-              <Link href="/dashboard/settings">
-                Settings
-              </Link>
-            </div>
-
-            <span className="footer-copy">
-              © {new Date().getFullYear()} PrimeCart
-            </span>
-          </footer>
         </div>
       </main>
 
-      {/* ===================================================
-          STYLES
-      =================================================== */}
-
       <style jsx global>{`
-        :root {
-          --pc-bg: #fbf8f2;
-          --pc-surface: #ffffff;
-          --pc-surface-soft: #f8f3e9;
-          --pc-gold: #b9975b;
-          --pc-gold-dark: #96723b;
-          --pc-gold-light: #dcc596;
-          --pc-gold-pale: #f5ead6;
-          --pc-brown: #4a4034;
-          --pc-brown-light: #796e5d;
-          --pc-muted: #9b907f;
-          --pc-border: #eadfcb;
-          --pc-border-light: #f0e8da;
-          --pc-shadow: 0 14px 40px rgba(91, 69, 36, 0.08);
-          --pc-shadow-hover: 0 20px 55px rgba(91, 69, 36, 0.13);
-        }
-
         * {
           box-sizing: border-box;
         }
 
-        html {
-          scroll-behavior: smooth;
-        }
-
         body {
           margin: 0;
-          background: var(--pc-bg);
-          color: var(--pc-brown);
-          font-family:
-            Inter,
-            ui-sans-serif,
-            system-ui,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
+          background: #fffdf9;
+          color: #302920;
         }
 
         a {
-          color: inherit;
           text-decoration: none;
+          color: inherit;
         }
 
         button,
@@ -2351,40 +2205,26 @@ export default function DashboardPage() {
 
         button {
           border: 0;
+          cursor: pointer;
         }
 
-        .prime-dashboard {
+        .primecart-dashboard {
           min-height: 100vh;
-          background:
-            radial-gradient(
-              circle at 5% 0%,
-              rgba(210, 174, 99, 0.1),
-              transparent 25%
-            ),
-            radial-gradient(
-              circle at 95% 15%,
-              rgba(210, 174, 99, 0.08),
-              transparent 23%
-            ),
-            var(--pc-bg);
+          display: flex;
+          background: #fffdf9;
         }
 
-        /* =================================================
-           SIDEBAR
-        ================================================= */
+        /* SIDEBAR */
 
-        .dashboard-sidebar {
+        .sidebar {
           position: fixed;
-          z-index: 80;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 260px;
+          inset: 0 auto 0 0;
+          width: 250px;
+          z-index: 100;
           display: flex;
           flex-direction: column;
-          background: rgba(255, 255, 255, 0.92);
-          border-right: 1px solid var(--pc-border-light);
-          backdrop-filter: blur(22px);
+          background: #ffffff;
+          border-right: 1px solid #eee6d9;
         }
 
         .sidebar-brand {
@@ -2393,76 +2233,59 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid var(--pc-border-light);
+          border-bottom: 1px solid #f0e9df;
         }
 
-        .brand-link {
+        .brand {
           display: flex;
           align-items: center;
           gap: 11px;
         }
 
         .brand-mark {
-          width: 40px;
-          height: 40px;
-          border-radius: 13px;
+          width: 42px;
+          height: 42px;
           display: grid;
           place-items: center;
-          background:
-            linear-gradient(
-              145deg,
-              #e2c47f,
-              #aa7e34
-            );
-          color: #fff;
-          box-shadow:
-            0 9px 20px rgba(168, 124, 48, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.35);
-        }
-
-        .brand-mark span {
-          font-size: 19px;
+          border-radius: 13px;
+          color: white;
+          font-size: 20px;
           font-weight: 900;
+          background: linear-gradient(
+            135deg,
+            #d6b367,
+            #a67528
+          );
+          box-shadow: 0 9px 24px
+            rgba(174, 130, 48, 0.2);
         }
 
-        .brand-copy strong {
+        .brand strong {
           display: block;
           font-size: 17px;
-          letter-spacing: -0.4px;
+          letter-spacing: -0.3px;
         }
 
-        .brand-copy span {
+        .brand span {
           display: block;
-          margin-top: 1px;
-          color: var(--pc-muted);
-          font-size: 9px;
-          letter-spacing: 1.2px;
-          text-transform: uppercase;
-        }
-
-        .mobile-close {
-          display: none;
-          background: transparent;
-          color: var(--pc-brown);
-          cursor: pointer;
+          margin-top: 2px;
+          color: #a19584;
+          font-size: 10px;
         }
 
         .sidebar-scroll {
           flex: 1;
           overflow-y: auto;
-          padding: 22px 13px;
+          padding: 25px 14px;
         }
 
-        .sidebar-label {
-          padding: 0 12px 9px;
-          color: #a69a88;
-          font-size: 9px;
+        .sidebar-title {
+          display: block;
+          padding: 0 10px 10px;
+          color: #aaa090;
+          font-size: 10px;
           font-weight: 800;
-          letter-spacing: 1.5px;
-        }
-
-        .smart-label {
-          margin-top: 27px;
+          letter-spacing: 1.3px;
         }
 
         .sidebar-nav {
@@ -2471,613 +2294,521 @@ export default function DashboardPage() {
         }
 
         .sidebar-link {
-          position: relative;
           min-height: 45px;
+          padding: 0 11px;
           display: flex;
           align-items: center;
           gap: 11px;
-          padding: 0 12px;
-          border-radius: 13px;
-          color: var(--pc-brown-light);
+          border-radius: 12px;
+          color: #665b4d;
           font-size: 13px;
           font-weight: 650;
-          transition:
-            background 0.2s ease,
-            color 0.2s ease,
-            transform 0.2s ease;
+          transition: 0.2s;
         }
 
-        .sidebar-link:hover {
-          background: var(--pc-surface-soft);
-          color: var(--pc-gold-dark);
-          transform: translateX(2px);
+        .sidebar-link:hover,
+        .sidebar-link.active {
+          color: #8d6724;
+          background: #fbf3e4;
         }
 
-        .sidebar-link-active {
-          color: var(--pc-gold-dark);
-          background:
-            linear-gradient(
-              90deg,
-              rgba(201, 163, 92, 0.16),
-              rgba(201, 163, 92, 0.04)
-            );
-          box-shadow:
-            inset 3px 0 0 var(--pc-gold);
-        }
-
-        .sidebar-icon {
+        .sidebar-link-icon {
           width: 31px;
           height: 31px;
           display: grid;
           place-items: center;
           border-radius: 9px;
+          background: #faf7f1;
         }
 
-        .sidebar-link-active .sidebar-icon {
-          background: #fff;
-          box-shadow: 0 4px 12px rgba(110, 78, 28, 0.08);
+        .sidebar-link.active
+          .sidebar-link-icon {
+          color: #a87929;
+          background: #f5e7c9;
         }
 
-        .sidebar-count {
+        .sidebar-link b {
           margin-left: auto;
-          min-width: 22px;
-          height: 22px;
+          min-width: 20px;
+          height: 20px;
           display: grid;
           place-items: center;
-          border-radius: 999px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
+          border-radius: 20px;
+          color: white;
+          background: #bc8c35;
           font-size: 10px;
-          font-weight: 800;
+        }
+
+        .smart-title {
+          margin-top: 28px;
         }
 
         .smart-sidebar {
           display: grid;
-          gap: 6px;
+          gap: 7px;
         }
 
-        .smart-sidebar-item {
+        .smart-sidebar-link {
           display: flex;
           align-items: center;
           gap: 9px;
           padding: 10px 9px;
-          border: 1px solid transparent;
+          border: 1px solid #f1eadf;
           border-radius: 12px;
-          transition: 0.2s ease;
+          background: #fffdfa;
+          transition: 0.2s;
         }
 
-        .smart-sidebar-item:hover {
-          background: #fffaf1;
-          border-color: var(--pc-border);
+        .smart-sidebar-link:hover {
+          border-color: #dec18b;
           transform: translateY(-1px);
         }
 
-        .smart-sidebar-icon {
-          width: 29px;
-          height: 29px;
+        .smart-icon {
+          width: 30px;
+          height: 30px;
           display: grid;
           place-items: center;
+          flex: 0 0 30px;
+          color: #a87a2d;
           border-radius: 9px;
-          color: var(--pc-gold-dark);
-          background: var(--pc-gold-pale);
+          background: #f9f0df;
         }
 
-        .smart-sidebar-content {
+        .smart-sidebar-link > span:nth-child(2) {
           min-width: 0;
           flex: 1;
         }
 
-        .smart-sidebar-content strong {
+        .smart-sidebar-link strong {
           display: block;
           font-size: 11px;
         }
 
-        .smart-sidebar-content small {
+        .smart-sidebar-link small {
           display: block;
           margin-top: 2px;
-          color: var(--pc-muted);
-          font-size: 7px;
-          font-weight: 800;
-          letter-spacing: 0.9px;
+          color: #a99b88;
+          font-size: 8px;
+          letter-spacing: 0.6px;
         }
 
-        .smart-sidebar-item > svg {
-          color: #b5aa99;
-        }
-
-        .sidebar-help {
-          margin: 20px 3px 0;
+        .safe-box {
+          margin-top: 24px;
           padding: 15px;
-          border-radius: 16px;
-          background:
-            linear-gradient(
-              145deg,
-              #fffaf1,
-              #f8f0df
-            );
-          border: 1px solid var(--pc-border);
+          border-radius: 15px;
+          color: #6b604f;
+          background: #fbf8f1;
         }
 
-        .sidebar-help-icon {
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          margin-bottom: 10px;
-          border-radius: 10px;
-          background: #fff;
-          color: var(--pc-gold-dark);
+        .safe-box svg {
+          color: #b1853c;
         }
 
-        .sidebar-help strong {
+        .safe-box strong {
           display: block;
+          margin-top: 9px;
           font-size: 12px;
         }
 
-        .sidebar-help p {
-          margin: 5px 0 10px;
-          color: var(--pc-brown-light);
+        .safe-box p {
+          margin: 5px 0 0;
+          color: #9c907f;
           font-size: 10px;
           line-height: 1.55;
         }
 
-        .sidebar-help a {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          color: var(--pc-gold-dark);
-          font-size: 10px;
-          font-weight: 750;
-        }
-
         .sidebar-bottom {
-          padding: 12px;
-          border-top: 1px solid var(--pc-border-light);
+          padding: 13px 14px;
+          border-top: 1px solid #eee7dd;
         }
 
-        .sidebar-bottom-link {
+        .bottom-link {
           width: 100%;
-          min-height: 40px;
+          padding: 11px;
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 0 11px;
-          border-radius: 10px;
+          color: #756a5c;
           background: transparent;
-          color: var(--pc-brown-light);
+          border-radius: 10px;
           font-size: 12px;
-          cursor: pointer;
-          text-align: left;
         }
 
-        .sidebar-bottom-link:hover {
-          background: var(--pc-surface-soft);
-          color: var(--pc-gold-dark);
+        .bottom-link:hover {
+          background: #faf7f1;
+          color: #9b7129;
         }
 
-        .logout-button {
-          margin-top: 3px;
+        .close-sidebar {
+          display: none;
+          background: transparent;
+          color: #655a4d;
         }
 
-        /* =================================================
-           MAIN
-        ================================================= */
+        /* MAIN */
 
-        .dashboard-main {
-          min-height: 100vh;
-          margin-left: 260px;
+        .main {
+          width: calc(100% - 250px);
+          margin-left: 250px;
+          min-width: 0;
         }
 
-        /* =================================================
-           HEADER
-        ================================================= */
-
-        .dashboard-header {
+        .top-header {
           position: sticky;
-          z-index: 50;
           top: 0;
-          min-height: 76px;
+          z-index: 50;
+          min-height: 72px;
+          padding: 12px 30px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 20px;
-          padding: 12px 34px;
-          background: rgba(251, 248, 242, 0.84);
-          border-bottom: 1px solid rgba(234, 223, 203, 0.7);
-          backdrop-filter: blur(20px);
+          background: rgba(
+            255,
+            253,
+            249,
+            0.95
+          );
+          border-bottom: 1px solid #eee7dc;
+          backdrop-filter: blur(18px);
         }
 
         .header-left {
-          min-width: 0;
           flex: 1;
+          min-width: 0;
           display: flex;
           align-items: center;
           gap: 14px;
         }
 
-        .mobile-menu-button {
-          display: none;
-          width: 40px;
-          height: 40px;
-          place-items: center;
-          border-radius: 11px;
-          background: #fff;
-          border: 1px solid var(--pc-border);
-          color: var(--pc-brown);
-          cursor: pointer;
-        }
-
-        .header-search-wrap {
+        .search-box {
           position: relative;
-          width: min(100%, 530px);
-        }
-
-        .header-search-icon {
-          position: absolute;
-          left: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #a99d8c;
-          pointer-events: none;
-        }
-
-        .header-search {
-          width: 100%;
+          width: min(650px, 100%);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 15px;
           height: 45px;
-          padding: 0 42px;
-          border: 1px solid var(--pc-border);
-          border-radius: 14px;
-          outline: none;
-          background: rgba(255, 255, 255, 0.85);
-          color: var(--pc-brown);
+          border: 1px solid #e8dfd1;
+          border-radius: 12px;
+          background: white;
+          color: #9c907f;
+          box-shadow: 0 4px 16px
+            rgba(89, 69, 39, 0.03);
+        }
+
+        .search-box:focus-within {
+          border-color: #d4b06b;
+          box-shadow: 0 0 0 3px
+            rgba(196, 153, 65, 0.1);
+        }
+
+        .search-box input {
+          width: 100%;
+          min-width: 0;
+          border: 0;
+          outline: 0;
+          color: #382f27;
+          background: transparent;
           font-size: 12px;
-          transition: 0.2s ease;
         }
 
-        .header-search::placeholder {
-          color: #b3a999;
+        .search-box input::placeholder {
+          color: #aaa092;
         }
 
-        .header-search:focus {
-          border-color: var(--pc-gold-light);
-          box-shadow:
-            0 0 0 4px rgba(185, 151, 91, 0.08),
-            0 8px 25px rgba(100, 75, 37, 0.05);
-          background: #fff;
-        }
-
-        .search-clear {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          width: 24px;
-          height: 24px;
-          transform: translateY(-50%);
+        .search-box button {
           display: grid;
           place-items: center;
-          border-radius: 7px;
-          background: var(--pc-surface-soft);
-          color: var(--pc-muted);
-          cursor: pointer;
+          color: #887c6c;
+          background: transparent;
         }
 
-        .search-results {
+        .search-dropdown {
           position: absolute;
-          z-index: 100;
           top: calc(100% + 9px);
           left: 0;
           right: 0;
           overflow: hidden;
-          border: 1px solid var(--pc-border);
-          border-radius: 17px;
-          background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
-          animation: dropdownIn 0.18s ease both;
+          border: 1px solid #eee5d7;
+          border-radius: 15px;
+          background: white;
+          box-shadow: 0 20px 45px
+            rgba(67, 51, 29, 0.13);
         }
 
-        .search-results-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+        .search-dropdown-head {
           padding: 13px 15px;
-          border-bottom: 1px solid var(--pc-border-light);
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 1px solid #f1ebe2;
         }
 
-        .search-results-head span {
+        .search-dropdown-head strong {
+          font-size: 12px;
+        }
+
+        .search-dropdown-head span {
+          color: #9d907f;
           font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0.6px;
-          text-transform: uppercase;
         }
 
-        .search-results-head small {
-          color: var(--pc-muted);
-          font-size: 10px;
-        }
-
-        .search-result-item {
+        .search-item {
           display: flex;
           align-items: center;
           gap: 11px;
-          padding: 10px 13px;
-          border-bottom: 1px solid #f4eee4;
-          transition: 0.15s ease;
+          padding: 9px 13px;
+          border-bottom: 1px solid #f4eee6;
         }
 
-        .search-result-item:hover {
-          background: #fffbf5;
+        .search-item:hover {
+          background: #fcfaf6;
         }
 
-        .search-result-image {
+        .search-image {
           position: relative;
-          width: 44px;
-          height: 44px;
-          flex: 0 0 44px;
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
           overflow: hidden;
-          border-radius: 10px;
-          background: #faf7f1;
+          border-radius: 8px;
+          background: #faf8f3;
         }
 
-        .search-result-info {
+        .search-item > div:nth-child(2) {
           min-width: 0;
           flex: 1;
         }
 
-        .search-result-info strong {
+        .search-item strong,
+        .search-item span,
+        .search-item b {
           display: block;
+        }
+
+        .search-item strong {
           overflow: hidden;
-          text-overflow: ellipsis;
           white-space: nowrap;
+          text-overflow: ellipsis;
           font-size: 11px;
         }
 
-        .search-result-info span {
-          display: block;
+        .search-item span {
           margin-top: 2px;
-          color: var(--pc-muted);
+          color: #9d9180;
           font-size: 9px;
         }
 
-        .search-result-info b {
-          display: block;
-          margin-top: 3px;
-          color: var(--pc-gold-dark);
-          font-size: 10px;
-        }
-
-        .search-result-item > svg {
-          color: #b8aa97;
-        }
-
-        .search-view-all {
-          min-height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          color: var(--pc-gold-dark);
+        .search-item b {
+          margin-top: 4px;
+          color: #9b7129;
           font-size: 11px;
-          font-weight: 750;
         }
 
-        .search-empty {
-          min-height: 150px;
+        .search-all {
+          padding: 12px 15px;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 5px;
-          color: #b0a494;
+          gap: 7px;
+          color: #a07428;
+          font-size: 11px;
+          font-weight: 700;
+          background: #fffaf0;
         }
 
-        .search-empty strong {
-          color: var(--pc-brown);
+        .no-results {
+          padding: 28px;
+          display: grid;
+          justify-items: center;
+          gap: 7px;
+          color: #a69a89;
+        }
+
+        .no-results strong {
+          color: #5d5244;
           font-size: 12px;
         }
 
-        .search-empty span {
+        .no-results span {
           font-size: 10px;
         }
 
-        .header-right {
-          position: relative;
+        .header-actions {
           display: flex;
           align-items: center;
           gap: 8px;
         }
 
-        .header-icon-button {
+        .header-button {
           position: relative;
           width: 40px;
           height: 40px;
           display: grid;
           place-items: center;
+          border: 1px solid #ece3d7;
           border-radius: 11px;
-          border: 1px solid var(--pc-border);
-          background: rgba(255, 255, 255, 0.8);
-          color: var(--pc-brown-light);
-          cursor: pointer;
-          transition: 0.2s ease;
+          color: #675c4e;
+          background: white;
         }
 
-        .header-icon-button:hover {
-          border-color: var(--pc-gold-light);
-          color: var(--pc-gold-dark);
-          transform: translateY(-1px);
-          box-shadow: 0 8px 20px rgba(90, 67, 34, 0.07);
+        .header-button:hover {
+          color: #a87929;
+          border-color: #dbc18d;
         }
 
-        .notification-dot {
+        .header-button i {
           position: absolute;
           top: 8px;
-          right: 8px;
+          right: 9px;
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #d94b4b;
-          box-shadow: 0 0 0 3px #fff;
+          background: #c18b2d;
         }
 
-        .header-count {
+        .header-button b {
           position: absolute;
-          top: -4px;
-          right: -4px;
+          top: -5px;
+          right: -5px;
           min-width: 17px;
           height: 17px;
-          padding: 0 4px;
           display: grid;
           place-items: center;
-          border-radius: 999px;
-          background: var(--pc-gold-dark);
+          border-radius: 50%;
           color: white;
+          background: #b8872d;
           font-size: 8px;
-          font-weight: 800;
-          border: 2px solid var(--pc-bg);
         }
 
-        .header-profile-wrap {
+        .profile-wrapper {
           position: relative;
         }
 
-        .header-profile {
-          min-height: 42px;
+        .profile-button {
+          height: 42px;
+          padding: 3px 8px 3px 4px;
           display: flex;
           align-items: center;
-          gap: 9px;
-          padding: 2px 4px 2px 2px;
-          background: transparent;
-          color: var(--pc-brown);
-          cursor: pointer;
+          gap: 8px;
+          border: 1px solid #ece3d7;
+          border-radius: 12px;
+          background: white;
+          color: #453b30;
         }
 
         .avatar,
-        .avatar-image {
-          width: 37px;
-          height: 37px;
-          border-radius: 11px;
+        .avatar-img {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
         }
 
         .avatar {
           display: grid;
           place-items: center;
-          background:
-            linear-gradient(
-              145deg,
-              #dfc282,
-              #a47b37
-            );
-          color: white;
+          color: #7e5b20;
+          background: #f2e4c7;
           font-size: 11px;
-          font-weight: 850;
-          box-shadow: 0 5px 15px rgba(153, 111, 44, 0.17);
+          font-weight: 800;
         }
 
-        .avatar.large {
-          width: 42px;
-          height: 42px;
-        }
-
-        .avatar-image {
+        .avatar-img {
           object-fit: cover;
         }
 
-        .header-profile-copy {
-          min-width: 72px;
+        .profile-name strong,
+        .profile-name small {
+          display: block;
           text-align: left;
         }
 
-        .header-profile-copy strong {
-          display: block;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .profile-name strong {
           font-size: 11px;
         }
 
-        .header-profile-copy small {
-          display: block;
+        .profile-name small {
           margin-top: 2px;
-          color: var(--pc-muted);
-          font-size: 9px;
+          color: #9c907f;
+          font-size: 8px;
         }
 
-        .profile-dropdown,
-        .notification-dropdown {
+        .profile-menu,
+        .notification-menu {
           position: absolute;
-          z-index: 110;
-          top: calc(100% + 10px);
+          z-index: 200;
+          top: calc(100% + 9px);
           right: 0;
-          width: 230px;
+          width: 260px;
           padding: 8px;
-          border: 1px solid var(--pc-border);
-          border-radius: 17px;
-          background: #fff;
-          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
-          animation: dropdownIn 0.18s ease both;
+          border: 1px solid #eee4d7;
+          border-radius: 15px;
+          background: white;
+          box-shadow: 0 20px 45px
+            rgba(63, 48, 27, 0.14);
         }
 
-        .profile-dropdown-head {
+        .profile-menu-head {
+          padding: 10px;
           display: flex;
           align-items: center;
           gap: 9px;
-          padding: 8px;
         }
 
-        .profile-dropdown-head strong {
+        .avatar.large {
+          width: 38px;
+          height: 38px;
+        }
+
+        .profile-menu-head strong,
+        .profile-menu-head span {
           display: block;
+        }
+
+        .profile-menu-head strong {
           font-size: 11px;
         }
 
-        .profile-dropdown-head span {
-          display: block;
-          max-width: 145px;
+        .profile-menu-head span {
           margin-top: 3px;
+          max-width: 165px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: var(--pc-muted);
+          color: #9c907f;
           font-size: 9px;
         }
 
-        .profile-divider {
-          height: 1px;
-          margin: 5px 0;
-          background: var(--pc-border-light);
-        }
-
-        .profile-dropdown a,
-        .profile-dropdown button {
+        .profile-menu a,
+        .profile-menu button {
           width: 100%;
-          min-height: 38px;
+          padding: 10px;
           display: flex;
           align-items: center;
           gap: 9px;
-          padding: 0 9px;
+          color: #675c4f;
           border-radius: 9px;
           background: transparent;
-          color: var(--pc-brown-light);
           font-size: 11px;
-          text-align: left;
-          cursor: pointer;
         }
 
-        .profile-dropdown a:hover,
-        .profile-dropdown button:hover {
-          background: var(--pc-surface-soft);
-          color: var(--pc-gold-dark);
+        .profile-menu a:hover,
+        .profile-menu button:hover {
+          background: #faf6ee;
+          color: #9b7028;
         }
 
-        .notification-dropdown {
-          right: 78px;
-          width: 275px;
+        .notification-menu {
+          right: 200px;
+          padding: 13px;
         }
 
         .notification-head {
           display: flex;
-          align-items: center;
           justify-content: space-between;
-          padding: 8px 9px 11px;
-          border-bottom: 1px solid var(--pc-border-light);
+          padding-bottom: 9px;
+          border-bottom: 1px solid #eee8df;
         }
 
         .notification-head strong {
@@ -3085,2019 +2816,1479 @@ export default function DashboardPage() {
         }
 
         .notification-head span {
-          padding: 4px 7px;
-          border-radius: 999px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
-          font-size: 8px;
-          font-weight: 800;
+          color: #ae7d2a;
+          font-size: 9px;
         }
 
-        .notification-item {
+        .notification {
+          padding: 11px 3px;
           display: flex;
           gap: 9px;
-          padding: 11px 8px;
         }
 
         .notification-icon {
-          width: 30px;
-          height: 30px;
-          flex: 0 0 30px;
+          width: 29px;
+          height: 29px;
           display: grid;
           place-items: center;
+          flex: 0 0 29px;
+          color: #a8792a;
           border-radius: 9px;
+          background: #f7edd9;
         }
 
-        .notification-icon.gold {
-          color: #9a742f;
-          background: #f8ecd7;
-        }
-
-        .notification-icon.green {
-          color: #4e8660;
-          background: #eaf5ec;
-        }
-
-        .notification-item strong {
+        .notification strong,
+        .notification span {
           display: block;
+        }
+
+        .notification strong {
           font-size: 10px;
         }
 
-        .notification-item span {
-          display: block;
+        .notification span {
           margin-top: 3px;
-          color: var(--pc-muted);
+          color: #9c907f;
           font-size: 9px;
         }
 
-        /* =================================================
-           CONTENT
-        ================================================= */
-
-        .dashboard-content {
-          max-width: 1680px;
-          margin: 0 auto;
-          padding: 28px 34px 45px;
+        .mobile-menu,
+        .mobile-brand {
+          display: none;
         }
 
-        /* =================================================
-           HERO BANNER CAROUSEL
-        ================================================= */
+        /* CONTENT */
 
-        .hero-banner-section {
-          width: 100%;
-          animation: heroIn 0.55s ease both;
-        }
-
-        .hero-banner-frame {
-          position: relative;
-          width: 100%;
-          height: clamp(230px, 23vw, 365px);
-          overflow: hidden;
-          border: 1px solid rgba(190, 153, 83, 0.22);
-          border-radius: 25px;
-          background: #f7f1e6;
-          box-shadow:
-            0 20px 48px rgba(130, 94, 35, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.7);
-        }
-
-        .hero-banner-link {
-          position: absolute;
-          inset: 0;
-          display: block;
-          overflow: hidden;
-        }
-
-        .hero-banner-image {
-          object-fit: cover;
-          object-position: center;
-          transition: transform 0.8s ease, opacity 0.35s ease;
-        }
-
-        .hero-banner-link:hover .hero-banner-image {
-          transform: scale(1.018);
-        }
-
-        .hero-banner-arrow {
-          position: absolute;
-          top: 50%;
-          z-index: 4;
-          width: 40px;
-          height: 40px;
-          display: grid;
-          place-items: center;
-          border: 1px solid rgba(255, 255, 255, 0.7);
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.78);
-          color: #594525;
-          box-shadow: 0 8px 24px rgba(62, 44, 20, 0.16);
-          backdrop-filter: blur(10px);
-          transform: translateY(-50%);
-          cursor: pointer;
-          transition: 0.2s ease;
-        }
-
-        .hero-banner-arrow:hover {
-          background: #fff;
-          color: #8a6427;
-          transform: translateY(-50%) scale(1.06);
-        }
-
-        .hero-banner-prev {
-          left: 16px;
-        }
-
-        .hero-banner-prev svg {
-          transform: rotate(180deg);
-        }
-
-        .hero-banner-next {
-          right: 16px;
-        }
-
-        .hero-banner-dots {
-          position: absolute;
-          z-index: 5;
-          left: 50%;
-          bottom: 16px;
+        .benefits-bar {
+          min-height: 43px;
+          padding: 0 30px;
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 7px 9px;
-          border: 1px solid rgba(255, 255, 255, 0.58);
-          border-radius: 999px;
-          background: rgba(50, 37, 20, 0.2);
-          backdrop-filter: blur(10px);
-          transform: translateX(-50%);
+          justify-content: space-between;
+          gap: 15px;
+          border-bottom: 1px solid #eee7dc;
+          background: white;
         }
 
-        .hero-banner-dot {
-          width: 7px;
-          height: 7px;
-          padding: 0;
-          border: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.58);
-          cursor: pointer;
-          transition: 0.22s ease;
-        }
-
-        .hero-banner-dot.active {
-          width: 22px;
-          border-radius: 999px;
-          background: #fff;
-        }
-
-        .hero-banner-count {
-          position: absolute;
-          right: 17px;
-          bottom: 15px;
-          z-index: 5;
+        .benefits-bar div {
           display: flex;
           align-items: center;
           gap: 7px;
-          padding: 7px 10px;
-          border: 1px solid rgba(255, 255, 255, 0.52);
-          border-radius: 999px;
-          background: rgba(50, 37, 20, 0.2);
-          color: #fff;
+          color: #7f7363;
+          font-size: 9px;
+        }
+
+        .benefits-bar svg {
+          color: #b8872d;
+        }
+
+        .content {
+          max-width: 1600px;
+          margin: auto;
+          padding: 28px 30px 60px;
+        }
+
+        /* HERO */
+
+        .hero {
+          position: relative;
+          min-height: 380px;
+          overflow: hidden;
+          display: grid;
+          grid-template-columns: 1.15fr 0.85fr;
+          border-radius: 24px;
+          background:
+            radial-gradient(
+              circle at 85% 40%,
+              rgba(255,255,255,.8),
+              transparent 25%
+            ),
+            linear-gradient(
+              120deg,
+              #f3e1bd,
+              #fbf3e3 58%,
+              #f6ead5
+            );
+          border: 1px solid #ead8b9;
+          box-shadow: 0 18px 45px
+            rgba(115, 82, 31, 0.08);
+        }
+
+        .hero-copy {
+          position: relative;
+          z-index: 2;
+          padding: 55px;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 11px;
+          border: 1px solid #dfc18b;
+          border-radius: 100px;
+          color: #98702a;
+          background: rgba(255,255,255,.55);
           font-size: 8px;
           font-weight: 800;
-          letter-spacing: 0.8px;
-          backdrop-filter: blur(10px);
+          letter-spacing: 1px;
         }
 
-        .hero-banner-count i {
-          width: 14px;
-          height: 1px;
-          background: rgba(255, 255, 255, 0.65);
+        .hero h1 {
+          margin: 20px 0 12px;
+          color: #3b3024;
+          font-size: clamp(38px, 4vw, 60px);
+          line-height: .98;
+          letter-spacing: -2.5px;
         }
 
-        /* =================================================
-           STATS
-        ================================================= */
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 13px;
-          margin-top: 18px;
+        .hero h1 span {
+          color: #ae7d29;
         }
 
-        .stat-card {
-          min-width: 0;
-          min-height: 105px;
+        .hero-copy p {
+          max-width: 510px;
+          margin: 0;
+          color: #766957;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .hero-buttons {
+          margin-top: 25px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .primary-button,
+        .secondary-button {
+          min-height: 44px;
+          padding: 0 17px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border-radius: 11px;
+          font-size: 11px;
+          font-weight: 750;
+        }
+
+        .primary-button {
+          color: white;
+          background: #a97828;
+          box-shadow: 0 10px 25px
+            rgba(155, 111, 37, 0.2);
+        }
+
+        .secondary-button {
+          color: #705328;
+          border: 1px solid #d9bd89;
+          background: rgba(255,255,255,.65);
+        }
+
+        .hero-trust {
+          margin-top: 22px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 15px;
+        }
+
+        .hero-trust span {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 16px;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 17px;
-          background: rgba(255, 255, 255, 0.84);
-          box-shadow: 0 7px 22px rgba(84, 62, 30, 0.04);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            border-color 0.2s ease;
+          gap: 5px;
+          color: #8d806e;
+          font-size: 9px;
         }
 
-        .stat-card:hover {
-          transform: translateY(-3px);
-          border-color: var(--pc-border);
-          box-shadow: var(--pc-shadow);
+        .hero-visual {
+          position: relative;
+          min-height: 350px;
         }
 
-        .stat-icon {
-          width: 42px;
-          height: 42px;
-          flex: 0 0 42px;
+        .hero-circle {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid
+            rgba(172, 126, 42, 0.2);
+        }
+
+        .circle-one {
+          width: 390px;
+          height: 390px;
+          right: 15px;
+          top: -10px;
+        }
+
+        .circle-two {
+          width: 270px;
+          height: 270px;
+          right: 75px;
+          top: 50px;
+        }
+
+        .hero-product-card {
+          position: absolute;
+          z-index: 2;
+          right: 60px;
+          top: 115px;
+          width: 275px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          border: 1px solid rgba(211,182,125,.65);
+          border-radius: 20px;
+          background: rgba(255,255,255,.8);
+          box-shadow: 0 25px 55px
+            rgba(101, 72, 30, .14);
+          backdrop-filter: blur(12px);
+        }
+
+        .hero-product-icon {
+          width: 54px;
+          height: 54px;
           display: grid;
           place-items: center;
-          border-radius: 12px;
+          border-radius: 15px;
+          background: #f6e8ca;
+          font-size: 25px;
         }
 
-        .gold-icon {
-          color: #9b732f;
-          background: #f8ecd8;
-        }
-
-        .rose-icon {
-          color: #b25e69;
-          background: #fae9eb;
-        }
-
-        .green-icon {
-          color: #4c8560;
-          background: #e8f3eb;
-        }
-
-        .purple-icon {
-          color: #7a65a5;
-          background: #eeeafb;
-        }
-
-        .stat-content {
-          min-width: 0;
+        .hero-product-card div:nth-child(2) {
           flex: 1;
         }
 
-        .stat-content span {
+        .hero-product-card span,
+        .hero-product-card strong {
           display: block;
-          color: var(--pc-muted);
-          font-size: 9px;
-          font-weight: 650;
         }
 
-        .stat-content strong {
-          display: block;
-          margin-top: 3px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          color: var(--pc-brown);
-          font-size: 18px;
-          letter-spacing: -0.4px;
+        .hero-product-card span {
+          color: #a17a35;
+          font-size: 8px;
+          letter-spacing: .8px;
+          font-weight: 800;
         }
 
-        .stat-content small {
+        .hero-product-card strong {
+          margin-top: 5px;
+          color: #4a3b2b;
+          font-size: 12px;
+        }
+
+        .floating-card {
+          position: absolute;
+          z-index: 3;
+          padding: 11px 13px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          border-radius: 13px;
+          background: white;
+          box-shadow: 0 15px 30px
+            rgba(87, 64, 30, .13);
+        }
+
+        .floating-card svg {
+          color: #b17e27;
+        }
+
+        .floating-card strong,
+        .floating-card span {
           display: block;
-          margin-top: 3px;
-          color: #b0a494;
+        }
+
+        .floating-card strong {
+          font-size: 10px;
+        }
+
+        .floating-card span {
+          margin-top: 2px;
+          color: #a09483;
           font-size: 8px;
         }
 
-        .stat-card > svg {
-          color: #c1b5a4;
+        .deal-floating {
+          left: 20px;
+          bottom: 65px;
         }
 
-        /* =================================================
-           SECTION
-        ================================================= */
+        .points-floating {
+          right: 10px;
+          bottom: 40px;
+        }
+
+        /* SECTIONS */
 
         .section {
-          margin-top: 42px;
+          margin-top: 43px;
         }
 
         .section-heading {
+          margin-bottom: 17px;
           display: flex;
-          align-items: flex-end;
+          align-items: end;
           justify-content: space-between;
           gap: 20px;
-          margin-bottom: 17px;
         }
 
-        .section-heading.compact {
+        .eyebrow {
+          display: flex;
           align-items: center;
-        }
-
-        .section-kicker {
-          display: block;
-          color: var(--pc-gold-dark);
+          gap: 5px;
+          color: #a67a2c;
           font-size: 8px;
           font-weight: 850;
-          letter-spacing: 1.5px;
+          letter-spacing: 1.2px;
         }
 
-        .section-kicker.red {
-          color: #bd5a52;
+        .eyebrow.danger {
+          color: #c16c45;
         }
 
         .section-heading h2 {
           margin: 5px 0 0;
-          color: var(--pc-brown);
-          font-size: 20px;
-          letter-spacing: -0.65px;
+          color: #3d3329;
+          font-size: 23px;
+          letter-spacing: -.7px;
         }
 
         .section-heading p {
           margin: 5px 0 0;
-          color: var(--pc-muted);
-          font-size: 10px;
+          color: #9a8d7b;
+          font-size: 11px;
         }
 
-        .heading-sparkle {
-          color: var(--pc-gold-light);
-        }
-
-        .view-all-link,
-        .panel-link {
+        .view-all {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          color: var(--pc-gold-dark);
+          color: #a27329;
           font-size: 10px;
           font-weight: 750;
           white-space: nowrap;
         }
 
-        .view-all-link:hover,
-        .panel-link:hover {
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
+        /* CATEGORIES */
 
-        /* =================================================
-           SMART TOOLS
-        ================================================= */
-
-        .smart-tools-grid {
+        .category-scroll {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 13px;
-        }
-
-        .smart-tool-card {
-          position: relative;
-          min-height: 220px;
-          overflow: hidden;
-          padding: 18px;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 18px;
-          background: #fff;
-          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.04);
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease,
-            border-color 0.25s ease;
-          animation: revealUp 0.55s ease both;
-        }
-
-        .smart-tool-card::before {
-          content: "";
-          position: absolute;
-          right: -55px;
-          bottom: -65px;
-          width: 150px;
-          height: 150px;
-          border-radius: 50%;
-          background: rgba(213, 182, 117, 0.08);
-          transition: 0.3s ease;
-        }
-
-        .smart-tool-card:hover {
-          transform: translateY(-5px);
-          border-color: var(--pc-border);
-          box-shadow: var(--pc-shadow-hover);
-        }
-
-        .smart-tool-card:hover::before {
-          transform: scale(1.3);
-        }
-
-        .smart-tool-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .smart-tool-badge {
-          color: #a27a39;
-          font-size: 7px;
-          font-weight: 850;
-          letter-spacing: 1.1px;
-        }
-
-        .smart-tool-arrow {
-          width: 29px;
-          height: 29px;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-          background: #faf7f0;
-          color: #9d8760;
-          transition: 0.2s ease;
-        }
-
-        .smart-tool-card:hover .smart-tool-arrow {
-          background: var(--pc-gold);
-          color: #fff;
-          transform: rotate(-5deg);
-        }
-
-        .smart-tool-icon {
-          width: 43px;
-          height: 43px;
-          display: grid;
-          place-items: center;
-          margin-top: 23px;
-          border-radius: 13px;
-          background: linear-gradient(
-            145deg,
-            #fbf3e2,
-            #f2e2c1
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(100px, 1fr)
           );
-          color: var(--pc-gold-dark);
+          gap: 9px;
         }
 
-        .smart-tool-card h3 {
-          margin: 15px 0 6px;
-          font-size: 15px;
-          letter-spacing: -0.3px;
-        }
-
-        .smart-tool-card p {
-          max-width: 200px;
-          min-height: 34px;
-          margin: 0;
-          color: var(--pc-muted);
-          font-size: 10px;
-          line-height: 1.55;
-        }
-
-        .smart-tool-link {
-          position: absolute;
-          left: 18px;
-          bottom: 17px;
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          color: var(--pc-gold-dark);
-          font-size: 9px;
-          font-weight: 750;
-        }
-
-        /* =================================================
-           CATEGORIES
-        ================================================= */
-
-        .category-strip {
-          display: grid;
-          grid-template-columns: repeat(11, minmax(72px, 1fr));
-          gap: 8px;
-        }
-
-        .category-card {
-          min-width: 0;
+        .category {
           min-height: 105px;
+          padding: 13px 8px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          padding: 9px 5px;
-          border: 1px solid var(--pc-border-light);
+          border: 1px solid #eee5d8;
           border-radius: 15px;
-          background: rgba(255, 255, 255, 0.8);
-          color: var(--pc-brown);
-          cursor: pointer;
-          transition: 0.2s ease;
+          color: #5e5346;
+          background: white;
+          transition: .2s;
         }
 
-        .category-card:hover {
-          transform: translateY(-3px);
-          border-color: var(--pc-border);
-          box-shadow: 0 10px 24px rgba(82, 61, 29, 0.07);
+        .category:hover,
+        .category.selected {
+          border-color: #d5b16c;
+          background: #fffaf0;
+          transform: translateY(-2px);
         }
 
-        .category-card-active {
-          border-color: #d9bf8e;
-          background: linear-gradient(
-            145deg,
-            #fffaf1,
-            #f8edda
-          );
-          box-shadow: 0 10px 25px rgba(129, 94, 35, 0.08);
+        .category span {
+          font-size: 25px;
         }
 
-        .category-emoji {
-          width: 39px;
-          height: 39px;
+        .category strong {
+          margin-top: 7px;
+          font-size: 10px;
+        }
+
+        .category small {
+          margin-top: 3px;
+          color: #a39786;
+          font-size: 8px;
+        }
+
+        /* DEAL BANNERS */
+
+        .deal-banner-grid {
+          margin-top: 28px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
+
+        .deal-banner {
+          min-height: 190px;
+          position: relative;
+          overflow: hidden;
+          padding: 27px 30px;
+          border-radius: 20px;
+          border: 1px solid #eadfce;
+        }
+
+        .gold-banner {
+          background:
+            radial-gradient(
+              circle at 90% 50%,
+              rgba(255,255,255,.5),
+              transparent 25%
+            ),
+            linear-gradient(
+              120deg,
+              #ead1a2,
+              #f8ead1
+            );
+        }
+
+        .cream-banner {
+          background:
+            radial-gradient(
+              circle at 90% 50%,
+              rgba(217,187,130,.3),
+              transparent 30%
+            ),
+            #f8f4eb;
+        }
+
+        .deal-banner span {
+          color: #a17329;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1px;
+        }
+
+        .deal-banner h2 {
+          margin: 9px 0 5px;
+          color: #3e3225;
+          font-size: 23px;
+          line-height: 1.05;
+          letter-spacing: -.7px;
+        }
+
+        .deal-banner p {
+          margin: 0;
+          color: #7f715e;
+          font-size: 10px;
+        }
+
+        .deal-banner strong {
+          margin-top: 14px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #9d7128;
+          font-size: 10px;
+        }
+
+        .deal-art {
+          position: absolute;
+          right: 45px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 105px;
+          height: 105px;
           display: grid;
           place-items: center;
-          border-radius: 12px;
-          background: #faf7f1;
-          font-size: 19px;
-        }
-
-        .category-card strong {
-          max-width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 9px;
-        }
-
-        .category-card small {
-          color: var(--pc-muted);
-          font-size: 7px;
-        }
-
-        /* =================================================
-           FLASH DEALS
-        ================================================= */
-
-        .title-with-live {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .live-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 3px 6px;
-          border-radius: 999px;
-          background: #fbe9e7;
-          color: #b6534b;
-          font-size: 6px;
-          font-weight: 850;
-          letter-spacing: 0.7px;
-        }
-
-        .live-badge span {
-          width: 4px;
-          height: 4px;
           border-radius: 50%;
-          background: #cf4d45;
-          animation: pulse 1.5s ease-in-out infinite;
+          background: rgba(255,255,255,.5);
+          font-size: 48px;
+          box-shadow: 0 12px 30px
+            rgba(101, 74, 32, .08);
         }
 
-        .flash-grid {
+        /* STATS */
+
+        .stats {
+          margin-top: 28px;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 13px;
+          gap: 11px;
         }
 
-        .flash-card {
-          overflow: hidden;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 17px;
-          background: #fff;
-          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.04);
-          transition: 0.22s ease;
+        .stat {
+          min-width: 0;
+          padding: 17px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border: 1px solid #eee6da;
+          border-radius: 15px;
+          background: white;
         }
 
-        .flash-card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--pc-shadow-hover);
+        .stat:hover {
+          border-color: #ddc38f;
         }
 
-        .flash-image {
-          position: relative;
-          height: 190px;
-          overflow: hidden;
-          background: #faf8f3;
+        .stat-icon {
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 40px;
+          border-radius: 12px;
         }
 
-        .flash-info {
-          padding: 13px;
+        .stat-icon.gold {
+          color: #a57729;
+          background: #f7ead0;
         }
 
-        .flash-info h3 {
-          margin: 4px 0 7px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 12px;
+        .stat-icon.rose {
+          color: #a85c66;
+          background: #f8e9ea;
         }
 
-        .product-brand {
+        .stat-icon.green {
+          color: #578465;
+          background: #e9f4ec;
+        }
+
+        .stat-icon.purple {
+          color: #7966a0;
+          background: #eeeafa;
+        }
+
+        .stat > div:nth-child(2) {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .stat span,
+        .stat strong,
+        .stat small {
           display: block;
-          color: var(--pc-gold-dark);
-          font-size: 8px;
-          font-weight: 750;
-          letter-spacing: 0.2px;
         }
 
-        .rating-row {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: #c58f35;
+        .stat span {
+          color: #9b907f;
           font-size: 9px;
         }
 
-        .rating-row small {
-          color: #aaa092;
+        .stat strong {
+          margin-top: 3px;
+          color: #43382d;
+          font-size: 18px;
+        }
+
+        .stat small {
+          margin-top: 3px;
+          color: #afa394;
           font-size: 8px;
         }
 
-        .price-row {
-          display: flex;
-          align-items: baseline;
-          gap: 7px;
-          margin-top: 9px;
-        }
-
-        .price-row strong {
-          color: var(--pc-brown);
-          font-size: 14px;
-        }
-
-        .price-row del {
-          color: #aaa092;
-          font-size: 9px;
-        }
-
-        .discount-badge,
-        .flash-label {
-          position: absolute;
-          z-index: 3;
-          top: 10px;
-          padding: 5px 7px;
-          border-radius: 7px;
-          font-size: 7px;
-          font-weight: 850;
-        }
-
-        .discount-badge {
-          left: 10px;
-          background: #fff;
-          color: #ae534b;
-        }
-
-        .flash-label {
-          right: 10px;
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          background: #8e4f44;
-          color: #fff;
-        }
-
-        /* =================================================
-           PRODUCT CARDS
-        ================================================= */
+        /* PRODUCTS */
 
         .product-grid {
           display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          gap: 13px;
+          grid-template-columns: repeat(
+            4,
+            minmax(0, 1fr)
+          );
+          gap: 14px;
         }
 
         .product-card {
           overflow: hidden;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 17px;
-          background: #fff;
-          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.035);
-          transition:
-            transform 0.22s ease,
-            box-shadow 0.22s ease,
-            border-color 0.22s ease;
+          border: 1px solid #eee6da;
+          border-radius: 16px;
+          background: white;
+          transition: .25s;
         }
 
         .product-card:hover {
-          transform: translateY(-5px);
-          border-color: var(--pc-border);
-          box-shadow: var(--pc-shadow-hover);
+          transform: translateY(-4px);
+          border-color: #dec18b;
+          box-shadow: 0 15px 35px
+            rgba(92, 69, 34, .09);
         }
 
-        .product-card-image {
+        .product-image-wrap {
           position: relative;
-          height: 205px;
-          overflow: hidden;
+          height: 230px;
           background: #faf8f3;
         }
 
-        /*
-          IMPORTANT:
-          object-contain keeps the WHOLE ORIGINAL IMAGE visible.
-          It does NOT crop top/bottom/left/right.
-        */
-
-        .product-image-wrapper {
-          position: absolute;
-          inset: 0;
+        .product-image {
+          position: relative;
           width: 100%;
           height: 100%;
-          overflow: hidden;
-          background: #faf8f3;
         }
 
-        .product-image-full {
-          object-fit: contain !important;
-          object-position: center center !important;
-          padding: 10px;
+        .product-image-inner {
+          object-fit: contain;
+          padding: 17px;
         }
 
-        .product-image-fallback {
+        .image-fallback {
           width: 100%;
           height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          color: #b9ad9c;
-          background: #faf8f3;
-        }
-
-        .product-image-fallback span {
-          font-size: 8px;
-        }
-
-        .product-discount {
-          position: absolute;
-          z-index: 4;
-          top: 10px;
-          left: 10px;
-          padding: 5px 7px;
-          border-radius: 7px;
-          background: #fff;
-          color: #a9514a;
-          font-size: 7px;
-          font-weight: 850;
-          box-shadow: 0 4px 10px rgba(64, 45, 20, 0.06);
-        }
-
-        .product-heart {
-          position: absolute;
-          z-index: 4;
-          top: 9px;
-          right: 9px;
-          width: 31px;
-          height: 31px;
           display: grid;
           place-items: center;
-          border-radius: 9px;
-          background: rgba(255, 255, 255, 0.92);
-          color: #8f8170;
-          cursor: pointer;
-          opacity: 0;
-          transform: translateY(-3px);
-          transition: 0.2s ease;
+          color: #c1b6a6;
+          background: #faf8f3;
         }
 
-        .product-card:hover .product-heart {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .product-heart:hover {
-          color: #b95e6b;
-          background: #fff4f5;
-        }
-
-        .low-stock,
-        .out-stock {
+        .discount,
+        .flash-tag {
           position: absolute;
-          z-index: 4;
-          left: 9px;
-          bottom: 9px;
+          top: 10px;
           padding: 5px 7px;
           border-radius: 6px;
-          font-size: 7px;
-          font-weight: 750;
-        }
-
-        .low-stock {
-          background: #fff5df;
-          color: #a5762d;
-        }
-
-        .out-stock {
-          background: #f8e7e7;
-          color: #ad5858;
-        }
-
-        .product-card-body {
-          padding: 13px;
-        }
-
-        .product-card-body h3 {
-          margin: 4px 0 5px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 12px;
-        }
-
-        .product-card-body p {
-          height: 28px;
-          margin: 0 0 7px;
-          overflow: hidden;
-          color: var(--pc-muted);
           font-size: 8px;
-          line-height: 1.5;
+          font-weight: 800;
         }
 
-        .product-bottom {
+        .discount {
+          left: 10px;
+          color: white;
+          background: #b77b27;
+        }
+
+        .flash-tag {
+          right: 10px;
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          color: #a95031;
+          background: #fff0e9;
+        }
+
+        .heart-button {
+          position: absolute;
+          right: 10px;
+          bottom: 10px;
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          border: 1px solid #e8dfd2;
+          border-radius: 50%;
+          color: #776b5c;
+          background: white;
+          z-index: 3;
+        }
+
+        .heart-button:hover {
+          color: #b15c65;
+        }
+
+        .product-body {
+          padding: 14px;
+        }
+
+        .brand {
+          display: block;
+          color: #a28f76;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: .5px;
+          text-transform: uppercase;
+        }
+
+        .product-body h3 {
+          margin: 6px 0 0;
+          overflow: hidden;
+          color: #3d342b;
+          font-size: 12px;
+          line-height: 1.35;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+
+        .product-body p {
+          margin: 6px 0 0;
+          height: 28px;
+          overflow: hidden;
+          color: #958979;
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        .rating {
+          margin-top: 9px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #b98228;
+          font-size: 9px;
+        }
+
+        .rating small {
+          color: #a69a89;
+        }
+
+        .price {
+          margin-top: 10px;
+          display: flex;
+          align-items: baseline;
+          gap: 7px;
+        }
+
+        .price strong {
+          color: #342c25;
+          font-size: 15px;
+        }
+
+        .price del {
+          color: #aaa092;
+          font-size: 9px;
+        }
+
+        .buy-row {
+          margin-top: 11px;
+          padding-top: 10px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 8px;
-          margin-top: 10px;
+          border-top: 1px solid #f2ece4;
+          color: #a37429;
+          font-size: 9px;
+          font-weight: 750;
         }
 
-        .product-price strong {
-          display: block;
-          color: var(--pc-brown);
-          font-size: 13px;
-        }
+        /* TOOLS */
 
-        .product-price del {
-          display: block;
-          margin-top: 2px;
-          color: #aaa092;
-          font-size: 8px;
-        }
-
-        .product-arrow {
-          width: 29px;
-          height: 29px;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-          background: var(--pc-surface-soft);
-          color: var(--pc-gold-dark);
-          transition: 0.2s ease;
-        }
-
-        .product-card:hover .product-arrow {
-          background: var(--pc-gold);
-          color: #fff;
-        }
-
-        /* =================================================
-           CATEGORY PRODUCTS
-        ================================================= */
-
-        .mini-product-grid {
+        .tools-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 12px;
         }
 
-        .mini-product-card {
-          min-height: 105px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 15px;
-          background: #fff;
-          transition: 0.2s ease;
+        .tool-card {
+          padding: 17px;
+          border: 1px solid #eee6da;
+          border-radius: 16px;
+          background: white;
+          transition: .2s;
         }
 
-        .mini-product-card:hover {
+        .tool-card:hover {
           transform: translateY(-3px);
-          box-shadow: var(--pc-shadow);
+          border-color: #dec28d;
+          box-shadow: 0 13px 30px
+            rgba(85, 64, 31, .07);
         }
 
-        .mini-product-image {
-          position: relative;
-          width: 82px;
-          height: 82px;
-          flex: 0 0 82px;
-          overflow: hidden;
-          border-radius: 11px;
-          background: #faf8f3;
-        }
-
-        .mini-product-card > div:last-child {
-          min-width: 0;
-        }
-
-        .mini-product-card span {
-          display: block;
-          color: var(--pc-gold-dark);
-          font-size: 8px;
-        }
-
-        .mini-product-card strong {
-          display: block;
-          margin: 4px 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 10px;
-        }
-
-        .mini-product-card b {
-          color: var(--pc-brown);
-          font-size: 10px;
-        }
-
-        .empty-category {
-          min-height: 150px;
+        .tool-top {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          gap: 5px;
-          border: 1px dashed var(--pc-border);
-          border-radius: 17px;
-          background: rgba(255, 255, 255, 0.55);
-          color: var(--pc-muted);
+          justify-content: space-between;
+          color: #a87b2e;
         }
 
-        .empty-category strong {
-          color: var(--pc-brown);
-          font-size: 12px;
+        .tool-top span {
+          padding: 4px 6px;
+          border-radius: 5px;
+          background: #faf1df;
+          font-size: 7px;
+          font-weight: 850;
         }
 
-        .empty-category span {
+        .tool-icon {
+          width: 43px;
+          height: 43px;
+          margin-top: 17px;
+          display: grid;
+          place-items: center;
+          color: #a7792c;
+          border-radius: 12px;
+          background: #f8efdf;
+        }
+
+        .tool-card h3 {
+          margin: 12px 0 5px;
+          font-size: 14px;
+        }
+
+        .tool-card p {
+          min-height: 30px;
+          margin: 0;
+          color: #968a79;
+          font-size: 9px;
+          line-height: 1.55;
+        }
+
+        .tool-card > strong {
+          margin-top: 13px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #a2742a;
           font-size: 9px;
         }
 
-        /* =================================================
-           FEATURE PANELS
-        ================================================= */
+        /* LARGE FEATURES */
 
-        .feature-grid {
-          display: grid;
-          grid-template-columns: 1.15fr 0.85fr;
-          gap: 13px;
+        .large-feature-grid {
           margin-top: 42px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
         }
 
-        .feature-panel {
+        .large-feature {
+          min-height: 315px;
           position: relative;
-          min-height: 305px;
           overflow: hidden;
-          padding: 30px;
-          border-radius: 22px;
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease;
+          padding: 31px;
+          border-radius: 21px;
         }
 
-        .feature-panel:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--pc-shadow-hover);
+        .large-feature > span {
+          color: rgba(255,255,255,.65);
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1px;
         }
 
-        .prime-match-panel {
-          color: #fff;
+        .large-feature.prime-match {
+          color: white;
           background:
             radial-gradient(
-              circle at 85% 30%,
-              rgba(255, 255, 255, 0.2),
-              transparent 23%
-            ),
-            linear-gradient(
-              130deg,
-              #51432f,
-              #8c713e
-            );
-        }
-
-        .budget-panel {
-          color: var(--pc-brown);
-          background:
-            radial-gradient(
-              circle at 85% 15%,
-              rgba(255, 255, 255, 0.6),
+              circle at 80% 20%,
+              rgba(255,255,255,.18),
               transparent 28%
             ),
             linear-gradient(
               135deg,
-              #f7ead1,
-              #e9d0a1
+              #6e5738,
+              #9e7b45
             );
-          border: 1px solid #e0c796;
         }
 
-        .feature-panel-glow {
-          position: absolute;
-          width: 260px;
-          height: 260px;
-          right: -100px;
-          bottom: -130px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.08);
+        .large-feature.budget {
+          color: #4a3d2d;
+          background:
+            radial-gradient(
+              circle at 90% 20%,
+              rgba(211,173,99,.3),
+              transparent 30%
+            ),
+            #f4ead8;
         }
 
-        .feature-panel-content {
-          position: relative;
-          z-index: 3;
-          max-width: 470px;
+        .budget > span {
+          color: #a77b32;
         }
 
-        .feature-kicker {
-          color: rgba(255, 255, 255, 0.62);
-          font-size: 7px;
-          font-weight: 850;
-          letter-spacing: 1.5px;
-        }
-
-        .budget-panel .feature-kicker {
-          color: #977338;
-        }
-
-        .feature-icon {
-          width: 42px;
-          height: 42px;
+        .large-icon {
+          width: 45px;
+          height: 45px;
+          margin-top: 20px;
           display: grid;
           place-items: center;
-          margin-top: 18px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.12);
-          color: #f3d99e;
+          border-radius: 13px;
+          background: rgba(255,255,255,.14);
         }
 
-        .budget-panel .feature-icon {
-          background: rgba(255, 255, 255, 0.5);
-          color: #936d30;
+        .budget .large-icon {
+          color: #a7792c;
+          background: #ead7b5;
         }
 
-        .feature-panel h2 {
-          margin: 15px 0 8px;
-          font-size: 28px;
-          line-height: 1.06;
+        .large-feature h2 {
+          margin: 14px 0 8px;
+          font-size: 29px;
+          line-height: 1.03;
           letter-spacing: -1px;
         }
 
-        .feature-panel p {
-          max-width: 400px;
-          margin: 0;
-          color: rgba(255, 255, 255, 0.68);
+        .large-feature p {
+          max-width: 350px;
+          color: rgba(255,255,255,.7);
           font-size: 10px;
-          line-height: 1.7;
+          line-height: 1.6;
         }
 
-        .budget-panel p {
-          color: #806a49;
+        .budget p {
+          color: #877965;
         }
 
-        .feature-cta {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          margin-top: 20px;
-          color: #fff;
-          font-size: 10px;
-          font-weight: 750;
-        }
-
-        .budget-panel .feature-cta {
-          color: #73562c;
-        }
-
-        .match-orbit {
+        .large-feature > strong {
           position: absolute;
-          z-index: 1;
-          right: 45px;
-          top: 50%;
-          width: 220px;
-          height: 220px;
-          transform: translateY(-50%);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 50%;
-        }
-
-        .match-orbit::before,
-        .match-orbit::after {
-          content: "";
-          position: absolute;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 50%;
-        }
-
-        .match-orbit::before {
-          inset: 30px;
-        }
-
-        .match-orbit::after {
-          inset: 64px;
-        }
-
-        .orbit-dot {
-          position: absolute;
-          width: 9px;
-          height: 9px;
-          border-radius: 50%;
-          background: #e5c37d;
-          box-shadow: 0 0 0 5px rgba(229, 195, 125, 0.1);
-        }
-
-        .orbit-dot.one {
-          top: 19px;
-          left: 95px;
-        }
-
-        .orbit-dot.two {
-          right: 12px;
-          top: 102px;
-        }
-
-        .orbit-dot.three {
-          bottom: 23px;
-          left: 57px;
-        }
-
-        .orbit-center {
-          position: absolute;
-          inset: 75px;
-          display: grid;
-          place-items: center;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.08);
-          color: #f0d291;
-          box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
-        }
-
-        .budget-panel-top {
+          left: 31px;
+          bottom: 27px;
           display: flex;
           align-items: center;
-          gap: 11px;
-        }
-
-        .budget-panel-top .feature-icon {
-          margin: 0;
-        }
-
-        .budget-visual {
-          max-width: 330px;
-          margin-top: 25px;
+          gap: 6px;
+          font-size: 10px;
         }
 
         .budget-line {
-          height: 7px;
+          position: absolute;
+          left: 31px;
+          right: 31px;
+          bottom: 72px;
+          height: 6px;
           overflow: hidden;
-          border-radius: 999px;
-          background: rgba(118, 87, 37, 0.13);
+          border-radius: 20px;
+          background: #dfd0b5;
         }
 
         .budget-line span {
           display: block;
-          width: 72%;
+          width: 64%;
           height: 100%;
           border-radius: inherit;
-          background: #99712f;
+          background: #b48738;
         }
 
-        .budget-labels {
+        .budget-values {
+          position: absolute;
+          left: 31px;
+          right: 31px;
+          bottom: 83px;
           display: flex;
           justify-content: space-between;
-          margin-top: 7px;
-          color: #94794e;
+          color: #9a896f;
           font-size: 8px;
         }
 
-        /* =================================================
-           TRIPLE
-        ================================================= */
-
-        .triple-feature-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 13px;
-          margin-top: 13px;
+        .orbit {
+          position: absolute;
+          right: 45px;
+          top: 65px;
+          width: 170px;
+          height: 170px;
+          border: 1px solid rgba(255,255,255,.25);
+          border-radius: 50%;
         }
 
-        .small-feature-card {
-          position: relative;
-          min-height: 220px;
-          padding: 20px;
-          overflow: hidden;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 19px;
-          background: #fff;
-          transition: 0.22s ease;
+        .orbit > div {
+          position: absolute;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #f1d596;
         }
 
-        .small-feature-card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--pc-shadow-hover);
+        .orbit > div:nth-child(1) {
+          left: 15px;
+          top: 30px;
         }
 
-        .setup-card {
-          background:
-            radial-gradient(
-              circle at 100% 0%,
-              rgba(202, 168, 98, 0.13),
-              transparent 38%
-            ),
-            #fff;
+        .orbit > div:nth-child(2) {
+          right: 10px;
+          top: 75px;
         }
 
-        .points-card {
-          background:
-            radial-gradient(
-              circle at 100% 0%,
-              rgba(170, 138, 206, 0.12),
-              transparent 40%
-            ),
-            #fff;
+        .orbit > div:nth-child(3) {
+          left: 55px;
+          bottom: 5px;
         }
 
-        .mystery-card {
-          background:
-            radial-gradient(
-              circle at 100% 0%,
-              rgba(217, 180, 93, 0.17),
-              transparent 40%
-            ),
-            #fff;
-        }
-
-        .small-feature-icon {
-          width: 38px;
-          height: 38px;
+        .orbit span {
+          position: absolute;
+          inset: 55px;
           display: grid;
           place-items: center;
-          border-radius: 11px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
+          border-radius: 50%;
+          background: rgba(255,255,255,.12);
         }
 
-        .small-feature-label {
+        /* SMALL FEATURES */
+
+        .small-feature-grid {
+          margin-top: 14px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+        }
+
+        .small-feature {
+          min-height: 190px;
+          padding: 21px;
+          border-radius: 18px;
+          border: 1px solid #eee6da;
+          background: white;
+        }
+
+        .small-feature > svg {
+          color: #b07f2b;
+        }
+
+        .small-feature > span {
           display: block;
-          margin-top: 17px;
-          color: var(--pc-gold-dark);
-          font-size: 7px;
+          margin-top: 13px;
+          color: #a17a38;
+          font-size: 8px;
           font-weight: 850;
-          letter-spacing: 1.3px;
+          letter-spacing: .8px;
         }
 
-        .small-feature-card h3 {
-          margin: 6px 0;
+        .small-feature h3 {
+          margin: 7px 0 5px;
           font-size: 17px;
-          letter-spacing: -0.45px;
         }
 
-        .small-feature-card p {
-          max-width: 260px;
+        .small-feature p {
           margin: 0;
-          color: var(--pc-muted);
+          color: #9a8e7c;
           font-size: 9px;
-          line-height: 1.65;
+          line-height: 1.55;
         }
 
-        .small-feature-arrow {
-          position: absolute;
-          left: 20px;
-          bottom: 19px;
-          display: inline-flex;
+        .small-feature > strong {
+          margin-top: 18px;
+          display: flex;
           align-items: center;
           gap: 5px;
-          color: var(--pc-gold-dark);
+          color: #a3752a;
           font-size: 9px;
-          font-weight: 750;
         }
 
-        .points-mini-bar {
-          max-width: 240px;
+        .points-bar {
           height: 5px;
-          margin-top: 15px;
+          margin-top: 14px;
           overflow: hidden;
-          border-radius: 999px;
-          background: #eee8f6;
+          border-radius: 10px;
+          background: #eee7db;
         }
 
-        .points-mini-bar span {
+        .points-bar span {
           display: block;
           height: 100%;
           border-radius: inherit;
-          background: #8a72b0;
+          background: #b88a3b;
         }
 
-        .mystery-button {
-          position: absolute;
-          left: 20px;
-          bottom: 17px;
+        .mystery button {
+          margin-top: 16px;
+          padding: 8px 11px;
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          min-height: 31px;
-          padding: 0 10px;
-          border-radius: 9px;
-          background: #f5ead5;
-          color: #8c682f;
+          border-radius: 8px;
+          color: #9d7129;
+          background: #fbf3e4;
           font-size: 9px;
           font-weight: 750;
-          cursor: pointer;
-          transition: 0.2s ease;
         }
 
-        .mystery-button:hover {
-          background: #e8d4ad;
-          transform: translateY(-1px);
-        }
+        /* MINI */
 
-        /* =================================================
-           RECENT
-        ================================================= */
-
-        .recent-grid {
+        .mini-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 12px;
         }
 
-        .recent-card {
-          min-width: 0;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 9px;
-          border: 1px solid var(--pc-border-light);
+        .mini-card {
+          padding: 10px;
+          border: 1px solid #eee6da;
           border-radius: 14px;
-          background: #fff;
-          transition: 0.2s ease;
+          background: white;
         }
 
-        .recent-card:hover {
-          transform: translateY(-3px);
-          box-shadow: var(--pc-shadow);
-        }
-
-        .recent-image {
-          position: relative;
-          width: 66px;
-          height: 66px;
-          flex: 0 0 66px;
+        .mini-card > div {
+          height: 150px;
           overflow: hidden;
           border-radius: 10px;
           background: #faf8f3;
         }
 
-        .recent-info {
-          min-width: 0;
-          flex: 1;
+        .mini-card > span,
+        .mini-card > strong,
+        .mini-card > b {
+          display: block;
         }
 
-        .recent-info span {
-          display: block;
-          color: var(--pc-gold-dark);
-          font-size: 7px;
+        .mini-card > span {
+          margin-top: 9px;
+          color: #a09280;
+          font-size: 8px;
         }
 
-        .recent-info strong {
-          display: block;
-          margin: 4px 0;
+        .mini-card > strong {
+          margin-top: 4px;
           overflow: hidden;
-          text-overflow: ellipsis;
           white-space: nowrap;
-          font-size: 10px;
+          text-overflow: ellipsis;
+          font-size: 11px;
         }
 
-        .recent-info b {
-          color: var(--pc-brown);
-          font-size: 10px;
+        .mini-card > b {
+          margin-top: 7px;
+          color: #9d7129;
+          font-size: 11px;
         }
 
-        .recent-card > svg {
-          color: #c0b5a5;
+        .empty {
+          min-height: 160px;
+          display: grid;
+          place-items: center;
+          align-content: center;
+          gap: 8px;
+          color: #a39887;
+          border: 1px dashed #ddd2c1;
+          border-radius: 15px;
         }
 
-        /* =================================================
-           BOTTOM
-        ================================================= */
+        .empty strong {
+          color: #665b4d;
+          font-size: 12px;
+        }
+
+        /* BOTTOM */
 
         .bottom-grid {
+          margin-top: 43px;
           display: grid;
-          grid-template-columns: 1.35fr 0.65fr;
-          gap: 13px;
-          margin-top: 42px;
+          grid-template-columns: 1.5fr .8fr;
+          gap: 14px;
         }
 
-        .dashboard-panel {
+        .panel {
           min-width: 0;
-          padding: 20px;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 20px;
-          background: rgba(255, 255, 255, 0.88);
-          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.035);
+          padding: 21px;
+          border: 1px solid #eee6da;
+          border-radius: 18px;
+          background: white;
         }
 
         .panel-heading {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 10px;
-          margin-bottom: 13px;
+          gap: 15px;
+          margin-bottom: 14px;
         }
 
         .panel-heading h2 {
-          margin: 5px 0 0;
+          margin: 4px 0 0;
           font-size: 17px;
         }
 
-        .panel-heading > svg {
-          color: var(--pc-gold);
-        }
-
-        .orders-list {
+        .orders {
           display: grid;
         }
 
-        .order-row {
-          min-height: 61px;
-          display: grid;
-          grid-template-columns: 35px minmax(120px, 1fr) auto auto 16px;
+        .order {
+          min-height: 60px;
+          display: flex;
           align-items: center;
           gap: 10px;
-          border-top: 1px solid var(--pc-border-light);
+          border-top: 1px solid #f2ede6;
         }
 
         .order-icon {
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
           display: grid;
           place-items: center;
+          flex: 0 0 34px;
+          color: #a8792b;
           border-radius: 9px;
-          background: var(--pc-surface-soft);
-          color: var(--pc-gold-dark);
+          background: #f8efdf;
         }
 
-        .order-info strong {
+        .order > div:nth-child(2) {
+          flex: 1;
+        }
+
+        .order strong,
+        .order span {
           display: block;
+        }
+
+        .order strong {
           font-size: 10px;
         }
 
-        .order-info span {
-          display: block;
+        .order > div:nth-child(2) span {
           margin-top: 3px;
-          color: var(--pc-muted);
+          color: #a19685;
           font-size: 8px;
         }
 
-        .order-status {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          color: #6e665c;
+        .status {
+          padding: 5px 7px;
+          border-radius: 6px;
+          color: #7a6b56;
+          background: #f5f0e8;
           font-size: 8px;
           white-space: nowrap;
         }
 
-        .status-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #d2a44f;
-        }
-
-        .status-dot.delivered,
-        .status-dot.completed {
-          background: #61a873;
-        }
-
-        .status-dot.cancelled,
-        .status-dot.canceled {
-          background: #c96767;
-        }
-
-        .order-price {
-          color: var(--pc-brown);
+        .order > b {
+          color: #453a2f;
           font-size: 10px;
           white-space: nowrap;
         }
 
-        .order-row > svg {
-          color: #c0b5a5;
-        }
-
-        .empty-panel {
-          min-height: 200px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          color: var(--pc-muted);
-          text-align: center;
-        }
-
-        .empty-panel-icon {
-          width: 45px;
-          height: 45px;
+        .empty-orders {
+          min-height: 170px;
           display: grid;
           place-items: center;
-          margin-bottom: 3px;
-          border-radius: 13px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
+          align-content: center;
+          gap: 7px;
+          color: #a39888;
         }
 
-        .empty-panel strong {
-          color: var(--pc-brown);
+        .empty-orders strong {
+          color: #625749;
           font-size: 12px;
         }
 
-        .empty-panel span {
+        .empty-orders span {
           font-size: 9px;
         }
 
-        .empty-panel a {
-          display: inline-flex;
+        .empty-orders a {
+          margin-top: 5px;
+          display: flex;
           align-items: center;
           gap: 5px;
-          margin-top: 7px;
-          color: var(--pc-gold-dark);
+          color: #a3752a;
           font-size: 9px;
           font-weight: 750;
         }
 
         .insight-list {
           display: grid;
-          gap: 8px;
+          gap: 4px;
         }
 
-        .insight-row {
+        .insight-list > div {
+          min-height: 47px;
+          padding: 7px;
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 8px;
-          border-radius: 11px;
+          gap: 9px;
+          border-radius: 10px;
           background: #fcfaf6;
         }
 
-        .insight-icon {
-          width: 31px;
-          height: 31px;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
+        .insight-list svg {
+          color: #ae7e2c;
         }
 
-        .insight-row div:last-child {
+        .insight-list span {
           flex: 1;
+          color: #8e8271;
+          font-size: 9px;
         }
 
-        .insight-row span {
-          display: block;
-          color: var(--pc-muted);
-          font-size: 8px;
-        }
-
-        .insight-row strong {
-          display: block;
-          margin-top: 2px;
+        .insight-list strong {
           font-size: 12px;
         }
 
-        .insight-cta {
+        .insight-button {
+          margin-top: 13px;
           min-height: 38px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          margin-top: 12px;
-          padding: 0 11px;
-          border-radius: 10px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
+          justify-content: center;
+          gap: 6px;
+          border-radius: 9px;
+          color: #966b27;
+          background: #fbf3e4;
           font-size: 9px;
           font-weight: 750;
         }
 
-        /* =================================================
-           BENEFITS
-        ================================================= */
+        /* RESPONSIVE */
 
-        .benefits-strip {
-          min-height: 100px;
-          display: grid;
-          grid-template-columns: repeat(7, auto);
-          align-items: center;
-          justify-content: space-between;
-          gap: 17px;
-          margin-top: 42px;
-          padding: 18px 22px;
-          border: 1px solid var(--pc-border-light);
-          border-radius: 18px;
-          background: #fff;
-        }
-
-        .benefit-item {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-        }
-
-        .benefit-icon {
-          width: 34px;
-          height: 34px;
-          display: grid;
-          place-items: center;
-          flex: 0 0 34px;
-          border-radius: 10px;
-          background: var(--pc-gold-pale);
-          color: var(--pc-gold-dark);
-        }
-
-        .benefit-item strong {
-          display: block;
-          font-size: 9px;
-        }
-
-        .benefit-item span {
-          display: block;
-          margin-top: 3px;
-          color: var(--pc-muted);
-          font-size: 7px;
-        }
-
-        .benefit-divider {
-          width: 1px;
-          height: 35px;
-          background: var(--pc-border-light);
-        }
-
-        /* =================================================
-           FOOTER
-        ================================================= */
-
-        .dashboard-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-          margin-top: 35px;
-          padding-top: 22px;
-          border-top: 1px solid var(--pc-border-light);
-        }
-
-        .footer-brand {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .footer-logo {
-          width: 29px;
-          height: 29px;
-          display: grid;
-          place-items: center;
-          border-radius: 9px;
-          background: var(--pc-gold);
-          color: white;
-          font-size: 12px;
-          font-weight: 850;
-        }
-
-        .footer-brand strong {
-          display: block;
-          font-size: 10px;
-        }
-
-        .footer-brand span {
-          display: block;
-          margin-top: 2px;
-          color: var(--pc-muted);
-          font-size: 7px;
-        }
-
-        .footer-links {
-          display: flex;
-          gap: 16px;
-        }
-
-        .footer-links a {
-          color: var(--pc-muted);
-          font-size: 8px;
-        }
-
-        .footer-links a:hover {
-          color: var(--pc-gold-dark);
-        }
-
-        .footer-copy {
-          color: #b0a494;
-          font-size: 8px;
-        }
-
-        /* =================================================
-           MOBILE OVERLAY
-        ================================================= */
-
-        .mobile-overlay {
-          display: none;
-        }
-
-        /* =================================================
-           ANIMATIONS
-        ================================================= */
-
-        @keyframes heroIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes revealUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes dropdownIn {
-          from {
-            opacity: 0;
-            transform: translateY(-5px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes floating {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-
-        @keyframes rotateSlow {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes rotateSlowReverse {
-          to {
-            transform: rotate(-360deg);
-          }
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-
-          50% {
-            opacity: 0.5;
-            transform: scale(1.3);
-          }
-        }
-
-        /* =================================================
-           RESPONSIVE 1280
-        ================================================= */
-
-        @media (max-width: 1400px) {
+        @media (max-width: 1200px) {
           .product-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
           }
 
-          .category-strip {
-            grid-template-columns: repeat(6, 1fr);
+          .tools-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
 
-          .hero-decoration {
-            right: 31%;
+          .stats {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .mini-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
 
-        @media (max-width: 1180px) {
-          .dashboard-sidebar {
-            width: 225px;
+        @media (max-width: 900px) {
+          .sidebar {
+            transform: translateX(-100%);
+            transition: .25s;
+            box-shadow: 10px 0 35px
+              rgba(0,0,0,.1);
           }
 
-          .dashboard-main {
-            margin-left: 225px;
+          .sidebar.sidebar-open {
+            transform: translateX(0);
           }
 
-          .dashboard-content {
-            padding: 24px;
+          .close-sidebar {
+            display: block;
           }
 
-          .smart-tools-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .main {
+            width: 100%;
+            margin-left: 0;
           }
 
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .mobile-menu {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border: 1px solid #e9e0d4;
+            border-radius: 10px;
+            background: white;
+            color: #675c4e;
           }
 
-          .flash-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .mobile-brand {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #493b2c;
+            font-size: 13px;
+            font-weight: 800;
           }
 
-          .feature-grid {
+          .mobile-brand span {
+            width: 27px;
+            height: 27px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            color: white;
+            background: #b5822b;
+          }
+
+          .search-box {
+            max-width: none;
+          }
+
+          .profile-name,
+          .desktop-only {
+            display: none;
+          }
+
+          .hero {
             grid-template-columns: 1fr;
+          }
+
+          .hero-visual {
+            display: none;
+          }
+
+          .hero-copy {
+            padding: 42px;
           }
 
           .bottom-grid {
             grid-template-columns: 1fr;
           }
 
-          .recent-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .benefits-bar {
+            overflow-x: auto;
+            justify-content: flex-start;
           }
 
-          .benefits-strip {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .benefit-divider {
-            display: none;
+          .benefits-bar div {
+            white-space: nowrap;
           }
         }
-
-        /* =================================================
-           TABLET
-        ================================================= */
-
-        @media (max-width: 980px) {
-          .dashboard-sidebar {
-            transform: translateX(-100%);
-            transition: transform 0.28s ease;
-            box-shadow: 20px 0 50px rgba(50, 37, 20, 0.15);
-          }
-
-          .dashboard-sidebar.sidebar-open {
-            transform: translateX(0);
-          }
-
-          .dashboard-main {
-            margin-left: 0;
-          }
-
-          .mobile-menu-button {
-            display: grid;
-          }
-
-          .mobile-close {
-            display: grid;
-            place-items: center;
-          }
-
-          .mobile-overlay {
-            position: fixed;
-            z-index: 70;
-            inset: 0;
-            display: block;
-            background: rgba(45, 34, 21, 0.28);
-            backdrop-filter: blur(2px);
-          }
-
-          .dashboard-header {
-            padding: 11px 20px;
-          }
-
-          .desktop-action {
-            display: none;
-          }
-
-          .product-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .mini-product-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        /* =================================================
-           MOBILE
-        ================================================= */
 
         @media (max-width: 700px) {
-          .dashboard-header {
-            min-height: 68px;
+          .top-header {
             padding: 10px 14px;
-            gap: 8px;
           }
 
           .header-left {
             gap: 8px;
           }
 
-          .mobile-menu-button {
-            width: 38px;
-            height: 38px;
-            flex: 0 0 38px;
+          .mobile-brand {
+            display: none;
           }
 
-          .header-search-wrap {
-            width: 100%;
-          }
-
-          .header-search {
-            height: 40px;
-            padding-left: 38px;
-            padding-right: 34px;
-            font-size: 10px;
-          }
-
-          .header-search-icon {
-            left: 12px;
-            width: 16px;
-          }
-
-          .header-right {
+          .header-actions {
             gap: 5px;
           }
 
-          .header-icon-button {
-            width: 37px;
-            height: 37px;
+          .header-button {
+            width: 36px;
+            height: 36px;
           }
 
-          .header-profile {
-            padding-right: 0;
+          .profile-button {
+            width: 38px;
+            padding: 2px;
           }
 
-          .header-profile-copy,
-          .header-profile > svg {
+          .profile-button > svg {
             display: none;
           }
 
-          .notification-dropdown {
-            right: 55px;
-            width: min(275px, calc(100vw - 30px));
+          .content {
+            padding: 18px 14px 45px;
           }
 
-          .dashboard-content {
-            padding: 15px 13px 30px;
+          .benefits-bar {
+            padding: 0 14px;
           }
 
-          .hero-banner-frame {
-            height: 230px;
-            border-radius: 19px;
+          .hero {
+            min-height: 400px;
+            border-radius: 18px;
           }
 
-          .hero-banner-arrow {
-            width: 34px;
-            height: 34px;
+          .hero-copy {
+            padding: 31px 24px;
           }
 
-          .hero-banner-prev {
-            left: 10px;
+          .hero h1 {
+            font-size: 42px;
+            letter-spacing: -1.8px;
           }
 
-          .hero-banner-next {
-            right: 10px;
+          .hero-copy p {
+            font-size: 12px;
           }
 
-          .hero-banner-dots {
-            bottom: 10px;
-          }
-
-          .hero-banner-count {
-            display: none;
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+          .hero-trust {
+            display: grid;
             gap: 8px;
-            margin-top: 10px;
           }
 
-          .stat-card {
-            min-height: 91px;
-            padding: 11px;
-            gap: 8px;
+          .deal-banner-grid,
+          .large-feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .deal-banner {
+            min-height: 175px;
+            padding: 23px;
+          }
+
+          .deal-art {
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            font-size: 34px;
+          }
+
+          .stats {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .stat {
+            padding: 12px;
           }
 
           .stat-icon {
@@ -5106,289 +4297,147 @@ export default function DashboardPage() {
             flex-basis: 34px;
           }
 
-          .stat-content strong {
-            font-size: 14px;
-          }
-
-          .stat-content small {
-            font-size: 7px;
-          }
-
-          .section {
-            margin-top: 31px;
-          }
-
-          .section-heading {
-            align-items: flex-start;
-            margin-bottom: 12px;
-          }
-
-          .section-heading h2 {
-            font-size: 17px;
-          }
-
-          .section-heading p {
-            font-size: 9px;
-          }
-
-          .smart-tools-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-          }
-
-          .smart-tool-card {
-            min-height: 195px;
-            padding: 13px;
-          }
-
-          .smart-tool-icon {
-            margin-top: 17px;
-            width: 37px;
-            height: 37px;
-          }
-
-          .smart-tool-card h3 {
-            font-size: 13px;
-          }
-
-          .smart-tool-card p {
-            font-size: 8px;
-          }
-
-          .smart-tool-link {
-            left: 13px;
-            bottom: 13px;
-          }
-
-          .category-strip {
-            display: flex;
-            overflow-x: auto;
-            gap: 7px;
-            padding-bottom: 5px;
-            scrollbar-width: none;
-          }
-
-          .category-strip::-webkit-scrollbar {
-            display: none;
-          }
-
-          .category-card {
-            min-width: 83px;
-            min-height: 92px;
-            flex: 0 0 83px;
-          }
-
-          .category-emoji {
-            width: 34px;
-            height: 34px;
-            font-size: 16px;
-          }
-
-          .flash-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-          }
-
-          .flash-image {
-            height: 145px;
-          }
-
-          .flash-info {
-            padding: 10px;
-          }
-
-          .flash-info h3 {
-            font-size: 10px;
-          }
-
-          .price-row strong {
-            font-size: 11px;
+          .stat strong {
+            font-size: 15px;
           }
 
           .product-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
           }
 
-          .product-card-image {
-            height: 165px;
+          .product-image-wrap {
+            height: 175px;
           }
 
-          .product-image-full {
-            padding: 8px;
-          }
-
-          .product-card-body {
+          .product-body {
             padding: 10px;
           }
 
-          .product-card-body h3 {
+          .product-body h3 {
             font-size: 10px;
           }
 
-          .product-card-body p {
-            font-size: 7px;
-          }
-
-          .product-heart {
-            opacity: 1;
-            transform: none;
-            width: 28px;
-            height: 28px;
-          }
-
-          .feature-grid {
-            margin-top: 31px;
-          }
-
-          .feature-panel {
-            min-height: 300px;
-            padding: 22px;
-            border-radius: 19px;
-          }
-
-          .feature-panel h2 {
-            font-size: 24px;
-          }
-
-          .feature-panel p {
-            max-width: 65%;
-          }
-
-          .match-orbit {
-            right: -80px;
-            opacity: 0.55;
-          }
-
-          .triple-feature-grid {
-            grid-template-columns: 1fr;
-            gap: 8px;
-          }
-
-          .small-feature-card {
-            min-height: 190px;
-          }
-
-          .recent-grid {
-            grid-template-columns: 1fr;
-            gap: 8px;
-          }
-
-          .mini-product-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .order-row {
-            grid-template-columns: 34px minmax(80px, 1fr) auto 16px;
-          }
-
-          .order-status {
+          .product-body p {
             display: none;
+          }
+
+          .price strong {
+            font-size: 13px;
+          }
+
+          .tools-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+
+          .tool-card {
+            padding: 13px;
+          }
+
+          .small-feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .small-feature {
+            min-height: 155px;
+          }
+
+          .orbit {
+            opacity: .5;
+            right: -35px;
+          }
+
+          .large-feature {
+            min-height: 290px;
           }
 
           .bottom-grid {
-            margin-top: 31px;
+            margin-top: 30px;
           }
 
-          .benefits-strip {
-            grid-template-columns: 1fr;
-            gap: 13px;
-            padding: 16px;
+          .order {
+            gap: 7px;
           }
 
-          .benefit-divider {
+          .order .status,
+          .order > b {
             display: none;
           }
 
-          .dashboard-footer {
-            flex-direction: column;
-            align-items: flex-start;
+          .notification-menu {
+            right: 10px;
+            width: calc(100vw - 28px);
           }
 
-          .footer-links {
-            flex-wrap: wrap;
-          }
-
-          .footer-copy {
-            order: 3;
-          }
-
-          .search-results {
-            position: fixed;
-            top: 62px;
-            left: 12px;
-            right: 12px;
-            width: auto;
+          .profile-menu {
+            right: -5px;
           }
         }
 
-        /* =================================================
-           SMALL MOBILE
-        ================================================= */
-
-        @media (max-width: 430px) {
-          .header-right .header-icon-button {
-            display: none;
+        @media (max-width: 420px) {
+          .search-box {
+            height: 39px;
+            padding: 0 10px;
           }
 
-          .header-right .header-profile {
+          .header-button {
+            width: 34px;
+            height: 34px;
+          }
+
+          .hero h1 {
+            font-size: 36px;
+          }
+
+          .stats {
+            grid-template-columns: 1fr;
+          }
+
+          .category-scroll {
             display: flex;
+            overflow-x: auto;
+            padding-bottom: 5px;
           }
 
-          .stats-grid {
+          .category {
+            min-width: 95px;
+            flex: 0 0 95px;
+          }
+
+          .product-grid {
             grid-template-columns: 1fr 1fr;
           }
 
-          .stat-card {
-            min-width: 0;
-          }
-
-          .stat-content strong {
-            max-width: 90px;
-          }
-
-          .smart-tool-card {
-            min-height: 185px;
-          }
-
-          .product-card-image {
+          .product-image-wrap {
             height: 150px;
           }
 
-          .flash-image {
-            height: 135px;
-          }
-
-          .hero-banner-frame {
-            height: 185px;
-            border-radius: 17px;
-          }
-
-          .hero-banner-arrow {
-            width: 31px;
-            height: 31px;
-          }
-
-          .hero-banner-arrow svg {
-            width: 17px;
-          }
-        }
-
-        /* =================================================
-           REDUCED MOTION
-        ================================================= */
-
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            scroll-behavior: auto !important;
-            transition-duration: 0.01ms !important;
+          .tools-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
     </div>
+  );
+}
+
+function CheckMark() {
+  return (
+    <span
+      style={{
+        width: 15,
+        height: 15,
+        display: "inline-grid",
+        placeItems: "center",
+        borderRadius: "50%",
+        color: "#8b672c",
+        background: "#e9d6ad",
+        fontSize: 9,
+        fontWeight: 900,
+      }}
+    >
+      ✓
+    </span>
   );
 }
