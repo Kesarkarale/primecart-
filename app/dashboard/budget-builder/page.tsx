@@ -205,57 +205,56 @@ function ProductImage({
   alt: string;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [hasFailed, setHasFailed] = useState(false);
 
-  useEffect(() => {
-    setFailed(false);
+  const imageSources = useMemo(() => {
+    if (!src) return [];
+
+    const value = src.trim();
+
+    if (!value) return [];
+
+    if (/^https?:\/\//i.test(value)) {
+      return [value];
+    }
+
+    const clean = value.replace(/^\/+/, "");
+
+    return [
+      `/${clean}`,
+      `/products/${clean}`,
+      `/product-images/${clean}`,
+      `/images/products/${clean}`,
+    ];
   }, [src]);
 
-  if (!src || failed) {
+  useEffect(() => {
+    setImageIndex(0);
+    setHasFailed(false);
+  }, [src]);
+
+  if (imageSources.length === 0 || hasFailed) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[#faf8f3] text-[#c79a3b]">
-        <ShoppingBag size={30} strokeWidth={1.5} />
+        <ShoppingBag size={32} strokeWidth={1.5} />
       </div>
     );
   }
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-  const [index, setIndex] = useState(0);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setIndex(0);
-    setFailed(false);
-  }, [src]);
-
-  if (!candidates.length || failed) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-gray-300">
-        <ShoppingBag size={32} />
-      </div>
-    );
-  }
+  const currentImage = imageSources[imageIndex];
 
   return (
     <img
-      src={candidates[index]}
+      src={currentImage}
       alt={alt}
       className={className}
       loading="lazy"
       onError={() => {
-        if (index < candidates.length - 1) {
-          setIndex((current) => current + 1);
+        if (imageIndex < imageSources.length - 1) {
+          setImageIndex((prev) => prev + 1);
         } else {
-          setFailed(true);
+          setHasFailed(true);
         }
       }}
     />
