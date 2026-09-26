@@ -109,21 +109,13 @@ function getImageUrl(value: string | null) {
   if (!value) return null;
 
   const image = value.trim();
-
   if (!image) return null;
 
-  if (
-    image.startsWith("http://") ||
-    image.startsWith("https://")
-  ) {
+  if (/^https?:\/\//i.test(image)) {
     return image;
   }
 
-  if (image.startsWith("/")) {
-    return image;
-  }
-
-  return `/${image}`;
+  return `/products/${image.replace(/^\/+/, "")}`;
 }
 
 function formatPrice(value: number) {
@@ -213,25 +205,29 @@ function ProductImage({
   alt: string;
   className?: string;
 }) {
-  const candidates = useMemo(() => {
-    if (!src) return [];
+  const [failed, setFailed] = useState(false);
 
-    const value = src.trim();
-    if (!value) return [];
-
-    if (/^https?:\/\//i.test(value) || value.startsWith("/")) {
-      return [value];
-    }
-
-    const clean = value.replace(/^\/+/, "");
-
-    return [
-      `/${clean}`,
-      `/products/${clean}`,
-      `/product-images/${clean}`,
-      `/images/products/${clean}`,
-    ];
+  useEffect(() => {
+    setFailed(false);
   }, [src]);
+
+  if (!src || failed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[#faf8f3] text-[#c79a3b]">
+        <ShoppingBag size={30} strokeWidth={1.5} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState(false);
