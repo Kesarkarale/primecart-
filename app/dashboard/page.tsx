@@ -25,8 +25,6 @@ import {
   AlertCircle,
   CloudUpload,
 } from "lucide-react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import type {
   ChangeEvent,
   DragEvent,
@@ -76,19 +74,7 @@ const API_URL = (
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
-const HERO_BANNERS = [
-  { image: "/banner/hero-banner.png", link: "/categories/fashion" },
-  { image: "/banner/hero-banner2.png", link: "/categories/electronics" },
-  { image: "/banner/hero-banner3.png", link: "/categories/home-living" },
-  { image: "/banner/hero-banner4.png", link: "/categories/beauty" },
-  { image: "/banner/hero-banner5.png", link: "/categories/fashion" },
-  { image: "/banner/hero-banner6.png", link: "/categories/electronics" },
-];
-
 export default function FilesPage() {
-  const router = useRouter();
-  const [heroCurrent, setHeroCurrent] = useState(0);
-
   const [files, setFiles] = useState<FileItem[]>([]);
 
   const [search, setSearch] = useState("");
@@ -132,14 +118,6 @@ export default function FilesPage() {
 
   const fileInputRef =
     useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setHeroCurrent((prev) => (prev + 1) % HERO_BANNERS.length);
-    }, 4000);
-
-    return () => window.clearInterval(interval);
-  }, []);
 
   const showToast = useCallback(
     (
@@ -728,43 +706,24 @@ export default function FilesPage() {
 
   return (
     <DashboardShell>
-      <div className="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+      <div className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
 
         {/* =====================================
-            HERO BANNER
+            PRIME CART HERO BANNER - UI ONLY
         ====================================== */}
-
-        <section className="mb-7 overflow-hidden rounded-[30px] shadow-xl">
-          <div className="relative w-full overflow-hidden rounded-[30px] aspect-[16/6] min-h-[150px] sm:min-h-[190px] md:min-h-[240px] lg:min-h-[300px] xl:min-h-[340px]">
-            {HERO_BANNERS.map((banner, index) => (
-              <Image
-                key={banner.image}
-                src={banner.image}
-                alt={`PrimeCart banner ${index + 1}`}
-                fill
-                priority={index === 0}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 92vw, 1500px"
-                onClick={() => router.push(banner.link)}
-                className={`cursor-pointer object-cover transition-opacity duration-700 ${
-                  heroCurrent === index ? "opacity-100" : "opacity-0"
-                }`}
-              />
-            ))}
-
-            <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:bottom-5">
-              {HERO_BANNERS.map((banner, index) => (
-                <button
-                  key={`${banner.image}-dot`}
-                  type="button"
-                  aria-label={`Show banner ${index + 1}`}
-                  onClick={() => setHeroCurrent(index)}
-                  className={`h-2 rounded-full transition-all ${
-                    heroCurrent === index
-                      ? "w-8 bg-white"
-                      : "w-2 bg-white/60 hover:bg-white/80"
-                  }`}
-                />
-              ))}
+        <section className="mb-6 overflow-hidden rounded-[28px] border border-[#eadfca] bg-[#fffdf8] shadow-[0_12px_40px_rgba(120,90,30,0.10)] dark:border-[#3a3120] dark:bg-[#11100d]">
+          <div className="relative w-full overflow-hidden">
+            <img
+              src="/banner/hero-banner.png"
+              alt="PrimeCart shopping banner"
+              className="block h-auto max-h-[400px] min-h-[170px] w-full object-cover object-center sm:min-h-[230px] md:min-h-[290px] lg:min-h-[350px]"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fffdf8]/10 via-transparent to-[#fffdf8]/5 dark:from-black/10 dark:to-black/20" />
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 sm:bottom-5">
+              <span className="h-2 w-7 rounded-full bg-white shadow-sm" />
+              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
+              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
+              <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
             </div>
           </div>
         </section>
@@ -777,11 +736,11 @@ export default function FilesPage() {
 
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10">
-                <HardDrive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
+                <HardDrive className="h-4 w-4 text-[#b8872d] dark:text-[#d4af37]" />
               </div>
 
-              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              <span className="text-sm font-semibold text-[#b8872d] dark:text-[#d4af37]">
                 Cloud Storage
               </span>
             </div>
@@ -804,7 +763,7 @@ export default function FilesPage() {
                 setShowUpload(true)
               }
               disabled={uploading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -823,7 +782,7 @@ export default function FilesPage() {
             STORAGE
         ====================================== */}
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#ececec] bg-white shadow-sm dark:border-[#222] dark:bg-[#0d0d0d]">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
 
           <div className="p-5 sm:p-6">
 
@@ -831,8 +790,8 @@ export default function FilesPage() {
 
               <div className="flex items-center gap-4">
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10">
-                  <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
+                  <HardDrive className="h-5 w-5 text-[#b8872d] dark:text-[#d4af37]" />
                 </div>
 
                 <div>
@@ -869,7 +828,7 @@ export default function FilesPage() {
 
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                   <div
-                    className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                    className="h-full rounded-full bg-[#c99718] transition-all duration-500"
                     style={{
                       width: `${storagePercentage}%`,
                     }}
@@ -898,7 +857,7 @@ export default function FilesPage() {
                 )
               }
               placeholder="Search your files..."
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c99718] focus:ring-4 focus:ring-[#c99718]/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
             />
 
             {search && (
@@ -928,7 +887,7 @@ export default function FilesPage() {
                       | "size"
                   )
                 }
-                className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-[#c99718] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
               >
                 <option value="recent">
                   Recently modified
@@ -977,7 +936,7 @@ export default function FilesPage() {
                 aria-label="Grid view"
                 className={`flex w-10 items-center justify-center rounded-lg transition ${
                   view === "grid"
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400"
                     : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
                 }`}
               >
@@ -992,7 +951,7 @@ export default function FilesPage() {
                 aria-label="List view"
                 className={`flex w-10 items-center justify-center rounded-lg transition ${
                   view === "list"
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400"
                     : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
                 }`}
               >
@@ -1007,7 +966,7 @@ export default function FilesPage() {
         ====================================== */}
 
         <div className="mt-7 flex items-center gap-2 text-sm">
-          <FolderOpen className="h-4 w-4 text-blue-500" />
+          <FolderOpen className="h-4 w-4 text-[#b8872d]" />
 
           <span className="font-semibold text-slate-900 dark:text-white">
             My Files
@@ -1069,7 +1028,7 @@ export default function FilesPage() {
             )}
           </div>
         ) : (
-          <div className="mt-5 overflow-hidden rounded-2xl border border-[#ececec] bg-white shadow-sm dark:border-[#222] dark:bg-[#0d0d0d]">
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
 
             <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
               <span>Name</span>
@@ -1215,14 +1174,14 @@ function FileCard({
   deleting: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-[#ececec] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37] hover:shadow-lg hover:shadow-[#D4AF37]/10 dark:border-[#222] dark:bg-[#0d0d0d] dark:hover:border-[#D4AF37]/50 dark:hover:shadow-black/20">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#ead9a8] hover:shadow-lg hover:shadow-slate-200/50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-[#c99718]/30 dark:hover:shadow-black/20">
 
       <div className="flex items-start justify-between">
 
         <button
           type="button"
           onClick={onClick}
-          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#D4AF37] group-hover:text-white dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#D4AF37] dark:group-hover:text-white"
+          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#faf4df] group-hover:text-[#b8872d] dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#faf4df]0/10 dark:group-hover:text-blue-400"
         >
           <FileIcon
             type={file.type}
@@ -1276,7 +1235,7 @@ function FileCard({
             downloading ||
             deleting
           }
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-blue-600 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-blue-400"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-[#b8872d] disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-blue-400"
         >
           {downloading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1374,7 +1333,7 @@ function ListFile({
             deleting
           }
           title="Download"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#faf4df] hover:text-[#b8872d] disabled:opacity-50 dark:hover:bg-[#faf4df]0/10 dark:hover:text-blue-400"
         >
           {downloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1459,11 +1418,11 @@ function EmptyState({
   return (
     <div className="mt-6 flex min-h-[430px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-white/[0.03]">
 
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#faf4df] dark:bg-[#c99718]/10">
         {search ? (
-          <Search className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+          <Search className="h-7 w-7 text-[#b8872d] dark:text-[#d4af37]" />
         ) : (
-          <CloudUpload className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <CloudUpload className="h-8 w-8 text-[#b8872d] dark:text-[#d4af37]" />
         )}
       </div>
 
@@ -1483,7 +1442,7 @@ function EmptyState({
         <button
           type="button"
           onClick={onUpload}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0"
         >
           <Upload className="h-4 w-4" />
           Upload files
@@ -1579,11 +1538,11 @@ function UploadModal({
     >
       <div className="text-center">
 
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-500/10">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf4df] dark:bg-[#c99718]/10">
           {uploading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-[#b8872d] dark:text-[#d4af37]" />
           ) : (
-            <Upload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <Upload className="h-6 w-6 text-[#b8872d] dark:text-[#d4af37]" />
           )}
         </div>
 
@@ -1614,8 +1573,8 @@ function UploadModal({
               onDrop={onDrop}
               className={`mt-6 rounded-2xl border-2 border-dashed px-6 py-10 transition ${
                 dragActive
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10"
-                  : "border-slate-200 hover:border-blue-400 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
+                  ? "border-[#c99718] bg-[#faf4df] dark:bg-[#c99718]/10"
+                  : "border-slate-200 hover:border-[#d4af37] hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
               }`}
             >
               <CloudUpload className="mx-auto h-9 w-9 text-slate-400" />
@@ -1633,7 +1592,7 @@ function UploadModal({
                 onClick={() =>
                   inputRef.current?.click()
                 }
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#faf4df]0"
               >
                 <Upload className="h-4 w-4" />
                 Choose files
@@ -1660,14 +1619,14 @@ function UploadModal({
                 Upload progress
               </span>
 
-              <span className="font-bold text-blue-600 dark:text-blue-400">
+              <span className="font-bold text-[#b8872d] dark:text-[#d4af37]">
                 {progress}%
               </span>
             </div>
 
             <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
               <div
-                className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                className="h-full rounded-full bg-[#c99718] transition-all duration-300"
                 style={{
                   width: `${progress}%`,
                 }}
@@ -1704,7 +1663,7 @@ function FileDetailsModal({
 
       <div className="flex items-start gap-4 pr-8">
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] text-[#b8872d] dark:bg-[#faf4df]0/10 dark:text-blue-400">
           <FileIcon
             type={file.type}
           />
@@ -1761,7 +1720,7 @@ function FileDetailsModal({
             downloading ||
             deleting
           }
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c99718] py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#faf4df]0 disabled:opacity-60"
         >
           {downloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1795,7 +1754,7 @@ function FileDetailsModal({
         </button>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 dark:border-blue-500/10 dark:bg-blue-500/5 dark:text-blue-300">
+      <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ead9a8] bg-[#faf4df] p-3 text-xs text-blue-700 dark:border-[#c99718]/10 dark:bg-[#faf4df]0/5 dark:text-[#e0c46a]">
         <Share2 className="h-4 w-4 shrink-0" />
 
         <span>
