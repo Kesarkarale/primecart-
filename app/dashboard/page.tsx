@@ -1,941 +1,1618 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  Archive,
-  Check,
+  ArrowRight,
+  BadgeCheck,
+  Bell,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
-  Download,
-  File as FileIconLucide,
-  FileImage,
-  FileText,
-  Folder,
-  FolderOpen,
   Grid2X2,
-  HardDrive,
-  List,
-  Loader2,
-  MoreHorizontal,
-  RefreshCw,
+  Heart,
+  Menu,
+  Moon,
   Search,
-  Share2,
-  Trash2,
-  Upload,
+  ShoppingBag,
+  ShoppingCart,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Sun,
+  Tag,
+  Truck,
+  User,
   X,
-  AlertCircle,
-  CloudUpload,
+  Zap,
+  ShieldCheck,
+  RotateCcw,
+  PackageCheck,
+  Gift,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
-import type {
-  ChangeEvent,
-  DragEvent,
-  KeyboardEvent,
-  MouseEvent,
-  ReactNode,
-  RefObject,
-} from "react";
+import { createClient } from "@supabase/supabase-js";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+type Product = {
+  id: string;
+  category_id: string | null;
+  name: string;
+  slug: string | null;
+  short_description: string | null;
+  description: string | null;
+  price: number;
+  original_price: number | null;
+  stock: number;
+  image_url: string | null;
+  brand: string | null;
+  rating: number | null;
+  reviews_count: number | null;
+  is_featured: boolean;
+  is_flash_sale: boolean;
+};
 
-type FileType =
-  | "folder"
-  | "pdf"
-  | "image"
-  | "document"
-  | "zip";
-
-type FileItem = {
+type Category = {
   id: string;
   name: string;
-  type: FileType;
-  size: number;
-  fileType?: string;
-  modified: string;
-  modifiedAt: number;
 };
 
-type ToastType = "success" | "error";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-type ToastState = {
-  type: ToastType;
-  message: string;
+const supabase = createClient(
+  supabaseUrl,
+  supabaseKey
+);
+
+const gold = "#b8872d";
+
+const categoryIcons: Record<string, string> = {
+  mobile: "📱",
+  smartphones: "📱",
+  home: "🏠",
+  appliance: "⚙️",
+  appliances: "⚙️",
+  footwear: "👟",
+  shoes: "👟",
+  watch: "⌚",
+  watches: "⌚",
+  bag: "👜",
+  bags: "👜",
+  toy: "🧸",
+  baby: "🧸",
+  automotive: "🚗",
+  fashion: "👗",
+  gaming: "🎮",
+  electronics: "💻",
+  beauty: "✨",
+  books: "📚",
 };
 
-const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080"
-).replace(/\/$/, "");
+function formatPrice(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+function discountPercent(
+  price: number,
+  originalPrice: number | null
+) {
+  if (!originalPrice || originalPrice <= price) return 0;
 
-export default function FilesPage() {
-  const [files, setFiles] = useState<FileItem[]>([]);
+  return Math.round(
+    ((originalPrice - price) / originalPrice) * 100
+  );
+}
 
-  const [search, setSearch] = useState("");
+function imageUrl(value: string | null) {
+  if (!value) return null;
 
-  const [view, setView] =
-    useState<"grid" | "list">("grid");
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/")
+  ) {
+    return value;
+  }
 
-  const [sortBy, setSortBy] =
-    useState<"recent" | "name" | "size">(
-      "recent"
-    );
+  return `/products/${value}`;
+}
+
+function getCategoryIcon(name: string) {
+  const key = name.toLowerCase().trim();
+
+  for (const [item, icon] of Object.entries(categoryIcons)) {
+    if (key.includes(item)) {
+      return icon;
+    }
+  }
+
+  return "🛍️";
+}
+
+export default function DashboardPage() {
+  const router = useRouter();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] =
+    useState(true);
 
-  const [refreshing, setRefreshing] =
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("featured");
+
+  const [view, setView] = useState<"grid" | "list">("grid");
+
+  const [wishlist, setWishlist] = useState<string[]>([]);
+
+  const [cartCount, setCartCount] = useState(0);
+
+  const [darkMode, setDarkMode] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  const [toast, setToast] = useState<string | null>(null);
+
+  const [showAllCategories, setShowAllCategories] =
     useState(false);
 
-  const [uploading, setUploading] =
-    useState(false);
-
-  const [uploadProgress, setUploadProgress] =
-    useState(0);
-
-  const [showUpload, setShowUpload] =
-    useState(false);
-
-  const [selectedFile, setSelectedFile] =
-    useState<FileItem | null>(null);
-
-  const [dragActive, setDragActive] =
-    useState(false);
-
-  const [toast, setToast] =
-    useState<ToastState | null>(null);
-
-  const [deletingId, setDeletingId] =
-    useState<string | null>(null);
-
-  const [downloadingId, setDownloadingId] =
-    useState<string | null>(null);
-
-  const fileInputRef =
-    useRef<HTMLInputElement>(null);
-
-  const showToast = useCallback(
-    (
-      type: ToastType,
-      message: string
-    ) => {
-      setToast({
-        type,
-        message,
-      });
-
-      window.setTimeout(() => {
-        setToast(null);
-      }, 3500);
+  const heroSlides = [
+    {
+      eyebrow: "PRIME DEALS",
+      title: "Shop smarter.",
+      highlight: "Live better.",
+      text: "Premium products, better prices and a shopping experience designed around you.",
+      button: "Explore Products",
+      href: "#products",
     },
-    []
-  );
-
-  /* =========================================
-     AUTH TOKEN
-  ========================================= */
-
-  const getToken = useCallback(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    return (
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("jwt")
-    );
-  }, []);
-
-  /* =========================================
-     API REQUEST
-  ========================================= */
-
-  const apiRequest = useCallback(
-    async (
-      endpoint: string,
-      options: RequestInit = {}
-    ) => {
-      const token = getToken();
-
-      if (!token) {
-        throw new Error(
-          "Please login again to access your files."
-        );
-      }
-
-      const headers = new Headers(
-        options.headers
-      );
-
-      headers.set(
-        "Authorization",
-        `Bearer ${token}`
-      );
-
-      const response = await fetch(
-        `${API_URL}${endpoint}`,
-        {
-          ...options,
-          headers,
-        }
-      );
-
-      if (!response.ok) {
-        let message =
-          `Request failed (${response.status})`;
-
-        try {
-          const contentType =
-            response.headers.get(
-              "content-type"
-            );
-
-          if (
-            contentType?.includes(
-              "application/json"
-            )
-          ) {
-            const data =
-              await response.json();
-
-            message =
-              data?.message ||
-              data?.error ||
-              message;
-          } else {
-            const text =
-              await response.text();
-
-            if (text.trim()) {
-              message = text;
-            }
-          }
-        } catch {
-          // Keep default error.
-        }
-
-        if (
-          response.status === 401 ||
-          response.status === 403
-        ) {
-          throw new Error(
-            "Your session has expired. Please login again."
-          );
-        }
-
-        throw new Error(message);
-      }
-
-      return response;
+    {
+      eyebrow: "PRIME MATCH",
+      title: "Find what fits",
+      highlight: "your budget.",
+      text: "Discover products based on your needs, priorities and spending range.",
+      button: "Try PrimeMatch",
+      href: "/dashboard/prime-match",
     },
-    [getToken]
-  );
-
-  /* =========================================
-     NORMALIZE BACKEND FILE
-  ========================================= */
-
-  const normalizeFile = useCallback(
-    (item: any): FileItem => {
-      const rawName =
-        item?.fileName ??
-        item?.name ??
-        "Unnamed file";
-
-      const rawSize =
-        item?.fileSize ??
-        item?.size ??
-        0;
-
-      const numericSize =
-        typeof rawSize === "number"
-          ? rawSize
-          : Number(rawSize) || 0;
-
-      const rawType =
-        item?.fileType ??
-        item?.contentType ??
-        "";
-
-      const type =
-        getFileTypeFromName(
-          rawName
-        );
-
-      const modified =
-        item?.updatedAt ??
-        item?.createdAt ??
-        item?.modifiedAt ??
-        item?.uploadedAt ??
-        "";
-
-      return {
-        id: String(
-          item?.id ??
-            item?.fileId ??
-            crypto.randomUUID()
-        ),
-        name: rawName,
-        type,
-        size: numericSize,
-        fileType:
-          typeof rawType === "string"
-            ? rawType
-            : undefined,
-        modified:
-          formatModifiedDate(
-            modified
-          ),
-        modifiedAt:
-          getTimestamp(modified),
-      };
+    {
+      eyebrow: "FLASH SALE",
+      title: "Limited time.",
+      highlight: "Exclusive prices.",
+      text: "Grab selected products before the timer runs out.",
+      button: "Shop Deals",
+      href: "#deals",
     },
-    []
-  );
+  ];
 
-  /* =========================================
-     LOAD FILES
-  ========================================= */
-
-  const loadFiles = useCallback(
-    async (
-      showRefreshLoader = false
-    ) => {
-      try {
-        if (showRefreshLoader) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        const response =
-          await apiRequest(
-            "/api/files"
-          );
-
-        const data =
-          await response.json();
-
-        const backendFiles =
-          Array.isArray(data)
-            ? data
-            : data?.files ?? [];
-
-        const normalized =
-          backendFiles.map(
-            normalizeFile
-          );
-
-        setFiles(normalized);
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unable to load files.";
-
-        showToast(
-          "error",
-          message
-        );
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [
-      apiRequest,
-      normalizeFile,
-      showToast,
-    ]
-  );
+  /* =====================================================
+     INITIAL DATA
+  ===================================================== */
 
   useEffect(() => {
-    loadFiles();
-  }, [loadFiles]);
+    async function loadDashboard() {
+      setLoading(true);
+      setCategoriesLoading(true);
 
-  /* =========================================
-     FILTER + SORT
-  ========================================= */
+      const [
+        productsResponse,
+        categoriesResponse,
+      ] = await Promise.all([
+        supabase
+          .from("products")
+          .select(
+            `
+              id,
+              category_id,
+              name,
+              slug,
+              short_description,
+              description,
+              price,
+              original_price,
+              stock,
+              image_url,
+              brand,
+              rating,
+              reviews_count,
+              is_featured,
+              is_flash_sale
+            `
+          )
+          .eq("is_active", true)
+          .order("created_at", {
+            ascending: false,
+          }),
 
-  const filteredFiles = useMemo(() => {
-    const query =
-      search.trim().toLowerCase();
+        supabase
+          .from("categories")
+          .select("id,name")
+          .order("name", {
+            ascending: true,
+          }),
+      ]);
 
-    let result = files.filter(
-      (file) =>
-        !query ||
-        file.name
-          .toLowerCase()
-          .includes(query)
+      if (!productsResponse.error) {
+        setProducts(
+          (productsResponse.data || []) as Product[]
+        );
+      }
+
+      if (!categoriesResponse.error) {
+        setCategories(
+          (categoriesResponse.data || []) as Category[]
+        );
+      }
+
+      setLoading(false);
+      setCategoriesLoading(false);
+    }
+
+    loadDashboard();
+  }, []);
+
+  /* =====================================================
+     LOCAL STORAGE
+  ===================================================== */
+
+  useEffect(() => {
+    try {
+      const savedWishlist =
+        localStorage.getItem("primecart-wishlist");
+
+      const savedCart =
+        localStorage.getItem("primecart-cart-count");
+
+      const savedTheme =
+        localStorage.getItem("primecart-theme");
+
+      if (savedWishlist) {
+        setWishlist(JSON.parse(savedWishlist));
+      }
+
+      if (savedCart) {
+        setCartCount(Number(savedCart) || 0);
+      }
+
+      if (savedTheme === "dark") {
+        setDarkMode(true);
+        document.documentElement.classList.add("dark");
+      }
+    } catch {
+      // Ignore invalid local storage.
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "primecart-wishlist",
+      JSON.stringify(wishlist)
+    );
+  }, [wishlist]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "primecart-cart-count",
+      String(cartCount)
+    );
+  }, [cartCount]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((current) =>
+        current === heroSlides.length - 1
+          ? 0
+          : current + 1
+      );
+    }, 6000);
+
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length]);
+
+  /* =====================================================
+     THEME
+  ===================================================== */
+
+  function toggleTheme() {
+    setDarkMode((current) => {
+      const next = !current;
+
+      if (next) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem(
+          "primecart-theme",
+          "dark"
+        );
+      } else {
+        document.documentElement.classList.remove(
+          "dark"
+        );
+        localStorage.setItem(
+          "primecart-theme",
+          "light"
+        );
+      }
+
+      return next;
+    });
+  }
+
+  /* =====================================================
+     TOAST
+  ===================================================== */
+
+  function showToast(message: string) {
+    setToast(message);
+
+    window.setTimeout(() => {
+      setToast(null);
+    }, 2500);
+  }
+
+  /* =====================================================
+     WISHLIST
+  ===================================================== */
+
+  function toggleWishlist(productId: string) {
+    setWishlist((current) => {
+      const exists = current.includes(productId);
+
+      if (exists) {
+        showToast("Removed from wishlist");
+        return current.filter(
+          (id) => id !== productId
+        );
+      }
+
+      showToast("Added to wishlist");
+      return [...current, productId];
+    });
+  }
+
+  /* =====================================================
+     CART
+  ===================================================== */
+
+  function addToCart(product: Product) {
+    if (product.stock <= 0) {
+      showToast("This product is currently out of stock");
+      return;
+    }
+
+    setCartCount((count) => count + 1);
+
+    showToast(`${product.name} added to cart`);
+  }
+
+  function buyNow(product: Product) {
+    if (product.stock <= 0) {
+      showToast("This product is currently out of stock");
+      return;
+    }
+
+    localStorage.setItem(
+      "primecart-buy-now",
+      JSON.stringify({
+        product,
+        quantity: 1,
+      })
     );
 
-    if (sortBy === "name") {
-      result = [...result].sort(
+    router.push("/checkout");
+  }
+
+  /* =====================================================
+     FILTERING
+  ===================================================== */
+
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    let result = [...products];
+
+    if (category !== "All") {
+      const selected = categories.find(
+        (item) => item.name === category
+      );
+
+      if (selected) {
+        result = result.filter(
+          (product) =>
+            product.category_id === selected.id
+        );
+      }
+    }
+
+    if (query) {
+      result = result.filter((product) => {
+        return (
+          product.name
+            .toLowerCase()
+            .includes(query) ||
+          product.brand
+            ?.toLowerCase()
+            .includes(query) ||
+          product.short_description
+            ?.toLowerCase()
+            .includes(query)
+        );
+      });
+    }
+
+    if (sort === "price-low") {
+      result.sort((a, b) => a.price - b.price);
+    }
+
+    if (sort === "price-high") {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    if (sort === "rating") {
+      result.sort(
         (a, b) =>
-          a.name.localeCompare(
-            b.name
+          (b.rating || 0) - (a.rating || 0)
+      );
+    }
+
+    if (sort === "discount") {
+      result.sort(
+        (a, b) =>
+          discountPercent(
+            b.price,
+            b.original_price
+          ) -
+          discountPercent(
+            a.price,
+            a.original_price
           )
       );
     }
 
-    if (sortBy === "size") {
-      result = [...result].sort(
+    if (sort === "featured") {
+      result.sort(
         (a, b) =>
-          b.size - a.size
-      );
-    }
-
-    if (sortBy === "recent") {
-      result = [...result].sort(
-        (a, b) =>
-          b.modifiedAt - a.modifiedAt
+          Number(b.is_featured) -
+          Number(a.is_featured)
       );
     }
 
     return result;
-  }, [files, search, sortBy]);
+  }, [
+    products,
+    categories,
+    category,
+    search,
+    sort,
+  ]);
 
-  /* =========================================
-     STORAGE
-  ========================================= */
-
-  const usedBytes = useMemo(
+  const featuredProducts = useMemo(
     () =>
-      files.reduce(
-        (total, file) =>
-          total + file.size,
-        0
-      ),
-    [files]
-  );
-
-  const storageLimit =
-    10 * 1024 * 1024 * 1024;
-
-  const storagePercentage = Math.min(
-    100,
-    (usedBytes / storageLimit) * 100
-  );
-
-  const freeBytes = Math.max(
-    0,
-    storageLimit - usedBytes
-  );
-
-  /* =========================================
-     UPLOAD
-  ========================================= */
-
-  async function uploadFiles(
-    selected: globalThis.File[]
-  ) {
-    if (!selected.length) {
-      return;
-    }
-
-    const validFiles =
-      selected.filter(
-        (file) =>
-          file.size <=
-          MAX_FILE_SIZE
-      );
-
-    const rejected =
-      selected.length -
-      validFiles.length;
-
-    if (rejected > 0) {
-      showToast(
-        "error",
-        `${rejected} file${
-          rejected > 1 ? "s" : ""
-        } exceeded the 100 MB limit.`
-      );
-    }
-
-    if (!validFiles.length) {
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    let uploadedCount = 0;
-
-    try {
-      for (
-        const file of validFiles
-      ) {
-        const formData =
-          new FormData();
-
-        formData.append(
-          "file",
-          file
-        );
-
-        await apiRequest(
-          "/api/files/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        uploadedCount++;
-
-        setUploadProgress(
-          Math.round(
-            (uploadedCount /
-              validFiles.length) *
-              100
-          )
-        );
-      }
-
-      showToast(
-        "success",
-        `${uploadedCount} file${
-          uploadedCount > 1
-            ? "s"
-            : ""
-        } uploaded successfully.`
-      );
-
-      setShowUpload(false);
-
-      await loadFiles(true);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Upload failed.";
-
-      showToast(
-        "error",
-        message
-      );
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-
-      if (
-        fileInputRef.current
-      ) {
-        fileInputRef.current.value =
-          "";
-      }
-    }
-  }
-
-  function handleFileUpload(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
-    const selected =
-      event.target.files;
-
-    if (!selected) {
-      return;
-    }
-
-    uploadFiles(
-      Array.from(selected)
-    );
-  }
-
-  function handleDrop(
-    event: DragEvent<HTMLDivElement>
-  ) {
-    event.preventDefault();
-
-    setDragActive(false);
-
-    const dropped =
-      Array.from(
-        event.dataTransfer.files
-      );
-
-    uploadFiles(dropped);
-  }
-
-  /* =========================================
-     DOWNLOAD
-  ========================================= */
-
-  async function downloadFile(
-    file: FileItem
-  ) {
-    try {
-      setDownloadingId(file.id);
-
-      const response =
-        await apiRequest(
-          `/api/files/${file.id}/download`
-        );
-
-      const blob =
-        await response.blob();
-
-      const url =
-        window.URL.createObjectURL(
-          blob
-        );
-
-      const anchor =
-        document.createElement("a");
-
-      anchor.href = url;
-      anchor.download =
-        file.name;
-
-      document.body.appendChild(
-        anchor
-      );
-
-      anchor.click();
-
-      anchor.remove();
-
-      window.URL.revokeObjectURL(
-        url
-      );
-
-      showToast(
-        "success",
-        "Download started."
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Download failed.";
-
-      showToast(
-        "error",
-        message
-      );
-    } finally {
-      setDownloadingId(null);
-    }
-  }
-
-  /* =========================================
-     DELETE
-  ========================================= */
-
-  async function deleteFile(
-    file: FileItem
-  ) {
-    const confirmed =
-      window.confirm(
-        `Delete "${file.name}"?`
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setDeletingId(file.id);
-
-      await apiRequest(
-        `/api/files/${file.id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      setFiles((current) =>
-        current.filter(
-          (item) =>
-            item.id !== file.id
+      products
+        .filter(
+          (product) => product.is_featured
         )
-      );
+        .slice(0, 8),
+    [products]
+  );
 
-      setSelectedFile(null);
+  const flashProducts = useMemo(
+    () =>
+      products
+        .filter(
+          (product) => product.is_flash_sale
+        )
+        .slice(0, 6),
+    [products]
+  );
 
-      showToast(
-        "success",
-        "File deleted successfully."
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to delete file.";
+  const visibleCategories = showAllCategories
+    ? categories
+    : categories.slice(0, 8);
 
-      showToast(
-        "error",
-        message
-      );
-    } finally {
-      setDeletingId(null);
-    }
-  }
+  /* =====================================================
+     PRODUCT CARD
+  ===================================================== */
 
-  /* =========================================
-     KEYBOARD
-  ========================================= */
-
-  useEffect(() => {
-    function handleKeyDown(
-      event: globalThis.KeyboardEvent
-    ) {
-      if (
-        event.key === "Escape"
-      ) {
-        setSelectedFile(null);
-
-        if (!uploading) {
-          setShowUpload(false);
-        }
-      }
-    }
-
-    window.addEventListener(
-      "keydown",
-      handleKeyDown
+  function ProductCard({
+    product,
+  }: {
+    product: Product;
+  }) {
+    const discount = discountPercent(
+      product.price,
+      product.original_price
     );
 
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
-  }, [uploading]);
+    const image = imageUrl(product.image_url);
 
-  return (
-    <div className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
+    return (
+      <div
+        className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${
+          darkMode
+            ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
+            : "border-[#eee9df] bg-white hover:-translate-y-1 hover:border-[#d7b66c] hover:shadow-[0_18px_45px_rgba(184,135,45,0.12)]"
+        }`}
+      >
+        <div className="absolute left-3 top-3 z-10 flex flex-col gap-2">
+          {discount > 0 && (
+            <span className="rounded-lg bg-[#b8872d] px-2.5 py-1 text-[10px] font-bold text-white">
+              {discount}% OFF
+            </span>
+          )}
 
-      {/* =====================================
-          PRIME CART HERO BANNER
-      ====================================== */}
-
-      <section className="mb-6 overflow-hidden rounded-[28px] border border-[#eadfca] bg-[#fffdf8] shadow-[0_12px_40px_rgba(120,90,30,0.10)] dark:border-[#3a3120] dark:bg-[#11100d]">
-        <div className="relative w-full overflow-hidden">
-          <img
-            src="/banner/hero-banner.png"
-            alt="PrimeCart shopping banner"
-            className="block h-auto max-h-[400px] min-h-[170px] w-full object-cover object-center sm:min-h-[230px] md:min-h-[290px] lg:min-h-[350px]"
-          />
-
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#fffdf8]/10 via-transparent to-[#fffdf8]/5 dark:from-black/10 dark:to-black/20" />
-
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 sm:bottom-5">
-            <span className="h-2 w-7 rounded-full bg-white shadow-sm" />
-            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-            <span className="h-2 w-2 rounded-full bg-white/60 shadow-sm" />
-          </div>
+          {product.is_flash_sale && (
+            <span className="flex items-center gap-1 rounded-lg bg-red-500 px-2.5 py-1 text-[10px] font-bold text-white">
+              <Zap className="h-3 w-3" />
+              FLASH
+            </span>
+          )}
         </div>
-      </section>
 
-      {/* PAGE HEADER */}
+        <button
+          type="button"
+          onClick={() =>
+            toggleWishlist(product.id)
+          }
+          className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition ${
+            wishlist.includes(product.id)
+              ? "border-red-200 bg-red-50 text-red-500"
+              : darkMode
+              ? "border-white/10 bg-black/30 text-white/70 hover:text-red-400"
+              : "border-[#eee9df] bg-white/90 text-slate-500 hover:text-red-500"
+          }`}
+        >
+          <Heart
+            className="h-4 w-4"
+            fill={
+              wishlist.includes(product.id)
+                ? "currentColor"
+                : "none"
+            }
+          />
+        </button>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <Link
+          href={`/dashboard/product/${product.id}`}
+          className="block"
+        >
+          <div
+            className={`flex h-[230px] items-center justify-center overflow-hidden ${
+              darkMode
+                ? "bg-[#171511]"
+                : "bg-[#faf8f3]"
+            }`}
+          >
+            {image ? (
+              <img
+                src={image}
+                alt={product.name}
+                className="h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-slate-300">
+                <ShoppingBag className="h-12 w-12" />
+                <span className="text-xs">
+                  No image
+                </span>
+              </div>
+            )}
+          </div>
+        </Link>
 
-        <div>
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
-              <HardDrive className="h-4 w-4 text-[#b8872d] dark:text-[#d4af37]" />
-            </div>
+        <div className="p-4">
+          {product.brand && (
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[#b8872d]">
+              {product.brand}
+            </p>
+          )}
 
-            <span className="text-sm font-semibold text-[#b8872d] dark:text-[#d4af37]">
-              Cloud Storage
+          <Link
+            href={`/dashboard/product/${product.id}`}
+          >
+            <h3
+              className={`line-clamp-2 min-h-[42px] text-sm font-semibold transition ${
+                darkMode
+                  ? "text-white hover:text-[#d8b96a]"
+                  : "text-[#25211a] hover:text-[#b8872d]"
+              }`}
+            >
+              {product.name}
+            </h3>
+          </Link>
+
+          {product.short_description && (
+            <p className="mt-1 line-clamp-1 text-xs text-slate-400">
+              {product.short_description}
+            </p>
+          )}
+
+          <div className="mt-3 flex items-center gap-2">
+            <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-1 text-[11px] font-semibold text-emerald-600">
+              <Star
+                className="h-3 w-3"
+                fill="currentColor"
+              />
+              {Number(
+                product.rating || 0
+              ).toFixed(1)}
+            </span>
+
+            <span className="text-[11px] text-slate-400">
+              ({product.reviews_count || 0})
             </span>
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-            My Files
-          </h1>
+          <div className="mt-3 flex items-end gap-2">
+            <span
+              className={`text-lg font-bold ${
+                darkMode
+                  ? "text-white"
+                  : "text-[#201d17]"
+              }`}
+            >
+              {formatPrice(product.price)}
+            </span>
 
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Securely store, organize and
-            manage your files from one
-            place.
-          </p>
-        </div>
+            {product.original_price &&
+              product.original_price >
+                product.price && (
+                <span className="pb-0.5 text-xs text-slate-400 line-through">
+                  {formatPrice(
+                    product.original_price
+                  )}
+                </span>
+              )}
+          </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              setShowUpload(true)
-            }
-            disabled={uploading}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                addToCart(product)
+              }
+              disabled={product.stock <= 0}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-[#d9c08a] px-3 py-2.5 text-xs font-semibold text-[#9a6e1f] transition hover:bg-[#fff9ec] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ShoppingCart className="h-3.5 w-3.5" />
+              Cart
+            </button>
 
-            {uploading
-              ? "Uploading..."
-              : "Upload files"}
-          </button>
+            <button
+              type="button"
+              onClick={() =>
+                buyNow(product)
+              }
+              disabled={product.stock <= 0}
+              className="rounded-xl bg-[#b8872d] px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-[#9e7325] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {product.stock <= 0
+                ? "Out of stock"
+                : "Buy Now"}
+            </button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* STORAGE */}
+  /* =====================================================
+     RENDER
+  ===================================================== */
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+  return (
+    <main
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-[#080806] text-white"
+          : "bg-[#faf8f3] text-[#25211a]"
+      }`}
+    >
+      {/* =================================================
+          TOP BAR
+      ================================================= */}
 
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] dark:bg-[#c99718]/10">
-                <HardDrive className="h-5 w-5 text-[#b8872d] dark:text-[#d4af37]" />
-              </div>
+      <div
+        className={`hidden border-b py-2.5 lg:block ${
+          darkMode
+            ? "border-white/10 bg-[#0e0d0a]"
+            : "border-[#eee8dc] bg-[#fffdf9]"
+        }`}
+      >
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 text-[11px]">
+          <div className="flex items-center gap-6 text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <Truck className="h-3.5 w-3.5 text-[#b8872d]" />
+              Free shipping above ₹499
+            </span>
 
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Storage
-                </p>
+            <span className="flex items-center gap-1.5">
+              <RotateCcw className="h-3.5 w-3.5 text-[#b8872d]" />
+              Easy returns
+            </span>
 
-                <p className="mt-1 text-xs text-slate-400">
-                  {formatBytes(
-                    usedBytes
-                  )}{" "}
-                  used of 10 GB
-                </p>
-              </div>
-            </div>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#b8872d]" />
+              Secure shopping
+            </span>
+          </div>
 
-            <div className="w-full lg:max-w-xl">
-              <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="text-slate-400">
-                  {storagePercentage.toFixed(
-                    1
-                  )}
-                  % used
-                </span>
+          <div className="flex items-center gap-5 text-slate-500">
+            <Link
+              href="/dashboard/orders"
+              className="hover:text-[#b8872d]"
+            >
+              Track Order
+            </Link>
 
-                <span className="font-medium text-slate-600 dark:text-slate-300">
-                  {formatBytes(
-                    freeBytes
-                  )}{" "}
-                  free
-                </span>
-              </div>
+            <Link
+              href="/dashboard/prime-points"
+              className="hover:text-[#b8872d]"
+            >
+              PrimePoints
+            </Link>
 
-              <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[#c99718] transition-all duration-500"
-                  style={{
-                    width: `${storagePercentage}%`,
-                  }}
-                />
-              </div>
-            </div>
+            <Link
+              href="/dashboard/settings"
+              className="hover:text-[#b8872d]"
+            >
+              Help
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* TOOLBAR */}
+      {/* =================================================
+          NAVBAR
+      ================================================= */}
 
-      <div className="mt-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-
-        <div className="relative w-full xl:max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-          <input
-            type="search"
-            value={search}
-            onChange={(event) =>
-              setSearch(
-                event.target.value
-              )
+      <header
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
+          darkMode
+            ? "border-white/10 bg-[#080806]/90"
+            : "border-[#eee8dc] bg-[#fffdf9]/95"
+        }`}
+      >
+        <div className="mx-auto flex h-[74px] max-w-[1500px] items-center gap-4 px-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() =>
+              setMobileMenu((value) => !value)
             }
-            placeholder="Search your files..."
-            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c99718] focus:ring-4 focus:ring-[#c99718]/10 dark:border-white/10 dark:bg-white/5 dark:text-white"
-          />
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e9dfcb] lg:hidden"
+          >
+            {mobileMenu ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
 
-          {search && (
+          <Link
+            href="/dashboard"
+            className="flex shrink-0 items-center gap-2"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d] text-white shadow-lg shadow-[#b8872d]/20">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+
+            <div className="hidden sm:block">
+              <div className="text-xl font-black tracking-tight">
+                Prime<span className="text-[#b8872d]">Cart</span>
+              </div>
+
+              <div className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                Shop smarter
+              </div>
+            </div>
+          </Link>
+
+          <nav className="hidden items-center gap-6 lg:flex">
+            <Link
+              href="/dashboard"
+              className="text-sm font-semibold text-[#b8872d]"
+            >
+              Home
+            </Link>
+
+            <a
+              href="#categories"
+              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
+            >
+              Categories
+            </a>
+
+            <a
+              href="#featured"
+              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
+            >
+              Featured
+            </a>
+
+            <a
+              href="#deals"
+              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
+            >
+              Deals
+            </a>
+
+            <Link
+              href="/dashboard/prime-match"
+              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-[#b8872d]"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              PrimeMatch
+            </Link>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden w-[250px] xl:block">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Search products..."
+                  className={`h-10 w-full rounded-xl border pl-10 pr-4 text-xs outline-none transition ${
+                    darkMode
+                      ? "border-white/10 bg-white/5 text-white"
+                      : "border-[#e8dfd0] bg-[#faf8f3]"
+                  }`}
+                />
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() =>
-                setSearch("")
+                setSearchOpen(
+                  (value) => !value
+                )
               }
-              className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] xl:hidden"
             >
-              <X className="h-4 w-4" />
+              <Search className="h-4 w-4" />
+            </button>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d]"
+            >
+              <Heart className="h-4 w-4" />
+
+              {wishlist.length > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  {wishlist.length}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/orders"
+              className="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] sm:flex"
+            >
+              <PackageCheck className="h-4 w-4" />
+            </Link>
+
+            <Link
+              href="/cart"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d]"
+            >
+              <ShoppingCart className="h-4 w-4" />
+
+              {cartCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] sm:flex"
+            >
+              {darkMode ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+
+            <Link
+              href="/profile"
+              className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d] text-white sm:flex"
+            >
+              <User className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+
+        {searchOpen && (
+          <div className="border-t border-[#eee8dc] p-3 xl:hidden">
+            <div className="relative mx-auto max-w-[1500px]">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="Search products..."
+                className="h-11 w-full rounded-xl border border-[#e8dfd0] bg-[#faf8f3] pl-10 pr-4 text-sm outline-none focus:border-[#b8872d]"
+              />
+            </div>
+          </div>
+        )}
+
+        {mobileMenu && (
+          <div
+            className={`border-t px-5 py-5 lg:hidden ${
+              darkMode
+                ? "border-white/10 bg-[#0e0d0a]"
+                : "border-[#eee8dc] bg-white"
+            }`}
+          >
+            <div className="flex flex-col gap-4">
+              <Link
+                href="/dashboard"
+                className="font-semibold text-[#b8872d]"
+              >
+                Home
+              </Link>
+
+              <a href="#categories">
+                Categories
+              </a>
+
+              <a href="#featured">
+                Featured Products
+              </a>
+
+              <a href="#deals">
+                Flash Deals
+              </a>
+
+              <Link href="/dashboard/prime-match">
+                PrimeMatch
+              </Link>
+
+              <Link href="/dashboard/budget-builder">
+                Budget Builder
+              </Link>
+
+              <Link href="/dashboard/setup">
+                Build My Setup
+              </Link>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex items-center gap-2 text-left"
+              >
+                {darkMode ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+
+                {darkMode
+                  ? "Light Mode"
+                  : "Dark Mode"}
+              </button>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* =================================================
+          HERO
+      ================================================= */}
+
+      <section className="mx-auto max-w-[1500px] px-4 pt-5 sm:px-6 lg:pt-7">
+        <div
+          className={`relative min-h-[430px] overflow-hidden rounded-[30px] border ${
+            darkMode
+              ? "border-[#3a3020] bg-[#15120c]"
+              : "border-[#eadfc9] bg-[#fffdf8]"
+          }`}
+        >
+          <div className="absolute inset-0">
+            <div
+              className={`absolute right-[-100px] top-[-100px] h-[400px] w-[400px] rounded-full blur-3xl ${
+                darkMode
+                  ? "bg-[#b8872d]/10"
+                  : "bg-[#b8872d]/10"
+              }`}
+            />
+
+            <div className="absolute bottom-[-160px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#d9b86c]/10 blur-3xl" />
+          </div>
+
+          <div className="relative grid min-h-[430px] items-center gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-16">
+            <div className="max-w-2xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8bd7c] bg-[#fffaf0] px-3 py-1.5 text-[10px] font-bold tracking-[0.2em] text-[#a8781f]">
+                <Sparkles className="h-3.5 w-3.5" />
+                {heroSlides[heroIndex].eyebrow}
+              </div>
+
+              <h1
+                className={`text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl ${
+                  darkMode
+                    ? "text-white"
+                    : "text-[#211d16]"
+                }`}
+              >
+                {heroSlides[heroIndex].title}
+                <br />
+                <span className="text-[#b8872d]">
+                  {heroSlides[heroIndex].highlight}
+                </span>
+              </h1>
+
+              <p className="mt-5 max-w-xl text-sm leading-7 text-slate-500 sm:text-base">
+                {heroSlides[heroIndex].text}
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href={
+                    heroSlides[heroIndex].href
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-xl shadow-[#b8872d]/20 transition hover:bg-[#9f7527]"
+                >
+                  {heroSlides[heroIndex].button}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+
+                <Link
+                  href="/dashboard/prime-match"
+                  className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
+                    darkMode
+                      ? "border-white/10 text-white hover:bg-white/5"
+                      : "border-[#dfd4c1] text-[#5c513e] hover:bg-[#fffaf0]"
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4 text-[#b8872d]" />
+                  PrimeMatch
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-5 text-xs text-slate-400">
+                <span className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-[#b8872d]" />
+                  Verified products
+                </span>
+
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-[#b8872d]" />
+                  Secure checkout
+                </span>
+
+                <span className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#b8872d]" />
+                  Fast delivery
+                </span>
+              </div>
+            </div>
+
+            <div className="relative hidden h-[350px] lg:block">
+              <div className="absolute right-4 top-1/2 w-[350px] -translate-y-1/2">
+                <div className="relative rounded-[32px] border border-[#d9c08a] bg-white/80 p-5 shadow-[0_30px_80px_rgba(80,60,20,0.12)] backdrop-blur-xl">
+                  <div className="mb-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b8872d]">
+                        PrimeCart Picks
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-[#272218]">
+                        Curated for you
+                      </p>
+                    </div>
+
+                    <Gift className="h-6 w-6 text-[#b8872d]" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {(
+                      featuredProducts.length
+                        ? featuredProducts
+                        : products
+                    )
+                      .slice(0, 4)
+                      .map((product) => (
+                        <div
+                          key={product.id}
+                          className="rounded-2xl border border-[#eee8dc] bg-[#faf8f3] p-3"
+                        >
+                          <div className="flex h-24 items-center justify-center">
+                            {imageUrl(
+                              product.image_url
+                            ) ? (
+                              <img
+                                src={imageUrl(
+                                  product.image_url
+                                )!}
+                                alt=""
+                                className="h-full w-full object-contain"
+                              />
+                            ) : (
+                              <ShoppingBag className="h-8 w-8 text-[#d0c4ac]" />
+                            )}
+                          </div>
+
+                          <p className="mt-2 line-clamp-1 text-xs font-semibold text-[#342e24]">
+                            {product.name}
+                          </p>
+
+                          <p className="mt-1 text-xs font-bold text-[#b8872d]">
+                            {formatPrice(
+                              product.price
+                            )}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="mt-4 rounded-xl bg-[#fff8e9] p-3 text-center">
+                    <span className="text-xs font-semibold text-[#9a6e1f]">
+                      Smart picks • Better value • Prime experience
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2">
+            {heroSlides.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() =>
+                  setHeroIndex(index)
+                }
+                className={`h-1.5 rounded-full transition-all ${
+                  index === heroIndex
+                    ? "w-7 bg-[#b8872d]"
+                    : "w-1.5 bg-[#d4c7af]"
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setHeroIndex(
+                heroIndex === 0
+                  ? heroSlides.length - 1
+                  : heroIndex - 1
+              )
+            }
+            className="absolute left-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e4d9c4] bg-white/80 text-[#8d7446] backdrop-blur transition hover:bg-white lg:flex"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setHeroIndex(
+                heroIndex ===
+                  heroSlides.length - 1
+                  ? 0
+                  : heroIndex + 1
+              )
+            }
+            className="absolute right-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e4d9c4] bg-white/80 text-[#8d7446] backdrop-blur transition hover:bg-white lg:flex"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </section>
+
+      {/* =================================================
+          QUICK FEATURES
+      ================================================= */}
+
+      <section className="mx-auto max-w-[1500px] px-4 pt-5 sm:px-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            {
+              icon: Truck,
+              title: "Fast Delivery",
+              text: "Reliable doorstep delivery",
+            },
+            {
+              icon: ShieldCheck,
+              title: "Secure Shopping",
+              text: "Protected payments",
+            },
+            {
+              icon: RotateCcw,
+              title: "Easy Returns",
+              text: "Simple return process",
+            },
+            {
+              icon: BadgeCheck,
+              title: "Verified Products",
+              text: "Quality you can trust",
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <div
+                key={item.title}
+                className={`flex items-center gap-3 rounded-2xl border p-4 ${
+                  darkMode
+                    ? "border-white/10 bg-[#11100d]"
+                    : "border-[#eee8dc] bg-white"
+                }`}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e7] text-[#b8872d]">
+                  <Icon className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold">
+                    {item.title}
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] text-slate-400">
+                    {item.text}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* =================================================
+          CATEGORIES
+      ================================================= */}
+
+      <section
+        id="categories"
+        className="mx-auto max-w-[1500px] px-4 pt-12 sm:px-6"
+      >
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
+              Explore
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
+              Shop by Category
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-400">
+              Find exactly what you are looking for.
+            </p>
+          </div>
+
+          {categories.length > 8 && (
+            <button
+              type="button"
+              onClick={() =>
+                setShowAllCategories(
+                  (value) => !value
+                )
+              }
+              className="text-xs font-semibold text-[#b8872d]"
+            >
+              {showAllCategories
+                ? "Show Less"
+                : "View All"}
             </button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(event) =>
-                setSortBy(
-                  event.target
-                    .value as
-                    | "recent"
-                    | "name"
-                    | "size"
-                )
-              }
-              className="h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-[#c99718] dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+        {categoriesLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            {Array.from({
+              length: 8,
+            }).map((_, index) => (
+              <div
+                key={index}
+                className="h-28 animate-pulse rounded-2xl bg-white"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            <button
+              type="button"
+              onClick={() => {
+                setCategory("All");
+                document
+                  .getElementById("products")
+                  ?.scrollIntoView({
+                    behavior: "smooth",
+                  });
+              }}
+              className={`rounded-2xl border p-4 text-center transition ${
+                category === "All"
+                  ? "border-[#caa85d] bg-[#fff8e9] shadow-sm"
+                  : darkMode
+                  ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
+                  : "border-[#eee8dc] bg-white hover:-translate-y-1 hover:border-[#d7b66c]"
+              }`}
             >
-              <option value="recent">
-                Recently modified
-              </option>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf6ed] text-2xl">
+                🛍️
+              </div>
 
-              <option value="name">
-                Name
-              </option>
+              <p className="mt-3 text-xs font-bold">
+                All Products
+              </p>
+            </button>
 
-              <option value="size">
-                Largest first
-              </option>
-            </select>
+            {visibleCategories.map(
+              (item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setCategory(item.name);
 
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    document
+                      .getElementById(
+                        "products"
+                      )
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                  }}
+                  className={`rounded-2xl border p-4 text-center transition ${
+                    category === item.name
+                      ? "border-[#caa85d] bg-[#fff8e9] shadow-sm"
+                      : darkMode
+                      ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
+                      : "border-[#eee8dc] bg-white hover:-translate-y-1 hover:border-[#d7b66c]"
+                  }`}
+                >
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf6ed] text-2xl">
+                    {getCategoryIcon(
+                      item.name
+                    )}
+                  </div>
+
+                  <p className="mt-3 line-clamp-1 text-xs font-bold">
+                    {item.name}
+                  </p>
+                </button>
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* =================================================
+          FEATURED
+      ================================================= */}
+
+      <section
+        id="featured"
+        className="mx-auto max-w-[1500px] px-4 pt-12 sm:px-6"
+      >
+        <div className="mb-5 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
+              Curated for you
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
+              Featured Products
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-400">
+              Popular picks selected for PrimeCart shoppers.
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              loadFiles(true)
-            }
-            disabled={
-              refreshing ||
-              loading
-            }
-            title="Refresh"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+          <Link
+            href="/dashboard/products"
+            className="hidden items-center gap-1 text-xs font-bold text-[#b8872d] sm:flex"
           >
-            <RefreshCw
-              className={`h-4 w-4 ${
-                refreshing
-                  ? "animate-spin"
-                  : ""
-              }`}
-            />
-          </button>
+            View all
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
 
-          <div className="flex h-11 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/10 dark:bg-white/5">
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({
+              length: 8,
+            }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[430px] animate-pulse rounded-2xl bg-white"
+              />
+            ))}
+          </div>
+        ) : featuredProducts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#d8ccb7] bg-white p-12 text-center">
+            <ShoppingBag className="mx-auto h-10 w-10 text-[#c9b68f]" />
+            <p className="mt-3 text-sm font-semibold">
+              No featured products available
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.map(
+              (product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* =================================================
+          FLASH DEALS
+      ================================================= */}
+
+      <section
+        id="deals"
+        className="mx-auto max-w-[1500px] px-4 pt-14 sm:px-6"
+      >
+        <div className="overflow-hidden rounded-[28px] border border-[#ead8ad] bg-[#fff8e9] p-5 sm:p-7">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#b8872d] text-white">
+                  <Zap className="h-4 w-4" />
+                </div>
+
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-[#9b701f]">
+                  Flash Deals
+                </span>
+              </div>
+
+              <h2 className="mt-3 text-2xl font-black text-[#2c261b] sm:text-3xl">
+                Deals that disappear fast
+              </h2>
+
+              <p className="mt-1 max-w-xl text-xs leading-6 text-[#806f4d]">
+                Limited-time prices on selected products.
+                Grab your favourites before the deal ends.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {[
+                ["08", "HRS"],
+                ["42", "MIN"],
+                ["18", "SEC"],
+              ].map(([value, label]) => (
+                <div
+                  key={label}
+                  className="rounded-xl bg-white px-4 py-3 text-center shadow-sm"
+                >
+                  <p className="text-xl font-black text-[#2c261b]">
+                    {value}
+                  </p>
+
+                  <p className="text-[8px] font-bold text-[#9b701f]">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {flashProducts.length > 0 && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {flashProducts.map(
+              (product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* =================================================
+          ALL PRODUCTS
+      ================================================= */}
+
+      <section
+        id="products"
+        className="mx-auto max-w-[1500px] px-4 pb-16 pt-14 sm:px-6"
+      >
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
+              Discover
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
+              {category === "All"
+                ? "All Products"
+                : category}
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-400">
+              {filteredProducts.length} products found
+              {search
+                ? ` for "${search}"`
+                : ""}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+
+              <select
+                value={sort}
+                onChange={(event) =>
+                  setSort(
+                    event.target.value
+                  )
+                }
+                className="h-10 appearance-none rounded-xl border border-[#e8dfd0] bg-white pl-9 pr-9 text-xs font-semibold text-slate-600 outline-none"
+              >
+                <option value="featured">
+                  Featured
+                </option>
+
+                <option value="price-low">
+                  Price: Low to High
+                </option>
+
+                <option value="price-high">
+                  Price: High to Low
+                </option>
+
+                <option value="rating">
+                  Highest Rated
+                </option>
+
+                <option value="discount">
+                  Biggest Discount
+                </option>
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            </div>
 
             <button
               type="button"
               onClick={() =>
                 setView("grid")
               }
-              aria-label="Grid view"
-              className={`flex w-10 items-center justify-center rounded-lg transition ${
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
                 view === "grid"
-                  ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]"
-                  : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                  ? "border-[#d6b86e] bg-[#fff8e9] text-[#b8872d]"
+                  : "border-[#e8dfd0] bg-white text-slate-400"
               }`}
             >
               <Grid2X2 className="h-4 w-4" />
@@ -946,1162 +1623,405 @@ export default function FilesPage() {
               onClick={() =>
                 setView("list")
               }
-              aria-label="List view"
-              className={`flex w-10 items-center justify-center rounded-lg transition ${
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
                 view === "list"
-                  ? "bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]"
-                  : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                  ? "border-[#d6b86e] bg-[#fff8e9] text-[#b8872d]"
+                  : "border-[#e8dfd0] bg-white text-slate-400"
               }`}
             >
               <List className="h-4 w-4" />
             </button>
           </div>
         </div>
-      </div>
 
-      {/* BREADCRUMB */}
+        {filteredProducts.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-[#d8ccb7] bg-white px-6 py-16 text-center">
+            <Search className="mx-auto h-10 w-10 text-[#cbbd9f]" />
 
-      <div className="mt-7 flex items-center gap-2 text-sm">
-        <FolderOpen className="h-4 w-4 text-[#b8872d]" />
+            <h3 className="mt-4 text-lg font-bold">
+              No products found
+            </h3>
 
-        <span className="font-semibold text-slate-900 dark:text-white">
-          My Files
-        </span>
-
-        <span className="text-slate-300 dark:text-slate-700">
-          /
-        </span>
-
-        <span className="text-slate-400">
-          All Files
-        </span>
-      </div>
-
-      {/* CONTENT */}
-
-      {loading ? (
-        <LoadingState view={view} />
-      ) : filteredFiles.length ===
-        0 ? (
-        <EmptyState
-          search={search}
-          onUpload={() =>
-            setShowUpload(true)
-          }
-        />
-      ) : view === "grid" ? (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredFiles.map(
-            (file) => (
-              <FileCard
-                key={file.id}
-                file={file}
-                onClick={() =>
-                  setSelectedFile(
-                    file
-                  )
-                }
-                onDownload={() =>
-                  downloadFile(
-                    file
-                  )
-                }
-                onDelete={() =>
-                  deleteFile(file)
-                }
-                downloading={
-                  downloadingId ===
-                  file.id
-                }
-                deleting={
-                  deletingId ===
-                  file.id
-                }
-              />
-            )
-          )}
-        </div>
-      ) : (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-
-          <div className="hidden grid-cols-[minmax(0,1fr)_140px_180px_80px] gap-4 border-b border-slate-200 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:border-white/10 md:grid">
-            <span>Name</span>
-            <span>Size</span>
-            <span>Modified</span>
-            <span />
-          </div>
-
-          {filteredFiles.map(
-            (file) => (
-              <ListFile
-                key={file.id}
-                file={file}
-                onClick={() =>
-                  setSelectedFile(
-                    file
-                  )
-                }
-                onDownload={() =>
-                  downloadFile(
-                    file
-                  )
-                }
-                onDelete={() =>
-                  deleteFile(file)
-                }
-                downloading={
-                  downloadingId ===
-                  file.id
-                }
-                deleting={
-                  deletingId ===
-                  file.id
-                }
-              />
-            )
-          )}
-        </div>
-      )}
-
-      {/* UPLOAD MODAL */}
-
-      {showUpload && (
-        <UploadModal
-          inputRef={fileInputRef}
-          uploading={uploading}
-          progress={
-            uploadProgress
-          }
-          dragActive={
-            dragActive
-          }
-          onClose={() => {
-            if (!uploading) {
-              setShowUpload(
-                false
-              );
-            }
-          }}
-          onUpload={
-            handleFileUpload
-          }
-          onDragEnter={() =>
-            setDragActive(true)
-          }
-          onDragLeave={() =>
-            setDragActive(false)
-          }
-          onDragOver={(event) =>
-            event.preventDefault()
-          }
-          onDrop={handleDrop}
-        />
-      )}
-
-      {/* FILE DETAILS */}
-
-      {selectedFile && (
-        <FileDetailsModal
-          file={selectedFile}
-          downloading={
-            downloadingId ===
-            selectedFile.id
-          }
-          deleting={
-            deletingId ===
-            selectedFile.id
-          }
-          onClose={() =>
-            setSelectedFile(null)
-          }
-          onDownload={() =>
-            downloadFile(
-              selectedFile
-            )
-          }
-          onDelete={() =>
-            deleteFile(
-              selectedFile
-            )
-          }
-        />
-      )}
-
-      {/* TOAST */}
-
-      {toast && (
-        <Toast
-          toast={toast}
-          onClose={() =>
-            setToast(null)
-          }
-        />
-      )}
-    </div>
-  );
-}
-
-/* =====================================================
-   FILE CARD
-===================================================== */
-
-function FileCard({
-  file,
-  onClick,
-  onDownload,
-  onDelete,
-  downloading,
-  deleting,
-}: {
-  file: FileItem;
-  onClick: () => void;
-  onDownload: () => void;
-  onDelete: () => void;
-  downloading: boolean;
-  deleting: boolean;
-}) {
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#ead9a8] hover:shadow-lg hover:shadow-slate-200/50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-[#c99718]/30 dark:hover:shadow-black/20">
-
-      <div className="flex items-start justify-between">
-
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#faf4df] group-hover:text-[#b8872d] dark:bg-white/10 dark:text-slate-300 dark:group-hover:bg-[#b8872d]/10 dark:group-hover:text-[#d4af37]"
-        >
-          <FileIcon
-            type={file.type}
-          />
-        </button>
-
-        <div className="relative">
-          <button
-            type="button"
-            onClick={onClick}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={onClick}
-        className="mt-5 block w-full text-left"
-      >
-        <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">
-          {file.name}
-        </p>
-
-        <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-          <span>
-            {formatBytes(
-              file.size
-            )}
-          </span>
-
-          <span className="text-slate-300 dark:text-slate-700">
-            •
-          </span>
-
-          <span>
-            {file.modified}
-          </span>
-        </div>
-      </button>
-
-      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-white/5">
-
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={
-            downloading ||
-            deleting
-          }
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-[#b8872d] disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-[#d4af37]"
-        >
-          {downloading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-
-          Download
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={
-            downloading ||
-            deleting
-          }
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-        >
-          {deleting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* =====================================================
-   LIST FILE
-===================================================== */
-
-function ListFile({
-  file,
-  onClick,
-  onDownload,
-  onDelete,
-  downloading,
-  deleting,
-}: {
-  file: FileItem;
-  onClick: () => void;
-  onDownload: () => void;
-  onDelete: () => void;
-  downloading: boolean;
-  deleting: boolean;
-}) {
-  return (
-    <div className="group grid w-full gap-3 border-b border-slate-100 px-4 py-4 transition last:border-0 hover:bg-slate-50 sm:px-5 dark:border-white/5 dark:hover:bg-white/5 md:grid-cols-[minmax(0,1fr)_140px_180px_80px] md:items-center md:gap-4">
-
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex min-w-0 items-center gap-3 text-left"
-      >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300">
-          <FileIcon
-            type={file.type}
-          />
-        </div>
-
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-800 dark:text-white">
-            {file.name}
-          </p>
-
-          <p className="mt-1 text-xs text-slate-400 md:hidden">
-            {formatBytes(
-              file.size
-            )}{" "}
-            • {file.modified}
-          </p>
-        </div>
-      </button>
-
-      <span className="hidden text-xs text-slate-400 md:block">
-        {formatBytes(
-          file.size
-        )}
-      </span>
-
-      <span className="hidden text-xs text-slate-400 md:block">
-        {file.modified}
-      </span>
-
-      <div className="flex items-center justify-end gap-1">
-
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={
-            downloading ||
-            deleting
-          }
-          title="Download"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#faf4df] hover:text-[#b8872d] disabled:opacity-50 dark:hover:bg-[#b8872d]/10 dark:hover:text-[#d4af37]"
-        >
-          {downloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={
-            downloading ||
-            deleting
-          }
-          title="Delete"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-        >
-          {deleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* =====================================================
-   FILE ICON
-===================================================== */
-
-function FileIcon({
-  type,
-}: {
-  type: FileType;
-}) {
-  if (type === "folder") {
-    return (
-      <Folder className="h-6 w-6" />
-    );
-  }
-
-  if (type === "image") {
-    return (
-      <FileImage className="h-6 w-6" />
-    );
-  }
-
-  if (
-    type === "pdf" ||
-    type === "document"
-  ) {
-    return (
-      <FileText className="h-6 w-6" />
-    );
-  }
-
-  if (type === "zip") {
-    return (
-      <Archive className="h-6 w-6" />
-    );
-  }
-
-  return (
-    <FileIconLucide className="h-6 w-6" />
-  );
-}
-
-/* =====================================================
-   EMPTY STATE
-===================================================== */
-
-function EmptyState({
-  search,
-  onUpload,
-}: {
-  search: string;
-  onUpload: () => void;
-}) {
-  return (
-    <div className="mt-6 flex min-h-[430px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-white/10 dark:bg-white/[0.03]">
-
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#faf4df] dark:bg-[#c99718]/10">
-        {search ? (
-          <Search className="h-7 w-7 text-[#b8872d] dark:text-[#d4af37]" />
-        ) : (
-          <CloudUpload className="h-8 w-8 text-[#b8872d] dark:text-[#d4af37]" />
-        )}
-      </div>
-
-      <h3 className="mt-5 text-lg font-bold text-slate-900 dark:text-white">
-        {search
-          ? "No files found"
-          : "Your storage is empty"}
-      </h3>
-
-      <p className="mt-2 max-w-md text-sm leading-6 text-slate-400">
-        {search
-          ? "We couldn't find any files matching your search. Try a different name."
-          : "Upload your first file to start using your CloudVault storage."}
-      </p>
-
-      {!search && (
-        <button
-          type="button"
-          onClick={onUpload}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d]"
-        >
-          <Upload className="h-4 w-4" />
-          Upload files
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* =====================================================
-   LOADING
-===================================================== */
-
-function LoadingState({
-  view,
-}: {
-  view: "grid" | "list";
-}) {
-  if (view === "list") {
-    return (
-      <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
-        {Array.from({
-          length: 7,
-        }).map((_, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-0 dark:border-white/5"
-          >
-            <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100 dark:bg-white/10" />
-
-            <div className="flex-1">
-              <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-
-              <div className="mt-2 h-3 w-1/5 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({
-        length: 8,
-      }).map((_, index) => (
-        <div
-          key={index}
-          className="h-[190px] animate-pulse rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
-        />
-      ))}
-    </div>
-  );
-}
-
-/* =====================================================
-   UPLOAD MODAL
-===================================================== */
-
-function UploadModal({
-  inputRef,
-  uploading,
-  progress,
-  dragActive,
-  onClose,
-  onUpload,
-  onDragEnter,
-  onDragLeave,
-  onDragOver,
-  onDrop,
-}: {
-  inputRef: RefObject<HTMLInputElement | null>;
-  uploading: boolean;
-  progress: number;
-  dragActive: boolean;
-  onClose: () => void;
-  onUpload: (
-    event: ChangeEvent<HTMLInputElement>
-  ) => void;
-  onDragEnter: () => void;
-  onDragLeave: () => void;
-  onDragOver: (
-    event: DragEvent<HTMLDivElement>
-  ) => void;
-  onDrop: (
-    event: DragEvent<HTMLDivElement>
-  ) => void;
-}) {
-  return (
-    <Modal
-      onClose={onClose}
-      disabled={uploading}
-    >
-      <div className="text-center">
-
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf4df] dark:bg-[#c99718]/10">
-          {uploading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-[#b8872d] dark:text-[#d4af37]" />
-          ) : (
-            <Upload className="h-6 w-6 text-[#b8872d] dark:text-[#d4af37]" />
-          )}
-        </div>
-
-        <h2 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
-          {uploading
-            ? "Uploading files"
-            : "Upload files"}
-        </h2>
-
-        <p className="mt-2 text-sm text-slate-400">
-          {uploading
-            ? "Please keep this window open while your files are being uploaded."
-            : "Upload one or multiple files to your CloudVault storage."}
-        </p>
-
-        {!uploading ? (
-          <>
-            <div
-              onDragEnter={(event) => {
-                event.preventDefault();
-                onDragEnter();
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault();
-                onDragLeave();
-              }}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              className={`mt-6 rounded-2xl border-2 border-dashed px-6 py-10 transition ${
-                dragActive
-                  ? "border-[#c99718] bg-[#faf4df] dark:bg-[#c99718]/10"
-                  : "border-slate-200 hover:border-[#d4af37] hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
-              }`}
-            >
-              <CloudUpload className="mx-auto h-9 w-9 text-slate-400" />
-
-              <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Drag & drop files here
-              </p>
-
-              <p className="mt-1 text-xs text-slate-400">
-                or choose files from your device
-              </p>
-
-              <button
-                type="button"
-                onClick={() =>
-                  inputRef.current?.click()
-                }
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#c99718] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#b8872d]"
-              >
-                <Upload className="h-4 w-4" />
-                Choose files
-              </button>
-            </div>
-
-            <p className="mt-4 text-xs text-slate-400">
-              Maximum file size: 100 MB
+            <p className="mt-2 text-sm text-slate-400">
+              Try another search or category.
             </p>
 
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={onUpload}
-            />
-          </>
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setCategory("All");
+              }}
+              className="mt-5 rounded-xl bg-[#b8872d] px-5 py-2.5 text-xs font-bold text-white"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : view === "grid" ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map(
+              (product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
+              )
+            )}
+          </div>
         ) : (
-          <div className="mt-7">
+          <div className="space-y-3">
+            {filteredProducts.map(
+              (product) => {
+                const image = imageUrl(
+                  product.image_url
+                );
 
-            <div className="mb-2 flex justify-between text-xs">
-              <span className="font-medium text-slate-500 dark:text-slate-400">
-                Upload progress
-              </span>
+                const discount =
+                  discountPercent(
+                    product.price,
+                    product.original_price
+                  );
 
-              <span className="font-bold text-[#b8872d] dark:text-[#d4af37]">
-                {progress}%
-              </span>
-            </div>
+                return (
+                  <div
+                    key={product.id}
+                    className={`flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center ${
+                      darkMode
+                        ? "border-white/10 bg-[#11100d]"
+                        : "border-[#eee8dc] bg-white"
+                    }`}
+                  >
+                    <Link
+                      href={`/dashboard/product/${product.id}`}
+                      className="flex h-28 w-full shrink-0 items-center justify-center rounded-xl bg-[#faf8f3] sm:w-32"
+                    >
+                      {image ? (
+                        <img
+                          src={image}
+                          alt={product.name}
+                          className="h-full w-full object-contain p-3"
+                        />
+                      ) : (
+                        <ShoppingBag className="h-8 w-8 text-[#cdbd9d]" />
+                      )}
+                    </Link>
 
-            <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-              <div
-                className="h-full rounded-full bg-[#c99718] transition-all duration-300"
-                style={{
-                  width: `${progress}%`,
-                }}
-              />
-            </div>
+                    <div className="min-w-0 flex-1">
+                      {product.brand && (
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#b8872d]">
+                          {product.brand}
+                        </p>
+                      )}
+
+                      <Link
+                        href={`/dashboard/product/${product.id}`}
+                      >
+                        <h3 className="mt-1 line-clamp-2 text-base font-bold">
+                          {product.name}
+                        </h3>
+                      </Link>
+
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                        {product.short_description}
+                      </p>
+
+                      <div className="mt-3 flex items-center gap-3">
+                        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                          <Star
+                            className="h-3.5 w-3.5"
+                            fill="currentColor"
+                          />
+                          {Number(
+                            product.rating || 0
+                          ).toFixed(1)}
+                        </span>
+
+                        <span className="text-xs text-slate-400">
+                          {product.reviews_count ||
+                            0}{" "}
+                          reviews
+                        </span>
+
+                        {discount > 0 && (
+                          <span className="text-xs font-bold text-[#b8872d]">
+                            {discount}% OFF
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 flex-col gap-3 sm:w-40">
+                      <div>
+                        <p className="text-lg font-black">
+                          {formatPrice(
+                            product.price
+                          )}
+                        </p>
+
+                        {product.original_price &&
+                          product.original_price >
+                            product.price && (
+                            <p className="text-xs text-slate-400 line-through">
+                              {formatPrice(
+                                product.original_price
+                              )}
+                            </p>
+                          )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            addToCart(
+                              product
+                            )
+                          }
+                          className="rounded-xl border border-[#d9c08a] py-2 text-xs font-bold text-[#9a6e1f]"
+                        >
+                          Cart
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            buyNow(product)
+                          }
+                          className="rounded-xl bg-[#b8872d] py-2 text-xs font-bold text-white"
+                        >
+                          Buy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            )}
           </div>
         )}
-      </div>
-    </Modal>
-  );
-}
+      </section>
 
-/* =====================================================
-   FILE DETAILS MODAL
-===================================================== */
+      {/* =================================================
+          PRIME FEATURES
+      ================================================= */}
 
-function FileDetailsModal({
-  file,
-  downloading,
-  deleting,
-  onClose,
-  onDownload,
-  onDelete,
-}: {
-  file: FileItem;
-  downloading: boolean;
-  deleting: boolean;
-  onClose: () => void;
-  onDownload: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <Modal onClose={onClose}>
+      <section className="border-y border-[#eee8dc] bg-[#fffdf9]">
+        <div className="mx-auto max-w-[1500px] px-4 py-14 sm:px-6">
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
+              More than shopping
+            </p>
 
-      <div className="flex items-start gap-4 pr-8">
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+              The PrimeCart Experience
+            </h2>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf4df] text-[#b8872d] dark:bg-[#c99718]/10 dark:text-[#d4af37]">
-          <FileIcon
-            type={file.type}
-          />
+            <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-slate-400">
+              Smart tools designed to make every shopping
+              decision easier.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                href: "/dashboard/prime-match",
+                icon: Sparkles,
+                title: "PrimeMatch",
+                text: "Tell us your needs and budget. Find products that fit.",
+              },
+              {
+                href: "/dashboard/budget-builder",
+                icon: Tag,
+                title: "Budget Builder",
+                text: "Plan your shopping within a realistic budget.",
+              },
+              {
+                href: "/dashboard/setup",
+                icon: LayoutGrid,
+                title: "Build My Setup",
+                text: "Create gaming, college, work or lifestyle setups.",
+              },
+              {
+                href: "/dashboard/prime-points",
+                icon: Gift,
+                title: "PrimePoints",
+                text: "Earn points and unlock rewards while you shop.",
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group rounded-2xl border border-[#eee8dc] bg-white p-6 transition hover:-translate-y-1 hover:border-[#d7b66c] hover:shadow-[0_18px_40px_rgba(184,135,45,0.1)]"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff7e7] text-[#b8872d] transition group-hover:scale-105">
+                    <Icon className="h-5 w-5" />
+                  </div>
+
+                  <h3 className="mt-5 text-sm font-black">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-6 text-slate-400">
+                    {item.text}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#b8872d]">
+                    Explore
+                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
+      </section>
 
-        <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold text-slate-900 dark:text-white">
-            {file.name}
-          </h2>
+      {/* =================================================
+          FOOTER
+      ================================================= */}
 
-          <p className="mt-1 text-xs capitalize text-slate-400">
-            {getReadableType(
-              file.type
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-xl bg-slate-50 p-4 dark:bg-white/5">
-
-        <DetailRow
-          icon={
-            <HardDrive className="h-4 w-4" />
-          }
-          label="Size"
-          value={formatBytes(
-            file.size
-          )}
-        />
-
-        <DetailRow
-          icon={
-            <Clock3 className="h-4 w-4" />
-          }
-          label="Modified"
-          value={file.modified}
-        />
-
-        <DetailRow
-          icon={
-            <Check className="h-4 w-4" />
-          }
-          label="Status"
-          value="Available"
-        />
-      </div>
-
-      <div className="mt-6">
-
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={
-            downloading ||
-            deleting
-          }
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c99718] py-3 text-sm font-semibold text-white shadow-lg shadow-[#c99718]/20 transition hover:bg-[#b8872d] disabled:opacity-60"
-        >
-          {downloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-
-          {downloading
-            ? "Preparing download..."
-            : "Download file"}
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={
-            downloading ||
-            deleting
-          }
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-500/10"
-        >
-          {deleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-
-          {deleting
-            ? "Deleting..."
-            : "Delete file"}
-        </button>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#ead9a8] bg-[#faf4df] p-3 text-xs text-[#8a6818] dark:border-[#c99718]/10 dark:bg-[#c99718]/5 dark:text-[#e0c46a]">
-        <Share2 className="h-4 w-4 shrink-0" />
-
-        <span>
-          File sharing will be available
-          when the backend share API is
-          added.
-        </span>
-      </div>
-    </Modal>
-  );
-}
-
-/* =====================================================
-   DETAIL ROW
-===================================================== */
-
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between border-b border-slate-200 py-3 last:border-0 dark:border-white/5">
-
-      <div className="flex items-center gap-2 text-xs text-slate-400">
-        {icon}
-        {label}
-      </div>
-
-      <span className="max-w-[180px] truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-/* =====================================================
-   MODAL
-===================================================== */
-
-function Modal({
-  children,
-  onClose,
-  disabled = false,
-}: {
-  children: ReactNode;
-  onClose: () => void;
-  disabled?: boolean;
-}) {
-  function handleBackdrop(
-    event: MouseEvent<HTMLDivElement>
-  ) {
-    if (
-      event.target ===
-      event.currentTarget
-    ) {
-      if (!disabled) {
-        onClose();
-      }
-    }
-  }
-
-  function handleKeyDown(
-    event: KeyboardEvent<HTMLDivElement>
-  ) {
-    if (
-      event.key === "Escape" &&
-      !disabled
-    ) {
-      onClose();
-    }
-  }
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
-      onMouseDown={
-        handleBackdrop
-      }
-      onKeyDown={handleKeyDown}
-      className="fixed inset-0 z-50 flex min-h-screen items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"
-    >
-      <div className="relative my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
-
-        <button
-          type="button"
-          onClick={() => {
-            if (!disabled) {
-              onClose();
-            }
-          }}
-          disabled={disabled}
-          aria-label="Close"
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10 dark:hover:text-white"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/* =====================================================
-   TOAST
-===================================================== */
-
-function Toast({
-  toast,
-  onClose,
-}: {
-  toast: ToastState;
-  onClose: () => void;
-}) {
-  const success =
-    toast.type === "success";
-
-  return (
-    <div className="fixed bottom-5 right-5 z-[60] w-[calc(100%-2rem)] max-w-sm">
-      <div
-        className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-2xl dark:bg-slate-900 ${
-          success
-            ? "border-emerald-200 dark:border-emerald-500/20"
-            : "border-red-200 dark:border-red-500/20"
-        }`}
+      <footer
+        className={`${
+          darkMode
+            ? "bg-[#080806]"
+            : "bg-[#201c15]"
+        } px-4 py-12 text-white sm:px-6`}
       >
-        <div
-          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-            success
-              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-              : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-          }`}
-        >
-          {success ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <AlertCircle className="h-4 w-4" />
-          )}
+        <div className="mx-auto max-w-[1500px]">
+          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d]">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+
+                <div className="text-xl font-black">
+                  Prime<span className="text-[#d4af58]">
+                    Cart
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-4 max-w-sm text-xs leading-6 text-white/50">
+                A smarter shopping experience built around
+                better discovery, better value and better
+                decisions.
+              </p>
+
+              <div className="mt-5 flex items-center gap-2 text-xs text-white/50">
+                <ShieldCheck className="h-4 w-4 text-[#d4af58]" />
+                Secure & trusted shopping
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
+                Shop
+              </h4>
+
+              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+                <a href="#categories">
+                  Categories
+                </a>
+                <a href="#featured">
+                  Featured
+                </a>
+                <a href="#deals">
+                  Flash Deals
+                </a>
+                <Link href="/dashboard/products">
+                  All Products
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
+                Prime
+              </h4>
+
+              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+                <Link href="/dashboard/prime-match">
+                  PrimeMatch
+                </Link>
+                <Link href="/dashboard/budget-builder">
+                  Budget Builder
+                </Link>
+                <Link href="/dashboard/setup">
+                  Build My Setup
+                </Link>
+                <Link href="/dashboard/prime-points">
+                  PrimePoints
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
+                Account
+              </h4>
+
+              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+                <Link href="/profile">
+                  Profile
+                </Link>
+                <Link href="/dashboard/orders">
+                  Orders
+                </Link>
+                <Link href="/dashboard/wishlist">
+                  Wishlist
+                </Link>
+                <Link href="/dashboard/settings">
+                  Settings
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-[10px] text-white/30 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              © {new Date().getFullYear()} PrimeCart.
+              All rights reserved.
+            </p>
+
+            <div className="flex gap-5">
+              <span>Privacy</span>
+              <span>Terms</span>
+              <span>Support</span>
+            </div>
+          </div>
         </div>
+      </footer>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-            {success
-              ? "Success"
-              : "Something went wrong"}
-          </p>
+      {/* =================================================
+          TOAST
+      ================================================= */}
 
-          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-            {toast.message}
-          </p>
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#dfc98e] bg-white px-5 py-3 shadow-2xl">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff5dd] text-[#b8872d]">
+            <BadgeCheck className="h-4 w-4" />
+          </div>
+
+          <span className="text-xs font-semibold text-[#3a3224]">
+            {toast}
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setToast(null)
+            }
+            className="text-slate-400 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
+      )}
+    </main>
   );
-}
-
-/* =====================================================
-   HELPERS
-===================================================== */
-
-function getFileTypeFromName(
-  fileName: string
-): FileType {
-  const extension =
-    fileName
-      .split(".")
-      .pop()
-      ?.toLowerCase();
-
-  if (extension === "pdf") {
-    return "pdf";
-  }
-
-  if (
-    [
-      "png",
-      "jpg",
-      "jpeg",
-      "gif",
-      "webp",
-      "svg",
-      "bmp",
-      "heic",
-    ].includes(extension || "")
-  ) {
-    return "image";
-  }
-
-  if (
-    [
-      "zip",
-      "rar",
-      "7z",
-      "tar",
-      "gz",
-    ].includes(extension || "")
-  ) {
-    return "zip";
-  }
-
-  return "document";
-}
-
-function formatBytes(
-  bytes: number
-) {
-  if (!bytes || bytes <= 0) {
-    return "0 Bytes";
-  }
-
-  const units = [
-    "Bytes",
-    "KB",
-    "MB",
-    "GB",
-    "TB",
-  ];
-
-  const index = Math.min(
-    Math.floor(
-      Math.log(bytes) /
-        Math.log(1024)
-    ),
-    units.length - 1
-  );
-
-  const value =
-    bytes /
-    Math.pow(1024, index);
-
-  return `${value.toFixed(
-    index === 0
-      ? 0
-      : value >= 100
-      ? 0
-      : 1
-  )} ${units[index]}`;
-}
-
-function getTimestamp(
-  value: unknown
-) {
-  if (!value) return 0;
-
-  const timestamp =
-    new Date(
-      String(value)
-    ).getTime();
-
-  return Number.isNaN(
-    timestamp
-  )
-    ? 0
-    : timestamp;
-}
-
-function formatModifiedDate(
-  value: unknown
-) {
-  if (!value) {
-    return "Recently";
-  }
-
-  const date =
-    new Date(
-      String(value)
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return String(value);
-  }
-
-  const now = new Date();
-
-  const difference =
-    now.getTime() -
-    date.getTime();
-
-  const minutes =
-    Math.floor(
-      difference / 60000
-    );
-
-  const hours =
-    Math.floor(
-      difference / 3600000
-    );
-
-  const days =
-    Math.floor(
-      difference / 86400000
-    );
-
-  if (minutes < 1) {
-    return "Just now";
-  }
-
-  if (minutes < 60) {
-    return `${minutes} min ago`;
-  }
-
-  if (hours < 24) {
-    return `${hours} hr${
-      hours > 1 ? "s" : ""
-    } ago`;
-  }
-
-  if (days === 1) {
-    return "Yesterday";
-  }
-
-  if (days < 7) {
-    return `${days} days ago`;
-  }
-
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
-}
-
-function getReadableType(
-  type: FileType
-) {
-  switch (type) {
-    case "pdf":
-      return "PDF document";
-
-    case "image":
-      return "Image";
-
-    case "zip":
-      return "Archive";
-
-    case "folder":
-      return "Folder";
-
-    default:
-      return "Document";
-  }
 }
