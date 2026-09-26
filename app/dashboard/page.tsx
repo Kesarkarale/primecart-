@@ -91,13 +91,13 @@ const THEME_KEY = "primecart-theme";
 
 const HERO_BANNERS = [
   "/banner/hero-banner.png",
-  "/banner/hero-banner-2.png",
-  "/banner/hero-banner-3.png",
-  "/banner/hero-banner-4.png",
-  "/banner/hero-banner-5.png",
-  "/banner/hero-banner-6.png",
-  "/banner/hero-banner-7.png",
-  "/banner/hero-banner-8.png",
+  "/banner/hero-banner2.png",
+  "/banner/hero-banner3.png",
+  "/banner/hero-banner4.png",
+  "/banner/hero-banner5.png",
+  "/banner/hero-banner6.png",
+  "/banner/hero-banner7.png",
+  "/banner/hero-banner8.png",
 ];
 
 const CATEGORY_ORDER = [
