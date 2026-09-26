@@ -41,8 +41,6 @@ import {
   useState,
 } from "react";
 
-import DashboardShell from "../components/DashboardShell";
-
 type FileType =
   | "folder"
   | "pdf"
@@ -1028,7 +1026,6 @@ export default function FilesPage() {
           onClose={() => setToast(null)}
         />
       )}
-    </DashboardShell>
   );
 }
 
@@ -1063,7 +1060,7 @@ function FileCard({
         >
           <FileIcon
             type={file.type}
-          />
+          />A
         </button>
 
         <div className="relative">
