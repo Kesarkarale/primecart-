@@ -481,7 +481,11 @@ export default function DashboardPage() {
       <header className="main-header">
         <div className="container header-main">
           <Link href="/dashboard" className="logo-wrap" aria-label="PrimeCart home">
-            <img src="/logo.png" alt="PrimeCart" className="brand-logo" />
+            <div className="logo-mark"><ShoppingBag size={27} /></div>
+            <div>
+              <div className="logo-text">PrimeCart</div>
+              <div className="logo-tagline">Shop Smart · Live Better</div>
+            </div>
           </Link>
 
           <form className="search-box" onSubmit={submitSearch}>
@@ -585,6 +589,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/products?deal=flash">Deals</Link>
           <Link href="/dashboard/products?sort=bestseller">Best Sellers</Link>
           <Link href="/dashboard/products?sort=newest">New Arrivals</Link>
+          <Link href="/dashboard/prime-points">PrimePoints</Link>
           <Link href="/dashboard/prime-match" className="nav-new">PrimeMatch <em>New</em></Link>
           <Link href="/dashboard/setup-builder" className="nav-new">Build My Setup <em>New</em></Link>
           <button className="more-nav" onClick={() => router.push("/dashboard/categories")}>More <ChevronDown size={15} /></button>
@@ -608,6 +613,7 @@ export default function DashboardPage() {
               <Link href="/dashboard/products?deal=flash" onClick={() => setMobileMenuOpen(false)}>Deals</Link>
               <Link href="/dashboard/products?sort=bestseller" onClick={() => setMobileMenuOpen(false)}>Best Sellers</Link>
               <Link href="/dashboard/products?sort=newest" onClick={() => setMobileMenuOpen(false)}>New Arrivals</Link>
+              <Link href="/dashboard/prime-points" onClick={() => setMobileMenuOpen(false)}>PrimePoints</Link>
               <Link href="/dashboard/prime-match" onClick={() => setMobileMenuOpen(false)}>PrimeMatch</Link>
               <Link href="/dashboard/setup-builder" onClick={() => setMobileMenuOpen(false)}>Build My Setup</Link>
               <Link href="/dashboard/categories" onClick={() => setMobileMenuOpen(false)}>All Categories</Link>
@@ -665,12 +671,25 @@ export default function DashboardPage() {
                   <span>{userLoggedIn ? "Welcome back to PrimeCart" : "Welcome to PrimeCart"}</span>
                 </div>
               </div>
+              <Link href={userLoggedIn ? "/dashboard/profile" : "/auth/login"} className="login-gold-btn">
+                {userLoggedIn ? "View My Account" : "Login / Register"}
+              </Link>
+
               <div className="service-list">
                 <Service icon={<Truck />} title="Free Shipping" text="Above ₹499" />
                 <Service icon={<RotateCcw />} title="Easy Returns" text="Within 7 Days" />
                 <Service icon={<ShieldCheck />} title="Secure Shopping" text="100% Safe & Secure" />
                 <Service icon={<Headphones />} title="24/7 Customer Support" text="We're here to help" />
               </div>
+            </div>
+
+            <div className="prime-points-card">
+              <div>
+                <strong>PrimePoints</strong>
+                <span>Earn Points & Get Rewards</span>
+                <Link href="/dashboard/prime-points">Learn More <ArrowRight size={14} /></Link>
+              </div>
+              <div className="gift-art">🎁</div>
             </div>
 
             <div className="top-deals-card">
@@ -834,8 +853,11 @@ export default function DashboardPage() {
 
         .main-header { background: #fff; border-bottom: 1px solid #f0eee9; }
         .header-main { min-height: 84px; display: flex; align-items: center; gap: 34px; }
-        .logo-wrap { display: flex; align-items: center; min-width: 250px; height: 58px; }
-        .brand-logo { display: block; width: 184px; height: auto; max-height: 58px; object-fit: contain; object-position: left center; }
+        .logo-wrap { display: flex; align-items: center; gap: 11px; min-width: 250px; }
+        .logo-mark { width: 43px; height: 43px; border: 2px solid var(--gold); border-radius: 10px 10px 13px 13px; color: var(--gold); display: grid; place-items: center; position: relative; }
+        .logo-mark:before { content: ""; position: absolute; width: 17px; height: 9px; border: 2px solid var(--gold); border-bottom: 0; border-radius: 12px 12px 0 0; top: -8px; left: 11px; }
+        .logo-text { color: var(--gold); font-size: 29px; line-height: 1; font-weight: 800; letter-spacing: -.8px; }
+        .logo-tagline { color: #8c8c8c; font-size: 11px; margin-top: 4px; letter-spacing: .2px; }
 
         .search-box { height: 43px; border: 1px solid #e6e4df; border-radius: 7px; display: flex; align-items: center; flex: 1; max-width: 730px; position: relative; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.025); }
         .search-box > svg { margin-left: 15px; color: #9c9c9c; flex: none; }
@@ -886,8 +908,8 @@ export default function DashboardPage() {
 
         .hero-layout { display: grid; grid-template-columns: minmax(0, 1fr) 292px; gap: 22px; align-items: stretch; }
         .hero-carousel { min-width: 0; }
-        .hero-image-frame { position: relative; width: 100%; height: 272px; border-radius: 9px; overflow: hidden; background: #f5eee0; box-shadow: 0 3px 10px rgba(0,0,0,.04); }
-        .hero-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0; transition: opacity .55s ease; pointer-events: none; }
+        .hero-image-frame { position: relative; width: 100%; aspect-ratio: 2.55 / 1; min-height: 300px; border-radius: 9px; overflow: hidden; background: #f5eee0; box-shadow: 0 3px 10px rgba(0,0,0,.04); }
+        .hero-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .55s ease; pointer-events: none; }
         .hero-banner.active { opacity: 1; pointer-events: auto; }
         .hero-arrow { position: absolute; z-index: 4; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.86); color: #9b711b; display: grid; place-items: center; box-shadow: 0 4px 13px rgba(0,0,0,.08); }
         .hero-left { left: 17px; }
@@ -911,6 +933,13 @@ export default function DashboardPage() {
         .service-row strong, .service-row small { display: block; }
         .service-row strong { font-size: 11px; }
         .service-row small { color: #777; font-size: 10px; margin-top: 3px; }
+
+        .prime-points-card { min-height: 104px; border-radius: 9px; padding: 15px 16px; background: linear-gradient(105deg, #fff7e6, #fff0cd); border: 1px solid #f0dfb9; display: flex; align-items: center; justify-content: space-between; overflow: hidden; }
+        .prime-points-card strong, .prime-points-card span { display: block; }
+        .prime-points-card strong { font-size: 15px; }
+        .prime-points-card span { font-size: 10px; margin-top: 5px; color: #725e3a; }
+        .prime-points-card a { margin-top: 9px; display: inline-flex; align-items: center; gap: 5px; background: var(--gold); color: #fff; padding: 7px 10px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .gift-art { font-size: 43px; transform: rotate(-4deg); }
 
         .top-deals-card { padding: 14px 14px 8px; }
         .rail-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -1025,6 +1054,7 @@ export default function DashboardPage() {
           .strip-right { display: none; }
           .header-main { min-height: 72px; }
           .logo-wrap { min-width: auto; }
+          .logo-text { font-size: 24px; }
           .search-box { max-width: none; }
           .header-actions { display: none; }
           .mobile-menu-button { display: block; }
@@ -1033,6 +1063,7 @@ export default function DashboardPage() {
           .right-rail { display: grid; grid-template-columns: 1fr 1fr; }
           .welcome-card { grid-row: span 2; }
           .top-deals-card { grid-column: 2; }
+          .prime-points-card { grid-column: 1; }
           .five-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .five-columns .product-card:nth-child(4), .five-columns .product-card:nth-child(5) { display: none; }
           .deal-banner-row { grid-template-columns: 1fr 1fr; }
@@ -1046,18 +1077,20 @@ export default function DashboardPage() {
           .strip-left { gap: 9px; overflow: hidden; white-space: nowrap; }
           .strip-left span:nth-of-type(3), .strip-left i:nth-of-type(2) { display: none; }
           .header-main { flex-wrap: wrap; gap: 8px; padding: 10px 0; }
-          .logo-wrap { flex: 1; min-width: 0; height: 42px; }
-          .brand-logo { width: 155px; max-height: 42px; }
+          .logo-wrap { flex: 1; }
+          .logo-mark { width: 37px; height: 37px; }
+          .logo-text { font-size: 22px; }
+          .logo-tagline { font-size: 9px; }
           .search-box { order: 3; flex-basis: 100%; height: 40px; }
           .search-box button { padding: 0 17px; }
           .page-content { padding-top: 10px; }
-          .hero-image-frame { height: 235px; border-radius: 7px; }
+          .hero-image-frame { aspect-ratio: 1.35 / 1; min-height: 235px; border-radius: 7px; }
           .hero-arrow { width: 32px; height: 32px; }
           .hero-left { left: 8px; }
           .hero-right { right: 8px; }
           .right-rail { grid-template-columns: 1fr; }
           .welcome-card { grid-row: auto; }
-          .top-deals-card { grid-column: auto; }
+          .prime-points-card, .top-deals-card { grid-column: auto; }
           .category-section { margin: 18px 0 22px; }
           .category-item { min-width: 80px; font-size: 9px; }
           .category-icon { width: 50px; height: 50px; }
@@ -1079,7 +1112,7 @@ export default function DashboardPage() {
         }
 
         @media (max-width: 430px) {
-          .hero-image-frame { height: 205px; }
+          .hero-image-frame { aspect-ratio: 1.05 / 1; }
           .product-image-wrap { height: 140px; }
           .product-category { font-size: 8px; }
           .section-head > a { font-size: 9px; }
