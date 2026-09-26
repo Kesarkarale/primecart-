@@ -130,6 +130,49 @@ const sidebarItems = [
   },
 ];
 
+  const heroBanners = [
+    {
+      image: "/banner/hero-banner.png",
+      alt: "PrimeCart shopping offer",
+      href: "/dashboard/products",
+    },
+    {
+      image: "/banner/hero-banner2.png",
+      alt: "PrimeCart featured collection",
+      href: "/dashboard/products",
+    },
+    {
+      image: "/banner/hero-banner3.png",
+      alt: "PrimeCart smart shopping",
+      href: "/dashboard/prime-match",
+    },
+    {
+      image: "/banner/hero-banner4.png",
+      alt: "PrimeCart flash deals",
+      href: "/dashboard/products",
+    },
+    {
+      image: "/banner/hero-banner5.png",
+      alt: "PrimeCart shopping deals",
+      href: "/dashboard/products",
+    },
+    {
+      image: "/banner/hero-banner6.png",
+      alt: "PrimeCart curated picks",
+      href: "/dashboard/products",
+    },
+    {
+      image: "/banner/hero-banner7.png",
+      alt: "PrimeCart PrimeMatch",
+      href: "/dashboard/prime-match",
+    },
+    {
+      image: "/banner/hero-banner8.png",
+      alt: "PrimeCart rewards",
+      href: "/dashboard/prime-points",
+    },
+  ];
+
 const smartTools = [
   {
     label: "PrimeMatch",
@@ -317,6 +360,18 @@ export default function DashboardPage() {
   const [dealMessage, setDealMessage] = useState(
     "Your mystery deal is waiting."
   );
+
+  const [activeHero, setActiveHero] = useState(0);
+
+  useEffect(() => {
+    if (heroBanners.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveHero((current) => (current + 1) % heroBanners.length);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [heroBanners.length]);
 
   /* =======================================================
      LOAD DASHBOARD
@@ -1123,86 +1178,79 @@ export default function DashboardPage() {
 
         <div className="dashboard-content">
           {/* ===============================================
-              WELCOME HERO
+              HERO BANNER CAROUSEL
           =============================================== */}
 
-          <section className="welcome-hero">
-            <div className="hero-content">
-              <div className="hero-eyebrow">
-                <span className="hero-eyebrow-dot" />
-                YOUR PERSONAL SHOPPING SPACE
-              </div>
-
-              <h1>
-                Welcome back,
-                <br />
-                <span>{firstName}.</span>
-              </h1>
-
-              <p>
-                Discover products picked around your needs,
-                budget and shopping style.
-              </p>
-
-              <div className="hero-actions">
-                <Link
-                  href="/dashboard/products"
-                  className="hero-primary"
-                >
-                  <ShoppingBag size={17} />
-                  Start Shopping
-                  <ArrowRight size={15} />
-                </Link>
-
-                <Link
-                  href="/dashboard/prime-match"
-                  className="hero-secondary"
-                >
-                  <Sparkles size={16} />
-                  Try PrimeMatch
-                </Link>
-              </div>
-            </div>
-
-            <div className="hero-decoration">
-              <div className="hero-ring ring-one" />
-              <div className="hero-ring ring-two" />
-              <div className="hero-glow" />
-            </div>
-
-            <div className="hero-points-card">
-              <div className="points-card-top">
-                <div className="points-icon">
-                  <Crown size={20} />
-                </div>
-
-                <div>
-                  <span>PRIMEPOINTS</span>
-                  <strong>
-                    {primePoints.toLocaleString("en-IN")}
-                  </strong>
-                </div>
-
-                <Link href="/dashboard/prime-points">
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-
-              <div className="points-progress">
-                <span
-                  style={{
-                    width: `${pointsProgress}%`,
-                  }}
+          <section className="hero-banner-section">
+            <div className="hero-banner-frame">
+              <Link
+                href={heroBanners[activeHero].href}
+                className="hero-banner-link"
+                aria-label={heroBanners[activeHero].alt}
+              >
+                <Image
+                  key={heroBanners[activeHero].image}
+                  src={heroBanners[activeHero].image}
+                  alt={heroBanners[activeHero].alt}
+                  fill
+                  priority={activeHero === 0}
+                  sizes="(max-width: 700px) 94vw, (max-width: 1200px) 92vw, 1600px"
+                  className="hero-banner-image"
                 />
-              </div>
+              </Link>
 
-              <div className="points-footer">
-                <span>
-                  {1000 - (primePoints % 1000)} points
-                  to next reward
-                </span>
-                <span>1000</span>
-              </div>
+              {heroBanners.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="hero-banner-arrow hero-banner-prev"
+                    onClick={() =>
+                      setActiveHero(
+                        (current) =>
+                          (current - 1 + heroBanners.length) %
+                          heroBanners.length
+                      )
+                    }
+                    aria-label="Previous banner"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="hero-banner-arrow hero-banner-next"
+                    onClick={() =>
+                      setActiveHero(
+                        (current) => (current + 1) % heroBanners.length
+                      )
+                    }
+                    aria-label="Next banner"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+
+                  <div className="hero-banner-dots" aria-label="Banner navigation">
+                    {heroBanners.map((banner, index) => (
+                      <button
+                        key={banner.image}
+                        type="button"
+                        className={`hero-banner-dot ${
+                          activeHero === index ? "active" : ""
+                        }`}
+                        onClick={() => setActiveHero(index)}
+                        aria-label={`Show banner ${index + 1}`}
+                        aria-current={activeHero === index ? "true" : undefined}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="hero-banner-count">
+                    <span>{String(activeHero + 1).padStart(2, "0")}</span>
+                    <i />
+                    <span>{String(heroBanners.length).padStart(2, "0")}</span>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
@@ -3093,242 +3141,137 @@ export default function DashboardPage() {
         }
 
         /* =================================================
-           HERO
+           HERO BANNER CAROUSEL
         ================================================= */
 
-        .welcome-hero {
-          position: relative;
-          min-height: 285px;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 39px 42px;
-          border: 1px solid rgba(190, 153, 83, 0.22);
-          border-radius: 27px;
-          background:
-            radial-gradient(
-              circle at 80% 20%,
-              rgba(255, 255, 255, 0.35),
-              transparent 23%
-            ),
-            linear-gradient(
-              120deg,
-              #f1dfb9 0%,
-              #e5cb91 48%,
-              #d6b66b 100%
-            );
-          box-shadow:
-            0 22px 50px rgba(130, 94, 35, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        .hero-banner-section {
+          width: 100%;
           animation: heroIn 0.55s ease both;
         }
 
-        .hero-content {
+        .hero-banner-frame {
           position: relative;
-          z-index: 3;
-          max-width: 570px;
+          width: 100%;
+          height: clamp(230px, 23vw, 365px);
+          overflow: hidden;
+          border: 1px solid rgba(190, 153, 83, 0.22);
+          border-radius: 25px;
+          background: #f7f1e6;
+          box-shadow:
+            0 20px 48px rgba(130, 94, 35, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
         }
 
-        .hero-eyebrow {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          margin-bottom: 13px;
-          color: #7b5d2e;
-          font-size: 8px;
-          font-weight: 850;
-          letter-spacing: 1.5px;
+        .hero-banner-link {
+          position: absolute;
+          inset: 0;
+          display: block;
+          overflow: hidden;
         }
 
-        .hero-eyebrow-dot {
-          width: 6px;
-          height: 6px;
+        .hero-banner-image {
+          object-fit: cover;
+          object-position: center;
+          transition: transform 0.8s ease, opacity 0.35s ease;
+        }
+
+        .hero-banner-link:hover .hero-banner-image {
+          transform: scale(1.018);
+        }
+
+        .hero-banner-arrow {
+          position: absolute;
+          top: 50%;
+          z-index: 4;
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255, 255, 255, 0.7);
           border-radius: 50%;
-          background: #96702f;
-          box-shadow: 0 0 0 4px rgba(150, 112, 47, 0.12);
-        }
-
-        .hero-content h1 {
-          margin: 0;
-          color: #453620;
-          font-size: clamp(30px, 3.5vw, 47px);
-          line-height: 1.05;
-          letter-spacing: -1.8px;
-        }
-
-        .hero-content h1 span {
-          color: #805d27;
-        }
-
-        .hero-content p {
-          max-width: 510px;
-          margin: 13px 0 20px;
-          color: #705d40;
-          font-size: 12px;
-          line-height: 1.65;
-        }
-
-        .hero-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 9px;
-        }
-
-        .hero-primary,
-        .hero-secondary {
-          min-height: 42px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 0 15px;
-          border-radius: 11px;
-          font-size: 11px;
-          font-weight: 750;
+          background: rgba(255, 255, 255, 0.78);
+          color: #594525;
+          box-shadow: 0 8px 24px rgba(62, 44, 20, 0.16);
+          backdrop-filter: blur(10px);
+          transform: translateY(-50%);
+          cursor: pointer;
           transition: 0.2s ease;
         }
 
-        .hero-primary {
-          background: #4c3b25;
-          color: #fff;
-          box-shadow: 0 10px 20px rgba(73, 55, 30, 0.16);
+        .hero-banner-arrow:hover {
+          background: #fff;
+          color: #8a6427;
+          transform: translateY(-50%) scale(1.06);
         }
 
-        .hero-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 14px 25px rgba(73, 55, 30, 0.22);
+        .hero-banner-prev {
+          left: 16px;
         }
 
-        .hero-secondary {
-          border: 1px solid rgba(96, 70, 30, 0.2);
-          background: rgba(255, 255, 255, 0.32);
-          color: #654a24;
+        .hero-banner-prev svg {
+          transform: rotate(180deg);
         }
 
-        .hero-secondary:hover {
-          background: rgba(255, 255, 255, 0.52);
-          transform: translateY(-2px);
+        .hero-banner-next {
+          right: 16px;
         }
 
-        .hero-decoration {
+        .hero-banner-dots {
           position: absolute;
-          right: 28%;
-          top: 50%;
-          width: 330px;
-          height: 330px;
-          transform: translateY(-50%);
-          pointer-events: none;
-        }
-
-        .hero-ring {
-          position: absolute;
-          inset: 0;
-          border: 1px solid rgba(115, 82, 27, 0.13);
-          border-radius: 50%;
-        }
-
-        .ring-one {
-          animation: rotateSlow 18s linear infinite;
-        }
-
-        .ring-two {
-          inset: 38px;
-          border-style: dashed;
-          animation: rotateSlowReverse 14s linear infinite;
-        }
-
-        .hero-glow {
-          position: absolute;
-          inset: 100px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.2);
-          filter: blur(18px);
-        }
-
-        .hero-points-card {
-          position: relative;
-          z-index: 4;
-          width: 230px;
-          padding: 17px;
-          border: 1px solid rgba(255, 255, 255, 0.48);
-          border-radius: 17px;
-          background: rgba(255, 255, 255, 0.52);
-          box-shadow:
-            0 18px 35px rgba(103, 75, 29, 0.11),
-            inset 0 1px 0 rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(10px);
-          animation: floating 4s ease-in-out infinite;
-        }
-
-        .points-card-top {
+          z-index: 5;
+          left: 50%;
+          bottom: 16px;
           display: flex;
           align-items: center;
-          gap: 10px;
-        }
-
-        .points-icon {
-          width: 39px;
-          height: 39px;
-          display: grid;
-          place-items: center;
-          border-radius: 11px;
-          background: #fff9eb;
-          color: #9b732f;
-        }
-
-        .points-card-top > div:nth-child(2) {
-          flex: 1;
-        }
-
-        .points-card-top span {
-          display: block;
-          color: #80683f;
-          font-size: 7px;
-          font-weight: 850;
-          letter-spacing: 1.1px;
-        }
-
-        .points-card-top strong {
-          display: block;
-          margin-top: 2px;
-          color: #4b3821;
-          font-size: 20px;
-        }
-
-        .points-card-top > a {
-          width: 27px;
-          height: 27px;
-          display: grid;
-          place-items: center;
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.6);
-          color: #806335;
-        }
-
-        .points-progress {
-          height: 6px;
-          margin-top: 16px;
-          overflow: hidden;
+          gap: 6px;
+          padding: 7px 9px;
+          border: 1px solid rgba(255, 255, 255, 0.58);
           border-radius: 999px;
-          background: rgba(117, 87, 39, 0.12);
+          background: rgba(50, 37, 20, 0.2);
+          backdrop-filter: blur(10px);
+          transform: translateX(-50%);
         }
 
-        .points-progress span {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: #96702e;
-          transition: width 0.7s ease;
+        .hero-banner-dot {
+          width: 7px;
+          height: 7px;
+          padding: 0;
+          border: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.58);
+          cursor: pointer;
+          transition: 0.22s ease;
         }
 
-        .points-footer {
+        .hero-banner-dot.active {
+          width: 22px;
+          border-radius: 999px;
+          background: #fff;
+        }
+
+        .hero-banner-count {
+          position: absolute;
+          right: 17px;
+          bottom: 15px;
+          z-index: 5;
           display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          margin-top: 7px;
-          color: #876f4a;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 10px;
+          border: 1px solid rgba(255, 255, 255, 0.52);
+          border-radius: 999px;
+          background: rgba(50, 37, 20, 0.2);
+          color: #fff;
           font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.8px;
+          backdrop-filter: blur(10px);
+        }
+
+        .hero-banner-count i {
+          width: 14px;
+          height: 1px;
+          background: rgba(255, 255, 255, 0.65);
         }
 
         /* =================================================
@@ -5046,19 +4989,6 @@ export default function DashboardPage() {
             display: none;
           }
 
-          .welcome-hero {
-            min-height: 300px;
-          }
-
-          .hero-points-card {
-            width: 205px;
-          }
-
-          .hero-decoration {
-            right: 21%;
-            opacity: 0.7;
-          }
-
           .product-grid {
             grid-template-columns: repeat(3, 1fr);
           }
@@ -5132,35 +5062,30 @@ export default function DashboardPage() {
             padding: 15px 13px 30px;
           }
 
-          .welcome-hero {
-            min-height: 370px;
-            align-items: flex-start;
-            padding: 25px 21px;
-            border-radius: 21px;
+          .hero-banner-frame {
+            height: 230px;
+            border-radius: 19px;
           }
 
-          .hero-content h1 {
-            font-size: 34px;
+          .hero-banner-arrow {
+            width: 34px;
+            height: 34px;
           }
 
-          .hero-content p {
-            max-width: 90%;
-            font-size: 10px;
+          .hero-banner-prev {
+            left: 10px;
           }
 
-          .hero-decoration {
-            right: -90px;
-            top: 67%;
-            opacity: 0.45;
-            transform: translateY(-50%) scale(0.75);
+          .hero-banner-next {
+            right: 10px;
           }
 
-          .hero-points-card {
-            position: absolute;
-            left: 21px;
-            right: 21px;
-            bottom: 19px;
-            width: auto;
+          .hero-banner-dots {
+            bottom: 10px;
+          }
+
+          .hero-banner-count {
+            display: none;
           }
 
           .stats-grid {
@@ -5434,8 +5359,18 @@ export default function DashboardPage() {
             height: 135px;
           }
 
-          .welcome-hero {
-            min-height: 365px;
+          .hero-banner-frame {
+            height: 185px;
+            border-radius: 17px;
+          }
+
+          .hero-banner-arrow {
+            width: 31px;
+            height: 31px;
+          }
+
+          .hero-banner-arrow svg {
+            width: 17px;
           }
         }
 
