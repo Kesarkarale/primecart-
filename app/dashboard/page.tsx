@@ -470,7 +470,11 @@ function SidebarItem({
   item: {
     label: string;
     href: string;
-    icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+    icon: React.ComponentType<{
+      size?: number;
+      strokeWidth?: number;
+      className?: string;
+    }>;
   };
   collapsed: boolean;
   onNavigate: () => void;
