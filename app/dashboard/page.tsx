@@ -1,47 +1,50 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
 import {
   ArrowRight,
-  BadgeCheck,
+  BarChart3,
   Bell,
+  CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
+  CircleDollarSign,
   Clock3,
-  Grid2X2,
+  Crown,
+  Flame,
   Heart,
+  LayoutDashboard,
+  LogOut,
   Menu,
-  Moon,
+  Package,
   Search,
+  Settings,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
-  SlidersHorizontal,
   Sparkles,
   Star,
-  Sun,
-  Tag,
+  Target,
+  TicketPercent,
   Truck,
   User,
+  WalletCards,
   X,
   Zap,
-  ShieldCheck,
-  RotateCcw,
-  PackageCheck,
-  Gift,
-  LayoutGrid,
-  List,
 } from "lucide-react";
 
-import { createClient } from "@supabase/supabase-js";
+/* =========================================================
+   TYPES
+========================================================= */
 
 type Product = {
   id: string;
-  category_id: string | null;
   name: string;
-  slug: string | null;
+  slug: string;
   short_description: string | null;
   description: string | null;
   price: number;
@@ -49,1979 +52,5408 @@ type Product = {
   stock: number;
   image_url: string | null;
   brand: string | null;
-  rating: number | null;
-  reviews_count: number | null;
+  rating: number;
+  reviews_count: number;
   is_featured: boolean;
   is_flash_sale: boolean;
+  is_active: boolean;
+  category_id: string | null;
+  created_at?: string;
 };
 
 type Category = {
   id: string;
   name: string;
+  slug: string;
 };
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+type Order = {
+  id: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+};
 
-const supabase = createClient(
-  supabaseUrl,
-  supabaseKey
-);
+type Profile = {
+  full_name: string | null;
+  email: string | null;
+  avatar_url?: string | null;
+};
 
-const gold = "#b8872d";
+type RecentProduct = {
+  id: string;
+  viewedAt: number;
+};
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
 
 const categoryIcons: Record<string, string> = {
+  "home-living": "🏠",
   mobile: "📱",
-  smartphones: "📱",
-  home: "🏠",
-  appliance: "⚙️",
-  appliances: "⚙️",
+  appliance: "⚡",
   footwear: "👟",
-  shoes: "👟",
   watch: "⌚",
-  watches: "⌚",
   bag: "👜",
-  bags: "👜",
-  toy: "🧸",
-  baby: "🧸",
+  "toy-baby": "🧸",
   automotive: "🚗",
-  fashion: "👗",
+  fashion: "👕",
   gaming: "🎮",
-  electronics: "💻",
-  beauty: "✨",
-  books: "📚",
 };
+
+const sidebarItems = [
+  {
+    label: "Overview",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Products",
+    href: "/dashboard/products",
+    icon: ShoppingBag,
+  },
+  {
+    label: "Categories",
+    href: "/dashboard/categories",
+    icon: Package,
+  },
+  {
+    label: "My Orders",
+    href: "/dashboard/orders",
+    icon: Truck,
+  },
+  {
+    label: "Wishlist",
+    href: "/dashboard/wishlist",
+    icon: Heart,
+  },
+];
+
+const smartTools = [
+  {
+    label: "PrimeMatch",
+    href: "/dashboard/prime-match",
+    description: "Find products matched to your needs.",
+    badge: "SMART MATCH",
+    icon: Target,
+  },
+  {
+    label: "Budget Builder",
+    href: "/dashboard/budget-builder",
+    description: "Plan your shopping without overspending.",
+    badge: "BUDGET",
+    icon: WalletCards,
+  },
+  {
+    label: "Setup Builder",
+    href: "/dashboard/setup-builder",
+    description: "Create a complete setup from scratch.",
+    badge: "CURATED",
+    icon: Sparkles,
+  },
+  {
+    label: "PrimePoints",
+    href: "/dashboard/prime-points",
+    description: "Track your rewards and shopping points.",
+    badge: "REWARDS",
+    icon: Crown,
+  },
+];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getImageCandidates(value: string | null) {
+  if (!value) return [];
+
+  const image = value.trim();
+
+  if (!image) return [];
+
+  if (
+    image.startsWith("http://") ||
+    image.startsWith("https://") ||
+    image.startsWith("data:")
+  ) {
+    return [image];
+  }
+
+  if (image.startsWith("/")) {
+    return [image];
+  }
+
+  return [`/${image}`, `/products/${image}`];
+}
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value || 0);
 }
 
-function discountPercent(
+function discountPercentage(
   price: number,
   originalPrice: number | null
 ) {
   if (!originalPrice || originalPrice <= price) return 0;
 
-  return Math.round(
-    ((originalPrice - price) / originalPrice) * 100
+  return Math.round(((originalPrice - price) / originalPrice) * 100);
+}
+
+function getInitials(name: string) {
+  const clean = name.trim();
+
+  if (!clean) return "PC";
+
+  const parts = clean.split(/\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function formatDate(value: string) {
+  if (!value) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatOrderStatus(status: string) {
+  if (!status) return "Processing";
+
+  return status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/* =========================================================
+   PRODUCT IMAGE
+   IMPORTANT:
+   object-contain => COMPLETE IMAGE VISIBLE
+========================================================= */
+
+function ProductImage({
+  product,
+  className = "",
+}: {
+  product: Product;
+  className?: string;
+}) {
+  const candidates = getImageCandidates(product.image_url);
+
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [product.image_url]);
+
+  if (!candidates.length || index >= candidates.length) {
+    return (
+      <div className={`product-image-fallback ${className}`}>
+        <ShoppingBag size={38} strokeWidth={1.4} />
+        <span>No image</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`product-image-wrapper ${className}`}>
+      <Image
+        src={candidates[index]}
+        alt={product.name}
+        fill
+        priority={false}
+        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 260px"
+        className="product-image-full"
+        onError={() => {
+          setIndex((current) => current + 1);
+        }}
+      />
+    </div>
   );
 }
 
-function imageUrl(value: string | null) {
-  if (!value) return null;
-
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("/")
-  ) {
-    return value;
-  }
-
-  return `/products/${value}`;
-}
-
-function getCategoryIcon(name: string) {
-  const key = name.toLowerCase().trim();
-
-  for (const [item, icon] of Object.entries(categoryIcons)) {
-    if (key.includes(item)) {
-      return icon;
-    }
-  }
-
-  return "🛍️";
-}
+/* =========================================================
+   MAIN DASHBOARD
+========================================================= */
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+
+  const [loading, setLoading] = useState(true);
+
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [categoriesLoading, setCategoriesLoading] =
-    useState(true);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [sort, setSort] = useState("featured");
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState("all");
 
-  const [cartCount, setCartCount] = useState(0);
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentProduct[]>(
+    []
+  );
 
-  const [darkMode, setDarkMode] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [dealMessage, setDealMessage] = useState(
+    "Your mystery deal is waiting."
+  );
 
-  const [heroIndex, setHeroIndex] = useState(0);
-
-  const [toast, setToast] = useState<string | null>(null);
-
-  const [showAllCategories, setShowAllCategories] =
-    useState(false);
-
-  const heroSlides = [
-    {
-      eyebrow: "PRIME DEALS",
-      title: "Shop smarter.",
-      highlight: "Live better.",
-      text: "Premium products, better prices and a shopping experience designed around you.",
-      button: "Explore Products",
-      href: "#products",
-    },
-    {
-      eyebrow: "PRIME MATCH",
-      title: "Find what fits",
-      highlight: "your budget.",
-      text: "Discover products based on your needs, priorities and spending range.",
-      button: "Try PrimeMatch",
-      href: "/dashboard/prime-match",
-    },
-    {
-      eyebrow: "FLASH SALE",
-      title: "Limited time.",
-      highlight: "Exclusive prices.",
-      text: "Grab selected products before the timer runs out.",
-      button: "Shop Deals",
-      href: "#deals",
-    },
-  ];
-
-  /* =====================================================
-     INITIAL DATA
-  ===================================================== */
+  /* =======================================================
+     LOAD DASHBOARD
+  ======================================================= */
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadDashboard() {
-      setLoading(true);
-      setCategoriesLoading(true);
+      try {
+        setLoading(true);
 
-      const [
-        productsResponse,
-        categoriesResponse,
-      ] = await Promise.all([
-        supabase
-          .from("products")
-          .select(
-            `
-              id,
-              category_id,
-              name,
-              slug,
-              short_description,
-              description,
-              price,
-              original_price,
-              stock,
-              image_url,
-              brand,
-              rating,
-              reviews_count,
-              is_featured,
-              is_flash_sale
-            `
-          )
-          .eq("is_active", true)
-          .order("created_at", {
-            ascending: false,
-          }),
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-        supabase
-          .from("categories")
-          .select("id,name")
-          .order("name", {
-            ascending: true,
-          }),
-      ]);
+        if (!user) {
+          window.location.replace("/auth/login");
+          return;
+        }
 
-      if (!productsResponse.error) {
-        setProducts(
-          (productsResponse.data || []) as Product[]
+        const [
+          profileResult,
+          productsResult,
+          categoriesResult,
+          ordersResult,
+          wishlistResult,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("full_name,email,avatar_url")
+            .eq("id", user.id)
+            .maybeSingle(),
+
+          supabase
+            .from("products")
+            .select(
+              `
+                id,
+                name,
+                slug,
+                short_description,
+                description,
+                price,
+                original_price,
+                stock,
+                image_url,
+                brand,
+                rating,
+                reviews_count,
+                is_featured,
+                is_flash_sale,
+                is_active,
+                category_id,
+                created_at
+              `
+            )
+            .eq("is_active", true)
+            .order("created_at", { ascending: false }),
+
+          supabase
+            .from("categories")
+            .select("id,name,slug")
+            .order("name", { ascending: true }),
+
+          supabase
+            .from("orders")
+            .select("id,status,total_amount,created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
+
+          supabase
+            .from("wishlist")
+            .select("id")
+            .eq("user_id", user.id),
+        ]);
+
+        if (!mounted) return;
+
+        const metadataName =
+          typeof user.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name
+            : "";
+
+        const fallbackProfile: Profile = {
+          full_name:
+            metadataName ||
+            user.user_metadata?.name ||
+            user.email?.split("@")[0] ||
+            "PrimeCart User",
+          email: user.email || null,
+          avatar_url:
+            typeof user.user_metadata?.avatar_url === "string"
+              ? user.user_metadata.avatar_url
+              : null,
+        };
+
+        setProfile(
+          profileResult.data
+            ? {
+                ...fallbackProfile,
+                ...profileResult.data,
+              }
+            : fallbackProfile
         );
-      }
 
-      if (!categoriesResponse.error) {
-        setCategories(
-          (categoriesResponse.data || []) as Category[]
-        );
-      }
+        if (!productsResult.error && productsResult.data) {
+          setProducts(productsResult.data as Product[]);
+        }
 
-      setLoading(false);
-      setCategoriesLoading(false);
+        if (!categoriesResult.error && categoriesResult.data) {
+          setCategories(categoriesResult.data as Category[]);
+        }
+
+        if (!ordersResult.error && ordersResult.data) {
+          setOrders(ordersResult.data as Order[]);
+        }
+
+        if (!wishlistResult.error && wishlistResult.data) {
+          setWishlistCount(wishlistResult.data.length);
+        }
+      } catch (error) {
+        console.error("Dashboard loading error:", error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     }
 
     loadDashboard();
-  }, []);
 
-  /* =====================================================
-     LOCAL STORAGE
-  ===================================================== */
+    return () => {
+      mounted = false;
+    };
+  }, [supabase]);
+
+  /* =======================================================
+     RECENTLY VIEWED
+  ======================================================= */
 
   useEffect(() => {
     try {
-      const savedWishlist =
-        localStorage.getItem("primecart-wishlist");
+      const stored = localStorage.getItem(
+        "primecart_recently_viewed"
+      );
 
-      const savedCart =
-        localStorage.getItem("primecart-cart-count");
+      if (stored) {
+        const parsed = JSON.parse(stored);
 
-      const savedTheme =
-        localStorage.getItem("primecart-theme");
-
-      if (savedWishlist) {
-        setWishlist(JSON.parse(savedWishlist));
-      }
-
-      if (savedCart) {
-        setCartCount(Number(savedCart) || 0);
-      }
-
-      if (savedTheme === "dark") {
-        setDarkMode(true);
-        document.documentElement.classList.add("dark");
+        if (Array.isArray(parsed)) {
+          setRecentlyViewed(parsed);
+        }
       }
     } catch {
-      // Ignore invalid local storage.
+      setRecentlyViewed([]);
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(
-      "primecart-wishlist",
-      JSON.stringify(wishlist)
+  /* =======================================================
+     DERIVED DATA
+  ======================================================= */
+
+  const featuredProducts = useMemo(() => {
+    const featured = products.filter(
+      (product) => product.is_featured
     );
-  }, [wishlist]);
 
-  useEffect(() => {
-    localStorage.setItem(
-      "primecart-cart-count",
-      String(cartCount)
+    return (featured.length ? featured : products).slice(0, 6);
+  }, [products]);
+
+  const flashProducts = useMemo(() => {
+    const flash = products.filter(
+      (product) => product.is_flash_sale
     );
-  }, [cartCount]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setHeroIndex((current) =>
-        current === heroSlides.length - 1
-          ? 0
-          : current + 1
-      );
-    }, 6000);
+    return (flash.length ? flash : products).slice(0, 4);
+  }, [products]);
 
-    return () => window.clearInterval(timer);
-  }, [heroSlides.length]);
+  const latestProducts = useMemo(() => {
+    return products.slice(0, 8);
+  }, [products]);
 
-  /* =====================================================
-     THEME
-  ===================================================== */
-
-  function toggleTheme() {
-    setDarkMode((current) => {
-      const next = !current;
-
-      if (next) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem(
-          "primecart-theme",
-          "dark"
-        );
-      } else {
-        document.documentElement.classList.remove(
-          "dark"
-        );
-        localStorage.setItem(
-          "primecart-theme",
-          "light"
-        );
-      }
-
-      return next;
-    });
-  }
-
-  /* =====================================================
-     TOAST
-  ===================================================== */
-
-  function showToast(message: string) {
-    setToast(message);
-
-    window.setTimeout(() => {
-      setToast(null);
-    }, 2500);
-  }
-
-  /* =====================================================
-     WISHLIST
-  ===================================================== */
-
-  function toggleWishlist(productId: string) {
-    setWishlist((current) => {
-      const exists = current.includes(productId);
-
-      if (exists) {
-        showToast("Removed from wishlist");
-        return current.filter(
-          (id) => id !== productId
-        );
-      }
-
-      showToast("Added to wishlist");
-      return [...current, productId];
-    });
-  }
-
-  /* =====================================================
-     CART
-  ===================================================== */
-
-  function addToCart(product: Product) {
-    if (product.stock <= 0) {
-      showToast("This product is currently out of stock");
-      return;
+  const filteredCategoryProducts = useMemo(() => {
+    if (activeCategory === "all") {
+      return products.slice(0, 8);
     }
 
-    setCartCount((count) => count + 1);
+    return products
+      .filter(
+        (product) => product.category_id === activeCategory
+      )
+      .slice(0, 8);
+  }, [products, activeCategory]);
 
-    showToast(`${product.name} added to cart`);
-  }
-
-  function buyNow(product: Product) {
-    if (product.stock <= 0) {
-      showToast("This product is currently out of stock");
-      return;
-    }
-
-    localStorage.setItem(
-      "primecart-buy-now",
-      JSON.stringify({
-        product,
-        quantity: 1,
-      })
-    );
-
-    router.push("/checkout");
-  }
-
-  /* =====================================================
-     FILTERING
-  ===================================================== */
-
-  const filteredProducts = useMemo(() => {
+  const searchResults = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    let result = [...products];
+    if (!query) return [];
 
-    if (category !== "All") {
-      const selected = categories.find(
-        (item) => item.name === category
-      );
+    return products
+      .filter((product) => {
+        const name = product.name?.toLowerCase() || "";
+        const brand = product.brand?.toLowerCase() || "";
+        const description =
+          product.short_description?.toLowerCase() || "";
 
-      if (selected) {
-        result = result.filter(
-          (product) =>
-            product.category_id === selected.id
-        );
-      }
-    }
-
-    if (query) {
-      result = result.filter((product) => {
         return (
-          product.name
-            .toLowerCase()
-            .includes(query) ||
-          product.brand
-            ?.toLowerCase()
-            .includes(query) ||
-          product.short_description
-            ?.toLowerCase()
-            .includes(query)
+          name.includes(query) ||
+          brand.includes(query) ||
+          description.includes(query)
         );
-      });
-    }
+      })
+      .slice(0, 6);
+  }, [products, search]);
 
-    if (sort === "price-low") {
-      result.sort((a, b) => a.price - b.price);
-    }
-
-    if (sort === "price-high") {
-      result.sort((a, b) => b.price - a.price);
-    }
-
-    if (sort === "rating") {
-      result.sort(
-        (a, b) =>
-          (b.rating || 0) - (a.rating || 0)
-      );
-    }
-
-    if (sort === "discount") {
-      result.sort(
-        (a, b) =>
-          discountPercent(
-            b.price,
-            b.original_price
-          ) -
-          discountPercent(
-            a.price,
-            a.original_price
-          )
-      );
-    }
-
-    if (sort === "featured") {
-      result.sort(
-        (a, b) =>
-          Number(b.is_featured) -
-          Number(a.is_featured)
-      );
-    }
-
-    return result;
-  }, [
-    products,
-    categories,
-    category,
-    search,
-    sort,
-  ]);
-
-  const featuredProducts = useMemo(
-    () =>
-      products
-        .filter(
-          (product) => product.is_featured
-        )
-        .slice(0, 8),
-    [products]
-  );
-
-  const flashProducts = useMemo(
-    () =>
-      products
-        .filter(
-          (product) => product.is_flash_sale
-        )
-        .slice(0, 6),
-    [products]
-  );
-
-  const visibleCategories = showAllCategories
-    ? categories
-    : categories.slice(0, 8);
-
-  /* =====================================================
-     PRODUCT CARD
-  ===================================================== */
-
-  function ProductCard({
-    product,
-  }: {
-    product: Product;
-  }) {
-    const discount = discountPercent(
-      product.price,
-      product.original_price
+  const totalSpent = useMemo(() => {
+    return orders.reduce(
+      (sum, order) => sum + Number(order.total_amount || 0),
+      0
     );
+  }, [orders]);
 
-    const image = imageUrl(product.image_url);
+  const primePoints = Math.floor(totalSpent / 10);
 
+  const userName =
+    profile?.full_name ||
+    profile?.email?.split("@")[0] ||
+    "PrimeCart User";
+
+  const firstName = userName.split(" ")[0];
+
+  const recentProducts = useMemo(() => {
+    return recentlyViewed
+      .map((item) => products.find((product) => product.id === item.id))
+      .filter(Boolean) as Product[];
+  }, [recentlyViewed, products]);
+
+  const visibleRecentProducts =
+    recentProducts.length > 0
+      ? recentProducts.slice(0, 4)
+      : latestProducts.slice(0, 4);
+
+  const pointsProgress = Math.min(
+    100,
+    ((primePoints % 1000) / 1000) * 100
+  );
+
+  /* =======================================================
+     ACTIONS
+  ======================================================= */
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.replace("/auth/login");
+  }
+
+  function openProduct(product: Product) {
+    try {
+      const current: RecentProduct[] = JSON.parse(
+        localStorage.getItem(
+          "primecart_recently_viewed"
+        ) || "[]"
+      );
+
+      const updated: RecentProduct[] = [
+        {
+          id: product.id,
+          viewedAt: Date.now(),
+        },
+        ...current.filter((item) => item.id !== product.id),
+      ].slice(0, 10);
+
+      localStorage.setItem(
+        "primecart_recently_viewed",
+        JSON.stringify(updated)
+      );
+    } catch {
+      // ignore local storage errors
+    }
+  }
+
+  function revealMysteryDeal() {
+    const deals = [
+      "You unlocked a surprise PrimeCart deal!",
+      "A special discount is waiting for you.",
+      "Your personalized deal has been revealed!",
+      "PrimeCart found something special for you.",
+    ];
+
+    const random =
+      deals[Math.floor(Math.random() * deals.length)];
+
+    setDealMessage(random);
+  }
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
+
+  if (loading) {
     return (
-      <div
-        className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${
-          darkMode
-            ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
-            : "border-[#eee9df] bg-white hover:-translate-y-1 hover:border-[#d7b66c] hover:shadow-[0_18px_45px_rgba(184,135,45,0.12)]"
-        }`}
-      >
-        <div className="absolute left-3 top-3 z-10 flex flex-col gap-2">
-          {discount > 0 && (
-            <span className="rounded-lg bg-[#b8872d] px-2.5 py-1 text-[10px] font-bold text-white">
-              {discount}% OFF
-            </span>
-          )}
-
-          {product.is_flash_sale && (
-            <span className="flex items-center gap-1 rounded-lg bg-red-500 px-2.5 py-1 text-[10px] font-bold text-white">
-              <Zap className="h-3 w-3" />
-              FLASH
-            </span>
-          )}
+      <div className="dashboard-loading">
+        <div className="loading-logo">
+          <div className="loading-logo-mark">P</div>
+          <div>
+            <strong>PrimeCart</strong>
+            <span>Smart shopping</span>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            toggleWishlist(product.id)
+        <div className="loading-spinner" />
+
+        <p>Preparing your shopping dashboard...</p>
+
+        <style jsx>{`
+          .dashboard-loading {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            background:
+              radial-gradient(
+                circle at top left,
+                rgba(199, 154, 59, 0.1),
+                transparent 35%
+              ),
+              #fbf8f2;
+            color: #4a4034;
           }
-          className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition ${
-            wishlist.includes(product.id)
-              ? "border-red-200 bg-red-50 text-red-500"
-              : darkMode
-              ? "border-white/10 bg-black/30 text-white/70 hover:text-red-400"
-              : "border-[#eee9df] bg-white/90 text-slate-500 hover:text-red-500"
-          }`}
-        >
-          <Heart
-            className="h-4 w-4"
-            fill={
-              wishlist.includes(product.id)
-                ? "currentColor"
-                : "none"
+
+          .loading-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .loading-logo-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(
+              135deg,
+              #d7b66a,
+              #9c7430
+            );
+            color: white;
+            font-size: 20px;
+            font-weight: 800;
+            box-shadow: 0 10px 30px rgba(155, 113, 46, 0.2);
+          }
+
+          .loading-logo strong {
+            display: block;
+            font-size: 19px;
+          }
+
+          .loading-logo span {
+            display: block;
+            color: #9b907f;
+            font-size: 11px;
+            margin-top: 2px;
+          }
+
+          .loading-spinner {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid #eadfcb;
+            border-top-color: #b9975b;
+            animation: spin 0.8s linear infinite;
+          }
+
+          .dashboard-loading p {
+            color: #9b907f;
+            font-size: 13px;
+          }
+
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
             }
-          />
-        </button>
-
-        <Link
-          href={`/dashboard/product/${product.id}`}
-          className="block"
-        >
-          <div
-            className={`flex h-[230px] items-center justify-center overflow-hidden ${
-              darkMode
-                ? "bg-[#171511]"
-                : "bg-[#faf8f3]"
-            }`}
-          >
-            {image ? (
-              <img
-                src={image}
-                alt={product.name}
-                className="h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-slate-300">
-                <ShoppingBag className="h-12 w-12" />
-                <span className="text-xs">
-                  No image
-                </span>
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="p-4">
-          {product.brand && (
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-[#b8872d]">
-              {product.brand}
-            </p>
-          )}
-
-          <Link
-            href={`/dashboard/product/${product.id}`}
-          >
-            <h3
-              className={`line-clamp-2 min-h-[42px] text-sm font-semibold transition ${
-                darkMode
-                  ? "text-white hover:text-[#d8b96a]"
-                  : "text-[#25211a] hover:text-[#b8872d]"
-              }`}
-            >
-              {product.name}
-            </h3>
-          </Link>
-
-          {product.short_description && (
-            <p className="mt-1 line-clamp-1 text-xs text-slate-400">
-              {product.short_description}
-            </p>
-          )}
-
-          <div className="mt-3 flex items-center gap-2">
-            <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-1 text-[11px] font-semibold text-emerald-600">
-              <Star
-                className="h-3 w-3"
-                fill="currentColor"
-              />
-              {Number(
-                product.rating || 0
-              ).toFixed(1)}
-            </span>
-
-            <span className="text-[11px] text-slate-400">
-              ({product.reviews_count || 0})
-            </span>
-          </div>
-
-          <div className="mt-3 flex items-end gap-2">
-            <span
-              className={`text-lg font-bold ${
-                darkMode
-                  ? "text-white"
-                  : "text-[#201d17]"
-              }`}
-            >
-              {formatPrice(product.price)}
-            </span>
-
-            {product.original_price &&
-              product.original_price >
-                product.price && (
-                <span className="pb-0.5 text-xs text-slate-400 line-through">
-                  {formatPrice(
-                    product.original_price
-                  )}
-                </span>
-              )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                addToCart(product)
-              }
-              disabled={product.stock <= 0}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-[#d9c08a] px-3 py-2.5 text-xs font-semibold text-[#9a6e1f] transition hover:bg-[#fff9ec] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ShoppingCart className="h-3.5 w-3.5" />
-              Cart
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                buyNow(product)
-              }
-              disabled={product.stock <= 0}
-              className="rounded-xl bg-[#b8872d] px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-[#9e7325] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {product.stock <= 0
-                ? "Out of stock"
-                : "Buy Now"}
-            </button>
-          </div>
-        </div>
+          }
+        `}</style>
       </div>
     );
   }
 
-  /* =====================================================
+  /* =======================================================
      RENDER
-  ===================================================== */
+  ======================================================= */
 
   return (
-    <main
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-[#080806] text-white"
-          : "bg-[#faf8f3] text-[#25211a]"
-      }`}
-    >
-      {/* =================================================
-          TOP BAR
-      ================================================= */}
+    <div className="prime-dashboard">
+      {/* ===================================================
+          MOBILE OVERLAY
+      =================================================== */}
 
-      <div
-        className={`hidden border-b py-2.5 lg:block ${
-          darkMode
-            ? "border-white/10 bg-[#0e0d0a]"
-            : "border-[#eee8dc] bg-[#fffdf9]"
+      {mobileMenu && (
+        <button
+          className="mobile-overlay"
+          onClick={() => setMobileMenu(false)}
+          aria-label="Close menu"
+        />
+      )}
+
+      {/* ===================================================
+          SIDEBAR
+      =================================================== */}
+
+      <aside
+        className={`dashboard-sidebar ${
+          mobileMenu ? "sidebar-open" : ""
         }`}
       >
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 text-[11px]">
-          <div className="flex items-center gap-6 text-slate-500">
-            <span className="flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5 text-[#b8872d]" />
-              Free shipping above ₹499
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <RotateCcw className="h-3.5 w-3.5 text-[#b8872d]" />
-              Easy returns
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#b8872d]" />
-              Secure shopping
-            </span>
-          </div>
-
-          <div className="flex items-center gap-5 text-slate-500">
-            <Link
-              href="/dashboard/orders"
-              className="hover:text-[#b8872d]"
-            >
-              Track Order
-            </Link>
-
-            <Link
-              href="/dashboard/prime-points"
-              className="hover:text-[#b8872d]"
-            >
-              PrimePoints
-            </Link>
-
-            <Link
-              href="/dashboard/settings"
-              className="hover:text-[#b8872d]"
-            >
-              Help
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* =================================================
-          NAVBAR
-      ================================================= */}
-
-      <header
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
-          darkMode
-            ? "border-white/10 bg-[#080806]/90"
-            : "border-[#eee8dc] bg-[#fffdf9]/95"
-        }`}
-      >
-        <div className="mx-auto flex h-[74px] max-w-[1500px] items-center gap-4 px-4 sm:px-6">
-          <button
-            type="button"
-            onClick={() =>
-              setMobileMenu((value) => !value)
-            }
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e9dfcb] lg:hidden"
-          >
-            {mobileMenu ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
-
+        <div className="sidebar-brand">
           <Link
             href="/dashboard"
-            className="flex shrink-0 items-center gap-2"
+            className="brand-link"
+            onClick={() => setMobileMenu(false)}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d] text-white shadow-lg shadow-[#b8872d]/20">
-              <ShoppingBag className="h-5 w-5" />
+            <div className="brand-mark">
+              <span>P</span>
             </div>
 
-            <div className="hidden sm:block">
-              <div className="text-xl font-black tracking-tight">
-                Prime<span className="text-[#b8872d]">Cart</span>
-              </div>
-
-              <div className="text-[8px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                Shop smarter
-              </div>
+            <div className="brand-copy">
+              <strong>PrimeCart</strong>
+              <span>Smart shopping</span>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-6 lg:flex">
-            <Link
-              href="/dashboard"
-              className="text-sm font-semibold text-[#b8872d]"
-            >
-              Home
-            </Link>
-
-            <a
-              href="#categories"
-              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
-            >
-              Categories
-            </a>
-
-            <a
-              href="#featured"
-              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
-            >
-              Featured
-            </a>
-
-            <a
-              href="#deals"
-              className="text-sm font-medium text-slate-500 transition hover:text-[#b8872d]"
-            >
-              Deals
-            </a>
-
-            <Link
-              href="/dashboard/prime-match"
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-[#b8872d]"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              PrimeMatch
-            </Link>
-          </nav>
-
-          <div className="ml-auto flex items-center gap-2">
-            <div className="hidden w-[250px] xl:block">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                <input
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Search products..."
-                  className={`h-10 w-full rounded-xl border pl-10 pr-4 text-xs outline-none transition ${
-                    darkMode
-                      ? "border-white/10 bg-white/5 text-white"
-                      : "border-[#e8dfd0] bg-[#faf8f3]"
-                  }`}
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSearchOpen(
-                  (value) => !value
-                )
-              }
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] xl:hidden"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-
-            <Link
-              href="/dashboard/wishlist"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d]"
-            >
-              <Heart className="h-4 w-4" />
-
-              {wishlist.length > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                  {wishlist.length}
-                </span>
-              )}
-            </Link>
-
-            <Link
-              href="/dashboard/orders"
-              className="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] sm:flex"
-            >
-              <PackageCheck className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href="/cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d]"
-            >
-              <ShoppingCart className="h-4 w-4" />
-
-              {cartCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-[#f5efe3] hover:text-[#b8872d] sm:flex"
-            >
-              {darkMode ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-
-            <Link
-              href="/profile"
-              className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d] text-white sm:flex"
-            >
-              <User className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        {searchOpen && (
-          <div className="border-t border-[#eee8dc] p-3 xl:hidden">
-            <div className="relative mx-auto max-w-[1500px]">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-              <input
-                autoFocus
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search products..."
-                className="h-11 w-full rounded-xl border border-[#e8dfd0] bg-[#faf8f3] pl-10 pr-4 text-sm outline-none focus:border-[#b8872d]"
-              />
-            </div>
-          </div>
-        )}
-
-        {mobileMenu && (
-          <div
-            className={`border-t px-5 py-5 lg:hidden ${
-              darkMode
-                ? "border-white/10 bg-[#0e0d0a]"
-                : "border-[#eee8dc] bg-white"
-            }`}
-          >
-            <div className="flex flex-col gap-4">
-              <Link
-                href="/dashboard"
-                className="font-semibold text-[#b8872d]"
-              >
-                Home
-              </Link>
-
-              <a href="#categories">
-                Categories
-              </a>
-
-              <a href="#featured">
-                Featured Products
-              </a>
-
-              <a href="#deals">
-                Flash Deals
-              </a>
-
-              <Link href="/dashboard/prime-match">
-                PrimeMatch
-              </Link>
-
-              <Link href="/dashboard/budget-builder">
-                Budget Builder
-              </Link>
-
-              <Link href="/dashboard/setup">
-                Build My Setup
-              </Link>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex items-center gap-2 text-left"
-              >
-                {darkMode ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-
-                {darkMode
-                  ? "Light Mode"
-                  : "Dark Mode"}
-              </button>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* =================================================
-          HERO
-      ================================================= */}
-
-      <section className="mx-auto max-w-[1500px] px-4 pt-5 sm:px-6 lg:pt-7">
-        <div
-          className={`relative min-h-[430px] overflow-hidden rounded-[30px] border ${
-            darkMode
-              ? "border-[#3a3020] bg-[#15120c]"
-              : "border-[#eadfc9] bg-[#fffdf8]"
-          }`}
-        >
-          <div className="absolute inset-0">
-            <div
-              className={`absolute right-[-100px] top-[-100px] h-[400px] w-[400px] rounded-full blur-3xl ${
-                darkMode
-                  ? "bg-[#b8872d]/10"
-                  : "bg-[#b8872d]/10"
-              }`}
-            />
-
-            <div className="absolute bottom-[-160px] left-[35%] h-[400px] w-[400px] rounded-full bg-[#d9b86c]/10 blur-3xl" />
-          </div>
-
-          <div className="relative grid min-h-[430px] items-center gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[1.1fr_.9fr] lg:px-16">
-            <div className="max-w-2xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8bd7c] bg-[#fffaf0] px-3 py-1.5 text-[10px] font-bold tracking-[0.2em] text-[#a8781f]">
-                <Sparkles className="h-3.5 w-3.5" />
-                {heroSlides[heroIndex].eyebrow}
-              </div>
-
-              <h1
-                className={`text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl ${
-                  darkMode
-                    ? "text-white"
-                    : "text-[#211d16]"
-                }`}
-              >
-                {heroSlides[heroIndex].title}
-                <br />
-                <span className="text-[#b8872d]">
-                  {heroSlides[heroIndex].highlight}
-                </span>
-              </h1>
-
-              <p className="mt-5 max-w-xl text-sm leading-7 text-slate-500 sm:text-base">
-                {heroSlides[heroIndex].text}
-              </p>
-
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  href={
-                    heroSlides[heroIndex].href
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-xl shadow-[#b8872d]/20 transition hover:bg-[#9f7527]"
-                >
-                  {heroSlides[heroIndex].button}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-
-                <Link
-                  href="/dashboard/prime-match"
-                  className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
-                    darkMode
-                      ? "border-white/10 text-white hover:bg-white/5"
-                      : "border-[#dfd4c1] text-[#5c513e] hover:bg-[#fffaf0]"
-                  }`}
-                >
-                  <Sparkles className="h-4 w-4 text-[#b8872d]" />
-                  PrimeMatch
-                </Link>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-5 text-xs text-slate-400">
-                <span className="flex items-center gap-2">
-                  <BadgeCheck className="h-4 w-4 text-[#b8872d]" />
-                  Verified products
-                </span>
-
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[#b8872d]" />
-                  Secure checkout
-                </span>
-
-                <span className="flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-[#b8872d]" />
-                  Fast delivery
-                </span>
-              </div>
-            </div>
-
-            <div className="relative hidden h-[350px] lg:block">
-              <div className="absolute right-4 top-1/2 w-[350px] -translate-y-1/2">
-                <div className="relative rounded-[32px] border border-[#d9c08a] bg-white/80 p-5 shadow-[0_30px_80px_rgba(80,60,20,0.12)] backdrop-blur-xl">
-                  <div className="mb-5 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b8872d]">
-                        PrimeCart Picks
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-[#272218]">
-                        Curated for you
-                      </p>
-                    </div>
-
-                    <Gift className="h-6 w-6 text-[#b8872d]" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {(
-                      featuredProducts.length
-                        ? featuredProducts
-                        : products
-                    )
-                      .slice(0, 4)
-                      .map((product) => (
-                        <div
-                          key={product.id}
-                          className="rounded-2xl border border-[#eee8dc] bg-[#faf8f3] p-3"
-                        >
-                          <div className="flex h-24 items-center justify-center">
-                            {imageUrl(
-                              product.image_url
-                            ) ? (
-                              <img
-                                src={imageUrl(
-                                  product.image_url
-                                )!}
-                                alt=""
-                                className="h-full w-full object-contain"
-                              />
-                            ) : (
-                              <ShoppingBag className="h-8 w-8 text-[#d0c4ac]" />
-                            )}
-                          </div>
-
-                          <p className="mt-2 line-clamp-1 text-xs font-semibold text-[#342e24]">
-                            {product.name}
-                          </p>
-
-                          <p className="mt-1 text-xs font-bold text-[#b8872d]">
-                            {formatPrice(
-                              product.price
-                            )}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-
-                  <div className="mt-4 rounded-xl bg-[#fff8e9] p-3 text-center">
-                    <span className="text-xs font-semibold text-[#9a6e1f]">
-                      Smart picks • Better value • Prime experience
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2">
-            {heroSlides.map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() =>
-                  setHeroIndex(index)
-                }
-                className={`h-1.5 rounded-full transition-all ${
-                  index === heroIndex
-                    ? "w-7 bg-[#b8872d]"
-                    : "w-1.5 bg-[#d4c7af]"
-                }`}
-              />
-            ))}
-          </div>
-
           <button
-            type="button"
-            onClick={() =>
-              setHeroIndex(
-                heroIndex === 0
-                  ? heroSlides.length - 1
-                  : heroIndex - 1
-              )
-            }
-            className="absolute left-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e4d9c4] bg-white/80 text-[#8d7446] backdrop-blur transition hover:bg-white lg:flex"
+            className="mobile-close"
+            onClick={() => setMobileMenu(false)}
+            aria-label="Close menu"
           >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setHeroIndex(
-                heroIndex ===
-                  heroSlides.length - 1
-                  ? 0
-                  : heroIndex + 1
-              )
-            }
-            className="absolute right-4 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#e4d9c4] bg-white/80 text-[#8d7446] backdrop-blur transition hover:bg-white lg:flex"
-          >
-            <ChevronRight className="h-5 w-5" />
+            <X size={20} />
           </button>
         </div>
-      </section>
 
-      {/* =================================================
-          QUICK FEATURES
-      ================================================= */}
+        <div className="sidebar-scroll">
+          <div className="sidebar-label">MAIN MENU</div>
 
-      <section className="mx-auto max-w-[1500px] px-4 pt-5 sm:px-6">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            {
-              icon: Truck,
-              title: "Fast Delivery",
-              text: "Reliable doorstep delivery",
-            },
-            {
-              icon: ShieldCheck,
-              title: "Secure Shopping",
-              text: "Protected payments",
-            },
-            {
-              icon: RotateCcw,
-              title: "Easy Returns",
-              text: "Simple return process",
-            },
-            {
-              icon: BadgeCheck,
-              title: "Verified Products",
-              text: "Quality you can trust",
-            },
-          ].map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.title}
-                className={`flex items-center gap-3 rounded-2xl border p-4 ${
-                  darkMode
-                    ? "border-white/10 bg-[#11100d]"
-                    : "border-[#eee8dc] bg-white"
-                }`}
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e7] text-[#b8872d]">
-                  <Icon className="h-5 w-5" />
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold">
-                    {item.title}
-                  </p>
-
-                  <p className="mt-0.5 text-[10px] text-slate-400">
-                    {item.text}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* =================================================
-          CATEGORIES
-      ================================================= */}
-
-      <section
-        id="categories"
-        className="mx-auto max-w-[1500px] px-4 pt-12 sm:px-6"
-      >
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
-              Explore
-            </p>
-
-            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
-              Shop by Category
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Find exactly what you are looking for.
-            </p>
-          </div>
-
-          {categories.length > 8 && (
-            <button
-              type="button"
-              onClick={() =>
-                setShowAllCategories(
-                  (value) => !value
-                )
-              }
-              className="text-xs font-semibold text-[#b8872d]"
-            >
-              {showAllCategories
-                ? "Show Less"
-                : "View All"}
-            </button>
-          )}
-        </div>
-
-        {categoriesLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            {Array.from({
-              length: 8,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="h-28 animate-pulse rounded-2xl bg-white"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            <button
-              type="button"
-              onClick={() => {
-                setCategory("All");
-                document
-                  .getElementById("products")
-                  ?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-              }}
-              className={`rounded-2xl border p-4 text-center transition ${
-                category === "All"
-                  ? "border-[#caa85d] bg-[#fff8e9] shadow-sm"
-                  : darkMode
-                  ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
-                  : "border-[#eee8dc] bg-white hover:-translate-y-1 hover:border-[#d7b66c]"
-              }`}
-            >
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf6ed] text-2xl">
-                🛍️
-              </div>
-
-              <p className="mt-3 text-xs font-bold">
-                All Products
-              </p>
-            </button>
-
-            {visibleCategories.map(
-              (item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setCategory(item.name);
-
-                    document
-                      .getElementById(
-                        "products"
-                      )
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      });
-                  }}
-                  className={`rounded-2xl border p-4 text-center transition ${
-                    category === item.name
-                      ? "border-[#caa85d] bg-[#fff8e9] shadow-sm"
-                      : darkMode
-                      ? "border-white/10 bg-[#11100d] hover:border-[#b8872d]/50"
-                      : "border-[#eee8dc] bg-white hover:-translate-y-1 hover:border-[#d7b66c]"
-                  }`}
-                >
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf6ed] text-2xl">
-                    {getCategoryIcon(
-                      item.name
-                    )}
-                  </div>
-
-                  <p className="mt-3 line-clamp-1 text-xs font-bold">
-                    {item.name}
-                  </p>
-                </button>
-              )
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          FEATURED
-      ================================================= */}
-
-      <section
-        id="featured"
-        className="mx-auto max-w-[1500px] px-4 pt-12 sm:px-6"
-      >
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
-              Curated for you
-            </p>
-
-            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
-              Featured Products
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Popular picks selected for PrimeCart shoppers.
-            </p>
-          </div>
-
-          <Link
-            href="/dashboard/products"
-            className="hidden items-center gap-1 text-xs font-bold text-[#b8872d] sm:flex"
-          >
-            View all
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({
-              length: 8,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="h-[430px] animate-pulse rounded-2xl bg-white"
-              />
-            ))}
-          </div>
-        ) : featuredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#d8ccb7] bg-white p-12 text-center">
-            <ShoppingBag className="mx-auto h-10 w-10 text-[#c9b68f]" />
-            <p className="mt-3 text-sm font-semibold">
-              No featured products available
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.map(
-              (product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                />
-              )
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          FLASH DEALS
-      ================================================= */}
-
-      <section
-        id="deals"
-        className="mx-auto max-w-[1500px] px-4 pt-14 sm:px-6"
-      >
-        <div className="overflow-hidden rounded-[28px] border border-[#ead8ad] bg-[#fff8e9] p-5 sm:p-7">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#b8872d] text-white">
-                  <Zap className="h-4 w-4" />
-                </div>
-
-                <span className="text-xs font-black uppercase tracking-[0.2em] text-[#9b701f]">
-                  Flash Deals
-                </span>
-              </div>
-
-              <h2 className="mt-3 text-2xl font-black text-[#2c261b] sm:text-3xl">
-                Deals that disappear fast
-              </h2>
-
-              <p className="mt-1 max-w-xl text-xs leading-6 text-[#806f4d]">
-                Limited-time prices on selected products.
-                Grab your favourites before the deal ends.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {[
-                ["08", "HRS"],
-                ["42", "MIN"],
-                ["18", "SEC"],
-              ].map(([value, label]) => (
-                <div
-                  key={label}
-                  className="rounded-xl bg-white px-4 py-3 text-center shadow-sm"
-                >
-                  <p className="text-xl font-black text-[#2c261b]">
-                    {value}
-                  </p>
-
-                  <p className="text-[8px] font-bold text-[#9b701f]">
-                    {label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {flashProducts.length > 0 && (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {flashProducts.map(
-              (product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                />
-              )
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          ALL PRODUCTS
-      ================================================= */}
-
-      <section
-        id="products"
-        className="mx-auto max-w-[1500px] px-4 pb-16 pt-14 sm:px-6"
-      >
-        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
-              Discover
-            </p>
-
-            <h2 className="mt-1 text-2xl font-black sm:text-3xl">
-              {category === "All"
-                ? "All Products"
-                : category}
-            </h2>
-
-            <p className="mt-1 text-xs text-slate-400">
-              {filteredProducts.length} products found
-              {search
-                ? ` for "${search}"`
-                : ""}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-
-              <select
-                value={sort}
-                onChange={(event) =>
-                  setSort(
-                    event.target.value
-                  )
-                }
-                className="h-10 appearance-none rounded-xl border border-[#e8dfd0] bg-white pl-9 pr-9 text-xs font-semibold text-slate-600 outline-none"
-              >
-                <option value="featured">
-                  Featured
-                </option>
-
-                <option value="price-low">
-                  Price: Low to High
-                </option>
-
-                <option value="price-high">
-                  Price: High to Low
-                </option>
-
-                <option value="rating">
-                  Highest Rated
-                </option>
-
-                <option value="discount">
-                  Biggest Discount
-                </option>
-              </select>
-
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setView("grid")
-              }
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
-                view === "grid"
-                  ? "border-[#d6b86e] bg-[#fff8e9] text-[#b8872d]"
-                  : "border-[#e8dfd0] bg-white text-slate-400"
-              }`}
-            >
-              <Grid2X2 className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setView("list")
-              }
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
-                view === "list"
-                  ? "border-[#d6b86e] bg-[#fff8e9] text-[#b8872d]"
-                  : "border-[#e8dfd0] bg-white text-slate-400"
-              }`}
-            >
-              <List className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {filteredProducts.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-[#d8ccb7] bg-white px-6 py-16 text-center">
-            <Search className="mx-auto h-10 w-10 text-[#cbbd9f]" />
-
-            <h3 className="mt-4 text-lg font-bold">
-              No products found
-            </h3>
-
-            <p className="mt-2 text-sm text-slate-400">
-              Try another search or category.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSearch("");
-                setCategory("All");
-              }}
-              className="mt-5 rounded-xl bg-[#b8872d] px-5 py-2.5 text-xs font-bold text-white"
-            >
-              Clear Filters
-            </button>
-          </div>
-        ) : view === "grid" ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map(
-              (product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                />
-              )
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredProducts.map(
-              (product) => {
-                const image = imageUrl(
-                  product.image_url
-                );
-
-                const discount =
-                  discountPercent(
-                    product.price,
-                    product.original_price
-                  );
-
-                return (
-                  <div
-                    key={product.id}
-                    className={`flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center ${
-                      darkMode
-                        ? "border-white/10 bg-[#11100d]"
-                        : "border-[#eee8dc] bg-white"
-                    }`}
-                  >
-                    <Link
-                      href={`/dashboard/product/${product.id}`}
-                      className="flex h-28 w-full shrink-0 items-center justify-center rounded-xl bg-[#faf8f3] sm:w-32"
-                    >
-                      {image ? (
-                        <img
-                          src={image}
-                          alt={product.name}
-                          className="h-full w-full object-contain p-3"
-                        />
-                      ) : (
-                        <ShoppingBag className="h-8 w-8 text-[#cdbd9d]" />
-                      )}
-                    </Link>
-
-                    <div className="min-w-0 flex-1">
-                      {product.brand && (
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#b8872d]">
-                          {product.brand}
-                        </p>
-                      )}
-
-                      <Link
-                        href={`/dashboard/product/${product.id}`}
-                      >
-                        <h3 className="mt-1 line-clamp-2 text-base font-bold">
-                          {product.name}
-                        </h3>
-                      </Link>
-
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">
-                        {product.short_description}
-                      </p>
-
-                      <div className="mt-3 flex items-center gap-3">
-                        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                          <Star
-                            className="h-3.5 w-3.5"
-                            fill="currentColor"
-                          />
-                          {Number(
-                            product.rating || 0
-                          ).toFixed(1)}
-                        </span>
-
-                        <span className="text-xs text-slate-400">
-                          {product.reviews_count ||
-                            0}{" "}
-                          reviews
-                        </span>
-
-                        {discount > 0 && (
-                          <span className="text-xs font-bold text-[#b8872d]">
-                            {discount}% OFF
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 flex-col gap-3 sm:w-40">
-                      <div>
-                        <p className="text-lg font-black">
-                          {formatPrice(
-                            product.price
-                          )}
-                        </p>
-
-                        {product.original_price &&
-                          product.original_price >
-                            product.price && (
-                            <p className="text-xs text-slate-400 line-through">
-                              {formatPrice(
-                                product.original_price
-                              )}
-                            </p>
-                          )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            addToCart(
-                              product
-                            )
-                          }
-                          className="rounded-xl border border-[#d9c08a] py-2 text-xs font-bold text-[#9a6e1f]"
-                        >
-                          Cart
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            buyNow(product)
-                          }
-                          className="rounded-xl bg-[#b8872d] py-2 text-xs font-bold text-white"
-                        >
-                          Buy
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          PRIME FEATURES
-      ================================================= */}
-
-      <section className="border-y border-[#eee8dc] bg-[#fffdf9]">
-        <div className="mx-auto max-w-[1500px] px-4 py-14 sm:px-6">
-          <div className="text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b8872d]">
-              More than shopping
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              The PrimeCart Experience
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-slate-400">
-              Smart tools designed to make every shopping
-              decision easier.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                href: "/dashboard/prime-match",
-                icon: Sparkles,
-                title: "PrimeMatch",
-                text: "Tell us your needs and budget. Find products that fit.",
-              },
-              {
-                href: "/dashboard/budget-builder",
-                icon: Tag,
-                title: "Budget Builder",
-                text: "Plan your shopping within a realistic budget.",
-              },
-              {
-                href: "/dashboard/setup",
-                icon: LayoutGrid,
-                title: "Build My Setup",
-                text: "Create gaming, college, work or lifestyle setups.",
-              },
-              {
-                href: "/dashboard/prime-points",
-                icon: Gift,
-                title: "PrimePoints",
-                text: "Earn points and unlock rewards while you shop.",
-              },
-            ].map((item) => {
+          <nav className="sidebar-nav">
+            {sidebarItems.map((item) => {
               const Icon = item.icon;
 
               return (
                 <Link
-                  key={item.title}
+                  key={item.href}
                   href={item.href}
-                  className="group rounded-2xl border border-[#eee8dc] bg-white p-6 transition hover:-translate-y-1 hover:border-[#d7b66c] hover:shadow-[0_18px_40px_rgba(184,135,45,0.1)]"
+                  className={`sidebar-link ${
+                    item.href === "/dashboard"
+                      ? "sidebar-link-active"
+                      : ""
+                  }`}
+                  onClick={() => setMobileMenu(false)}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff7e7] text-[#b8872d] transition group-hover:scale-105">
-                    <Icon className="h-5 w-5" />
-                  </div>
+                  <span className="sidebar-icon">
+                    <Icon size={18} />
+                  </span>
 
-                  <h3 className="mt-5 text-sm font-black">
-                    {item.title}
-                  </h3>
+                  <span>{item.label}</span>
 
-                  <p className="mt-2 text-xs leading-6 text-slate-400">
-                    {item.text}
-                  </p>
+                  {item.label === "Wishlist" &&
+                    wishlistCount > 0 && (
+                      <span className="sidebar-count">
+                        {wishlistCount}
+                      </span>
+                    )}
+                </Link>
+              );
+            })}
+          </nav>
 
-                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-[#b8872d]">
-                    Explore
-                    <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
-                  </div>
+          <div className="sidebar-label smart-label">
+            SMART TOOLS
+          </div>
+
+          <div className="smart-sidebar">
+            {smartTools.map((tool) => {
+              const Icon = tool.icon;
+
+              return (
+                <Link
+                  href={tool.href}
+                  key={tool.href}
+                  className="smart-sidebar-item"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <span className="smart-sidebar-icon">
+                    <Icon size={16} />
+                  </span>
+
+                  <span className="smart-sidebar-content">
+                    <strong>{tool.label}</strong>
+                    <small>{tool.badge}</small>
+                  </span>
+
+                  <ChevronRight size={15} />
                 </Link>
               );
             })}
           </div>
+
+          <div className="sidebar-help">
+            <div className="sidebar-help-icon">
+              <ShieldCheck size={20} />
+            </div>
+
+            <strong>Safe shopping</strong>
+
+            <p>
+              Secure checkout, protected payments and easy
+              returns.
+            </p>
+
+            <Link href="/dashboard/orders">
+              Learn more
+              <ArrowRight size={13} />
+            </Link>
+          </div>
         </div>
-      </section>
 
-      {/* =================================================
-          FOOTER
-      ================================================= */}
+        <div className="sidebar-bottom">
+          <Link
+            href="/dashboard/settings"
+            className="sidebar-bottom-link"
+          >
+            <Settings size={18} />
+            Settings
+          </Link>
 
-      <footer
-        className={`${
-          darkMode
-            ? "bg-[#080806]"
-            : "bg-[#201c15]"
-        } px-4 py-12 text-white sm:px-6`}
-      >
-        <div className="mx-auto max-w-[1500px]">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b8872d]">
-                  <ShoppingBag className="h-5 w-5" />
+          <button
+            className="sidebar-bottom-link logout-button"
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* ===================================================
+          MAIN
+      =================================================== */}
+
+      <main className="dashboard-main">
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <header className="dashboard-header">
+          <div className="header-left">
+            <button
+              className="mobile-menu-button"
+              onClick={() => setMobileMenu(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={21} />
+            </button>
+
+            <div className="header-search-wrap">
+              <Search
+                size={18}
+                className="header-search-icon"
+              />
+
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                onFocus={() => setSearchFocused(true)}
+                placeholder="Search products, brands & categories..."
+                className="header-search"
+              />
+
+              {search && (
+                <button
+                  className="search-clear"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                >
+                  <X size={15} />
+                </button>
+              )}
+
+              {searchFocused && search.trim() && (
+                <div className="search-results">
+                  <div className="search-results-head">
+                    <span>Search results</span>
+                    <small>
+                      {searchResults.length} found
+                    </small>
+                  </div>
+
+                  {searchResults.length > 0 ? (
+                    searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/dashboard/products/${product.id}`}
+                        className="search-result-item"
+                        onClick={() => {
+                          openProduct(product);
+                          setSearchFocused(false);
+                        }}
+                      >
+                        <div className="search-result-image">
+                          <ProductImage product={product} />
+                        </div>
+
+                        <div className="search-result-info">
+                          <strong>{product.name}</strong>
+
+                          <span>
+                            {product.brand || "PrimeCart"}
+                          </span>
+
+                          <b>
+                            {formatPrice(product.price)}
+                          </b>
+                        </div>
+
+                        <ChevronRight size={16} />
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="search-empty">
+                      <Search size={25} />
+                      <strong>No products found</strong>
+                      <span>
+                        Try another product or brand name.
+                      </span>
+                    </div>
+                  )}
+
+                  {searchResults.length > 0 && (
+                    <Link
+                      href="/dashboard/products"
+                      className="search-view-all"
+                      onClick={() =>
+                        setSearchFocused(false)
+                      }
+                    >
+                      View all products
+                      <ArrowRight size={15} />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="header-right">
+            <button
+              className="header-icon-button"
+              onClick={() =>
+                setNotificationOpen(!notificationOpen)
+              }
+              aria-label="Notifications"
+            >
+              <Bell size={19} />
+              <span className="notification-dot" />
+            </button>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="header-icon-button desktop-action"
+              aria-label="Wishlist"
+            >
+              <Heart size={19} />
+              {wishlistCount > 0 && (
+                <span className="header-count">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/orders"
+              className="header-icon-button desktop-action"
+              aria-label="Orders"
+            >
+              <ShoppingBag size={19} />
+            </Link>
+
+            <div className="header-profile-wrap">
+              <button
+                className="header-profile"
+                onClick={() =>
+                  setProfileOpen(!profileOpen)
+                }
+              >
+                {profile?.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={userName}
+                    width={38}
+                    height={38}
+                    className="avatar-image"
+                  />
+                ) : (
+                  <div className="avatar">
+                    {getInitials(userName)}
+                  </div>
+                )}
+
+                <span className="header-profile-copy">
+                  <strong>{firstName}</strong>
+                  <small>Prime member</small>
+                </span>
+
+                <ChevronDown size={15} />
+              </button>
+
+              {profileOpen && (
+                <div className="profile-dropdown">
+                  <div className="profile-dropdown-head">
+                    <div className="avatar large">
+                      {getInitials(userName)}
+                    </div>
+
+                    <div>
+                      <strong>{userName}</strong>
+                      <span>{profile?.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="profile-divider" />
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <User size={16} />
+                    My Profile
+                  </Link>
+
+                  <Link
+                    href="/dashboard/orders"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Package size={16} />
+                    My Orders
+                  </Link>
+
+                  <Link
+                    href="/dashboard/settings"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </Link>
+
+                  <button onClick={handleLogout}>
+                    <LogOut size={16} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {notificationOpen && (
+            <div className="notification-dropdown">
+              <div className="notification-head">
+                <strong>Notifications</strong>
+                <span>2 new</span>
+              </div>
+
+              <div className="notification-item">
+                <div className="notification-icon gold">
+                  <Zap size={15} />
                 </div>
 
-                <div className="text-xl font-black">
-                  Prime<span className="text-[#d4af58]">
-                    Cart
+                <div>
+                  <strong>Flash deals are live</strong>
+                  <span>
+                    Discover limited-time offers.
                   </span>
                 </div>
               </div>
 
-              <p className="mt-4 max-w-sm text-xs leading-6 text-white/50">
-                A smarter shopping experience built around
-                better discovery, better value and better
-                decisions.
+              <div className="notification-item">
+                <div className="notification-icon green">
+                  <CheckCircle2 size={15} />
+                </div>
+
+                <div>
+                  <strong>PrimePoints updated</strong>
+                  <span>
+                    Your shopping rewards are ready.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </header>
+
+        <div className="dashboard-content">
+          {/* ===============================================
+              WELCOME HERO
+          =============================================== */}
+
+          <section className="welcome-hero">
+            <div className="hero-content">
+              <div className="hero-eyebrow">
+                <span className="hero-eyebrow-dot" />
+                YOUR PERSONAL SHOPPING SPACE
+              </div>
+
+              <h1>
+                Welcome back,
+                <br />
+                <span>{firstName}.</span>
+              </h1>
+
+              <p>
+                Discover products picked around your needs,
+                budget and shopping style.
               </p>
 
-              <div className="mt-5 flex items-center gap-2 text-xs text-white/50">
-                <ShieldCheck className="h-4 w-4 text-[#d4af58]" />
-                Secure & trusted shopping
-              </div>
-            </div>
+              <div className="hero-actions">
+                <Link
+                  href="/dashboard/products"
+                  className="hero-primary"
+                >
+                  <ShoppingBag size={17} />
+                  Start Shopping
+                  <ArrowRight size={15} />
+                </Link>
 
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
-                Shop
-              </h4>
-
-              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
-                <a href="#categories">
-                  Categories
-                </a>
-                <a href="#featured">
-                  Featured
-                </a>
-                <a href="#deals">
-                  Flash Deals
-                </a>
-                <Link href="/dashboard/products">
-                  All Products
+                <Link
+                  href="/dashboard/prime-match"
+                  className="hero-secondary"
+                >
+                  <Sparkles size={16} />
+                  Try PrimeMatch
                 </Link>
               </div>
             </div>
 
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
-                Prime
-              </h4>
+            <div className="hero-decoration">
+              <div className="hero-ring ring-one" />
+              <div className="hero-ring ring-two" />
+              <div className="hero-glow" />
+            </div>
 
-              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
-                <Link href="/dashboard/prime-match">
-                  PrimeMatch
-                </Link>
-                <Link href="/dashboard/budget-builder">
-                  Budget Builder
-                </Link>
-                <Link href="/dashboard/setup">
-                  Build My Setup
-                </Link>
+            <div className="hero-points-card">
+              <div className="points-card-top">
+                <div className="points-icon">
+                  <Crown size={20} />
+                </div>
+
+                <div>
+                  <span>PRIMEPOINTS</span>
+                  <strong>
+                    {primePoints.toLocaleString("en-IN")}
+                  </strong>
+                </div>
+
                 <Link href="/dashboard/prime-points">
-                  PrimePoints
+                  <ArrowRight size={16} />
                 </Link>
+              </div>
+
+              <div className="points-progress">
+                <span
+                  style={{
+                    width: `${pointsProgress}%`,
+                  }}
+                />
+              </div>
+
+              <div className="points-footer">
+                <span>
+                  {1000 - (primePoints % 1000)} points
+                  to next reward
+                </span>
+                <span>1000</span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===============================================
+              QUICK STATS
+          =============================================== */}
+
+          <section className="stats-grid">
+            <Link
+              href="/dashboard/orders"
+              className="stat-card"
+            >
+              <div className="stat-icon gold-icon">
+                <ShoppingBag size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Total Orders</span>
+                <strong>{orders.length}</strong>
+                <small>
+                  {orders.length
+                    ? "Your shopping history"
+                    : "Start your first order"}
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <Link
+              href="/dashboard/wishlist"
+              className="stat-card"
+            >
+              <div className="stat-icon rose-icon">
+                <Heart size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Wishlist</span>
+                <strong>{wishlistCount}</strong>
+                <small>
+                  {wishlistCount
+                    ? "Items saved for later"
+                    : "Save products you love"}
+                </small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+
+            <div className="stat-card">
+              <div className="stat-icon green-icon">
+                <CircleDollarSign size={20} />
+              </div>
+
+              <div className="stat-content">
+                <span>Total Spent</span>
+                <strong>{formatPrice(totalSpent)}</strong>
+                <small>Across all orders</small>
               </div>
             </div>
 
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#d4af58]">
-                Account
-              </h4>
+            <Link
+              href="/dashboard/prime-points"
+              className="stat-card"
+            >
+              <div className="stat-icon purple-icon">
+                <Crown size={20} />
+              </div>
 
-              <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
-                <Link href="/profile">
-                  Profile
-                </Link>
-                <Link href="/dashboard/orders">
-                  Orders
-                </Link>
-                <Link href="/dashboard/wishlist">
-                  Wishlist
-                </Link>
-                <Link href="/dashboard/settings">
-                  Settings
+              <div className="stat-content">
+                <span>PrimePoints</span>
+                <strong>{primePoints}</strong>
+                <small>Rewards earned</small>
+              </div>
+
+              <ChevronRight size={17} />
+            </Link>
+          </section>
+
+          {/* ===============================================
+              SMART TOOLS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading">
+              <div>
+                <span className="section-kicker">
+                  SMART SHOPPING
+                </span>
+
+                <h2>
+                  Shop smarter with PrimeCart
+                </h2>
+
+                <p>
+                  Tools designed to make your shopping
+                  easier.
+                </p>
+              </div>
+
+              <Sparkles
+                className="heading-sparkle"
+                size={23}
+              />
+            </div>
+
+            <div className="smart-tools-grid">
+              {smartTools.map((tool, index) => {
+                const Icon = tool.icon;
+
+                return (
+                  <Link
+                    href={tool.href}
+                    key={tool.href}
+                    className="smart-tool-card"
+                    style={{
+                      animationDelay: `${index * 70}ms`,
+                    }}
+                  >
+                    <div className="smart-tool-top">
+                      <span className="smart-tool-badge">
+                        {tool.badge}
+                      </span>
+
+                      <span className="smart-tool-arrow">
+                        <ArrowRight size={15} />
+                      </span>
+                    </div>
+
+                    <div className="smart-tool-icon">
+                      <Icon size={22} />
+                    </div>
+
+                    <h3>{tool.label}</h3>
+
+                    <p>{tool.description}</p>
+
+                    <span className="smart-tool-link">
+                      Explore tool
+                      <ChevronRight size={14} />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              CATEGORIES
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  EXPLORE
+                </span>
+
+                <h2>Shop by category</h2>
+              </div>
+
+              <Link
+                href="/dashboard/categories"
+                className="view-all-link"
+              >
+                View all
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="category-strip">
+              <button
+                className={`category-card ${
+                  activeCategory === "all"
+                    ? "category-card-active"
+                    : ""
+                }`}
+                onClick={() => setActiveCategory("all")}
+              >
+                <span className="category-emoji">
+                  ✨
+                </span>
+
+                <strong>All</strong>
+
+                <small>{products.length} items</small>
+              </button>
+
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`category-card ${
+                    activeCategory === category.id
+                      ? "category-card-active"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    setActiveCategory(category.id)
+                  }
+                >
+                  <span className="category-emoji">
+                    {categoryIcons[category.slug] || "🛍️"}
+                  </span>
+
+                  <strong>{category.name}</strong>
+
+                  <small>
+                    {
+                      products.filter(
+                        (product) =>
+                          product.category_id ===
+                          category.id
+                      ).length
+                    }{" "}
+                    items
+                  </small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* ===============================================
+              FLASH DEALS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <div className="title-with-live">
+                  <span className="section-kicker red">
+                    LIMITED TIME
+                  </span>
+
+                  <span className="live-badge">
+                    <span />
+                    LIVE
+                  </span>
+                </div>
+
+                <h2>Flash Deals</h2>
+
+                <p>
+                  Grab selected deals before they disappear.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                View deals
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="flash-grid">
+              {flashProducts.map((product) => {
+                const discount = discountPercentage(
+                  product.price,
+                  product.original_price
+                );
+
+                return (
+                  <Link
+                    href={`/dashboard/products/${product.id}`}
+                    key={product.id}
+                    className="flash-card"
+                    onClick={() => openProduct(product)}
+                  >
+                    <div className="flash-image">
+                      <ProductImage product={product} />
+
+                      {discount > 0 && (
+                        <span className="discount-badge">
+                          -{discount}%
+                        </span>
+                      )}
+
+                      <span className="flash-label">
+                        <Flame size={12} />
+                        FLASH
+                      </span>
+                    </div>
+
+                    <div className="flash-info">
+                      <span className="product-brand">
+                        {product.brand ||
+                          "PrimeCart Exclusive"}
+                      </span>
+
+                      <h3>{product.name}</h3>
+
+                      <div className="rating-row">
+                        <Star
+                          size={13}
+                          fill="currentColor"
+                        />
+
+                        <span>
+                          {Number(product.rating || 0).toFixed(
+                            1
+                          )}
+                        </span>
+
+                        <small>
+                          ({product.reviews_count || 0})
+                        </small>
+                      </div>
+
+                      <div className="price-row">
+                        <strong>
+                          {formatPrice(product.price)}
+                        </strong>
+
+                        {product.original_price &&
+                          product.original_price >
+                            product.price && (
+                            <del>
+                              {formatPrice(
+                                product.original_price
+                              )}
+                            </del>
+                          )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              PRIME CART PICKS
+          =============================================== */}
+
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  CURATED FOR YOU
+                </span>
+
+                <h2>PrimeCart Picks</h2>
+
+                <p>
+                  Popular products selected from our
+                  catalogue.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                View all products
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div className="product-grid">
+              {featuredProducts.map((product) => {
+                const discount = discountPercentage(
+                  product.price,
+                  product.original_price
+                );
+
+                return (
+                  <Link
+                    href={`/dashboard/products/${product.id}`}
+                    key={product.id}
+                    className="product-card"
+                    onClick={() => openProduct(product)}
+                  >
+                    <div className="product-card-image">
+                      <ProductImage product={product} />
+
+                      {discount > 0 && (
+                        <span className="product-discount">
+                          {discount}% OFF
+                        </span>
+                      )}
+
+                      <button
+                        className="product-heart"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          window.location.href =
+                            "/dashboard/wishlist";
+                        }}
+                        aria-label="Wishlist"
+                      >
+                        <Heart size={17} />
+                      </button>
+
+                      {product.stock <= 5 &&
+                        product.stock > 0 && (
+                          <span className="low-stock">
+                            Only {product.stock} left
+                          </span>
+                        )}
+
+                      {product.stock <= 0 && (
+                        <span className="out-stock">
+                          Out of stock
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="product-card-body">
+                      <span className="product-brand">
+                        {product.brand || "PrimeCart"}
+                      </span>
+
+                      <h3>{product.name}</h3>
+
+                      <p>
+                        {product.short_description ||
+                          product.description ||
+                          "Premium product selected for you."}
+                      </p>
+
+                      <div className="rating-row">
+                        <Star
+                          size={13}
+                          fill="currentColor"
+                        />
+
+                        <span>
+                          {Number(product.rating || 0).toFixed(
+                            1
+                          )}
+                        </span>
+
+                        <small>
+                          ({product.reviews_count || 0})
+                        </small>
+                      </div>
+
+                      <div className="product-bottom">
+                        <div className="product-price">
+                          <strong>
+                            {formatPrice(product.price)}
+                          </strong>
+
+                          {product.original_price &&
+                            product.original_price >
+                              product.price && (
+                              <del>
+                                {formatPrice(
+                                  product.original_price
+                                )}
+                              </del>
+                            )}
+                        </div>
+
+                        <span className="product-arrow">
+                          <ArrowRight size={15} />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===============================================
+              CATEGORY PRODUCT FILTER
+          =============================================== */}
+
+          {activeCategory !== "all" && (
+            <section className="section category-products-section">
+              <div className="section-heading compact">
+                <div>
+                  <span className="section-kicker">
+                    CATEGORY
+                  </span>
+
+                  <h2>
+                    {categories.find(
+                      (category) =>
+                        category.id === activeCategory
+                    )?.name || "Products"}
+                  </h2>
+
+                  <p>
+                    Products available in this category.
+                  </p>
+                </div>
+
+                <Link
+                  href={`/dashboard/categories/${categories.find(
+                    (category) =>
+                      category.id === activeCategory
+                  )?.slug || ""}`}
+                  className="view-all-link"
+                >
+                  Open category
+                  <ArrowRight size={15} />
                 </Link>
               </div>
+
+              {filteredCategoryProducts.length > 0 ? (
+                <div className="mini-product-grid">
+                  {filteredCategoryProducts
+                    .slice(0, 4)
+                    .map((product) => (
+                      <Link
+                        href={`/dashboard/products/${product.id}`}
+                        key={product.id}
+                        className="mini-product-card"
+                        onClick={() => openProduct(product)}
+                      >
+                        <div className="mini-product-image">
+                          <ProductImage
+                            product={product}
+                          />
+                        </div>
+
+                        <div>
+                          <span>
+                            {product.brand ||
+                              "PrimeCart"}
+                          </span>
+
+                          <strong>{product.name}</strong>
+
+                          <b>
+                            {formatPrice(product.price)}
+                          </b>
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              ) : (
+                <div className="empty-category">
+                  <Package size={28} />
+                  <strong>No products in this category</strong>
+                  <span>
+                    Try another category.
+                  </span>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ===============================================
+              FEATURE GRID
+          =============================================== */}
+
+          <section className="feature-grid">
+            {/* PRIME MATCH */}
+            <Link
+              href="/dashboard/prime-match"
+              className="feature-panel prime-match-panel"
+            >
+              <div className="feature-panel-glow" />
+
+              <div className="feature-panel-content">
+                <span className="feature-kicker">
+                  AI-POWERED SHOPPING
+                </span>
+
+                <div className="feature-icon">
+                  <Target size={21} />
+                </div>
+
+                <h2>
+                  Find your
+                  <br />
+                  perfect match.
+                </h2>
+
+                <p>
+                  Tell PrimeMatch what you need, your
+                  budget and priorities. We&apos;ll help
+                  narrow your choices.
+                </p>
+
+                <span className="feature-cta">
+                  Start PrimeMatch
+                  <ArrowRight size={16} />
+                </span>
+              </div>
+
+              <div className="match-orbit">
+                <div className="orbit-dot one" />
+                <div className="orbit-dot two" />
+                <div className="orbit-dot three" />
+
+                <div className="orbit-center">
+                  <Sparkles size={23} />
+                </div>
+              </div>
+            </Link>
+
+            {/* BUDGET */}
+            <Link
+              href="/dashboard/budget-builder"
+              className="feature-panel budget-panel"
+            >
+              <div className="budget-panel-top">
+                <div className="feature-icon">
+                  <WalletCards size={21} />
+                </div>
+
+                <span className="feature-kicker">
+                  PLAN YOUR SPEND
+                </span>
+              </div>
+
+              <h2>
+                Build a smarter
+                <br />
+                shopping budget.
+              </h2>
+
+              <p>
+                Set a limit and plan exactly where your
+                money should go.
+              </p>
+
+              <div className="budget-visual">
+                <div className="budget-line">
+                  <span />
+                </div>
+
+                <div className="budget-labels">
+                  <span>₹0</span>
+                  <strong>₹25K</strong>
+                </div>
+              </div>
+
+              <span className="feature-cta">
+                Open Budget Builder
+                <ArrowRight size={16} />
+              </span>
+            </Link>
+          </section>
+
+          {/* ===============================================
+              SETUP + POINTS + MYSTERY
+          =============================================== */}
+
+          <section className="triple-feature-grid">
+            <Link
+              href="/dashboard/setup-builder"
+              className="small-feature-card setup-card"
+            >
+              <div className="small-feature-icon">
+                <Sparkles size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                CURATED SETUPS
+              </span>
+
+              <h3>Build My Setup</h3>
+
+              <p>
+                Gaming, college, work, fitness and more.
+              </p>
+
+              <span className="small-feature-arrow">
+                Explore
+                <ArrowRight size={15} />
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/prime-points"
+              className="small-feature-card points-card"
+            >
+              <div className="small-feature-icon">
+                <Crown size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                REWARDS
+              </span>
+
+              <h3>PrimePoints</h3>
+
+              <p>
+                You currently have{" "}
+                <strong>{primePoints}</strong> points.
+              </p>
+
+              <div className="points-mini-bar">
+                <span
+                  style={{
+                    width: `${pointsProgress}%`,
+                  }}
+                />
+              </div>
+
+              <span className="small-feature-arrow">
+                View rewards
+                <ArrowRight size={15} />
+              </span>
+            </Link>
+
+            <div className="small-feature-card mystery-card">
+              <div className="small-feature-icon">
+                <TicketPercent size={19} />
+              </div>
+
+              <span className="small-feature-label">
+                JUST FOR YOU
+              </span>
+
+              <h3>Mystery Deal</h3>
+
+              <p>{dealMessage}</p>
+
+              <button
+                className="mystery-button"
+                onClick={revealMysteryDeal}
+              >
+                Reveal deal
+                <Sparkles size={14} />
+              </button>
             </div>
-          </div>
+          </section>
 
-          <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 text-[10px] text-white/30 sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              © {new Date().getFullYear()} PrimeCart.
-              All rights reserved.
-            </p>
+          {/* ===============================================
+              RECENTLY VIEWED
+          =============================================== */}
 
-            <div className="flex gap-5">
-              <span>Privacy</span>
-              <span>Terms</span>
-              <span>Support</span>
+          <section className="section">
+            <div className="section-heading compact">
+              <div>
+                <span className="section-kicker">
+                  YOUR ACTIVITY
+                </span>
+
+                <h2>Recently viewed</h2>
+
+                <p>
+                  Continue exploring products you checked
+                  recently.
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/products"
+                className="view-all-link"
+              >
+                Explore more
+                <ArrowRight size={15} />
+              </Link>
             </div>
-          </div>
+
+            <div className="recent-grid">
+              {visibleRecentProducts.map((product) => (
+                <Link
+                  href={`/dashboard/products/${product.id}`}
+                  key={product.id}
+                  className="recent-card"
+                  onClick={() => openProduct(product)}
+                >
+                  <div className="recent-image">
+                    <ProductImage product={product} />
+                  </div>
+
+                  <div className="recent-info">
+                    <span>
+                      {product.brand || "PrimeCart"}
+                    </span>
+
+                    <strong>{product.name}</strong>
+
+                    <b>{formatPrice(product.price)}</b>
+                  </div>
+
+                  <ChevronRight size={16} />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* ===============================================
+              BOTTOM AREA
+          =============================================== */}
+
+          <section className="bottom-grid">
+            {/* ORDERS */}
+            <div className="dashboard-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">
+                    ACTIVITY
+                  </span>
+
+                  <h2>Recent orders</h2>
+                </div>
+
+                <Link
+                  href="/dashboard/orders"
+                  className="panel-link"
+                >
+                  View all
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              {orders.length > 0 ? (
+                <div className="orders-list">
+                  {orders.slice(0, 5).map((order) => (
+                    <Link
+                      href="/dashboard/orders"
+                      className="order-row"
+                      key={order.id}
+                    >
+                      <div className="order-icon">
+                        <Package size={17} />
+                      </div>
+
+                      <div className="order-info">
+                        <strong>
+                          Order #
+                          {order.id.slice(0, 8).toUpperCase()}
+                        </strong>
+
+                        <span>
+                          {formatDate(order.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="order-status">
+                        <span
+                          className={`status-dot ${order.status
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")}`}
+                        />
+
+                        {formatOrderStatus(order.status)}
+                      </div>
+
+                      <strong className="order-price">
+                        {formatPrice(order.total_amount)}
+                      </strong>
+
+                      <ChevronRight size={15} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-panel">
+                  <div className="empty-panel-icon">
+                    <ShoppingBag size={24} />
+                  </div>
+
+                  <strong>No orders yet</strong>
+
+                  <span>
+                    Your recent orders will appear here.
+                  </span>
+
+                  <Link href="/dashboard/products">
+                    Start shopping
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* SHOPPING INSIGHTS */}
+            <div className="dashboard-panel insights-panel">
+              <div className="panel-heading">
+                <div>
+                  <span className="section-kicker">
+                    YOUR SHOPPING
+                  </span>
+
+                  <h2>Quick insights</h2>
+                </div>
+
+                <BarChart3 size={19} />
+              </div>
+
+              <div className="insight-list">
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <ShoppingBag size={17} />
+                  </div>
+
+                  <div>
+                    <span>Orders placed</span>
+                    <strong>{orders.length}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Heart size={17} />
+                  </div>
+
+                  <div>
+                    <span>Saved products</span>
+                    <strong>{wishlistCount}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Crown size={17} />
+                  </div>
+
+                  <div>
+                    <span>Reward points</span>
+                    <strong>{primePoints}</strong>
+                  </div>
+                </div>
+
+                <div className="insight-row">
+                  <div className="insight-icon">
+                    <Clock3 size={17} />
+                  </div>
+
+                  <div>
+                    <span>Products available</span>
+                    <strong>{products.length}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard/prime-match"
+                className="insight-cta"
+              >
+                Personalize your shopping
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </section>
+
+          {/* ===============================================
+              BENEFITS
+          =============================================== */}
+
+          <section className="benefits-strip">
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <Truck size={19} />
+              </div>
+
+              <div>
+                <strong>Fast delivery</strong>
+                <span>
+                  Reliable delivery on eligible orders
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <ShieldCheck size={19} />
+              </div>
+
+              <div>
+                <strong>Secure payments</strong>
+                <span>
+                  Your payment information stays protected
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <TicketPercent size={19} />
+              </div>
+
+              <div>
+                <strong>Exclusive deals</strong>
+                <span>
+                  Discover member-only shopping benefits
+                </span>
+              </div>
+            </div>
+
+            <div className="benefit-divider" />
+
+            <div className="benefit-item">
+              <div className="benefit-icon">
+                <CircleDollarSign size={19} />
+              </div>
+
+              <div>
+                <strong>Easy returns</strong>
+                <span>
+                  Shop confidently with simple returns
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===============================================
+              FOOTER
+          =============================================== */}
+
+          <footer className="dashboard-footer">
+            <div className="footer-brand">
+              <div className="footer-logo">P</div>
+
+              <div>
+                <strong>PrimeCart</strong>
+                <span>
+                  Smart shopping, made personal.
+                </span>
+              </div>
+            </div>
+
+            <div className="footer-links">
+              <Link href="/dashboard/products">
+                Products
+              </Link>
+
+              <Link href="/dashboard/categories">
+                Categories
+              </Link>
+
+              <Link href="/dashboard/orders">
+                Orders
+              </Link>
+
+              <Link href="/dashboard/settings">
+                Settings
+              </Link>
+            </div>
+
+            <span className="footer-copy">
+              © {new Date().getFullYear()} PrimeCart
+            </span>
+          </footer>
         </div>
-      </footer>
+      </main>
 
-      {/* =================================================
-          TOAST
-      ================================================= */}
+      {/* ===================================================
+          STYLES
+      =================================================== */}
 
-      {toast && (
-        <div className="fixed bottom-5 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#dfc98e] bg-white px-5 py-3 shadow-2xl">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff5dd] text-[#b8872d]">
-            <BadgeCheck className="h-4 w-4" />
-          </div>
+      <style jsx global>{`
+        :root {
+          --pc-bg: #fbf8f2;
+          --pc-surface: #ffffff;
+          --pc-surface-soft: #f8f3e9;
+          --pc-gold: #b9975b;
+          --pc-gold-dark: #96723b;
+          --pc-gold-light: #dcc596;
+          --pc-gold-pale: #f5ead6;
+          --pc-brown: #4a4034;
+          --pc-brown-light: #796e5d;
+          --pc-muted: #9b907f;
+          --pc-border: #eadfcb;
+          --pc-border-light: #f0e8da;
+          --pc-shadow: 0 14px 40px rgba(91, 69, 36, 0.08);
+          --pc-shadow-hover: 0 20px 55px rgba(91, 69, 36, 0.13);
+        }
 
-          <span className="text-xs font-semibold text-[#3a3224]">
-            {toast}
-          </span>
+        * {
+          box-sizing: border-box;
+        }
 
-          <button
-            type="button"
-            onClick={() =>
-              setToast(null)
-            }
-            className="text-slate-400 hover:text-slate-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-    </main>
+        html {
+          scroll-behavior: smooth;
+        }
+
+        body {
+          margin: 0;
+          background: var(--pc-bg);
+          color: var(--pc-brown);
+          font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+
+        a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        button,
+        input {
+          font: inherit;
+        }
+
+        button {
+          border: 0;
+        }
+
+        .prime-dashboard {
+          min-height: 100vh;
+          background:
+            radial-gradient(
+              circle at 5% 0%,
+              rgba(210, 174, 99, 0.1),
+              transparent 25%
+            ),
+            radial-gradient(
+              circle at 95% 15%,
+              rgba(210, 174, 99, 0.08),
+              transparent 23%
+            ),
+            var(--pc-bg);
+        }
+
+        /* =================================================
+           SIDEBAR
+        ================================================= */
+
+        .dashboard-sidebar {
+          position: fixed;
+          z-index: 80;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 260px;
+          display: flex;
+          flex-direction: column;
+          background: rgba(255, 255, 255, 0.92);
+          border-right: 1px solid var(--pc-border-light);
+          backdrop-filter: blur(22px);
+        }
+
+        .sidebar-brand {
+          height: 78px;
+          padding: 0 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid var(--pc-border-light);
+        }
+
+        .brand-link {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .brand-mark {
+          width: 40px;
+          height: 40px;
+          border-radius: 13px;
+          display: grid;
+          place-items: center;
+          background:
+            linear-gradient(
+              145deg,
+              #e2c47f,
+              #aa7e34
+            );
+          color: #fff;
+          box-shadow:
+            0 9px 20px rgba(168, 124, 48, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+
+        .brand-mark span {
+          font-size: 19px;
+          font-weight: 900;
+        }
+
+        .brand-copy strong {
+          display: block;
+          font-size: 17px;
+          letter-spacing: -0.4px;
+        }
+
+        .brand-copy span {
+          display: block;
+          margin-top: 1px;
+          color: var(--pc-muted);
+          font-size: 9px;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+        }
+
+        .mobile-close {
+          display: none;
+          background: transparent;
+          color: var(--pc-brown);
+          cursor: pointer;
+        }
+
+        .sidebar-scroll {
+          flex: 1;
+          overflow-y: auto;
+          padding: 22px 13px;
+        }
+
+        .sidebar-label {
+          padding: 0 12px 9px;
+          color: #a69a88;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+        }
+
+        .smart-label {
+          margin-top: 27px;
+        }
+
+        .sidebar-nav {
+          display: grid;
+          gap: 5px;
+        }
+
+        .sidebar-link {
+          position: relative;
+          min-height: 45px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 0 12px;
+          border-radius: 13px;
+          color: var(--pc-brown-light);
+          font-size: 13px;
+          font-weight: 650;
+          transition:
+            background 0.2s ease,
+            color 0.2s ease,
+            transform 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+          transform: translateX(2px);
+        }
+
+        .sidebar-link-active {
+          color: var(--pc-gold-dark);
+          background:
+            linear-gradient(
+              90deg,
+              rgba(201, 163, 92, 0.16),
+              rgba(201, 163, 92, 0.04)
+            );
+          box-shadow:
+            inset 3px 0 0 var(--pc-gold);
+        }
+
+        .sidebar-icon {
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+        }
+
+        .sidebar-link-active .sidebar-icon {
+          background: #fff;
+          box-shadow: 0 4px 12px rgba(110, 78, 28, 0.08);
+        }
+
+        .sidebar-count {
+          margin-left: auto;
+          min-width: 22px;
+          height: 22px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .smart-sidebar {
+          display: grid;
+          gap: 6px;
+        }
+
+        .smart-sidebar-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 10px 9px;
+          border: 1px solid transparent;
+          border-radius: 12px;
+          transition: 0.2s ease;
+        }
+
+        .smart-sidebar-item:hover {
+          background: #fffaf1;
+          border-color: var(--pc-border);
+          transform: translateY(-1px);
+        }
+
+        .smart-sidebar-icon {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          color: var(--pc-gold-dark);
+          background: var(--pc-gold-pale);
+        }
+
+        .smart-sidebar-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .smart-sidebar-content strong {
+          display: block;
+          font-size: 11px;
+        }
+
+        .smart-sidebar-content small {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: 0.9px;
+        }
+
+        .smart-sidebar-item > svg {
+          color: #b5aa99;
+        }
+
+        .sidebar-help {
+          margin: 20px 3px 0;
+          padding: 15px;
+          border-radius: 16px;
+          background:
+            linear-gradient(
+              145deg,
+              #fffaf1,
+              #f8f0df
+            );
+          border: 1px solid var(--pc-border);
+        }
+
+        .sidebar-help-icon {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 10px;
+          border-radius: 10px;
+          background: #fff;
+          color: var(--pc-gold-dark);
+        }
+
+        .sidebar-help strong {
+          display: block;
+          font-size: 12px;
+        }
+
+        .sidebar-help p {
+          margin: 5px 0 10px;
+          color: var(--pc-brown-light);
+          font-size: 10px;
+          line-height: 1.55;
+        }
+
+        .sidebar-help a {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 750;
+        }
+
+        .sidebar-bottom {
+          padding: 12px;
+          border-top: 1px solid var(--pc-border-light);
+        }
+
+        .sidebar-bottom-link {
+          width: 100%;
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 0 11px;
+          border-radius: 10px;
+          background: transparent;
+          color: var(--pc-brown-light);
+          font-size: 12px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .sidebar-bottom-link:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+        }
+
+        .logout-button {
+          margin-top: 3px;
+        }
+
+        /* =================================================
+           MAIN
+        ================================================= */
+
+        .dashboard-main {
+          min-height: 100vh;
+          margin-left: 260px;
+        }
+
+        /* =================================================
+           HEADER
+        ================================================= */
+
+        .dashboard-header {
+          position: sticky;
+          z-index: 50;
+          top: 0;
+          min-height: 76px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 12px 34px;
+          background: rgba(251, 248, 242, 0.84);
+          border-bottom: 1px solid rgba(234, 223, 203, 0.7);
+          backdrop-filter: blur(20px);
+        }
+
+        .header-left {
+          min-width: 0;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .mobile-menu-button {
+          display: none;
+          width: 40px;
+          height: 40px;
+          place-items: center;
+          border-radius: 11px;
+          background: #fff;
+          border: 1px solid var(--pc-border);
+          color: var(--pc-brown);
+          cursor: pointer;
+        }
+
+        .header-search-wrap {
+          position: relative;
+          width: min(100%, 530px);
+        }
+
+        .header-search-icon {
+          position: absolute;
+          left: 15px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #a99d8c;
+          pointer-events: none;
+        }
+
+        .header-search {
+          width: 100%;
+          height: 45px;
+          padding: 0 42px;
+          border: 1px solid var(--pc-border);
+          border-radius: 14px;
+          outline: none;
+          background: rgba(255, 255, 255, 0.85);
+          color: var(--pc-brown);
+          font-size: 12px;
+          transition: 0.2s ease;
+        }
+
+        .header-search::placeholder {
+          color: #b3a999;
+        }
+
+        .header-search:focus {
+          border-color: var(--pc-gold-light);
+          box-shadow:
+            0 0 0 4px rgba(185, 151, 91, 0.08),
+            0 8px 25px rgba(100, 75, 37, 0.05);
+          background: #fff;
+        }
+
+        .search-clear {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          width: 24px;
+          height: 24px;
+          transform: translateY(-50%);
+          display: grid;
+          place-items: center;
+          border-radius: 7px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-muted);
+          cursor: pointer;
+        }
+
+        .search-results {
+          position: absolute;
+          z-index: 100;
+          top: calc(100% + 9px);
+          left: 0;
+          right: 0;
+          overflow: hidden;
+          border: 1px solid var(--pc-border);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
+          animation: dropdownIn 0.18s ease both;
+        }
+
+        .search-results-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 13px 15px;
+          border-bottom: 1px solid var(--pc-border-light);
+        }
+
+        .search-results-head span {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+        }
+
+        .search-results-head small {
+          color: var(--pc-muted);
+          font-size: 10px;
+        }
+
+        .search-result-item {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 10px 13px;
+          border-bottom: 1px solid #f4eee4;
+          transition: 0.15s ease;
+        }
+
+        .search-result-item:hover {
+          background: #fffbf5;
+        }
+
+        .search-result-image {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          flex: 0 0 44px;
+          overflow: hidden;
+          border-radius: 10px;
+          background: #faf7f1;
+        }
+
+        .search-result-info {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .search-result-info strong {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 11px;
+        }
+
+        .search-result-info span {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .search-result-info b {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+        }
+
+        .search-result-item > svg {
+          color: #b8aa97;
+        }
+
+        .search-view-all {
+          min-height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          color: var(--pc-gold-dark);
+          font-size: 11px;
+          font-weight: 750;
+        }
+
+        .search-empty {
+          min-height: 150px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          color: #b0a494;
+        }
+
+        .search-empty strong {
+          color: var(--pc-brown);
+          font-size: 12px;
+        }
+
+        .search-empty span {
+          font-size: 10px;
+        }
+
+        .header-right {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .header-icon-button {
+          position: relative;
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          border-radius: 11px;
+          border: 1px solid var(--pc-border);
+          background: rgba(255, 255, 255, 0.8);
+          color: var(--pc-brown-light);
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .header-icon-button:hover {
+          border-color: var(--pc-gold-light);
+          color: var(--pc-gold-dark);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(90, 67, 34, 0.07);
+        }
+
+        .notification-dot {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #d94b4b;
+          box-shadow: 0 0 0 3px #fff;
+        }
+
+        .header-count {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          min-width: 17px;
+          height: 17px;
+          padding: 0 4px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          background: var(--pc-gold-dark);
+          color: white;
+          font-size: 8px;
+          font-weight: 800;
+          border: 2px solid var(--pc-bg);
+        }
+
+        .header-profile-wrap {
+          position: relative;
+        }
+
+        .header-profile {
+          min-height: 42px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 2px 4px 2px 2px;
+          background: transparent;
+          color: var(--pc-brown);
+          cursor: pointer;
+        }
+
+        .avatar,
+        .avatar-image {
+          width: 37px;
+          height: 37px;
+          border-radius: 11px;
+        }
+
+        .avatar {
+          display: grid;
+          place-items: center;
+          background:
+            linear-gradient(
+              145deg,
+              #dfc282,
+              #a47b37
+            );
+          color: white;
+          font-size: 11px;
+          font-weight: 850;
+          box-shadow: 0 5px 15px rgba(153, 111, 44, 0.17);
+        }
+
+        .avatar.large {
+          width: 42px;
+          height: 42px;
+        }
+
+        .avatar-image {
+          object-fit: cover;
+        }
+
+        .header-profile-copy {
+          min-width: 72px;
+          text-align: left;
+        }
+
+        .header-profile-copy strong {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 11px;
+        }
+
+        .header-profile-copy small {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .profile-dropdown,
+        .notification-dropdown {
+          position: absolute;
+          z-index: 110;
+          top: calc(100% + 10px);
+          right: 0;
+          width: 230px;
+          padding: 8px;
+          border: 1px solid var(--pc-border);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 25px 60px rgba(63, 48, 25, 0.15);
+          animation: dropdownIn 0.18s ease both;
+        }
+
+        .profile-dropdown-head {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 8px;
+        }
+
+        .profile-dropdown-head strong {
+          display: block;
+          font-size: 11px;
+        }
+
+        .profile-dropdown-head span {
+          display: block;
+          max-width: 145px;
+          margin-top: 3px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        .profile-divider {
+          height: 1px;
+          margin: 5px 0;
+          background: var(--pc-border-light);
+        }
+
+        .profile-dropdown a,
+        .profile-dropdown button {
+          width: 100%;
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 0 9px;
+          border-radius: 9px;
+          background: transparent;
+          color: var(--pc-brown-light);
+          font-size: 11px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .profile-dropdown a:hover,
+        .profile-dropdown button:hover {
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+        }
+
+        .notification-dropdown {
+          right: 78px;
+          width: 275px;
+        }
+
+        .notification-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 9px 11px;
+          border-bottom: 1px solid var(--pc-border-light);
+        }
+
+        .notification-head strong {
+          font-size: 12px;
+        }
+
+        .notification-head span {
+          padding: 4px 7px;
+          border-radius: 999px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .notification-item {
+          display: flex;
+          gap: 9px;
+          padding: 11px 8px;
+        }
+
+        .notification-icon {
+          width: 30px;
+          height: 30px;
+          flex: 0 0 30px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+        }
+
+        .notification-icon.gold {
+          color: #9a742f;
+          background: #f8ecd7;
+        }
+
+        .notification-icon.green {
+          color: #4e8660;
+          background: #eaf5ec;
+        }
+
+        .notification-item strong {
+          display: block;
+          font-size: 10px;
+        }
+
+        .notification-item span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
+          font-size: 9px;
+        }
+
+        /* =================================================
+           CONTENT
+        ================================================= */
+
+        .dashboard-content {
+          max-width: 1680px;
+          margin: 0 auto;
+          padding: 28px 34px 45px;
+        }
+
+        /* =================================================
+           HERO
+        ================================================= */
+
+        .welcome-hero {
+          position: relative;
+          min-height: 285px;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 39px 42px;
+          border: 1px solid rgba(190, 153, 83, 0.22);
+          border-radius: 27px;
+          background:
+            radial-gradient(
+              circle at 80% 20%,
+              rgba(255, 255, 255, 0.35),
+              transparent 23%
+            ),
+            linear-gradient(
+              120deg,
+              #f1dfb9 0%,
+              #e5cb91 48%,
+              #d6b66b 100%
+            );
+          box-shadow:
+            0 22px 50px rgba(130, 94, 35, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55);
+          animation: heroIn 0.55s ease both;
+        }
+
+        .hero-content {
+          position: relative;
+          z-index: 3;
+          max-width: 570px;
+        }
+
+        .hero-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 13px;
+          color: #7b5d2e;
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .hero-eyebrow-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #96702f;
+          box-shadow: 0 0 0 4px rgba(150, 112, 47, 0.12);
+        }
+
+        .hero-content h1 {
+          margin: 0;
+          color: #453620;
+          font-size: clamp(30px, 3.5vw, 47px);
+          line-height: 1.05;
+          letter-spacing: -1.8px;
+        }
+
+        .hero-content h1 span {
+          color: #805d27;
+        }
+
+        .hero-content p {
+          max-width: 510px;
+          margin: 13px 0 20px;
+          color: #705d40;
+          font-size: 12px;
+          line-height: 1.65;
+        }
+
+        .hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+        }
+
+        .hero-primary,
+        .hero-secondary {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 15px;
+          border-radius: 11px;
+          font-size: 11px;
+          font-weight: 750;
+          transition: 0.2s ease;
+        }
+
+        .hero-primary {
+          background: #4c3b25;
+          color: #fff;
+          box-shadow: 0 10px 20px rgba(73, 55, 30, 0.16);
+        }
+
+        .hero-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 25px rgba(73, 55, 30, 0.22);
+        }
+
+        .hero-secondary {
+          border: 1px solid rgba(96, 70, 30, 0.2);
+          background: rgba(255, 255, 255, 0.32);
+          color: #654a24;
+        }
+
+        .hero-secondary:hover {
+          background: rgba(255, 255, 255, 0.52);
+          transform: translateY(-2px);
+        }
+
+        .hero-decoration {
+          position: absolute;
+          right: 28%;
+          top: 50%;
+          width: 330px;
+          height: 330px;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .hero-ring {
+          position: absolute;
+          inset: 0;
+          border: 1px solid rgba(115, 82, 27, 0.13);
+          border-radius: 50%;
+        }
+
+        .ring-one {
+          animation: rotateSlow 18s linear infinite;
+        }
+
+        .ring-two {
+          inset: 38px;
+          border-style: dashed;
+          animation: rotateSlowReverse 14s linear infinite;
+        }
+
+        .hero-glow {
+          position: absolute;
+          inset: 100px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          filter: blur(18px);
+        }
+
+        .hero-points-card {
+          position: relative;
+          z-index: 4;
+          width: 230px;
+          padding: 17px;
+          border: 1px solid rgba(255, 255, 255, 0.48);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.52);
+          box-shadow:
+            0 18px 35px rgba(103, 75, 29, 0.11),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(10px);
+          animation: floating 4s ease-in-out infinite;
+        }
+
+        .points-card-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .points-icon {
+          width: 39px;
+          height: 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 11px;
+          background: #fff9eb;
+          color: #9b732f;
+        }
+
+        .points-card-top > div:nth-child(2) {
+          flex: 1;
+        }
+
+        .points-card-top span {
+          display: block;
+          color: #80683f;
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.1px;
+        }
+
+        .points-card-top strong {
+          display: block;
+          margin-top: 2px;
+          color: #4b3821;
+          font-size: 20px;
+        }
+
+        .points-card-top > a {
+          width: 27px;
+          height: 27px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.6);
+          color: #806335;
+        }
+
+        .points-progress {
+          height: 6px;
+          margin-top: 16px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(117, 87, 39, 0.12);
+        }
+
+        .points-progress span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #96702e;
+          transition: width 0.7s ease;
+        }
+
+        .points-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 7px;
+          color: #876f4a;
+          font-size: 8px;
+        }
+
+        /* =================================================
+           STATS
+        ================================================= */
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 13px;
+          margin-top: 18px;
+        }
+
+        .stat-card {
+          min-width: 0;
+          min-height: 105px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.84);
+          box-shadow: 0 7px 22px rgba(84, 62, 30, 0.04);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-3px);
+          border-color: var(--pc-border);
+          box-shadow: var(--pc-shadow);
+        }
+
+        .stat-icon {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+        }
+
+        .gold-icon {
+          color: #9b732f;
+          background: #f8ecd8;
+        }
+
+        .rose-icon {
+          color: #b25e69;
+          background: #fae9eb;
+        }
+
+        .green-icon {
+          color: #4c8560;
+          background: #e8f3eb;
+        }
+
+        .purple-icon {
+          color: #7a65a5;
+          background: #eeeafb;
+        }
+
+        .stat-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .stat-content span {
+          display: block;
+          color: var(--pc-muted);
+          font-size: 9px;
+          font-weight: 650;
+        }
+
+        .stat-content strong {
+          display: block;
+          margin-top: 3px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--pc-brown);
+          font-size: 18px;
+          letter-spacing: -0.4px;
+        }
+
+        .stat-content small {
+          display: block;
+          margin-top: 3px;
+          color: #b0a494;
+          font-size: 8px;
+        }
+
+        .stat-card > svg {
+          color: #c1b5a4;
+        }
+
+        /* =================================================
+           SECTION
+        ================================================= */
+
+        .section {
+          margin-top: 42px;
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 17px;
+        }
+
+        .section-heading.compact {
+          align-items: center;
+        }
+
+        .section-kicker {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .section-kicker.red {
+          color: #bd5a52;
+        }
+
+        .section-heading h2 {
+          margin: 5px 0 0;
+          color: var(--pc-brown);
+          font-size: 20px;
+          letter-spacing: -0.65px;
+        }
+
+        .section-heading p {
+          margin: 5px 0 0;
+          color: var(--pc-muted);
+          font-size: 10px;
+        }
+
+        .heading-sparkle {
+          color: var(--pc-gold-light);
+        }
+
+        .view-all-link,
+        .panel-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 10px;
+          font-weight: 750;
+          white-space: nowrap;
+        }
+
+        .view-all-link:hover,
+        .panel-link:hover {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
+        /* =================================================
+           SMART TOOLS
+        ================================================= */
+
+        .smart-tools-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 13px;
+        }
+
+        .smart-tool-card {
+          position: relative;
+          min-height: 220px;
+          overflow: hidden;
+          padding: 18px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 18px;
+          background: #fff;
+          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.04);
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            border-color 0.25s ease;
+          animation: revealUp 0.55s ease both;
+        }
+
+        .smart-tool-card::before {
+          content: "";
+          position: absolute;
+          right: -55px;
+          bottom: -65px;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          background: rgba(213, 182, 117, 0.08);
+          transition: 0.3s ease;
+        }
+
+        .smart-tool-card:hover {
+          transform: translateY(-5px);
+          border-color: var(--pc-border);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .smart-tool-card:hover::before {
+          transform: scale(1.3);
+        }
+
+        .smart-tool-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .smart-tool-badge {
+          color: #a27a39;
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.1px;
+        }
+
+        .smart-tool-arrow {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: #faf7f0;
+          color: #9d8760;
+          transition: 0.2s ease;
+        }
+
+        .smart-tool-card:hover .smart-tool-arrow {
+          background: var(--pc-gold);
+          color: #fff;
+          transform: rotate(-5deg);
+        }
+
+        .smart-tool-icon {
+          width: 43px;
+          height: 43px;
+          display: grid;
+          place-items: center;
+          margin-top: 23px;
+          border-radius: 13px;
+          background: linear-gradient(
+            145deg,
+            #fbf3e2,
+            #f2e2c1
+          );
+          color: var(--pc-gold-dark);
+        }
+
+        .smart-tool-card h3 {
+          margin: 15px 0 6px;
+          font-size: 15px;
+          letter-spacing: -0.3px;
+        }
+
+        .smart-tool-card p {
+          max-width: 200px;
+          min-height: 34px;
+          margin: 0;
+          color: var(--pc-muted);
+          font-size: 10px;
+          line-height: 1.55;
+        }
+
+        .smart-tool-link {
+          position: absolute;
+          left: 18px;
+          bottom: 17px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        /* =================================================
+           CATEGORIES
+        ================================================= */
+
+        .category-strip {
+          display: grid;
+          grid-template-columns: repeat(11, minmax(72px, 1fr));
+          gap: 8px;
+        }
+
+        .category-card {
+          min-width: 0;
+          min-height: 105px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 9px 5px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 15px;
+          background: rgba(255, 255, 255, 0.8);
+          color: var(--pc-brown);
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .category-card:hover {
+          transform: translateY(-3px);
+          border-color: var(--pc-border);
+          box-shadow: 0 10px 24px rgba(82, 61, 29, 0.07);
+        }
+
+        .category-card-active {
+          border-color: #d9bf8e;
+          background: linear-gradient(
+            145deg,
+            #fffaf1,
+            #f8edda
+          );
+          box-shadow: 0 10px 25px rgba(129, 94, 35, 0.08);
+        }
+
+        .category-emoji {
+          width: 39px;
+          height: 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          background: #faf7f1;
+          font-size: 19px;
+        }
+
+        .category-card strong {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 9px;
+        }
+
+        .category-card small {
+          color: var(--pc-muted);
+          font-size: 7px;
+        }
+
+        /* =================================================
+           FLASH DEALS
+        ================================================= */
+
+        .title-with-live {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .live-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 6px;
+          border-radius: 999px;
+          background: #fbe9e7;
+          color: #b6534b;
+          font-size: 6px;
+          font-weight: 850;
+          letter-spacing: 0.7px;
+        }
+
+        .live-badge span {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #cf4d45;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .flash-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 13px;
+        }
+
+        .flash-card {
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.04);
+          transition: 0.22s ease;
+        }
+
+        .flash-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .flash-image {
+          position: relative;
+          height: 190px;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        .flash-info {
+          padding: 13px;
+        }
+
+        .flash-info h3 {
+          margin: 4px 0 7px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .product-brand {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+          font-weight: 750;
+          letter-spacing: 0.2px;
+        }
+
+        .rating-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #c58f35;
+          font-size: 9px;
+        }
+
+        .rating-row small {
+          color: #aaa092;
+          font-size: 8px;
+        }
+
+        .price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 7px;
+          margin-top: 9px;
+        }
+
+        .price-row strong {
+          color: var(--pc-brown);
+          font-size: 14px;
+        }
+
+        .price-row del {
+          color: #aaa092;
+          font-size: 9px;
+        }
+
+        .discount-badge,
+        .flash-label {
+          position: absolute;
+          z-index: 3;
+          top: 10px;
+          padding: 5px 7px;
+          border-radius: 7px;
+          font-size: 7px;
+          font-weight: 850;
+        }
+
+        .discount-badge {
+          left: 10px;
+          background: #fff;
+          color: #ae534b;
+        }
+
+        .flash-label {
+          right: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          background: #8e4f44;
+          color: #fff;
+        }
+
+        /* =================================================
+           PRODUCT CARDS
+        ================================================= */
+
+        .product-grid {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 13px;
+        }
+
+        .product-card {
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 17px;
+          background: #fff;
+          box-shadow: 0 6px 20px rgba(82, 61, 29, 0.035);
+          transition:
+            transform 0.22s ease,
+            box-shadow 0.22s ease,
+            border-color 0.22s ease;
+        }
+
+        .product-card:hover {
+          transform: translateY(-5px);
+          border-color: var(--pc-border);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .product-card-image {
+          position: relative;
+          height: 205px;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        /*
+          IMPORTANT:
+          object-contain keeps the WHOLE ORIGINAL IMAGE visible.
+          It does NOT crop top/bottom/left/right.
+        */
+
+        .product-image-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          background: #faf8f3;
+        }
+
+        .product-image-full {
+          object-fit: contain !important;
+          object-position: center center !important;
+          padding: 10px;
+        }
+
+        .product-image-fallback {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          color: #b9ad9c;
+          background: #faf8f3;
+        }
+
+        .product-image-fallback span {
+          font-size: 8px;
+        }
+
+        .product-discount {
+          position: absolute;
+          z-index: 4;
+          top: 10px;
+          left: 10px;
+          padding: 5px 7px;
+          border-radius: 7px;
+          background: #fff;
+          color: #a9514a;
+          font-size: 7px;
+          font-weight: 850;
+          box-shadow: 0 4px 10px rgba(64, 45, 20, 0.06);
+        }
+
+        .product-heart {
+          position: absolute;
+          z-index: 4;
+          top: 9px;
+          right: 9px;
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: rgba(255, 255, 255, 0.92);
+          color: #8f8170;
+          cursor: pointer;
+          opacity: 0;
+          transform: translateY(-3px);
+          transition: 0.2s ease;
+        }
+
+        .product-card:hover .product-heart {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .product-heart:hover {
+          color: #b95e6b;
+          background: #fff4f5;
+        }
+
+        .low-stock,
+        .out-stock {
+          position: absolute;
+          z-index: 4;
+          left: 9px;
+          bottom: 9px;
+          padding: 5px 7px;
+          border-radius: 6px;
+          font-size: 7px;
+          font-weight: 750;
+        }
+
+        .low-stock {
+          background: #fff5df;
+          color: #a5762d;
+        }
+
+        .out-stock {
+          background: #f8e7e7;
+          color: #ad5858;
+        }
+
+        .product-card-body {
+          padding: 13px;
+        }
+
+        .product-card-body h3 {
+          margin: 4px 0 5px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+
+        .product-card-body p {
+          height: 28px;
+          margin: 0 0 7px;
+          overflow: hidden;
+          color: var(--pc-muted);
+          font-size: 8px;
+          line-height: 1.5;
+        }
+
+        .product-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .product-price strong {
+          display: block;
+          color: var(--pc-brown);
+          font-size: 13px;
+        }
+
+        .product-price del {
+          display: block;
+          margin-top: 2px;
+          color: #aaa092;
+          font-size: 8px;
+        }
+
+        .product-arrow {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+          transition: 0.2s ease;
+        }
+
+        .product-card:hover .product-arrow {
+          background: var(--pc-gold);
+          color: #fff;
+        }
+
+        /* =================================================
+           CATEGORY PRODUCTS
+        ================================================= */
+
+        .mini-product-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .mini-product-card {
+          min-height: 105px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 15px;
+          background: #fff;
+          transition: 0.2s ease;
+        }
+
+        .mini-product-card:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--pc-shadow);
+        }
+
+        .mini-product-image {
+          position: relative;
+          width: 82px;
+          height: 82px;
+          flex: 0 0 82px;
+          overflow: hidden;
+          border-radius: 11px;
+          background: #faf8f3;
+        }
+
+        .mini-product-card > div:last-child {
+          min-width: 0;
+        }
+
+        .mini-product-card span {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 8px;
+        }
+
+        .mini-product-card strong {
+          display: block;
+          margin: 4px 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 10px;
+        }
+
+        .mini-product-card b {
+          color: var(--pc-brown);
+          font-size: 10px;
+        }
+
+        .empty-category {
+          min-height: 150px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          border: 1px dashed var(--pc-border);
+          border-radius: 17px;
+          background: rgba(255, 255, 255, 0.55);
+          color: var(--pc-muted);
+        }
+
+        .empty-category strong {
+          color: var(--pc-brown);
+          font-size: 12px;
+        }
+
+        .empty-category span {
+          font-size: 9px;
+        }
+
+        /* =================================================
+           FEATURE PANELS
+        ================================================= */
+
+        .feature-grid {
+          display: grid;
+          grid-template-columns: 1.15fr 0.85fr;
+          gap: 13px;
+          margin-top: 42px;
+        }
+
+        .feature-panel {
+          position: relative;
+          min-height: 305px;
+          overflow: hidden;
+          padding: 30px;
+          border-radius: 22px;
+          transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease;
+        }
+
+        .feature-panel:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .prime-match-panel {
+          color: #fff;
+          background:
+            radial-gradient(
+              circle at 85% 30%,
+              rgba(255, 255, 255, 0.2),
+              transparent 23%
+            ),
+            linear-gradient(
+              130deg,
+              #51432f,
+              #8c713e
+            );
+        }
+
+        .budget-panel {
+          color: var(--pc-brown);
+          background:
+            radial-gradient(
+              circle at 85% 15%,
+              rgba(255, 255, 255, 0.6),
+              transparent 28%
+            ),
+            linear-gradient(
+              135deg,
+              #f7ead1,
+              #e9d0a1
+            );
+          border: 1px solid #e0c796;
+        }
+
+        .feature-panel-glow {
+          position: absolute;
+          width: 260px;
+          height: 260px;
+          right: -100px;
+          bottom: -130px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .feature-panel-content {
+          position: relative;
+          z-index: 3;
+          max-width: 470px;
+        }
+
+        .feature-kicker {
+          color: rgba(255, 255, 255, 0.62);
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.5px;
+        }
+
+        .budget-panel .feature-kicker {
+          color: #977338;
+        }
+
+        .feature-icon {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          margin-top: 18px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.12);
+          color: #f3d99e;
+        }
+
+        .budget-panel .feature-icon {
+          background: rgba(255, 255, 255, 0.5);
+          color: #936d30;
+        }
+
+        .feature-panel h2 {
+          margin: 15px 0 8px;
+          font-size: 28px;
+          line-height: 1.06;
+          letter-spacing: -1px;
+        }
+
+        .feature-panel p {
+          max-width: 400px;
+          margin: 0;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: 10px;
+          line-height: 1.7;
+        }
+
+        .budget-panel p {
+          color: #806a49;
+        }
+
+        .feature-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 20px;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 750;
+        }
+
+        .budget-panel .feature-cta {
+          color: #73562c;
+        }
+
+        .match-orbit {
+          position: absolute;
+          z-index: 1;
+          right: 45px;
+          top: 50%;
+          width: 220px;
+          height: 220px;
+          transform: translateY(-50%);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 50%;
+        }
+
+        .match-orbit::before,
+        .match-orbit::after {
+          content: "";
+          position: absolute;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+        }
+
+        .match-orbit::before {
+          inset: 30px;
+        }
+
+        .match-orbit::after {
+          inset: 64px;
+        }
+
+        .orbit-dot {
+          position: absolute;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #e5c37d;
+          box-shadow: 0 0 0 5px rgba(229, 195, 125, 0.1);
+        }
+
+        .orbit-dot.one {
+          top: 19px;
+          left: 95px;
+        }
+
+        .orbit-dot.two {
+          right: 12px;
+          top: 102px;
+        }
+
+        .orbit-dot.three {
+          bottom: 23px;
+          left: 57px;
+        }
+
+        .orbit-center {
+          position: absolute;
+          inset: 75px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.08);
+          color: #f0d291;
+          box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
+        }
+
+        .budget-panel-top {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .budget-panel-top .feature-icon {
+          margin: 0;
+        }
+
+        .budget-visual {
+          max-width: 330px;
+          margin-top: 25px;
+        }
+
+        .budget-line {
+          height: 7px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(118, 87, 37, 0.13);
+        }
+
+        .budget-line span {
+          display: block;
+          width: 72%;
+          height: 100%;
+          border-radius: inherit;
+          background: #99712f;
+        }
+
+        .budget-labels {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 7px;
+          color: #94794e;
+          font-size: 8px;
+        }
+
+        /* =================================================
+           TRIPLE
+        ================================================= */
+
+        .triple-feature-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 13px;
+          margin-top: 13px;
+        }
+
+        .small-feature-card {
+          position: relative;
+          min-height: 220px;
+          padding: 20px;
+          overflow: hidden;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 19px;
+          background: #fff;
+          transition: 0.22s ease;
+        }
+
+        .small-feature-card:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--pc-shadow-hover);
+        }
+
+        .setup-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(202, 168, 98, 0.13),
+              transparent 38%
+            ),
+            #fff;
+        }
+
+        .points-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(170, 138, 206, 0.12),
+              transparent 40%
+            ),
+            #fff;
+        }
+
+        .mystery-card {
+          background:
+            radial-gradient(
+              circle at 100% 0%,
+              rgba(217, 180, 93, 0.17),
+              transparent 40%
+            ),
+            #fff;
+        }
+
+        .small-feature-icon {
+          width: 38px;
+          height: 38px;
+          display: grid;
+          place-items: center;
+          border-radius: 11px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .small-feature-label {
+          display: block;
+          margin-top: 17px;
+          color: var(--pc-gold-dark);
+          font-size: 7px;
+          font-weight: 850;
+          letter-spacing: 1.3px;
+        }
+
+        .small-feature-card h3 {
+          margin: 6px 0;
+          font-size: 17px;
+          letter-spacing: -0.45px;
+        }
+
+        .small-feature-card p {
+          max-width: 260px;
+          margin: 0;
+          color: var(--pc-muted);
+          font-size: 9px;
+          line-height: 1.65;
+        }
+
+        .small-feature-arrow {
+          position: absolute;
+          left: 20px;
+          bottom: 19px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        .points-mini-bar {
+          max-width: 240px;
+          height: 5px;
+          margin-top: 15px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #eee8f6;
+        }
+
+        .points-mini-bar span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #8a72b0;
+        }
+
+        .mystery-button {
+          position: absolute;
+          left: 20px;
+          bottom: 17px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 31px;
+          padding: 0 10px;
+          border-radius: 9px;
+          background: #f5ead5;
+          color: #8c682f;
+          font-size: 9px;
+          font-weight: 750;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .mystery-button:hover {
+          background: #e8d4ad;
+          transform: translateY(-1px);
+        }
+
+        /* =================================================
+           RECENT
+        ================================================= */
+
+        .recent-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .recent-card {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 9px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 14px;
+          background: #fff;
+          transition: 0.2s ease;
+        }
+
+        .recent-card:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--pc-shadow);
+        }
+
+        .recent-image {
+          position: relative;
+          width: 66px;
+          height: 66px;
+          flex: 0 0 66px;
+          overflow: hidden;
+          border-radius: 10px;
+          background: #faf8f3;
+        }
+
+        .recent-info {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .recent-info span {
+          display: block;
+          color: var(--pc-gold-dark);
+          font-size: 7px;
+        }
+
+        .recent-info strong {
+          display: block;
+          margin: 4px 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 10px;
+        }
+
+        .recent-info b {
+          color: var(--pc-brown);
+          font-size: 10px;
+        }
+
+        .recent-card > svg {
+          color: #c0b5a5;
+        }
+
+        /* =================================================
+           BOTTOM
+        ================================================= */
+
+        .bottom-grid {
+          display: grid;
+          grid-template-columns: 1.35fr 0.65fr;
+          gap: 13px;
+          margin-top: 42px;
+        }
+
+        .dashboard-panel {
+          min-width: 0;
+          padding: 20px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.88);
+          box-shadow: 0 7px 24px rgba(82, 61, 29, 0.035);
+        }
+
+        .panel-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 13px;
+        }
+
+        .panel-heading h2 {
+          margin: 5px 0 0;
+          font-size: 17px;
+        }
+
+        .panel-heading > svg {
+          color: var(--pc-gold);
+        }
+
+        .orders-list {
+          display: grid;
+        }
+
+        .order-row {
+          min-height: 61px;
+          display: grid;
+          grid-template-columns: 35px minmax(120px, 1fr) auto auto 16px;
+          align-items: center;
+          gap: 10px;
+          border-top: 1px solid var(--pc-border-light);
+        }
+
+        .order-icon {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-surface-soft);
+          color: var(--pc-gold-dark);
+        }
+
+        .order-info strong {
+          display: block;
+          font-size: 10px;
+        }
+
+        .order-info span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
+          font-size: 8px;
+        }
+
+        .order-status {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          color: #6e665c;
+          font-size: 8px;
+          white-space: nowrap;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #d2a44f;
+        }
+
+        .status-dot.delivered,
+        .status-dot.completed {
+          background: #61a873;
+        }
+
+        .status-dot.cancelled,
+        .status-dot.canceled {
+          background: #c96767;
+        }
+
+        .order-price {
+          color: var(--pc-brown);
+          font-size: 10px;
+          white-space: nowrap;
+        }
+
+        .order-row > svg {
+          color: #c0b5a5;
+        }
+
+        .empty-panel {
+          min-height: 200px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          color: var(--pc-muted);
+          text-align: center;
+        }
+
+        .empty-panel-icon {
+          width: 45px;
+          height: 45px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 3px;
+          border-radius: 13px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .empty-panel strong {
+          color: var(--pc-brown);
+          font-size: 12px;
+        }
+
+        .empty-panel span {
+          font-size: 9px;
+        }
+
+        .empty-panel a {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 7px;
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        .insight-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .insight-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px;
+          border-radius: 11px;
+          background: #fcfaf6;
+        }
+
+        .insight-icon {
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .insight-row div:last-child {
+          flex: 1;
+        }
+
+        .insight-row span {
+          display: block;
+          color: var(--pc-muted);
+          font-size: 8px;
+        }
+
+        .insight-row strong {
+          display: block;
+          margin-top: 2px;
+          font-size: 12px;
+        }
+
+        .insight-cta {
+          min-height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 12px;
+          padding: 0 11px;
+          border-radius: 10px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+          font-size: 9px;
+          font-weight: 750;
+        }
+
+        /* =================================================
+           BENEFITS
+        ================================================= */
+
+        .benefits-strip {
+          min-height: 100px;
+          display: grid;
+          grid-template-columns: repeat(7, auto);
+          align-items: center;
+          justify-content: space-between;
+          gap: 17px;
+          margin-top: 42px;
+          padding: 18px 22px;
+          border: 1px solid var(--pc-border-light);
+          border-radius: 18px;
+          background: #fff;
+        }
+
+        .benefit-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+        }
+
+        .benefit-icon {
+          width: 34px;
+          height: 34px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 34px;
+          border-radius: 10px;
+          background: var(--pc-gold-pale);
+          color: var(--pc-gold-dark);
+        }
+
+        .benefit-item strong {
+          display: block;
+          font-size: 9px;
+        }
+
+        .benefit-item span {
+          display: block;
+          margin-top: 3px;
+          color: var(--pc-muted);
+          font-size: 7px;
+        }
+
+        .benefit-divider {
+          width: 1px;
+          height: 35px;
+          background: var(--pc-border-light);
+        }
+
+        /* =================================================
+           FOOTER
+        ================================================= */
+
+        .dashboard-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          margin-top: 35px;
+          padding-top: 22px;
+          border-top: 1px solid var(--pc-border-light);
+        }
+
+        .footer-brand {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .footer-logo {
+          width: 29px;
+          height: 29px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: var(--pc-gold);
+          color: white;
+          font-size: 12px;
+          font-weight: 850;
+        }
+
+        .footer-brand strong {
+          display: block;
+          font-size: 10px;
+        }
+
+        .footer-brand span {
+          display: block;
+          margin-top: 2px;
+          color: var(--pc-muted);
+          font-size: 7px;
+        }
+
+        .footer-links {
+          display: flex;
+          gap: 16px;
+        }
+
+        .footer-links a {
+          color: var(--pc-muted);
+          font-size: 8px;
+        }
+
+        .footer-links a:hover {
+          color: var(--pc-gold-dark);
+        }
+
+        .footer-copy {
+          color: #b0a494;
+          font-size: 8px;
+        }
+
+        /* =================================================
+           MOBILE OVERLAY
+        ================================================= */
+
+        .mobile-overlay {
+          display: none;
+        }
+
+        /* =================================================
+           ANIMATIONS
+        ================================================= */
+
+        @keyframes heroIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes revealUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes dropdownIn {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes floating {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+
+        @keyframes rotateSlow {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes rotateSlowReverse {
+          to {
+            transform: rotate(-360deg);
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: 0.5;
+            transform: scale(1.3);
+          }
+        }
+
+        /* =================================================
+           RESPONSIVE 1280
+        ================================================= */
+
+        @media (max-width: 1400px) {
+          .product-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+
+          .category-strip {
+            grid-template-columns: repeat(6, 1fr);
+          }
+
+          .hero-decoration {
+            right: 31%;
+          }
+        }
+
+        @media (max-width: 1180px) {
+          .dashboard-sidebar {
+            width: 225px;
+          }
+
+          .dashboard-main {
+            margin-left: 225px;
+          }
+
+          .dashboard-content {
+            padding: 24px;
+          }
+
+          .smart-tools-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .flash-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .bottom-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .recent-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .benefits-strip {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .benefit-divider {
+            display: none;
+          }
+        }
+
+        /* =================================================
+           TABLET
+        ================================================= */
+
+        @media (max-width: 980px) {
+          .dashboard-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.28s ease;
+            box-shadow: 20px 0 50px rgba(50, 37, 20, 0.15);
+          }
+
+          .dashboard-sidebar.sidebar-open {
+            transform: translateX(0);
+          }
+
+          .dashboard-main {
+            margin-left: 0;
+          }
+
+          .mobile-menu-button {
+            display: grid;
+          }
+
+          .mobile-close {
+            display: grid;
+            place-items: center;
+          }
+
+          .mobile-overlay {
+            position: fixed;
+            z-index: 70;
+            inset: 0;
+            display: block;
+            background: rgba(45, 34, 21, 0.28);
+            backdrop-filter: blur(2px);
+          }
+
+          .dashboard-header {
+            padding: 11px 20px;
+          }
+
+          .desktop-action {
+            display: none;
+          }
+
+          .welcome-hero {
+            min-height: 300px;
+          }
+
+          .hero-points-card {
+            width: 205px;
+          }
+
+          .hero-decoration {
+            right: 21%;
+            opacity: 0.7;
+          }
+
+          .product-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .mini-product-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* =================================================
+           MOBILE
+        ================================================= */
+
+        @media (max-width: 700px) {
+          .dashboard-header {
+            min-height: 68px;
+            padding: 10px 14px;
+            gap: 8px;
+          }
+
+          .header-left {
+            gap: 8px;
+          }
+
+          .mobile-menu-button {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+          }
+
+          .header-search-wrap {
+            width: 100%;
+          }
+
+          .header-search {
+            height: 40px;
+            padding-left: 38px;
+            padding-right: 34px;
+            font-size: 10px;
+          }
+
+          .header-search-icon {
+            left: 12px;
+            width: 16px;
+          }
+
+          .header-right {
+            gap: 5px;
+          }
+
+          .header-icon-button {
+            width: 37px;
+            height: 37px;
+          }
+
+          .header-profile {
+            padding-right: 0;
+          }
+
+          .header-profile-copy,
+          .header-profile > svg {
+            display: none;
+          }
+
+          .notification-dropdown {
+            right: 55px;
+            width: min(275px, calc(100vw - 30px));
+          }
+
+          .dashboard-content {
+            padding: 15px 13px 30px;
+          }
+
+          .welcome-hero {
+            min-height: 370px;
+            align-items: flex-start;
+            padding: 25px 21px;
+            border-radius: 21px;
+          }
+
+          .hero-content h1 {
+            font-size: 34px;
+          }
+
+          .hero-content p {
+            max-width: 90%;
+            font-size: 10px;
+          }
+
+          .hero-decoration {
+            right: -90px;
+            top: 67%;
+            opacity: 0.45;
+            transform: translateY(-50%) scale(0.75);
+          }
+
+          .hero-points-card {
+            position: absolute;
+            left: 21px;
+            right: 21px;
+            bottom: 19px;
+            width: auto;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+          }
+
+          .stat-card {
+            min-height: 91px;
+            padding: 11px;
+            gap: 8px;
+          }
+
+          .stat-icon {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+          }
+
+          .stat-content strong {
+            font-size: 14px;
+          }
+
+          .stat-content small {
+            font-size: 7px;
+          }
+
+          .section {
+            margin-top: 31px;
+          }
+
+          .section-heading {
+            align-items: flex-start;
+            margin-bottom: 12px;
+          }
+
+          .section-heading h2 {
+            font-size: 17px;
+          }
+
+          .section-heading p {
+            font-size: 9px;
+          }
+
+          .smart-tools-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .smart-tool-card {
+            min-height: 195px;
+            padding: 13px;
+          }
+
+          .smart-tool-icon {
+            margin-top: 17px;
+            width: 37px;
+            height: 37px;
+          }
+
+          .smart-tool-card h3 {
+            font-size: 13px;
+          }
+
+          .smart-tool-card p {
+            font-size: 8px;
+          }
+
+          .smart-tool-link {
+            left: 13px;
+            bottom: 13px;
+          }
+
+          .category-strip {
+            display: flex;
+            overflow-x: auto;
+            gap: 7px;
+            padding-bottom: 5px;
+            scrollbar-width: none;
+          }
+
+          .category-strip::-webkit-scrollbar {
+            display: none;
+          }
+
+          .category-card {
+            min-width: 83px;
+            min-height: 92px;
+            flex: 0 0 83px;
+          }
+
+          .category-emoji {
+            width: 34px;
+            height: 34px;
+            font-size: 16px;
+          }
+
+          .flash-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .flash-image {
+            height: 145px;
+          }
+
+          .flash-info {
+            padding: 10px;
+          }
+
+          .flash-info h3 {
+            font-size: 10px;
+          }
+
+          .price-row strong {
+            font-size: 11px;
+          }
+
+          .product-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .product-card-image {
+            height: 165px;
+          }
+
+          .product-image-full {
+            padding: 8px;
+          }
+
+          .product-card-body {
+            padding: 10px;
+          }
+
+          .product-card-body h3 {
+            font-size: 10px;
+          }
+
+          .product-card-body p {
+            font-size: 7px;
+          }
+
+          .product-heart {
+            opacity: 1;
+            transform: none;
+            width: 28px;
+            height: 28px;
+          }
+
+          .feature-grid {
+            margin-top: 31px;
+          }
+
+          .feature-panel {
+            min-height: 300px;
+            padding: 22px;
+            border-radius: 19px;
+          }
+
+          .feature-panel h2 {
+            font-size: 24px;
+          }
+
+          .feature-panel p {
+            max-width: 65%;
+          }
+
+          .match-orbit {
+            right: -80px;
+            opacity: 0.55;
+          }
+
+          .triple-feature-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .small-feature-card {
+            min-height: 190px;
+          }
+
+          .recent-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .mini-product-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .order-row {
+            grid-template-columns: 34px minmax(80px, 1fr) auto 16px;
+          }
+
+          .order-status {
+            display: none;
+          }
+
+          .bottom-grid {
+            margin-top: 31px;
+          }
+
+          .benefits-strip {
+            grid-template-columns: 1fr;
+            gap: 13px;
+            padding: 16px;
+          }
+
+          .benefit-divider {
+            display: none;
+          }
+
+          .dashboard-footer {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .footer-links {
+            flex-wrap: wrap;
+          }
+
+          .footer-copy {
+            order: 3;
+          }
+
+          .search-results {
+            position: fixed;
+            top: 62px;
+            left: 12px;
+            right: 12px;
+            width: auto;
+          }
+        }
+
+        /* =================================================
+           SMALL MOBILE
+        ================================================= */
+
+        @media (max-width: 430px) {
+          .header-right .header-icon-button {
+            display: none;
+          }
+
+          .header-right .header-profile {
+            display: flex;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .stat-card {
+            min-width: 0;
+          }
+
+          .stat-content strong {
+            max-width: 90px;
+          }
+
+          .smart-tool-card {
+            min-height: 185px;
+          }
+
+          .product-card-image {
+            height: 150px;
+          }
+
+          .flash-image {
+            height: 135px;
+          }
+
+          .welcome-hero {
+            min-height: 365px;
+          }
+        }
+
+        /* =================================================
+           REDUCED MOTION
+        ================================================= */
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
