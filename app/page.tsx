@@ -42,7 +42,6 @@ type HeroSlide = {
   button: string;
   secondary: string;
   badge: string;
-  offer: string;
 };
 
 const categories: Category[] = [
@@ -86,37 +85,34 @@ const categories: Category[] = [
 
 const heroSlides: HeroSlide[] = [
   {
-    eyebrow: "SUPER SALE IS LIVE",
+    eyebrow: "🔥 SUPER SALE IS LIVE",
     title: "Shop More.",
     highlight: "Pay Less.",
     description:
       "Discover premium products, everyday essentials and exciting deals — all in one beautiful shopping experience.",
     button: "Shop Now",
     secondary: "Explore Deals",
-    badge: "UP TO 70% OFF",
-    offer: "Limited-time savings",
+    badge: "Up to 70% OFF",
   },
   {
-    eyebrow: "PRIMECART PICKS",
+    eyebrow: "✨ PRIMECART PICKS",
     title: "Curated.",
     highlight: "Just For You.",
     description:
       "Explore hand-picked products across electronics, fashion, beauty, home and gaming.",
     button: "Explore Picks",
     secondary: "View Categories",
-    badge: "PREMIUM SELECTION",
-    offer: "Editor's favourites",
+    badge: "Premium Selection",
   },
   {
-    eyebrow: "FLASH DEALS",
+    eyebrow: "⚡ FLASH DEALS",
     title: "Big Deals.",
     highlight: "Limited Time.",
     description:
       "Don't miss today's exclusive offers. Grab your favourites before the timer runs out.",
     button: "Grab Deals",
     secondary: "Shop Everything",
-    badge: "LIMITED TIME",
-    offer: "Deals ending soon",
+    badge: "Limited Time",
   },
 ];
 
@@ -146,7 +142,6 @@ const benefits = [
 const primeFeatures = [
   {
     icon: Sparkles,
-    number: "01",
     title: "PrimeMatch",
     description:
       "Tell us what you need, your budget and priorities. Find products that fit your requirements.",
@@ -155,7 +150,6 @@ const primeFeatures = [
   },
   {
     icon: Zap,
-    number: "02",
     title: "Budget Builder",
     description:
       "Plan your shopping intelligently and discover the best combination within your budget.",
@@ -164,7 +158,6 @@ const primeFeatures = [
   },
   {
     icon: PackageCheck,
-    number: "03",
     title: "Build My Setup",
     description:
       "Create complete gaming, college, work, fitness or home setups with ease.",
@@ -173,7 +166,6 @@ const primeFeatures = [
   },
   {
     icon: Star,
-    number: "04",
     title: "PrimePoints",
     description:
       "Shop, complete challenges and collect rewards while becoming a PrimeCart member.",
@@ -189,7 +181,6 @@ const dealItems = [
     discount: "UP TO 60% OFF",
     image: "/electronics.png",
     href: "/dashboard/categories/electronics",
-    tag: "Trending",
   },
   {
     title: "Fashion",
@@ -197,7 +188,6 @@ const dealItems = [
     discount: "UP TO 50% OFF",
     image: "/fashion.png",
     href: "/dashboard/categories/fashion",
-    tag: "Popular",
   },
   {
     title: "Home & Living",
@@ -205,7 +195,6 @@ const dealItems = [
     discount: "UP TO 45% OFF",
     image: "/home.png",
     href: "/dashboard/categories/home-and-living",
-    tag: "New",
   },
 ];
 
@@ -262,20 +251,6 @@ export default function HomePage() {
     return () => window.clearInterval(slider);
   }, []);
 
-  useEffect(() => {
-    if (!openMenu) return;
-
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setOpenMenu(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, [openMenu]);
-
   const formattedTime = formatTime(timeLeft);
 
   const handleSubscribe = (
@@ -290,29 +265,32 @@ export default function HomePage() {
   };
 
   const nextSlide = () => {
-    setActiveSlide((value) => (value + 1) % heroSlides.length);
+    setActiveSlide(
+      (value) => (value + 1) % heroSlides.length
+    );
   };
 
   const previousSlide = () => {
     setActiveSlide(
-      (value) => (value - 1 + heroSlides.length) % heroSlides.length
+      (value) =>
+        (value - 1 + heroSlides.length) % heroSlides.length
     );
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#faf9f6] text-[#171512] selection:bg-[#d4af37]/20">
+    <main className="min-h-screen w-full overflow-x-hidden bg-[#faf8f3] pb-20 text-[#171512] md:pb-0">
+
       {/* =========================================================
-          ANNOUNCEMENT BAR
+          TOP ANNOUNCEMENT
       ========================================================= */}
 
       <div className="hidden bg-[#171512] text-white sm:block">
-        <div className="mx-auto flex h-9 max-w-[1440px] items-center justify-between px-5 text-[11px] sm:px-8">
-          <div className="flex items-center gap-2 font-medium tracking-wide">
-            <Sparkles size={13} className="text-[#d4af37]" />
-            <span>Premium shopping. Better prices. Smarter choices.</span>
-          </div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 text-[11px] sm:px-6 sm:text-xs">
+          <p className="font-medium tracking-wide">
+            ✨ Premium shopping. Better prices. Smarter choices.
+          </p>
 
-          <div className="flex items-center gap-6 text-white/65">
+          <div className="flex items-center gap-5 text-white/70">
             <span>Free delivery above ₹499</span>
             <span>Easy returns</span>
             <span>Secure checkout</span>
@@ -324,52 +302,56 @@ export default function HomePage() {
           NAVBAR
       ========================================================= */}
 
-      <nav className="sticky top-0 z-50 border-b border-[#ebe6dc] bg-white/95 shadow-[0_5px_25px_rgba(35,27,10,0.045)] backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[72px] max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <nav className="sticky top-0 z-50 border-b border-[#ece7db] bg-white/95 shadow-[0_4px_20px_rgba(40,30,10,0.04)] backdrop-blur-xl">
+
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-2 px-3 sm:h-[74px] sm:gap-4 sm:px-6">
+
           {/* LOGO */}
 
           <Link
             href="/"
-            className="group flex shrink-0 items-center gap-2.5"
+            className="flex min-w-0 shrink-0 items-center gap-2"
           >
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl bg-[#d4af37]/10 blur-md transition group-hover:bg-[#d4af37]/20" />
+            <Image
+              src="/logo.png"
+              alt="PrimeCart Logo"
+              width={48}
+              height={48}
+              className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+              priority
+            />
 
-              <Image
-                src="/logo.png"
-                alt="PrimeCart Logo"
-                width={48}
-                height={48}
-                priority
-                className="relative h-10 w-10 object-contain sm:h-11 sm:w-11"
-              />
-            </div>
-
-            <div className="hidden sm:block">
-              <h1 className="text-[21px] font-black leading-none tracking-[-0.04em]">
-                Prime<span className="text-[#d4af37]">Cart</span>
+            <div className="hidden min-w-0 sm:block">
+              <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
+                Prime<span className="text-[#D4AF37]">Cart</span>
               </h1>
 
-              <p className="mt-1 text-[8px] font-semibold uppercase tracking-[0.22em] text-[#8d887e]">
+              <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-gray-500">
                 Premium Shopping
               </p>
+            </div>
+
+            {/* compact mobile brand */}
+            <div className="block sm:hidden">
+              <h1 className="text-lg font-extrabold tracking-tight">
+                Prime<span className="text-[#D4AF37]">Cart</span>
+              </h1>
             </div>
           </Link>
 
           {/* DESKTOP NAV */}
 
-          <div className="ml-5 hidden items-center gap-6 lg:flex">
+          <div className="ml-3 hidden items-center gap-6 lg:flex">
             <Link
               href="/"
-              className="relative py-2 text-sm font-bold text-[#b38a22]"
+              className="font-semibold text-[#D4AF37]"
             >
               Home
-              <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-full bg-[#d4af37]" />
             </Link>
 
             <Link
               href="/auth/login"
-              className="py-2 text-sm font-medium text-[#666159] transition hover:text-[#b38a22]"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Shop
             </Link>
@@ -377,60 +359,60 @@ export default function HomePage() {
             <div className="group relative">
               <button
                 type="button"
-                className="flex items-center gap-1 py-2 text-sm font-medium text-[#666159] transition hover:text-[#b38a22]"
+                className="flex items-center gap-1.5 font-medium text-gray-600 transition hover:text-[#D4AF37]"
               >
                 Categories
-                <ChevronDown
-                  size={14}
-                  className="transition group-hover:rotate-180"
-                />
+                <ChevronDown size={15} />
               </button>
 
-              <div className="invisible absolute left-1/2 top-full mt-3 w-[570px] -translate-x-1/2 translate-y-2 rounded-[26px] border border-[#ebe5d9] bg-white p-5 opacity-0 shadow-[0_25px_70px_rgba(40,30,10,0.14)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="invisible absolute left-1/2 top-full mt-4 w-[540px] -translate-x-1/2 translate-y-2 rounded-3xl border border-[#ece7db] bg-white p-5 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-base font-black">
+                    <p className="text-lg font-bold">
                       Shop Categories
                     </p>
-                    <p className="mt-1 text-xs text-[#918c83]">
-                      Explore our most-loved collections
+
+                    <p className="text-sm text-gray-500">
+                      Explore everything in one place
                     </p>
                   </div>
 
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff7e3] text-[#b38a22]">
-                    <Sparkles size={17} />
-                  </div>
+                  <Sparkles
+                    className="text-[#D4AF37]"
+                    size={20}
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-3">
                   {categories.map((category) => (
                     <Link
                       key={category.name}
                       href={`/dashboard/categories/${category.slug}`}
-                      className="group/item flex items-center gap-3 rounded-2xl border border-transparent p-3 transition hover:border-[#ead9a9] hover:bg-[#fffbf2]"
+                      className="group/item flex items-center gap-3 rounded-2xl border border-[#f0ece3] p-3 transition hover:border-[#D4AF37]/50 hover:bg-[#fffaf0]"
                     >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f8f6f0]">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf8f3]">
                         <Image
                           src={category.image}
                           alt={category.name}
-                          width={42}
-                          height={42}
-                          className="h-9 w-9 object-contain transition group-hover/item:scale-110"
+                          width={44}
+                          height={44}
+                          className="h-10 w-10 object-contain"
                         />
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">
+                        <p className="truncate font-semibold">
                           {category.name}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#99938a]">
+
+                        <p className="text-xs text-gray-500">
                           {category.products}
                         </p>
                       </div>
 
                       <ArrowUpRight
-                        size={14}
-                        className="ml-auto shrink-0 text-[#c8c2b6] transition group-hover/item:text-[#d4af37]"
+                        size={15}
+                        className="ml-auto text-gray-300 transition group-hover/item:text-[#D4AF37]"
                       />
                     </Link>
                   ))}
@@ -440,92 +422,92 @@ export default function HomePage() {
 
             <Link
               href="/auth/login"
-              className="py-2 text-sm font-medium text-[#666159] transition hover:text-[#b38a22]"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Deals
             </Link>
 
             <Link
               href="/auth/login"
-              className="py-2 text-sm font-medium text-[#666159] transition hover:text-[#b38a22]"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Contact
             </Link>
           </div>
 
-          {/* SEARCH */}
+          {/* DESKTOP SEARCH */}
 
-          <div className="relative ml-auto hidden max-w-[370px] flex-1 md:flex lg:ml-7">
-            <Search
-              size={17}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#99938a]"
-            />
+          <div className="ml-auto hidden max-w-[300px] flex-1 md:flex">
+            <div className="relative w-full">
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
 
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onFocus={() => setSearchOpen(true)}
-              placeholder="Search products or categories..."
-              className="h-11 w-full rounded-2xl border border-[#e9e3d8] bg-[#f9f7f2] pl-11 pr-4 text-sm text-[#24211d] outline-none transition placeholder:text-[#aaa49a] focus:border-[#d4af37] focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10"
-            />
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search products, categories..."
+                className="h-11 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-4 focus:ring-[#D4AF37]/10"
+              />
 
-            {searchOpen && search.trim() && (
-              <div className="absolute left-0 right-0 top-[52px] overflow-hidden rounded-2xl border border-[#ebe5da] bg-white p-2 shadow-[0_20px_50px_rgba(30,25,15,0.12)]">
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((category) => (
-                    <Link
-                      key={category.name}
-                      href={`/dashboard/categories/${category.slug}`}
-                      onClick={() => {
-                        setSearchOpen(false);
-                        setSearch("");
-                      }}
-                      className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-[#faf8f2]"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8f6f0]">
-                        <Image
-                          src={category.image}
-                          alt={category.name}
-                          width={35}
-                          height={35}
-                          className="h-8 w-8 object-contain"
-                        />
-                      </div>
+              {searchOpen && search.trim() && (
+                <div className="absolute left-0 right-0 top-[52px] overflow-hidden rounded-2xl border border-[#ece7db] bg-white p-2 shadow-2xl">
+                  {filteredCategories.length > 0 ? (
+                    filteredCategories.map((category) => (
+                      <Link
+                        key={category.name}
+                        href={`/dashboard/categories/${category.slug}`}
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setSearch("");
+                        }}
+                        className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-[#faf8f3]"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#faf8f3]">
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            width={35}
+                            height={35}
+                            className="h-8 w-8 object-contain"
+                          />
+                        </div>
 
-                      <div>
-                        <p className="text-sm font-bold">
-                          {category.name}
-                        </p>
-                        <p className="text-[11px] text-[#99938a]">
-                          {category.products}
-                        </p>
-                      </div>
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {category.name}
+                          </p>
 
-                      <ArrowRight
-                        size={14}
-                        className="ml-auto text-[#c9c2b6]"
-                      />
-                    </Link>
-                  ))
-                ) : (
-                  <div className="p-5 text-center text-sm text-[#8d887f]">
-                    No matching category found.
-                  </div>
-                )}
-              </div>
-            )}
+                          <p className="text-xs text-gray-500">
+                            {category.products}
+                          </p>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      No matching category found.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ACTIONS */}
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 md:ml-3">
+
             <button
               type="button"
-              onClick={() => {
-                setSearchOpen((value) => !value);
-                setOpenMenu(false);
-              }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f4ed] text-[#454039] transition hover:bg-[#f0eadc] hover:text-[#b38a22] md:hidden"
+              onClick={() =>
+                setSearchOpen((value) => !value)
+              }
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 md:hidden"
               aria-label="Search"
             >
               <Search size={18} />
@@ -533,7 +515,7 @@ export default function HomePage() {
 
             <Link
               href="/auth/login"
-              className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f7f4ed] text-[#454039] transition hover:bg-[#f0eadc] hover:text-[#b38a22] sm:flex"
+              className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:flex"
               aria-label="Wishlist"
             >
               <Heart size={18} />
@@ -541,40 +523,43 @@ export default function HomePage() {
 
             <Link
               href="/auth/login"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f4ed] text-[#454039] transition hover:bg-[#f0eadc] hover:text-[#b38a22]"
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 sm:h-10 sm:w-10"
               aria-label="Shopping cart"
             >
               <ShoppingCart size={18} />
 
-              <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-white bg-[#d4af37] px-1 text-[8px] font-black text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[8px] font-bold text-white">
                 0
               </span>
             </Link>
 
             <Link
               href="/auth/login"
-              className="hidden h-10 items-center justify-center rounded-xl border border-[#ddd6ca] px-4 text-sm font-bold text-[#3f3a34] transition hover:border-[#d4af37] hover:text-[#b38a22] md:flex"
+              className="hidden rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold transition hover:border-[#D4AF37] hover:text-[#D4AF37] md:block"
             >
               Login
             </Link>
 
             <Link
               href="/auth/register"
-              className="hidden h-10 items-center justify-center rounded-xl bg-[#d4af37] px-4 text-sm font-bold text-white shadow-[0_8px_22px_rgba(212,175,55,0.22)] transition hover:-translate-y-0.5 hover:bg-[#c59f30] hover:shadow-[0_12px_28px_rgba(212,175,55,0.28)] md:flex"
+              className="hidden rounded-xl bg-[#D4AF37] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#c69f2f] hover:shadow-lg md:block"
             >
               Register
             </Link>
 
             <button
               type="button"
-              onClick={() => {
-                setOpenMenu((value) => !value);
-                setSearchOpen(false);
-              }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e8e2d7] text-[#37332e] transition hover:border-[#d4af37] hover:text-[#b38a22] lg:hidden"
+              onClick={() =>
+                setOpenMenu((value) => !value)
+              }
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ece7db] active:scale-95 lg:hidden sm:h-10 sm:w-10"
               aria-label="Open menu"
             >
-              {openMenu ? <X size={20} /> : <Menu size={20} />}
+              {openMenu ? (
+                <X size={20} />
+              ) : (
+                <Menu size={20} />
+              )}
             </button>
           </div>
         </div>
@@ -582,24 +567,26 @@ export default function HomePage() {
         {/* MOBILE SEARCH */}
 
         {searchOpen && (
-          <div className="border-t border-[#eee8de] bg-white px-4 py-3 md:hidden">
+          <div className="border-t border-[#ece7db] bg-white px-3 py-3 sm:px-4 md:hidden">
             <div className="relative">
               <Search
                 size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9b958b]"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
               />
 
               <input
                 autoFocus
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
                 placeholder="Search products or categories..."
-                className="h-12 w-full rounded-2xl border border-[#e6dfd3] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10"
+                className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10"
               />
             </div>
 
             {search.trim() && (
-              <div className="mt-2 overflow-hidden rounded-2xl border border-[#ebe5da] bg-white p-1.5 shadow-lg">
+              <div className="mt-2 max-h-64 overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
                 {filteredCategories.length > 0 ? (
                   filteredCategories.map((category) => (
                     <Link
@@ -609,33 +596,29 @@ export default function HomePage() {
                         setSearchOpen(false);
                         setSearch("");
                       }}
-                      className="flex items-center gap-3 rounded-xl p-3 hover:bg-[#faf8f2]"
+                      className="flex items-center gap-3 rounded-xl p-3 active:bg-[#faf8f3]"
                     >
                       <Image
                         src={category.image}
                         alt={category.name}
-                        width={38}
-                        height={38}
+                        width={40}
+                        height={40}
                         className="h-9 w-9 object-contain"
                       />
 
-                      <div>
-                        <p className="text-sm font-bold">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">
                           {category.name}
                         </p>
-                        <p className="text-[11px] text-[#99938a]">
+
+                        <p className="text-xs text-gray-500">
                           {category.products}
                         </p>
                       </div>
-
-                      <ArrowRight
-                        size={14}
-                        className="ml-auto text-[#c8c1b6]"
-                      />
                     </Link>
                   ))
                 ) : (
-                  <p className="p-4 text-center text-sm text-[#8d887f]">
+                  <p className="p-3 text-center text-sm text-gray-500">
                     No category found.
                   </p>
                 )}
@@ -647,41 +630,33 @@ export default function HomePage() {
         {/* MOBILE MENU */}
 
         {openMenu && (
-          <div className="border-t border-[#eee8de] bg-white px-4 py-5 shadow-[0_15px_35px_rgba(30,25,15,0.08)] lg:hidden">
-            <div className="mx-auto max-w-md">
-              <div className="mb-4 rounded-2xl bg-[#faf8f3] p-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b38a22]">
-                  PrimeCart
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[#46413a]">
-                  Premium shopping, made simpler.
-                </p>
-              </div>
+          <div className="max-h-[calc(100vh-64px)] overflow-y-auto border-t border-[#ece7db] bg-white px-3 py-4 shadow-xl sm:px-4 lg:hidden">
+            <div className="grid gap-1.5">
+              {[
+                ["Home", "/"],
+                ["Shop", "/auth/login"],
+                [
+                  "Categories",
+                  "/dashboard/categories/electronics",
+                ],
+                ["Deals", "/auth/login"],
+                ["Contact", "/auth/login"],
+              ].map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setOpenMenu(false)}
+                  className="rounded-xl px-4 py-3.5 font-medium text-gray-700 transition active:bg-[#faf8f3] hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+                >
+                  {label}
+                </Link>
+              ))}
 
-              <div className="grid gap-1">
-                {[
-                  ["Home", "/"],
-                  ["Shop", "/auth/login"],
-                  ["Categories", "/dashboard/categories/electronics"],
-                  ["Deals", "/auth/login"],
-                  ["Contact", "/auth/login"],
-                ].map(([label, href]) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    onClick={() => setOpenMenu(false)}
-                    className="rounded-xl px-4 py-3.5 text-sm font-semibold text-[#514c45] transition hover:bg-[#faf8f3] hover:text-[#b38a22]"
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <div className="mt-2 grid grid-cols-2 gap-2.5">
                 <Link
                   href="/auth/login"
                   onClick={() => setOpenMenu(false)}
-                  className="rounded-xl border border-[#ddd6ca] px-4 py-3 text-center text-sm font-bold"
+                  className="rounded-xl border border-gray-300 px-4 py-3 text-center text-sm font-semibold"
                 >
                   Login
                 </Link>
@@ -689,7 +664,7 @@ export default function HomePage() {
                 <Link
                   href="/auth/register"
                   onClick={() => setOpenMenu(false)}
-                  className="rounded-xl bg-[#d4af37] px-4 py-3 text-center text-sm font-bold text-white"
+                  className="rounded-xl bg-[#D4AF37] px-4 py-3 text-center text-sm font-semibold text-white"
                 >
                   Register
                 </Link>
@@ -703,112 +678,111 @@ export default function HomePage() {
           HERO
       ========================================================= */}
 
-      <section className="px-3 pb-7 pt-3 sm:px-5 sm:pt-5 lg:px-7 lg:pt-7">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="relative overflow-hidden rounded-[26px] border border-[#e8e0d2] bg-white shadow-[0_22px_80px_rgba(65,48,15,0.08)] sm:rounded-[34px] lg:rounded-[42px]">
-            {/* Background glow */}
+      <section className="px-3 pb-5 pt-3 sm:px-6 sm:pb-8 sm:pt-5 lg:pt-8">
+        <div className="mx-auto max-w-7xl">
 
-            <div className="pointer-events-none absolute -right-32 -top-40 h-[420px] w-[420px] rounded-full bg-[#d4af37]/10 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[24px] border border-[#e9e1d2] bg-white shadow-[0_15px_45px_rgba(74,57,20,0.07)] sm:rounded-[40px]">
 
-            <div className="pointer-events-none absolute -bottom-48 left-[30%] h-[440px] w-[440px] rounded-full bg-[#f5ead0] blur-3xl" />
+            <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#D4AF37]/10 blur-3xl sm:h-80 sm:w-80" />
 
-            <div className="pointer-events-none absolute left-[48%] top-0 h-full w-px bg-gradient-to-b from-transparent via-[#eadfca] to-transparent opacity-60" />
+            <div className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-[#f4e8c8] blur-3xl sm:h-80 sm:w-80" />
 
-            <div className="relative grid min-h-[620px] lg:grid-cols-[0.96fr_1.04fr]">
-              {/* LEFT */}
+            <div className="relative grid lg:min-h-[540px] lg:grid-cols-[1.02fr_.98fr]">
 
-              <div className="relative z-10 flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#ead8a5] bg-[#fffaf0] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#ad8420] sm:text-xs">
-                  <Sparkles size={13} />
-                  {currentSlide.eyebrow}
-                </div>
+              {/* HERO LEFT */}
 
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-[#171512] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
-                    {currentSlide.badge}
-                  </span>
+              <div className="relative z-10 px-5 pb-6 pt-7 sm:px-10 sm:py-12 lg:px-14 lg:py-16">
 
-                  <span className="rounded-full border border-[#e8dfcd] bg-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#857f75]">
-                    {currentSlide.offer}
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#fffaf0] px-3 py-1.5 text-[10px] font-bold tracking-wide text-[#b58c24] sm:px-4 sm:py-2 sm:text-sm">
+                  <Sparkles size={13} className="shrink-0 sm:h-[15px] sm:w-[15px]" />
+                  <span className="truncate">
+                    {currentSlide.eyebrow}
                   </span>
                 </div>
 
-                <h2 className="mt-6 max-w-[650px] text-[46px] font-black leading-[0.94] tracking-[-0.055em] text-[#181613] sm:text-[62px] lg:text-[76px] xl:text-[84px]">
+                <div className="mt-3 inline-flex rounded-full bg-[#171512] px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-5 sm:text-xs">
+                  {currentSlide.badge}
+                </div>
+
+                <h2 className="mt-4 max-w-2xl text-[40px] font-black leading-[0.98] tracking-[-0.045em] text-[#171512] sm:mt-6 sm:text-[60px] lg:text-[76px]">
                   {currentSlide.title}
                   <br />
-                  <span className="text-[#d4af37]">
+                  <span className="text-[#D4AF37]">
                     {currentSlide.highlight}
                   </span>
                 </h2>
 
-                <p className="mt-6 max-w-xl text-[15px] leading-7 text-[#716b63] sm:text-[17px]">
+                <p className="mt-4 max-w-xl text-sm leading-6 text-gray-600 sm:mt-6 sm:text-lg sm:leading-7">
                   {currentSlide.description}
                 </p>
 
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-6 grid grid-cols-1 gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
                   <Link
                     href="/auth/login"
-                    className="group inline-flex items-center gap-2 rounded-2xl bg-[#d4af37] px-6 py-3.5 text-sm font-black text-white shadow-[0_12px_28px_rgba(212,175,55,0.22)] transition hover:-translate-y-0.5 hover:bg-[#c69f2f] hover:shadow-[0_16px_34px_rgba(212,175,55,0.3)]"
+                    className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 font-bold text-white shadow-lg shadow-[#D4AF37]/20 transition hover:-translate-y-0.5 hover:bg-[#c69f2f] active:scale-[0.98] sm:px-6 sm:py-3.5"
                   >
                     {currentSlide.button}
 
                     <ArrowRight
-                      size={17}
+                      size={18}
                       className="transition group-hover:translate-x-1"
                     />
                   </Link>
 
                   <Link
                     href="/auth/login"
-                    className="inline-flex items-center gap-2 rounded-2xl border border-[#ddd6ca] bg-white px-6 py-3.5 text-sm font-bold text-[#3e3933] transition hover:border-[#d4af37] hover:text-[#ad8420]"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#ded8ca] bg-white px-5 py-3 font-semibold text-gray-800 transition hover:border-[#D4AF37] hover:text-[#b58c24] active:scale-[0.98] sm:px-6 sm:py-3.5"
                   >
                     {currentSlide.secondary}
                   </Link>
                 </div>
 
-                {/* Trust */}
+                {/* MOBILE STATS */}
 
-                <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-                  <div>
-                    <p className="text-xl font-black">10K+</p>
-                    <p className="mt-0.5 text-[10px] font-medium text-[#918b82]">
+                <div className="mt-7 grid grid-cols-3 divide-x divide-[#e7e0d2] border-y border-[#eee8dc] py-4 sm:mt-9 sm:flex sm:items-center sm:gap-x-7 sm:divide-x-0 sm:border-0 sm:py-0">
+
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg font-black sm:text-xl">
+                      10K+
+                    </p>
+                    <p className="text-[9px] text-gray-500 sm:text-xs">
                       Happy Customers
                     </p>
                   </div>
 
-                  <div className="h-8 w-px bg-[#e5ded1]" />
-
-                  <div>
-                    <p className="flex items-center gap-1 text-xl font-black">
+                  <div className="text-center sm:text-left">
+                    <p className="flex items-center justify-center gap-1 text-lg font-black sm:justify-start sm:text-xl">
                       4.8
                       <Star
-                        size={15}
+                        size={14}
                         fill="currentColor"
-                        className="text-[#d4af37]"
+                        className="text-[#D4AF37]"
                       />
                     </p>
-                    <p className="mt-0.5 text-[10px] font-medium text-[#918b82]">
+
+                    <p className="text-[9px] text-gray-500 sm:text-xs">
                       Customer Rating
                     </p>
                   </div>
 
-                  <div className="h-8 w-px bg-[#e5ded1]" />
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg font-black sm:text-xl">
+                      2500+
+                    </p>
 
-                  <div>
-                    <p className="text-xl font-black">2500+</p>
-                    <p className="mt-0.5 text-[10px] font-medium text-[#918b82]">
+                    <p className="text-[9px] text-gray-500 sm:text-xs">
                       Products
                     </p>
                   </div>
                 </div>
 
-                {/* Slider controls */}
+                {/* SLIDER */}
 
-                <div className="mt-8 flex items-center gap-3">
+                <div className="mt-6 flex items-center justify-center gap-3 sm:mt-9 sm:justify-start">
                   <button
                     type="button"
                     onClick={previousSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd6ca] bg-white transition hover:border-[#d4af37] hover:text-[#b38a22]"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
                     aria-label="Previous slide"
                   >
                     <ChevronLeft size={17} />
@@ -821,10 +795,10 @@ export default function HomePage() {
                         type="button"
                         onClick={() => setActiveSlide(index)}
                         aria-label={`Go to slide ${index + 1}`}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                        className={`h-2 rounded-full transition-all ${
                           activeSlide === index
-                            ? "w-8 bg-[#d4af37]"
-                            : "w-1.5 bg-[#d9d2c5]"
+                            ? "w-7 bg-[#D4AF37]"
+                            : "w-2 bg-[#d9d2c5]"
                         }`}
                       />
                     ))}
@@ -833,7 +807,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={nextSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ddd6ca] bg-white transition hover:border-[#d4af37] hover:text-[#b38a22]"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
                     aria-label="Next slide"
                   >
                     <ChevronRight size={17} />
@@ -841,53 +815,38 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* RIGHT */}
+              {/* HERO RIGHT */}
 
-              <div className="relative flex min-h-[350px] items-center justify-center px-5 pb-12 lg:min-h-full lg:px-7 lg:pb-0">
-                <div className="absolute h-[275px] w-[275px] rounded-full border border-[#e6d7b4] bg-[#f8efd9] shadow-[0_0_80px_rgba(212,175,55,0.14)] sm:h-[370px] sm:w-[370px] lg:h-[470px] lg:w-[470px]" />
+              <div className="relative flex min-h-[265px] items-center justify-center overflow-hidden px-4 pb-7 sm:min-h-[350px] sm:px-5 sm:pb-10 lg:min-h-full lg:px-8 lg:pb-0">
 
-                <div className="absolute h-[205px] w-[205px] rounded-full border border-white/80 bg-white/30 sm:h-[280px] sm:w-[280px] lg:h-[360px] lg:w-[360px]" />
+                <div className="absolute h-[220px] w-[220px] rounded-full bg-[#f5ead0] sm:h-[380px] sm:w-[380px] lg:h-[470px] lg:w-[470px]" />
 
-                {/* top card */}
+                <div className="absolute right-4 top-5 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:right-12 lg:top-10">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    Today&apos;s highlight
+                  </p>
 
-                <div className="absolute right-5 top-7 z-20 rounded-2xl border border-[#e7ddc7] bg-white/90 px-4 py-3 shadow-[0_15px_35px_rgba(40,30,10,0.1)] backdrop-blur sm:right-8 sm:top-10">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff4d6] text-[#b38a22]">
-                      <Zap size={15} />
-                    </div>
-
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-wider text-[#9b948a]">
-                        Today&apos;s highlight
-                      </p>
-                      <p className="mt-0.5 text-xs font-black">
-                        Premium Deals
-                      </p>
-                    </div>
-                  </div>
+                  <p className="mt-1 font-bold">
+                    Premium Deals
+                  </p>
                 </div>
 
-                {/* bottom card */}
-
-                <div className="absolute bottom-9 left-4 z-20 rounded-2xl border border-[#e7ddc7] bg-white/90 px-4 py-3 shadow-[0_15px_35px_rgba(40,30,10,0.1)] backdrop-blur sm:left-8 lg:bottom-14">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff4d8] text-[#b38a22]">
-                      <ShieldCheck size={17} />
+                <div className="absolute bottom-6 left-4 z-10 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:bottom-12 lg:left-10">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d8] text-[#b58c24]">
+                      <ShieldCheck size={16} />
                     </div>
 
                     <div>
-                      <p className="text-xs font-black">Safe Shopping</p>
-                      <p className="mt-0.5 text-[9px] text-[#8f897f]">
+                      <p className="text-xs font-bold">
+                        Safe Shopping
+                      </p>
+
+                      <p className="text-[10px] text-gray-500">
                         Secure checkout
                       </p>
                     </div>
                   </div>
-                </div>
-
-                {/* offer pill */}
-
-                <div className="absolute bottom-6 right-5 z-20 hidden rounded-full border border-[#ead9aa] bg-[#171512] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-[#f1d77e] sm:block lg:right-9 lg:bottom-10">
-                  Premium picks
                 </div>
 
                 <Image
@@ -896,7 +855,7 @@ export default function HomePage() {
                   width={900}
                   height={900}
                   priority
-                  className="relative z-10 w-[92%] max-w-[530px] object-contain drop-shadow-[0_30px_35px_rgba(45,30,8,0.16)] sm:w-[76%] lg:w-full"
+                  className="relative z-[1] w-[82%] max-w-[310px] object-contain drop-shadow-[0_20px_25px_rgba(50,35,10,0.12)] sm:w-[75%] sm:max-w-[570px] lg:w-full"
                 />
               </div>
             </div>
@@ -905,33 +864,36 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================
-          TRUST / BENEFITS
+          BENEFITS
       ========================================================= */}
 
-      <section className="px-4 py-2 sm:px-6">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="grid overflow-hidden rounded-[24px] border border-[#e9e2d7] bg-white shadow-[0_8px_30px_rgba(50,40,20,0.035)] sm:grid-cols-2 lg:grid-cols-4">
+      <section className="px-3 py-3 sm:px-6 sm:py-5">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="grid overflow-hidden rounded-3xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
 
               return (
                 <div
                   key={benefit.title}
-                  className={`flex items-center gap-3.5 px-5 py-5 sm:px-6 ${
+                  className={`flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-6 ${
                     index !== benefits.length - 1
-                      ? "border-b border-[#eee8de] sm:border-r lg:border-b-0"
+                      ? "border-b border-[#eee8dc] sm:border-r lg:border-b-0"
                       : ""
                   }`}
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff7e4] text-[#b38a22]">
-                    <Icon size={20} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12 sm:rounded-2xl">
+                    <Icon size={19} className="sm:h-[22px] sm:w-[22px]" />
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-black">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-bold sm:text-base">
                       {benefit.title}
                     </h3>
-                    <p className="mt-0.5 text-[11px] text-[#8e887f]">
+
+                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500 sm:text-xs">
                       {benefit.description}
                     </p>
                   </div>
@@ -946,100 +908,104 @@ export default function HomePage() {
           FLASH DEALS
       ========================================================= */}
 
-      <section className="px-4 py-16 sm:px-6 lg:py-20">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#b38a22]">
-                <Zap size={14} />
+              <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
+                <Zap size={15} />
                 Limited Time
               </div>
 
-              <h2 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
                 Flash Deals
               </h2>
 
-              <p className="mt-2 max-w-xl text-sm text-[#878178] sm:text-base">
-                Trending categories, special prices and limited-time savings.
+              <p className="mt-2 text-sm text-gray-500 sm:text-base">
+                Grab the deal before the clock runs out.
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <div className="rounded-xl bg-[#171512] px-3 py-2 text-center text-white">
-                <p className="text-base font-black leading-none sm:text-lg">
+            {/* TIMER */}
+
+            <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
+
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
                   {formattedTime.hours}
                 </p>
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/55">
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
                   Hrs
                 </p>
               </div>
 
-              <span className="font-black text-[#c19a35]">:</span>
+              <span className="font-bold text-[#b58c24]">
+                :
+              </span>
 
-              <div className="rounded-xl bg-[#171512] px-3 py-2 text-center text-white">
-                <p className="text-base font-black leading-none sm:text-lg">
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
                   {formattedTime.minutes}
                 </p>
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/55">
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
                   Min
                 </p>
               </div>
 
-              <span className="font-black text-[#c19a35]">:</span>
+              <span className="font-bold text-[#b58c24]">
+                :
+              </span>
 
-              <div className="rounded-xl bg-[#171512] px-3 py-2 text-center text-white">
-                <p className="text-base font-black leading-none sm:text-lg">
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
                   {formattedTime.seconds}
                 </p>
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/55">
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
                   Sec
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
+
             {dealItems.map((deal) => (
               <Link
                 key={deal.title}
                 href={deal.href}
-                className="group relative overflow-hidden rounded-[28px] border border-[#e8e1d5] bg-white p-4 shadow-[0_8px_28px_rgba(45,35,15,0.04)] transition duration-300 hover:-translate-y-1.5 hover:border-[#dfca8f] hover:shadow-[0_20px_45px_rgba(45,35,15,0.09)] sm:p-5"
+                className="group relative overflow-hidden rounded-[24px] border border-[#e9e2d5] bg-white p-3.5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[28px] sm:p-5"
               >
-                <div className="absolute left-5 top-5 z-10 rounded-full bg-[#fff5da] px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#ad8420]">
-                  {deal.tag}
-                </div>
-
-                <div className="absolute right-5 top-5 z-10 rounded-full bg-[#171512] px-3 py-1.5 text-[9px] font-black tracking-wider text-white">
+                <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
                   {deal.discount}
                 </div>
 
-                <div className="flex h-[220px] items-center justify-center overflow-hidden rounded-[22px] bg-[#faf8f3] sm:h-[245px]">
+                <div className="flex h-[185px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
                   <Image
                     src={deal.image}
                     alt={deal.title}
-                    width={350}
-                    height={260}
-                    className="h-[190px] w-[90%] object-contain transition duration-500 group-hover:scale-110 sm:h-[215px]"
+                    width={300}
+                    height={240}
+                    className="h-[155px] w-full object-contain transition duration-500 group-hover:scale-105 sm:h-[190px]"
                   />
                 </div>
 
-                <div className="flex items-end justify-between gap-4 px-1 pb-1 pt-5">
-                  <div>
-                    <p className="text-xl font-black tracking-tight">
+                <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-black sm:text-xl">
                       {deal.title}
                     </p>
 
-                    <p className="mt-1 text-xs leading-5 text-[#8d877e] sm:text-sm">
+                    <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
                       {deal.subtitle}
                     </p>
-
-                    <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-[#b38a22]">
-                      Shop collection
-                      <ArrowRight size={13} />
-                    </div>
                   </div>
 
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e5ded2] transition group-hover:border-[#d4af37] group-hover:bg-[#d4af37] group-hover:text-white">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e1d4] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
                     <ArrowUpRight size={17} />
                   </div>
                 </div>
@@ -1053,48 +1019,42 @@ export default function HomePage() {
           CATEGORIES
       ========================================================= */}
 
-      <section className="border-y border-[#eee8df] bg-white px-4 py-16 sm:px-6 lg:py-20">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <section className="bg-white px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+
             <div>
-              <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#b38a22]">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
                 Explore Store
               </p>
 
-              <h2 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
                 Shop By Category
               </h2>
 
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[#858078] sm:text-base">
-                Browse popular collections and find products that fit your
-                lifestyle.
+              <p className="mt-2 max-w-xl text-sm text-gray-500 sm:text-base">
+                Find exactly what you need from our growing collection.
               </p>
             </div>
 
             <Link
               href="/dashboard/categories/electronics"
-              className="group inline-flex items-center gap-2 text-sm font-black text-[#ad8420]"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
             >
               View all categories
-              <ArrowRight
-                size={16}
-                className="transition group-hover:translate-x-1"
-              />
+              <ArrowRight size={17} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
-            {categories.map((category, index) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+            {categories.map((category) => (
               <Link
                 key={category.name}
                 href={`/dashboard/categories/${category.slug}`}
-                className="group relative overflow-hidden rounded-[25px] border border-[#ebe5da] bg-[#faf8f3] transition duration-300 hover:-translate-y-1 hover:border-[#ddc57f] hover:bg-white hover:shadow-[0_18px_40px_rgba(45,35,15,0.08)]"
+                className="group overflow-hidden rounded-2xl border border-[#ece7db] bg-[#faf8f3] transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-white hover:shadow-xl sm:rounded-3xl"
               >
-                <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-[#b38a22] opacity-0 shadow-sm transition group-hover:opacity-100">
-                  <ArrowUpRight size={12} />
-                </div>
-
-                <div className="flex h-32 items-center justify-center overflow-hidden px-4 pt-4 sm:h-36">
+                <div className="flex h-28 items-center justify-center overflow-hidden px-3 pt-3 sm:h-40 sm:px-4 sm:pt-4">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -1104,12 +1064,19 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div className="border-t border-[#eee8de] bg-white p-3.5 sm:p-4">
-                  <h3 className="truncate text-sm font-black">
-                    {category.name}
-                  </h3>
+                <div className="bg-white p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="truncate text-sm font-bold sm:text-base">
+                      {category.name}
+                    </h3>
 
-                  <p className="mt-1 text-[10px] font-medium text-[#918b82]">
+                    <ArrowUpRight
+                      size={14}
+                      className="shrink-0 text-gray-300 transition group-hover:text-[#D4AF37]"
+                    />
+                  </div>
+
+                  <p className="mt-1 text-[10px] text-gray-500 sm:text-xs">
                     {category.products}
                   </p>
                 </div>
@@ -1120,27 +1087,28 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================
-          PRIME CART ADVANTAGE
+          PRIME CART EXCLUSIVE
       ========================================================= */}
 
-      <section className="px-4 py-16 sm:px-6 lg:py-20">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="mb-9">
-            <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#b38a22]">
+      <section className="px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-8">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
               More than shopping
             </p>
 
-            <h2 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
               The PrimeCart Advantage
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#858078] sm:text-base">
-              Smart tools designed to make buying easier, faster and more
-              rewarding.
+            <p className="mt-2 max-w-2xl text-sm text-gray-500 sm:text-base">
+              Smart shopping tools designed to make buying easier,
+              faster and more rewarding.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
             {primeFeatures.map((feature) => {
               const Icon = feature.icon;
 
@@ -1148,39 +1116,35 @@ export default function HomePage() {
                 <Link
                   key={feature.title}
                   href={feature.href}
-                  className="group relative overflow-hidden rounded-[28px] border border-[#e8e1d5] bg-white p-6 shadow-[0_7px_28px_rgba(45,35,15,0.035)] transition duration-300 hover:-translate-y-1 hover:border-[#ddc57f] hover:shadow-[0_20px_50px_rgba(45,35,15,0.08)] sm:p-7"
+                  className="group relative overflow-hidden rounded-[24px] border border-[#e8e1d4] bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[30px] sm:p-8"
                 >
-                  <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#d4af37]/8 transition duration-500 group-hover:scale-150" />
+                  <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/10 transition group-hover:scale-150" />
 
                   <div className="relative">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-13 w-13 h-14 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b38a22]">
-                          <Icon size={25} />
-                        </div>
 
-                        <span className="text-[10px] font-black tracking-[0.16em] text-[#bcb5aa]">
-                          {feature.number}
-                        </span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b58c24] sm:h-14 sm:w-14">
+                        <Icon size={23} />
                       </div>
 
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ebe5da] transition group-hover:border-[#d4af37] group-hover:bg-[#d4af37] group-hover:text-white">
-                        <ArrowUpRight size={15} />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ece7db] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
+                        <ArrowUpRight size={16} />
                       </div>
                     </div>
 
-                    <h3 className="mt-6 text-xl font-black tracking-tight sm:text-2xl">
+                    <h3 className="mt-5 text-xl font-black sm:mt-6 sm:text-2xl">
                       {feature.title}
                     </h3>
 
-                    <p className="mt-2.5 max-w-lg text-sm leading-6 text-[#817b72]">
+                    <p className="mt-2 text-sm leading-6 text-gray-500 sm:mt-3">
                       {feature.description}
                     </p>
 
-                    <div className="mt-5 inline-flex items-center gap-2 text-xs font-black text-[#ad8420]">
+                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#b58c24] sm:mt-6">
                       {feature.label}
+
                       <ArrowRight
-                        size={14}
+                        size={16}
                         className="transition group-hover:translate-x-1"
                       />
                     </div>
@@ -1196,45 +1160,42 @@ export default function HomePage() {
           PRIMEPOINTS
       ========================================================= */}
 
-      <section className="px-4 pb-16 sm:px-6 lg:pb-20">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="relative overflow-hidden rounded-[32px] bg-[#171512] px-6 py-12 text-white sm:px-10 lg:px-14 lg:py-14">
-            <div className="absolute -right-32 -top-40 h-96 w-96 rounded-full bg-[#d4af37]/20 blur-3xl" />
+      <section className="px-3 pb-12 sm:px-6 sm:pb-16 lg:pb-20">
+        <div className="mx-auto max-w-7xl">
 
-            <div className="absolute -bottom-40 left-[35%] h-80 w-80 rounded-full bg-[#d4af37]/10 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[28px] bg-[#171512] px-5 py-9 text-white sm:rounded-[32px] sm:px-10 sm:py-12 lg:px-14">
 
-            <div className="absolute right-[38%] top-0 hidden h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent lg:block" />
+            <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/20 blur-3xl" />
 
-            <div className="relative grid items-center gap-10 lg:grid-cols-[1fr_390px]">
+            <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+
+            <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
+
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#d4af37]/35 bg-[#d4af37]/10 px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#e8cb72]">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e4c46a] sm:px-4 sm:py-2 sm:text-xs">
                   <Star size={13} fill="currentColor" />
                   PrimePoints
                 </div>
 
-                <h2 className="mt-5 max-w-2xl text-3xl font-black leading-[1.05] tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+                <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight sm:mt-5 sm:text-4xl lg:text-5xl">
                   Shop. Earn.
-                  <span className="text-[#d4af37]">
-                    {" "}
-                    Get Rewarded.
+                  <span className="text-[#D4AF37]">
+                    {" "}Get Rewarded.
                   </span>
                 </h2>
 
-                <p className="mt-4 max-w-xl text-sm leading-7 text-white/60 sm:text-base">
-                  Turn your shopping activity into rewards with PrimePoints.
-                  Complete challenges, collect points and unlock exclusive
-                  benefits.
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:mt-4 sm:text-base sm:leading-7">
+                  Turn your shopping activity into rewards with
+                  PrimePoints. Complete challenges, collect points
+                  and unlock exclusive benefits.
                 </p>
 
                 <Link
                   href="/dashboard/prime-points"
-                  className="group mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#d4af37] px-6 py-3.5 text-sm font-black text-white transition hover:bg-[#c69f2f]"
+                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
                 >
                   Explore PrimePoints
-                  <ArrowRight
-                    size={16}
-                    className="transition group-hover:translate-x-1"
-                  />
+                  <ArrowRight size={17} />
                 </Link>
               </div>
 
@@ -1246,13 +1207,13 @@ export default function HomePage() {
                 ].map(([number, label]) => (
                   <div
                     key={number}
-                    className="rounded-[20px] border border-white/10 bg-white/[0.045] p-4 text-center backdrop-blur-sm sm:p-6"
+                    className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm sm:p-6"
                   >
-                    <p className="text-2xl font-black text-[#d4af37]">
+                    <p className="text-xl font-black text-[#D4AF37] sm:text-2xl">
                       {number}
                     </p>
 
-                    <p className="mt-1 text-[10px] font-bold text-white/65 sm:text-sm">
+                    <p className="mt-1 text-[10px] font-semibold text-white/70 sm:text-sm">
                       {label}
                     </p>
                   </div>
@@ -1267,42 +1228,45 @@ export default function HomePage() {
           NEWSLETTER
       ========================================================= */}
 
-      <section className="border-y border-[#ece7df] bg-white px-4 py-16 sm:px-6 lg:py-20">
+      <section className="border-y border-[#ece7db] bg-white px-3 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b38a22]">
-            <ShoppingBag size={23} />
+
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58c24] sm:h-14 sm:w-14">
+            <ShoppingBag size={22} />
           </div>
 
-          <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+          <h2 className="mt-4 text-2xl font-black sm:mt-5 sm:text-4xl">
             Stay in the PrimeCart loop
           </h2>
 
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#858078] sm:text-base">
-            Get notified about new arrivals, exclusive offers and limited-time
-            deals.
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-500 sm:mt-3 sm:text-base">
+            Get notified about new arrivals, exclusive offers and
+            limited-time deals.
           </p>
 
           {subscribed ? (
-            <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-[#d5e8d6] bg-[#f3fbf3] px-5 py-4 text-sm font-bold text-green-700">
+            <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#d9e9d9] bg-[#f4fbf4] px-4 py-4 text-sm font-semibold text-green-700">
               ✓ You&apos;re subscribed. Welcome to PrimeCart!
             </div>
           ) : (
             <form
               onSubmit={handleSubscribe}
-              className="mx-auto mt-7 flex max-w-xl flex-col gap-2 rounded-[20px] border border-[#e7e0d5] bg-[#faf8f3] p-2 shadow-sm sm:flex-row"
+              className="mx-auto mt-6 flex max-w-xl flex-col gap-2 rounded-2xl border border-[#e8e1d4] bg-[#faf8f3] p-2 sm:mt-7 sm:flex-row"
             >
               <input
                 type="email"
                 required
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
                 placeholder="Enter your email address"
-                className="h-12 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none placeholder:text-[#a39c92]"
+                className="h-12 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none"
               />
 
               <button
                 type="submit"
-                className="h-12 rounded-xl bg-[#d4af37] px-6 text-sm font-black text-white transition hover:bg-[#c69f2f]"
+                className="h-12 rounded-xl bg-[#D4AF37] px-6 text-sm font-bold text-white transition hover:bg-[#c69f2f]"
               >
                 Subscribe
               </button>
@@ -1315,51 +1279,51 @@ export default function HomePage() {
           FOOTER
       ========================================================= */}
 
-      <footer className="bg-[#faf8f3] px-4 pb-24 pt-14 sm:px-6 md:pb-8">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="grid gap-10 border-b border-[#e7e0d4] pb-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]">
+      <footer className="bg-[#faf8f3] px-3 pb-5 pt-12 sm:px-6 sm:pb-8 sm:pt-14">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="grid gap-8 border-b border-[#e7e0d4] pb-9 sm:grid-cols-2 sm:gap-10 sm:pb-12 lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]">
+
             {/* BRAND */}
 
             <div>
               <Link
                 href="/"
-                className="group flex items-center gap-3"
+                className="flex items-center gap-3"
               >
                 <Image
                   src="/logo.png"
                   alt="PrimeCart Logo"
                   width={50}
                   height={50}
-                  className="h-12 w-12 object-contain transition group-hover:scale-105"
+                  className="h-11 w-11 object-contain sm:h-12 sm:w-12"
                 />
 
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight">
-                    Prime<span className="text-[#d4af37]">Cart</span>
+                  <h2 className="text-xl font-black sm:text-2xl">
+                    Prime<span className="text-[#D4AF37]">
+                      Cart
+                    </span>
                   </h2>
 
-                  <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8e887f]">
+                  <p className="text-[10px] text-gray-500 sm:text-xs">
                     Premium Shopping Store
                   </p>
                 </div>
               </Link>
 
-              <p className="mt-5 max-w-sm text-sm leading-6 text-[#817b72]">
-                Your one-stop destination for premium products, smart shopping
-                tools and better deals.
+              <p className="mt-4 max-w-sm text-sm leading-6 text-gray-500">
+                Your one-stop destination for premium products,
+                smart shopping tools and better deals.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <span className="rounded-full border border-[#e3dccf] bg-white px-3 py-1.5 text-[10px] font-bold text-[#69635b]">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-600">
                   Secure Shopping
                 </span>
 
-                <span className="rounded-full border border-[#e3dccf] bg-white px-3 py-1.5 text-[10px] font-bold text-[#69635b]">
+                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-600">
                   Easy Returns
-                </span>
-
-                <span className="rounded-full border border-[#e3dccf] bg-white px-3 py-1.5 text-[10px] font-bold text-[#69635b]">
-                  Genuine Products
                 </span>
               </div>
             </div>
@@ -1367,33 +1331,35 @@ export default function HomePage() {
             {/* QUICK LINKS */}
 
             <div>
-              <h3 className="text-sm font-black">Quick Links</h3>
+              <h3 className="text-sm font-bold sm:text-base">
+                Quick Links
+              </h3>
 
-              <div className="mt-5 flex flex-col gap-3 text-sm text-[#777168]">
+              <div className="mt-4 flex flex-col gap-2.5 text-sm text-gray-500 sm:mt-5 sm:gap-3">
                 <Link
                   href="/"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Home
                 </Link>
 
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Shop
                 </Link>
 
                 <Link
                   href="/dashboard/categories/electronics"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Deals
                 </Link>
@@ -1403,35 +1369,35 @@ export default function HomePage() {
             {/* CUSTOMER */}
 
             <div>
-              <h3 className="text-sm font-black">
+              <h3 className="text-sm font-bold sm:text-base">
                 Customer Service
               </h3>
 
-              <div className="mt-5 flex flex-col gap-3 text-sm text-[#777168]">
+              <div className="mt-4 flex flex-col gap-2.5 text-sm text-gray-500 sm:mt-5 sm:gap-3">
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Contact Us
                 </Link>
 
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Shipping Policy
                 </Link>
 
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Returns
                 </Link>
 
                 <Link
                   href="/auth/login"
-                  className="transition hover:text-[#d4af37]"
+                  className="transition hover:text-[#D4AF37]"
                 >
                   Privacy Policy
                 </Link>
@@ -1441,23 +1407,23 @@ export default function HomePage() {
             {/* TRUST */}
 
             <div>
-              <h3 className="text-sm font-black">
+              <h3 className="text-sm font-bold sm:text-base">
                 Why PrimeCart?
               </h3>
 
-              <div className="mt-5 space-y-4">
+              <div className="mt-4 space-y-4 sm:mt-5">
                 <div className="flex gap-3">
                   <ShieldCheck
-                    className="mt-0.5 shrink-0 text-[#d4af37]"
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
                     size={18}
                   />
 
                   <div>
-                    <p className="text-sm font-bold">
+                    <p className="text-sm font-semibold">
                       Secure shopping
                     </p>
 
-                    <p className="mt-0.5 text-xs leading-5 text-[#8b857c]">
+                    <p className="mt-0.5 text-xs text-gray-500">
                       Safe and protected checkout experience.
                     </p>
                   </div>
@@ -1465,16 +1431,16 @@ export default function HomePage() {
 
                 <div className="flex gap-3">
                   <Truck
-                    className="mt-0.5 shrink-0 text-[#d4af37]"
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
                     size={18}
                   />
 
                   <div>
-                    <p className="text-sm font-bold">
+                    <p className="text-sm font-semibold">
                       Reliable delivery
                     </p>
 
-                    <p className="mt-0.5 text-xs leading-5 text-[#8b857c]">
+                    <p className="mt-0.5 text-xs text-gray-500">
                       Easy and convenient order delivery.
                     </p>
                   </div>
@@ -1482,16 +1448,16 @@ export default function HomePage() {
 
                 <div className="flex gap-3">
                   <Headphones
-                    className="mt-0.5 shrink-0 text-[#d4af37]"
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
                     size={18}
                   />
 
                   <div>
-                    <p className="text-sm font-bold">
+                    <p className="text-sm font-semibold">
                       Customer support
                     </p>
 
-                    <p className="mt-0.5 text-xs leading-5 text-[#8b857c]">
+                    <p className="mt-0.5 text-xs text-gray-500">
                       Help whenever you need it.
                     </p>
                   </div>
@@ -1500,10 +1466,14 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 py-6 text-center text-[10px] text-[#8b857d] sm:flex-row sm:items-center sm:justify-between sm:text-left">
-            <p>© 2026 PrimeCart. All Rights Reserved.</p>
+          <div className="flex flex-col gap-2 py-5 text-center text-[10px] text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:text-xs">
+            <p>
+              © 2026 PrimeCart. All Rights Reserved.
+            </p>
 
-            <p>Made for a smarter shopping experience.</p>
+            <p>
+              Made for a smarter shopping experience.
+            </p>
           </div>
         </div>
       </footer>
@@ -1512,51 +1482,67 @@ export default function HomePage() {
           MOBILE BOTTOM NAV
       ========================================================= */}
 
-      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#e7e0d4] bg-white/95 px-2 py-2 shadow-[0_-8px_30px_rgba(50,35,10,0.09)] backdrop-blur-xl md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around">
+      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#e7e0d4] bg-white/95 px-2 py-2 shadow-[0_-5px_25px_rgba(50,35,10,0.08)] backdrop-blur-xl md:hidden">
+
+        <div className="mx-auto grid max-w-md grid-cols-5">
+
           <Link
             href="/"
-            className="flex min-w-[54px] flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#c09a32]"
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-[#D4AF37]"
           >
             <ShoppingBag size={18} />
-            <span className="text-[9px] font-black">Home</span>
+
+            <span className="text-[9px] font-semibold">
+              Home
+            </span>
           </Link>
 
           <Link
             href="/dashboard/categories/electronics"
-            className="flex min-w-[54px] flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#817b72]"
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
           >
             <Search size={18} />
-            <span className="text-[9px] font-bold">Shop</span>
+
+            <span className="text-[9px] font-semibold">
+              Shop
+            </span>
           </Link>
 
           <Link
             href="/auth/login"
-            className="flex min-w-[54px] flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#817b72]"
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
           >
             <Heart size={18} />
-            <span className="text-[9px] font-bold">Wishlist</span>
+
+            <span className="text-[9px] font-semibold">
+              Wishlist
+            </span>
           </Link>
 
           <Link
             href="/auth/login"
-            className="relative flex min-w-[54px] flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#817b72]"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
 
-            <span className="absolute right-1.5 top-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#d4af37] px-1 text-[7px] font-black text-white">
+            <span className="absolute left-1/2 top-0 ml-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[7px] font-bold text-white">
               0
             </span>
 
-            <span className="text-[9px] font-bold">Cart</span>
+            <span className="text-[9px] font-semibold">
+              Cart
+            </span>
           </Link>
 
           <Link
             href="/auth/login"
-            className="flex min-w-[54px] flex-col items-center gap-1 rounded-xl px-2 py-1 text-[#817b72]"
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
           >
             <UserRound size={18} />
-            <span className="text-[9px] font-bold">Account</span>
+
+            <span className="text-[9px] font-semibold">
+              Account
+            </span>
           </Link>
         </div>
       </div>
