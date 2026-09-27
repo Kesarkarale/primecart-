@@ -637,7 +637,7 @@ export default function HomePage() {
                 ["Shop", "/auth/login"],
                 [
                   "Categories",
-                  "/dashboard/categories/electronics",
+                  "/auth/login",
                 ],
                 ["Deals", "/auth/login"],
                 ["Contact", "/auth/login"],
@@ -1007,7 +1007,7 @@ lg:min-h-[540px]
       ease-out
       sm:scale-[1.04]
       lg:object-cover
-      lg:scale-[0.90]
+      lg:scale-[0.95]
       lg:hover:scale-[1.015]
     "
   />
