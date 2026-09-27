@@ -1,3 +1,5 @@
+// app/auth/login/page.tsx
+
 "use client";
 
 import Image from "next/image";
@@ -23,17 +25,11 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  /* =========================================================
-     REMEMBERED EMAIL
-  ========================================================= */
 
   useEffect(() => {
     try {
@@ -49,10 +45,6 @@ export default function LoginPage() {
       // Ignore localStorage errors
     }
   }, []);
-
-  /* =========================================================
-     LOGIN
-  ========================================================= */
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -154,158 +146,166 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      {/* =====================================================
-          BACKGROUND
-      ===================================================== */}
+      {/* BACKGROUND */}
+      <div className="bg-orb orb-one" />
+      <div className="bg-orb orb-two" />
+      <div className="bg-grid" />
 
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
-      <div className="ambient ambient-three" />
-      <div className="grid-pattern" />
-
-      <div className="login-wrapper">
+      <div className="login-shell">
         {/* =====================================================
-            LEFT SHOWCASE
+            LEFT BRAND / EXPERIENCE PANEL
         ===================================================== */}
 
-        <section className="login-showcase">
-          {/* BRAND */}
+        <section className="experience-panel">
+          <div className="experience-inner">
+            {/* BRAND */}
 
-          <Link href="/" className="brand">
-            <div className="brand-logo">
-              <Image
-                src="/logo.png"
-                alt="PrimeCart"
-                width={46}
-                height={46}
-                priority
-              />
-            </div>
+            <Link href="/" className="brand">
+              <div className="brand-mark">
+                <Image
+                  src="/logo.png"
+                  alt="PrimeCart"
+                  width={46}
+                  height={46}
+                  priority
+                />
+              </div>
 
-            <div className="brand-name">
-              Prime<span>Cart</span>
-            </div>
-          </Link>
+              <div className="brand-text">
+                Prime<span>Cart</span>
+              </div>
+            </Link>
 
-          {/* MAIN CONTENT */}
+            {/* MAIN */}
 
-          <div className="showcase-main">
-            <div className="eyebrow">
-              <span className="eyebrow-icon">
+            <div className="experience-content">
+              <div className="premium-badge">
+                <span className="badge-dot" />
                 <Sparkles size={13} />
-              </span>
+                <span>Smarter shopping starts here</span>
+              </div>
 
-              <span>Welcome to smarter shopping</span>
+              <h1>
+                Shop smarter.
+                <br />
+                <span>Live better.</span>
+              </h1>
+
+              <p className="experience-description">
+                Your everyday shopping destination for
+                carefully selected products, exciting deals
+                and a simpler way to discover what you need.
+              </p>
+
+              {/* FEATURE CARDS */}
+
+              <div className="feature-cards">
+                <div className="feature-card">
+                  <div className="feature-icon">
+                    <Zap size={17} />
+                  </div>
+
+                  <div>
+                    <h3>Smart discovery</h3>
+                    <p>
+                      Find products that match your needs.
+                    </p>
+                  </div>
+
+                  <div className="feature-arrow">
+                    <ArrowRight size={14} />
+                  </div>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon">
+                    <Truck size={17} />
+                  </div>
+
+                  <div>
+                    <h3>Easy shopping</h3>
+                    <p>
+                      A smooth experience from browse to buy.
+                    </p>
+                  </div>
+
+                  <div className="feature-arrow">
+                    <ArrowRight size={14} />
+                  </div>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon">
+                    <ShieldCheck size={17} />
+                  </div>
+
+                  <div>
+                    <h3>Secure account</h3>
+                    <p>
+                      Your shopping experience stays protected.
+                    </p>
+                  </div>
+
+                  <div className="feature-arrow">
+                    <ArrowRight size={14} />
+                  </div>
+                </div>
+              </div>
+
+              {/* TRUST STATS */}
+
+              <div className="trust-row">
+                <div className="trust-item">
+                  <strong>10K+</strong>
+                  <span>Products</span>
+                </div>
+
+                <div className="trust-separator" />
+
+                <div className="trust-item">
+                  <strong>24/7</strong>
+                  <span>Shopping</span>
+                </div>
+
+                <div className="trust-separator" />
+
+                <div className="trust-item">
+                  <strong>Easy</strong>
+                  <span>Returns</span>
+                </div>
+              </div>
             </div>
 
-            <h1>
-              Everything you need.
-              <br />
-              <span>All in one place.</span>
-            </h1>
+            {/* FOOTER */}
 
-            <p className="showcase-description">
-              Discover trending products, exclusive deals and
-              everyday essentials — carefully brought together
-              for a simpler shopping experience.
-            </p>
+            <div className="experience-footer">
+              <span>© 2026 PrimeCart</span>
 
-            {/* FEATURE LIST */}
-
-            <div className="feature-list">
-              <div className="feature-item">
-                <div className="feature-icon">
-                  <Zap size={18} />
-                </div>
-
-                <div>
-                  <strong>Smart deals</strong>
-                  <span>
-                    Discover great value without endless
-                    searching.
-                  </span>
-                </div>
+              <div>
+                <span>Secure</span>
+                <i>•</i>
+                <span>Simple</span>
+                <i>•</i>
+                <span>Smart</span>
               </div>
-
-              <div className="feature-item">
-                <div className="feature-icon">
-                  <Truck size={18} />
-                </div>
-
-                <div>
-                  <strong>Easy shopping</strong>
-                  <span>
-                    Browse products and manage everything
-                    effortlessly.
-                  </span>
-                </div>
-              </div>
-
-              <div className="feature-item">
-                <div className="feature-icon">
-                  <ShieldCheck size={18} />
-                </div>
-
-                <div>
-                  <strong>Secure experience</strong>
-                  <span>
-                    Your account and shopping journey stay
-                    protected.
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* STATS */}
-
-            <div className="mini-stats">
-              <div className="stat">
-                <strong>10K+</strong>
-                <span>Products</span>
-              </div>
-
-              <div className="stat-line" />
-
-              <div className="stat">
-                <strong>7 Days</strong>
-                <span>Easy Returns</span>
-              </div>
-
-              <div className="stat-line" />
-
-              <div className="stat">
-                <strong>24/7</strong>
-                <span>Shopping</span>
-              </div>
-            </div>
-          </div>
-
-          {/* FOOTER */}
-
-          <div className="showcase-footer">
-            <span>© 2026 PrimeCart</span>
-
-            <div className="footer-links">
-              <span>Secure</span>
-              <span className="footer-dot">•</span>
-              <span>Simple</span>
-              <span className="footer-dot">•</span>
-              <span>Smart</span>
             </div>
           </div>
         </section>
 
         {/* =====================================================
-            LOGIN
+            LOGIN PANEL
         ===================================================== */}
 
-        <section className="login-section">
+        <section className="login-area">
           <div className="login-card">
+            {/* TOP GOLD LINE */}
+            <div className="gold-line" />
+
             {/* MOBILE BRAND */}
 
             <div className="mobile-brand">
               <Link href="/" className="brand">
-                <div className="brand-logo">
+                <div className="brand-mark">
                   <Image
                     src="/logo.png"
                     alt="PrimeCart"
@@ -314,30 +314,28 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="brand-name">
+                <div className="brand-text">
                   Prime<span>Cart</span>
                 </div>
               </Link>
             </div>
 
-            <div className="card-top-glow" />
+            {/* LOGIN HEADER */}
 
-            {/* HEADER */}
-
-            <div className="card-header">
-              <div className="welcome-icon">
-                <LockKeyhole size={21} />
+            <div className="login-header">
+              <div className="login-icon">
+                <LockKeyhole size={20} />
               </div>
 
-              <div className="header-copy">
-                <span className="small-heading">
-                  YOUR ACCOUNT
+              <div>
+                <span className="overline">
+                  PRIME CART ACCOUNT
                 </span>
 
                 <h2>Welcome back</h2>
 
                 <p>
-                  Sign in to continue your PrimeCart journey.
+                  Sign in to continue to your account.
                 </p>
               </div>
             </div>
@@ -345,12 +343,9 @@ export default function LoginPage() {
             {/* ERROR */}
 
             {error && (
-              <div
-                className="message error-message"
-                role="alert"
-              >
-                <div className="message-icon">
-                  <AlertCircle size={17} />
+              <div className="alert alert-error" role="alert">
+                <div className="alert-icon">
+                  <AlertCircle size={16} />
                 </div>
 
                 <span>{error}</span>
@@ -361,11 +356,11 @@ export default function LoginPage() {
 
             {success && (
               <div
-                className="message success-message"
+                className="alert alert-success"
                 role="status"
               >
-                <div className="message-icon">
-                  <CheckCircle2 size={17} />
+                <div className="alert-icon">
+                  <CheckCircle2 size={16} />
                 </div>
 
                 <span>{success}</span>
@@ -380,18 +375,14 @@ export default function LoginPage() {
             >
               {/* EMAIL */}
 
-              <div className="field">
+              <div className="form-field">
                 <label htmlFor="email">
                   Email address
                 </label>
 
-                <div
-                  className={`input-wrapper ${
-                    email ? "has-value" : ""
-                  }`}
-                >
-                  <div className="input-icon-box">
-                    <Mail size={18} />
+                <div className="input-container">
+                  <div className="input-leading">
+                    <Mail size={17} />
                   </div>
 
                   <input
@@ -412,8 +403,8 @@ export default function LoginPage() {
 
               {/* PASSWORD */}
 
-              <div className="field">
-                <div className="password-header">
+              <div className="form-field">
+                <div className="password-label-row">
                   <label htmlFor="password">
                     Password
                   </label>
@@ -423,13 +414,9 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <div
-                  className={`input-wrapper ${
-                    password ? "has-value" : ""
-                  }`}
-                >
-                  <div className="input-icon-box">
-                    <LockKeyhole size={18} />
+                <div className="input-container">
+                  <div className="input-leading">
+                    <LockKeyhole size={17} />
                   </div>
 
                   <input
@@ -450,7 +437,7 @@ export default function LoginPage() {
 
                   <button
                     type="button"
-                    className="password-toggle"
+                    className="eye-button"
                     onClick={() =>
                       setShowPassword((value) => !value)
                     }
@@ -462,9 +449,9 @@ export default function LoginPage() {
                     }
                   >
                     {showPassword ? (
-                      <EyeOff size={18} />
+                      <EyeOff size={17} />
                     ) : (
-                      <Eye size={18} />
+                      <Eye size={17} />
                     )}
                   </button>
                 </div>
@@ -472,7 +459,7 @@ export default function LoginPage() {
 
               {/* REMEMBER */}
 
-              <label className="remember">
+              <label className="remember-row">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -482,101 +469,102 @@ export default function LoginPage() {
                   disabled={loading}
                 />
 
-                <span className="custom-checkbox">
+                <span className="fake-checkbox">
                   <span>✓</span>
                 </span>
 
                 <span>Remember me</span>
               </label>
 
-              {/* LOGIN BUTTON */}
+              {/* LOGIN */}
 
               <button
                 type="submit"
-                className="primary-button"
+                className="login-button"
                 disabled={loading}
               >
-                <span className="button-shine" />
-
-                {loading ? (
-                  <>
-                    <Loader2
-                      size={19}
-                      className="spin"
-                    />
-
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign in to PrimeCart</span>
-
-                    <span className="button-arrow">
-                      <ArrowRight size={18} />
-                    </span>
-                  </>
-                )}
+                <span className="button-content">
+                  {loading ? (
+                    <>
+                      <Loader2
+                        size={18}
+                        className="loading-icon"
+                      />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign in to PrimeCart</span>
+                      <span className="button-icon">
+                        <ArrowRight size={17} />
+                      </span>
+                    </>
+                  )}
+                </span>
               </button>
             </form>
 
             {/* REGISTER */}
 
-            <div className="divider">
-              <span>New to PrimeCart?</span>
+            <div className="register-section">
+              <div className="register-divider">
+                <span>Don't have an account?</span>
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="register-button"
+              >
+                <span>Create your PrimeCart account</span>
+
+                <span className="register-arrow">
+                  <ArrowRight size={15} />
+                </span>
+              </Link>
             </div>
-
-            <Link
-              href="/auth/register"
-              className="create-account"
-            >
-              <span>Create your account</span>
-
-              <span className="create-arrow">
-                <ArrowRight size={16} />
-              </span>
-            </Link>
 
             {/* SECURITY */}
 
-            <div className="security-note">
-              <div className="security-icon">
-                <ShieldCheck size={15} />
+            <div className="security-box">
+              <div className="security-symbol">
+                <ShieldCheck size={16} />
               </div>
 
               <div>
-                <strong>Secure sign in</strong>
-
+                <strong>Secure & protected</strong>
                 <span>
-                  Your account information is protected.
+                  Your account information is handled
+                  securely.
                 </span>
+              </div>
+
+              <div className="verified-badge">
+                <CheckCircle2 size={13} />
+                Verified
               </div>
             </div>
 
             {/* BENEFITS */}
 
-            <div className="login-benefits">
-              <div>
-                <CheckCircle2 size={13} />
-                <span>Easy returns</span>
-              </div>
+            <div className="bottom-benefits">
+              <span>
+                <CheckCircle2 size={12} />
+                Easy returns
+              </span>
 
-              <div>
-                <CheckCircle2 size={13} />
-                <span>Secure checkout</span>
-              </div>
+              <span>
+                <CheckCircle2 size={12} />
+                Secure checkout
+              </span>
 
-              <div>
-                <CheckCircle2 size={13} />
-                <span>Smart deals</span>
-              </div>
+              <span>
+                <CheckCircle2 size={12} />
+                Smart deals
+              </span>
             </div>
           </div>
         </section>
       </div>
-
-      {/* =====================================================
-          STYLES
-      ===================================================== */}
 
       <style jsx global>{`
         * {
@@ -606,20 +594,21 @@ export default function LoginPage() {
         .login-page {
           position: relative;
           min-height: 100vh;
-          overflow-x: hidden;
+          min-height: 100dvh;
+          overflow: hidden;
+          color: #24211b;
           background:
             radial-gradient(
-              circle at 84% 10%,
-              rgba(215, 170, 63, 0.12),
-              transparent 25%
+              circle at 80% 5%,
+              rgba(212, 175, 55, 0.11),
+              transparent 24%
             ),
             radial-gradient(
-              circle at 8% 90%,
-              rgba(215, 170, 63, 0.08),
-              transparent 25%
+              circle at 5% 95%,
+              rgba(212, 175, 55, 0.07),
+              transparent 27%
             ),
             #faf8f3;
-          color: #211f1a;
           font-family:
             Inter,
             ui-sans-serif,
@@ -631,92 +620,69 @@ export default function LoginPage() {
         }
 
         /* =====================================================
-           AMBIENT
+           BACKGROUND
         ===================================================== */
 
-        .ambient {
+        .bg-orb {
           position: fixed;
-          width: 340px;
-          height: 340px;
-          border-radius: 50%;
-          filter: blur(100px);
-          pointer-events: none;
           z-index: 0;
+          border-radius: 999px;
+          pointer-events: none;
+          filter: blur(90px);
         }
 
-        .ambient-one {
-          top: -180px;
-          right: -100px;
-          background: rgba(207, 161, 48, 0.18);
-          animation: ambientFloat 10s ease-in-out infinite;
+        .orb-one {
+          top: -190px;
+          right: -120px;
+          width: 390px;
+          height: 390px;
+          background: rgba(212, 175, 55, 0.11);
         }
 
-        .ambient-two {
-          bottom: -200px;
-          left: -130px;
-          background: rgba(218, 178, 82, 0.11);
-          animation: ambientFloat 12s ease-in-out infinite reverse;
+        .orb-two {
+          bottom: -220px;
+          left: -160px;
+          width: 430px;
+          height: 430px;
+          background: rgba(207, 165, 58, 0.08);
         }
 
-        .ambient-three {
-          top: 45%;
-          left: 43%;
-          width: 220px;
-          height: 220px;
-          background: rgba(255, 225, 153, 0.07);
-          animation: ambientFloat 14s ease-in-out infinite;
-        }
-
-        @keyframes ambientFloat {
-          0%,
-          100% {
-            transform: translate3d(0, 0, 0);
-          }
-
-          50% {
-            transform: translate3d(18px, -18px, 0);
-          }
-        }
-
-        .grid-pattern {
+        .bg-grid {
           position: fixed;
           inset: 0;
+          z-index: 0;
           pointer-events: none;
-          opacity: 0.2;
+          opacity: 0.3;
           background-image:
             linear-gradient(
-              rgba(198, 150, 36, 0.025) 1px,
+              rgba(170, 135, 53, 0.025) 1px,
               transparent 1px
             ),
             linear-gradient(
               90deg,
-              rgba(198, 150, 36, 0.025) 1px,
+              rgba(170, 135, 53, 0.025) 1px,
               transparent 1px
             );
-          background-size: 48px 48px;
-          mask-image: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.8),
-            transparent 90%
-          );
+          background-size: 44px 44px;
         }
 
         /* =====================================================
-           WRAPPER
+           SHELL
         ===================================================== */
 
-        .login-wrapper {
+        .login-shell {
           position: relative;
-          z-index: 1;
-          width: min(1220px, calc(100% - 52px));
+          z-index: 2;
+          width: min(1260px, calc(100% - 64px));
           min-height: 100vh;
+          min-height: 100dvh;
           margin: 0 auto;
-          padding: 32px 0;
+          padding: 30px 0;
           display: grid;
           grid-template-columns:
-            minmax(0, 1.05fr)
-            minmax(400px, 0.95fr);
-          gap: 62px;
+            minmax(0, 1fr)
+            minmax(410px, 480px);
+          gap: 75px;
           align-items: center;
         }
 
@@ -725,153 +691,146 @@ export default function LoginPage() {
         ===================================================== */
 
         .brand {
-          width: fit-content;
           display: inline-flex;
+          width: fit-content;
           align-items: center;
           gap: 11px;
-          color: #211f1a;
+          color: #24211b;
           text-decoration: none;
-          animation: fadeDown 0.7s ease both;
         }
 
-        .brand-logo {
+        .brand-mark {
           width: 45px;
           height: 45px;
           display: grid;
           place-items: center;
           overflow: hidden;
+          border: 1px solid #e7decc;
           border-radius: 13px;
-          background: #fff;
-          border: 1px solid #eadfca;
+          background: #ffffff;
           box-shadow:
-            0 10px 28px rgba(83, 60, 20, 0.09);
+            0 8px 25px rgba(63, 47, 17, 0.07);
         }
 
-        .brand-logo img {
+        .brand-mark img {
           width: 100%;
           height: 100%;
           object-fit: contain;
         }
 
-        .brand-name {
+        .brand-text {
           font-size: 24px;
           line-height: 1;
-          font-weight: 850;
+          font-weight: 900;
           letter-spacing: -1px;
         }
 
-        .brand-name span {
+        .brand-text span {
           color: #c69624;
         }
 
         /* =====================================================
-           LEFT SHOWCASE
+           EXPERIENCE PANEL
         ===================================================== */
 
-        .login-showcase {
+        .experience-panel {
           min-height: 650px;
-          padding: 22px 5px;
+          display: flex;
+          align-items: center;
+        }
+
+        .experience-inner {
+          width: 100%;
+          min-height: 610px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
         }
 
-        .showcase-main {
-          max-width: 620px;
-          animation: fadeUp 0.8s 0.1s ease both;
+        .experience-content {
+          max-width: 640px;
         }
 
-        .eyebrow {
+        .premium-badge {
           width: fit-content;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 7px 12px;
-          margin-bottom: 22px;
-          border: 1px solid rgba(198, 150, 36, 0.2);
-          background: rgba(255, 255, 255, 0.7);
+          gap: 7px;
+          margin-bottom: 23px;
+          padding: 7px 12px 7px 9px;
+          border: 1px solid #eadfc8;
           border-radius: 999px;
-          color: #85651b;
-          font-size: 11px;
-          font-weight: 750;
+          background: rgba(255, 255, 255, 0.72);
+          color: #947126;
+          font-size: 10px;
+          font-weight: 800;
           box-shadow:
-            0 8px 25px rgba(80, 60, 20, 0.035);
+            0 8px 25px rgba(61, 45, 18, 0.035);
         }
 
-        .eyebrow-icon {
-          width: 22px;
-          height: 22px;
-          display: grid;
-          place-items: center;
+        .badge-dot {
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: #f7e9c6;
-          color: #a4791d;
+          background: #c69624;
+          box-shadow:
+            0 0 0 4px rgba(198, 150, 36, 0.09);
         }
 
-        .showcase-main h1 {
+        .experience-content h1 {
           margin: 0;
-          font-size: clamp(46px, 5vw, 72px);
+          color: #24211b;
+          font-size: clamp(48px, 5vw, 72px);
           line-height: 0.98;
-          letter-spacing: -4px;
+          letter-spacing: -4.5px;
           font-weight: 900;
-          color: #211f1a;
         }
 
-        .showcase-main h1 span {
-          display: inline-block;
+        .experience-content h1 span {
           color: #c69624;
-          background: linear-gradient(
-            100deg,
-            #b88618,
-            #d6aa45,
-            #b88618
-          );
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: goldFlow 5s linear infinite;
         }
 
-        @keyframes goldFlow {
-          to {
-            background-position: 200% center;
-          }
-        }
-
-        .showcase-description {
-          max-width: 540px;
-          margin: 24px 0 30px;
-          color: #777166;
-          font-size: 15px;
-          line-height: 1.75;
+        .experience-description {
+          max-width: 555px;
+          margin: 25px 0 29px;
+          color: #7e776c;
+          font-size: 14px;
+          line-height: 1.8;
         }
 
         /* =====================================================
-           FEATURES
+           FEATURE CARDS
         ===================================================== */
 
-        .feature-list {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
+        .feature-cards {
+          display: grid;
+          gap: 9px;
+          width: min(580px, 100%);
         }
 
-        .feature-item {
+        .feature-card {
+          position: relative;
           display: flex;
           align-items: center;
-          gap: 13px;
-          width: min(530px, 100%);
+          gap: 12px;
+          min-height: 60px;
           padding: 10px 12px;
+          border: 1px solid rgba(229, 221, 207, 0.7);
           border-radius: 15px;
+          background: rgba(255, 255, 255, 0.58);
           transition:
-            transform 0.25s ease,
-            background 0.25s ease;
+            transform 0.22s ease,
+            border-color 0.22s ease,
+            background 0.22s ease,
+            box-shadow 0.22s ease;
         }
 
-        .feature-item:hover {
+        .feature-card:hover {
           transform: translateX(5px);
-          background: rgba(255, 255, 255, 0.6);
+          border-color: #e0c986;
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow:
+            0 10px 25px rgba(71, 52, 16, 0.05);
         }
 
         .feature-icon {
@@ -881,134 +840,144 @@ export default function LoginPage() {
           display: grid;
           place-items: center;
           border-radius: 11px;
-          background: #f5e6bd;
-          color: #946d17;
+          background: #f8edd2;
+          color: #9a741e;
         }
 
-        .feature-item strong {
-          display: block;
-          margin-bottom: 2px;
-          color: #29261f;
-          font-size: 12px;
-          font-weight: 800;
-        }
-
-        .feature-item span {
-          display: block;
-          color: #8b8479;
+        .feature-card h3 {
+          margin: 0 0 2px;
+          color: #373229;
           font-size: 11px;
-          line-height: 1.45;
+          font-weight: 850;
+        }
+
+        .feature-card p {
+          margin: 0;
+          color: #928b80;
+          font-size: 10px;
+        }
+
+        .feature-arrow {
+          margin-left: auto;
+          color: #c3b18d;
+          transition: transform 0.22s ease;
+        }
+
+        .feature-card:hover .feature-arrow {
+          transform: translateX(3px);
+          color: #aa8228;
         }
 
         /* =====================================================
-           STATS
+           TRUST
         ===================================================== */
 
-        .mini-stats {
+        .trust-row {
+          width: min(510px, 100%);
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 22px;
           margin-top: 28px;
-          padding-top: 21px;
-          border-top: 1px solid rgba(195, 181, 153, 0.35);
+          padding-top: 22px;
+          border-top: 1px solid #e7dfd1;
         }
 
-        .stat {
+        .trust-item {
           display: flex;
           flex-direction: column;
           gap: 3px;
         }
 
-        .stat strong {
-          color: #29261f;
-          font-size: 15px;
-          font-weight: 850;
+        .trust-item strong {
+          color: #343027;
+          font-size: 14px;
+          font-weight: 900;
         }
 
-        .stat span {
-          color: #999185;
-          font-size: 10px;
+        .trust-item span {
+          color: #9b9489;
+          font-size: 9px;
         }
 
-        .stat-line {
+        .trust-separator {
           width: 1px;
-          height: 25px;
-          background: #dfd8ca;
+          height: 27px;
+          background: #ded6c7;
         }
 
         /* =====================================================
-           SHOWCASE FOOTER
+           FOOTER
         ===================================================== */
 
-        .showcase-footer {
+        .experience-footer {
+          width: min(640px, 100%);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          max-width: 620px;
-          color: #aaa398;
-          font-size: 10px;
-          animation: fadeUp 0.8s 0.25s ease both;
+          color: #aaa298;
+          font-size: 9px;
         }
 
-        .footer-links {
+        .experience-footer div {
           display: flex;
-          align-items: center;
           gap: 7px;
         }
 
-        .footer-dot {
-          color: #d3b26a;
+        .experience-footer i {
+          color: #cfab5d;
+          font-style: normal;
         }
 
         /* =====================================================
-           LOGIN SECTION
+           LOGIN AREA
         ===================================================== */
 
-        .login-section {
+        .login-area {
           display: flex;
           justify-content: center;
-          animation: cardEnter 0.8s 0.15s ease both;
+          width: 100%;
         }
 
         .login-card {
           position: relative;
-          width: min(460px, 100%);
+          width: 100%;
           padding: 38px;
           overflow: hidden;
-          background: rgba(255, 255, 255, 0.96);
-          border: 1px solid rgba(225, 216, 198, 0.9);
+          border: 1px solid #e5ddcf;
           border-radius: 28px;
+          background: rgba(255, 255, 255, 0.96);
           box-shadow:
-            0 30px 75px rgba(57, 45, 22, 0.09),
-            0 7px 22px rgba(57, 45, 22, 0.035);
-          backdrop-filter: blur(18px);
+            0 35px 80px rgba(57, 44, 19, 0.09),
+            0 8px 25px rgba(57, 44, 19, 0.035);
+          backdrop-filter: blur(20px);
         }
 
-        .login-card::before {
+        .login-card::after {
           content: "";
           position: absolute;
+          right: -100px;
+          top: -110px;
+          width: 230px;
+          height: 230px;
+          border-radius: 50%;
+          background: rgba(212, 175, 55, 0.06);
+          filter: blur(35px);
+          pointer-events: none;
+        }
+
+        .gold-line {
+          position: absolute;
           top: 0;
-          left: 12%;
-          right: 12%;
-          height: 1px;
+          left: 14%;
+          right: 14%;
+          height: 2px;
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(198, 150, 36, 0.72),
+            #d4af37,
+            #b98a21,
             transparent
           );
-        }
-
-        .card-top-glow {
-          position: absolute;
-          top: -120px;
-          right: -100px;
-          width: 220px;
-          height: 220px;
-          border-radius: 50%;
-          background: rgba(215, 170, 63, 0.08);
-          filter: blur(40px);
-          pointer-events: none;
         }
 
         .mobile-brand {
@@ -1019,101 +988,87 @@ export default function LoginPage() {
            HEADER
         ===================================================== */
 
-        .card-header {
+        .login-header {
           position: relative;
+          z-index: 1;
           display: flex;
-          gap: 14px;
+          gap: 13px;
           margin-bottom: 25px;
         }
 
-        .welcome-icon {
-          width: 47px;
-          height: 47px;
-          flex: 0 0 47px;
+        .login-icon {
+          width: 46px;
+          height: 46px;
+          flex: 0 0 46px;
           display: grid;
           place-items: center;
+          border: 1px solid #eadcbf;
           border-radius: 14px;
           background: linear-gradient(
             145deg,
-            #f9efd6,
-            #f3dfad
+            #fff9ea,
+            #f5e6bf
           );
           color: #96701b;
-          box-shadow:
-            inset 0 0 0 1px rgba(198, 150, 36, 0.13);
         }
 
-        .small-heading {
+        .overline {
           display: block;
           margin-bottom: 4px;
-          color: #aa8a4a;
-          font-size: 8px;
-          letter-spacing: 1.5px;
-          font-weight: 850;
+          color: #b28a35;
+          font-size: 7px;
+          letter-spacing: 1.7px;
+          font-weight: 900;
         }
 
-        .card-header h2 {
+        .login-header h2 {
           margin: 0;
-          color: #211f1a;
+          color: #25221c;
           font-size: 29px;
-          line-height: 1.1;
+          line-height: 1.05;
           letter-spacing: -1.2px;
-          font-weight: 850;
+          font-weight: 900;
         }
 
-        .card-header p {
+        .login-header p {
           margin: 6px 0 0;
-          color: #888176;
-          font-size: 11px;
-          line-height: 1.55;
+          color: #8c857b;
+          font-size: 10px;
+          line-height: 1.5;
         }
 
         /* =====================================================
-           MESSAGES
+           ALERT
         ===================================================== */
 
-        .message {
+        .alert {
           position: relative;
+          z-index: 2;
           display: flex;
           align-items: flex-start;
           gap: 9px;
+          margin-bottom: 15px;
           padding: 11px 12px;
-          margin-bottom: 16px;
-          border-radius: 12px;
-          font-size: 11px;
+          border-radius: 11px;
+          font-size: 10px;
           line-height: 1.5;
-          animation: messageIn 0.35s ease both;
         }
 
-        .message-icon {
+        .alert-icon {
           flex: 0 0 auto;
-          display: grid;
-          place-items: center;
           margin-top: 1px;
         }
 
-        .error-message {
-          color: #9a4444;
-          background: #fff3f2;
-          border: 1px solid #f2d4d1;
+        .alert-error {
+          border: 1px solid #efd5d2;
+          background: #fff5f4;
+          color: #9b4945;
         }
 
-        .success-message {
-          color: #4e754c;
-          background: #f1f8ef;
-          border: 1px solid #d5e8d1;
-        }
-
-        @keyframes messageIn {
-          from {
-            opacity: 0;
-            transform: translateY(-5px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        .alert-success {
+          border: 1px solid #d6e8d1;
+          background: #f4faf1;
+          color: #557650;
         }
 
         /* =====================================================
@@ -1121,53 +1076,54 @@ export default function LoginPage() {
         ===================================================== */
 
         .login-form {
+          position: relative;
+          z-index: 2;
           display: flex;
           flex-direction: column;
           gap: 17px;
         }
 
-        .field {
+        .form-field {
           display: flex;
           flex-direction: column;
           gap: 7px;
         }
 
-        .field label,
-        .password-header label {
-          color: #363229;
-          font-size: 11px;
-          font-weight: 800;
+        .form-field label {
+          color: #39342b;
+          font-size: 10px;
+          font-weight: 850;
         }
 
-        .password-header {
+        .password-label-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
 
-        .password-header a {
-          color: #a2771d;
-          font-size: 10px;
+        .password-label-row a {
+          color: #a67b20;
+          font-size: 9px;
           font-weight: 800;
           text-decoration: none;
           transition: color 0.2s ease;
         }
 
-        .password-header a:hover {
-          color: #79590f;
+        .password-label-row a:hover {
+          color: #76560f;
         }
 
         /* =====================================================
            INPUT
         ===================================================== */
 
-        .input-wrapper {
+        .input-container {
           position: relative;
           display: flex;
           align-items: center;
         }
 
-        .input-wrapper::after {
+        .input-container::after {
           content: "";
           position: absolute;
           left: 13px;
@@ -1177,8 +1133,8 @@ export default function LoginPage() {
           border-radius: 999px;
           background: linear-gradient(
             90deg,
-            #b9891d,
-            #e1bd66
+            #b9891c,
+            #e1be68
           );
           transform: scaleX(0);
           transform-origin: center;
@@ -1186,238 +1142,210 @@ export default function LoginPage() {
           pointer-events: none;
         }
 
-        .input-wrapper:focus-within::after {
+        .input-container:focus-within::after {
           transform: scaleX(1);
         }
 
-        .input-icon-box {
+        .input-leading {
           position: absolute;
           left: 14px;
           z-index: 2;
           display: grid;
           place-items: center;
-          color: #aaa298;
+          color: #aaa297;
           pointer-events: none;
           transition:
             color 0.2s ease,
             transform 0.2s ease;
         }
 
-        .input-wrapper:focus-within .input-icon-box {
-          color: #b2831b;
-          transform: scale(1.04);
+        .input-container:focus-within .input-leading {
+          color: #b2821a;
+          transform: scale(1.05);
         }
 
-        .input-wrapper input {
+        .input-container input {
           width: 100%;
           height: 51px;
           padding: 0 44px;
-          border: 1px solid #e4ded3;
-          border-radius: 13px;
+          border: 1px solid #e3ddd3;
+          border-radius: 12px;
           outline: none;
           background: #fff;
-          color: #29261f;
-          font-size: 12px;
+          color: #2d2922;
+          font-size: 11px;
           transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease,
             background 0.2s ease;
         }
 
-        .input-wrapper input:hover:not(:disabled) {
-          border-color: #d7ccb7;
+        .input-container input:hover:not(:disabled) {
+          border-color: #d5c9b6;
         }
 
-        .input-wrapper input:focus {
-          border-color: #d0a039;
+        .input-container input:focus {
+          border-color: #d0a03c;
           background: #fffefa;
           box-shadow:
-            0 0 0 4px rgba(208, 160, 57, 0.08),
-            0 8px 20px rgba(74, 57, 24, 0.035);
+            0 0 0 4px rgba(208, 160, 60, 0.07);
         }
 
-        .input-wrapper input::placeholder {
-          color: #b5afa5;
+        .input-container input::placeholder {
+          color: #b8b1a7;
         }
 
-        .input-wrapper input:disabled {
+        .input-container input:disabled {
           opacity: 0.65;
           cursor: not-allowed;
         }
 
-        .password-toggle {
+        .eye-button {
           position: absolute;
-          right: 10px;
+          right: 8px;
           z-index: 3;
-          width: 31px;
-          height: 31px;
+          width: 32px;
+          height: 32px;
           display: grid;
           place-items: center;
           border: 0;
           border-radius: 8px;
           background: transparent;
-          color: #9b9489;
+          color: #9d968c;
           cursor: pointer;
           transition:
-            color 0.2s ease,
             background 0.2s ease,
-            transform 0.2s ease;
+            color 0.2s ease;
         }
 
-        .password-toggle:hover {
-          color: #a2781c;
-          background: #f8f1e3;
-          transform: scale(1.04);
+        .eye-button:hover {
+          background: #f7f0e2;
+          color: #9a731d;
         }
 
         /* =====================================================
            REMEMBER
         ===================================================== */
 
-        .remember {
-          width: fit-content;
+        .remember-row {
+          position: relative;
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          color: #797268;
-          font-size: 11px;
+          width: fit-content;
+          color: #817a70;
+          font-size: 10px;
           cursor: pointer;
           user-select: none;
         }
 
-        .remember input {
+        .remember-row input {
           position: absolute;
           opacity: 0;
           pointer-events: none;
         }
 
-        .custom-checkbox {
+        .fake-checkbox {
           width: 17px;
           height: 17px;
           display: grid;
           place-items: center;
-          border: 1px solid #d7d0c3;
+          border: 1px solid #d6cfc2;
           border-radius: 5px;
           background: #fff;
-          transition: all 0.2s ease;
         }
 
-        .custom-checkbox span {
+        .fake-checkbox span {
           opacity: 0;
-          transform: scale(0.5);
           color: #fff;
           font-size: 10px;
           font-weight: 900;
-          transition: all 0.2s ease;
+          transform: scale(0.5);
+          transition: 0.18s ease;
         }
 
-        .remember input:checked + .custom-checkbox {
+        .remember-row
+          input:checked
+          + .fake-checkbox {
           border-color: #c69624;
           background: #c69624;
           box-shadow:
             0 4px 10px rgba(198, 150, 36, 0.2);
         }
 
-        .remember
+        .remember-row
           input:checked
-          + .custom-checkbox
+          + .fake-checkbox
           span {
           opacity: 1;
           transform: scale(1);
         }
 
         /* =====================================================
-           PRIMARY BUTTON
+           LOGIN BUTTON
         ===================================================== */
 
-        .primary-button {
+        .login-button {
           position: relative;
           width: 100%;
-          height: 53px;
+          height: 52px;
           overflow: hidden;
           border: 0;
-          border-radius: 13px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
+          border-radius: 12px;
           background: linear-gradient(
             135deg,
-            #c69624,
-            #b68318
+            #c99a2d,
+            #b58018
           );
           color: #fff;
-          font-size: 12px;
-          font-weight: 850;
           cursor: pointer;
           box-shadow:
-            0 13px 27px rgba(198, 150, 36, 0.2);
+            0 12px 25px rgba(190, 140, 31, 0.22);
           transition:
             transform 0.2s ease,
             box-shadow 0.2s ease,
             filter 0.2s ease;
         }
 
-        .primary-button:hover:not(:disabled) {
+        .login-button:hover:not(:disabled) {
           transform: translateY(-2px);
-          filter: brightness(1.03);
+          filter: brightness(1.035);
           box-shadow:
-            0 17px 32px rgba(198, 150, 36, 0.27);
+            0 16px 30px rgba(190, 140, 31, 0.28);
         }
 
-        .primary-button:active:not(:disabled) {
+        .login-button:active:not(:disabled) {
           transform: translateY(0);
         }
 
-        .primary-button:disabled {
+        .login-button:disabled {
           opacity: 0.72;
           cursor: not-allowed;
         }
 
-        .button-shine {
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 55%;
+        .button-content {
+          position: relative;
+          z-index: 2;
           height: 100%;
-          transform: skewX(-20deg);
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.18),
-            transparent
-          );
-          animation: buttonShine 4s ease-in-out infinite;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          font-size: 11px;
+          font-weight: 850;
         }
 
-        @keyframes buttonShine {
-          0%,
-          55% {
-            left: -100%;
-          }
-
-          75%,
-          100% {
-            left: 150%;
-          }
-        }
-
-        .button-arrow {
+        .button-icon {
           width: 27px;
           height: 27px;
           display: grid;
           place-items: center;
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.14);
-          transition: transform 0.2s ease;
         }
 
-        .primary-button:hover .button-arrow {
-          transform: translateX(3px);
-        }
-
-        .spin {
-          animation: spin 0.85s linear infinite;
+        .loading-icon {
+          animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
@@ -1430,36 +1358,42 @@ export default function LoginPage() {
            REGISTER
         ===================================================== */
 
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          margin: 21px 0 12px;
-          color: #aaa399;
-          font-size: 9px;
+        .register-section {
+          position: relative;
+          z-index: 2;
+          margin-top: 20px;
         }
 
-        .divider::before,
-        .divider::after {
+        .register-divider {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 11px;
+          color: #aaa399;
+          font-size: 8px;
+        }
+
+        .register-divider::before,
+        .register-divider::after {
           content: "";
           height: 1px;
           flex: 1;
-          background: #eee9e0;
+          background: #eee8df;
         }
 
-        .create-account {
+        .register-button {
+          height: 44px;
           width: 100%;
-          height: 45px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 13px 0 16px;
-          border: 1px solid #e9e2d5;
+          padding: 0 12px 0 15px;
+          border: 1px solid #e6dfd4;
           border-radius: 11px;
           background: #fff;
-          color: #4c463c;
-          font-size: 11px;
-          font-weight: 750;
+          color: #514b41;
+          font-size: 10px;
+          font-weight: 800;
           text-decoration: none;
           transition:
             border-color 0.2s ease,
@@ -1467,147 +1401,120 @@ export default function LoginPage() {
             transform 0.2s ease;
         }
 
-        .create-account:hover {
-          border-color: #d7b765;
-          background: #fffdf8;
+        .register-button:hover {
           transform: translateY(-1px);
+          border-color: #d9bb70;
+          background: #fffdf8;
         }
 
-        .create-arrow {
-          width: 26px;
-          height: 26px;
+        .register-arrow {
+          width: 25px;
+          height: 25px;
           display: grid;
           place-items: center;
-          border-radius: 8px;
+          border-radius: 7px;
           background: #f7ecd1;
-          color: #9a7118;
-          transition: transform 0.2s ease;
-        }
-
-        .create-account:hover .create-arrow {
-          transform: translateX(3px);
+          color: #99721b;
         }
 
         /* =====================================================
            SECURITY
         ===================================================== */
 
-        .security-note {
+        .security-box {
+          position: relative;
+          z-index: 2;
           display: flex;
           align-items: center;
           gap: 9px;
-          margin-top: 19px;
-          padding-top: 17px;
-          border-top: 1px solid #eee9e0;
+          margin-top: 17px;
+          padding: 12px;
+          border: 1px solid #e5eadf;
+          border-radius: 11px;
+          background: #fbfdf9;
         }
 
-        .security-icon {
+        .security-symbol {
           width: 29px;
           height: 29px;
           flex: 0 0 29px;
           display: grid;
           place-items: center;
           border-radius: 8px;
-          background: #f2f7ef;
-          color: #62805e;
+          background: #eef6e9;
+          color: #5d8055;
         }
 
-        .security-note strong {
+        .security-box strong {
           display: block;
           margin-bottom: 2px;
-          color: #5f594f;
-          font-size: 9px;
-          font-weight: 800;
+          color: #5c6658;
+          font-size: 8px;
+          font-weight: 850;
         }
 
-        .security-note span {
+        .security-box span {
           display: block;
-          color: #a09a90;
-          font-size: 9px;
-        }
-
-        /* =====================================================
-           SMALL BENEFITS
-        ===================================================== */
-
-        .login-benefits {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 7px;
-          margin-top: 14px;
-        }
-
-        .login-benefits div {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          color: #9a9388;
+          color: #9a9d96;
           font-size: 8px;
         }
 
-        .login-benefits svg {
-          color: #9c7928;
+        .verified-badge {
+          margin-left: auto;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          color: #65825e;
+          font-size: 7px;
+          font-weight: 800;
+          white-space: nowrap;
         }
 
         /* =====================================================
-           ANIMATIONS
+           BOTTOM BENEFITS
         ===================================================== */
 
-        @keyframes fadeDown {
-          from {
-            opacity: 0;
-            transform: translateY(-12px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        .bottom-benefits {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 5px;
+          margin-top: 13px;
         }
 
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        .bottom-benefits span {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #9b9489;
+          font-size: 7px;
+          white-space: nowrap;
         }
 
-        @keyframes cardEnter {
-          from {
-            opacity: 0;
-            transform: translateY(25px) scale(0.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+        .bottom-benefits svg {
+          color: #a17a21;
         }
 
         /* =====================================================
            TABLET
         ===================================================== */
 
-        @media (max-width: 1020px) {
-          .login-wrapper {
-            width: min(680px, calc(100% - 34px));
+        @media (max-width: 1050px) {
+          .login-shell {
+            width: min(700px, calc(100% - 32px));
             grid-template-columns: 1fr;
             gap: 0;
-            padding: 26px 0;
+            padding: 25px 0;
           }
 
-          .login-showcase {
+          .experience-panel {
             display: none;
           }
 
-          .login-section {
-            min-height: calc(100vh - 52px);
+          .login-area {
+            min-height: calc(100dvh - 50px);
             align-items: center;
           }
 
@@ -1618,11 +1525,7 @@ export default function LoginPage() {
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 26px;
-          }
-
-          .mobile-brand .brand {
-            animation: none;
+            margin-bottom: 24px;
           }
         }
 
@@ -1632,92 +1535,72 @@ export default function LoginPage() {
 
         @media (max-width: 560px) {
           .login-page {
-            min-height: 100dvh;
+            overflow-y: auto;
           }
 
-          .login-wrapper {
-            width: calc(100% - 18px);
+          .login-shell {
+            width: calc(100% - 14px);
             min-height: 100dvh;
-            padding: 9px 0;
+            padding: 7px 0;
           }
 
-          .login-section {
-            min-height: calc(100dvh - 18px);
-            align-items: center;
+          .login-area {
+            min-height: calc(100dvh - 14px);
           }
 
           .login-card {
-            width: 100%;
-            padding: 25px 18px 20px;
-            border-radius: 22px;
+            padding: 25px 17px 18px;
+            border-radius: 21px;
           }
 
           .mobile-brand {
-            margin-bottom: 21px;
+            margin-bottom: 20px;
           }
 
-          .brand-logo {
+          .brand-mark {
             width: 39px;
             height: 39px;
             border-radius: 11px;
           }
 
-          .brand-name {
+          .brand-text {
             font-size: 21px;
           }
 
-          .card-header {
-            gap: 11px;
+          .login-header {
+            gap: 10px;
             margin-bottom: 21px;
           }
 
-          .welcome-icon {
+          .login-icon {
             width: 42px;
             height: 42px;
             flex-basis: 42px;
             border-radius: 12px;
           }
 
-          .card-header h2 {
+          .login-header h2 {
             font-size: 25px;
           }
 
-          .card-header p {
-            font-size: 10px;
-          }
-
-          .small-heading {
-            font-size: 7px;
+          .login-header p {
+            font-size: 9px;
           }
 
           .login-form {
             gap: 15px;
           }
 
-          .field {
-            gap: 6px;
-          }
-
-          .input-wrapper input {
+          .input-container input {
             height: 49px;
-            font-size: 12px;
           }
 
-          .primary-button {
-            height: 51px;
+          .login-button {
+            height: 50px;
           }
 
-          .divider {
-            margin-top: 19px;
-          }
-
-          .security-note {
-            margin-top: 17px;
-            padding-top: 15px;
-          }
-
-          .login-benefits {
-            margin-top: 12px;
+          .security-box {
+            padding: 10px;
           }
         }
 
@@ -1726,44 +1609,61 @@ export default function LoginPage() {
         ===================================================== */
 
         @media (max-width: 380px) {
-          .login-wrapper {
-            width: calc(100% - 14px);
+          .login-shell {
+            width: calc(100% - 10px);
           }
 
           .login-card {
-            padding: 22px 15px 18px;
+            padding: 22px 14px 16px;
+            border-radius: 19px;
           }
 
           .mobile-brand {
-            margin-bottom: 18px;
+            margin-bottom: 17px;
           }
 
-          .card-header h2 {
+          .login-header h2 {
             font-size: 23px;
           }
 
-          .card-header p {
-            font-size: 9px;
+          .login-header p {
+            font-size: 8px;
           }
 
-          .input-wrapper input {
+          .input-container input {
             height: 47px;
           }
 
-          .primary-button {
-            height: 49px;
+          .login-button {
+            height: 48px;
           }
 
-          .login-benefits {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 5px;
+          .bottom-benefits {
+            gap: 3px;
+          }
+
+          .bottom-benefits span {
+            font-size: 6.5px;
+          }
+
+          .verified-badge {
+            display: none;
           }
         }
 
         /* =====================================================
-           REDUCED MOTION
+           ACCESSIBILITY
         ===================================================== */
+
+        .brand:focus-visible,
+        .password-label-row a:focus-visible,
+        .register-button:focus-visible,
+        .eye-button:focus-visible,
+        .login-button:focus-visible,
+        input:focus-visible {
+          outline: 2px solid #c69624;
+          outline-offset: 3px;
+        }
 
         @media (prefers-reduced-motion: reduce) {
           *,
@@ -1771,7 +1671,6 @@ export default function LoginPage() {
           *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
-            scroll-behavior: auto !important;
             transition-duration: 0.01ms !important;
           }
         }
