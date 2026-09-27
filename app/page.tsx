@@ -1,1673 +1,1300 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
-  Search,
-  Heart,
-  ShoppingCart,
-  User,
-  Menu,
-  X,
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
   ChevronDown,
   ChevronRight,
-  ArrowRight,
-  Truck,
-  ShieldCheck,
-  RotateCcw,
-  Headphones,
-  Star,
-  Zap,
-  Sparkles,
   Clock3,
-  Tag,
-  Gift,
+  Facebook,
+  Heart,
+  Headphones,
+  Instagram,
+  Mail,
+  Menu,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Star,
+  Truck,
+  Twitter,
+  UserRound,
+  X,
+  Zap,
 } from "lucide-react";
-
-/* =========================================================
-   DATA
-========================================================= */
 
 const categories = [
   {
     name: "Electronics",
-    slug: "electronics",
+    subtitle: "Smart technology",
+    products: "2500+ Products",
     image: "/electronics.png",
-    count: "2500+ Products",
+    href: "/categories/electronics",
   },
   {
     name: "Fashion",
-    slug: "fashion",
+    subtitle: "Style your way",
+    products: "1800+ Products",
     image: "/fashion.png",
-    count: "1800+ Products",
+    href: "/categories/fashion",
   },
   {
     name: "Watches",
-    slug: "watches",
+    subtitle: "Timeless style",
+    products: "1200+ Products",
     image: "/watch.png",
-    count: "1200+ Products",
+    href: "/categories/watches",
   },
   {
     name: "Beauty",
-    slug: "beauty",
+    subtitle: "Care & beauty",
+    products: "800+ Products",
     image: "/beauty.png",
-    count: "800+ Products",
+    href: "/categories/beauty",
   },
   {
     name: "Home & Living",
-    slug: "home-and-living",
+    subtitle: "Make it yours",
+    products: "1500+ Products",
     image: "/home.png",
-    count: "1500+ Products",
+    href: "/categories/home-and-living",
   },
   {
     name: "Gaming",
-    slug: "gaming",
+    subtitle: "Level up",
+    products: "950+ Products",
     image: "/gaming.png",
-    count: "950+ Products",
+    href: "/categories/gaming",
   },
 ];
 
-const products = [
+const benefits = [
   {
-    id: 1,
-    name: "Smartphone X Pro",
-    slug: "smartphone-x-pro",
-    category: "Electronics",
-    image: "/products/smartphone-x-pro.png",
-    price: "₹29,999",
-    oldPrice: "₹39,999",
-    discount: "25% OFF",
-    rating: "4.8",
-    reviews: "1,248",
-    badge: "Bestseller",
+    icon: Truck,
+    title: "Fast Delivery",
+    description: "Quick and reliable delivery across India.",
   },
   {
-    id: 2,
-    name: "Wireless Headphones",
-    slug: "wireless-headphones",
-    category: "Electronics",
-    image: "/products/wireless-headphones.png",
-    price: "₹2,499",
-    oldPrice: "₹4,999",
-    discount: "50% OFF",
-    rating: "4.7",
-    reviews: "892",
-    badge: "Hot Deal",
+    icon: ShieldCheck,
+    title: "Secure Payments",
+    description: "Protected checkout with secure payments.",
   },
   {
-    id: 3,
-    name: "Premium Denim Jacket",
-    slug: "denim-jacket",
-    category: "Fashion",
-    image: "/products/denim-jacket.png",
-    price: "₹1,799",
-    oldPrice: "₹3,499",
-    discount: "49% OFF",
-    rating: "4.6",
-    reviews: "641",
-    badge: "Trending",
+    icon: PackageCheck,
+    title: "Easy Returns",
+    description: "Simple returns for a stress-free experience.",
   },
   {
-    id: 4,
-    name: "Sports Running Shoes",
-    slug: "sports-running-shoes",
-    category: "Footwear",
-    image: "/products/sports-running-shoes.png",
-    price: "₹1,999",
-    oldPrice: "₹3,999",
-    discount: "50% OFF",
-    rating: "4.8",
-    reviews: "1,104",
-    badge: "Popular",
+    icon: Headphones,
+    title: "24/7 Support",
+    description: "We're always here when you need us.",
+  },
+];
+
+const lifestyle = [
+  {
+    title: "Work From Home",
+    text: "Build a smarter workspace.",
+    tag: "Explore Setup",
+  },
+  {
+    title: "Gaming Zone",
+    text: "Upgrade your gaming experience.",
+    tag: "Build Your Setup",
+  },
+  {
+    title: "Everyday Style",
+    text: "Fresh looks for every occasion.",
+    tag: "Shop Fashion",
   },
 ];
 
 const deals = [
   {
-    name: "Smartphone X Pro",
-    image: "/products/smartphone-x-pro.png",
-    price: "₹29,999",
-    oldPrice: "₹39,999",
-    discount: "25% OFF",
+    title: "Smart Tech",
+    discount: "UP TO 40% OFF",
+    text: "Upgrade your everyday technology.",
   },
   {
-    name: "Wireless Headphones",
-    image: "/products/wireless-headphones.png",
-    price: "₹2,499",
-    oldPrice: "₹4,999",
-    discount: "50% OFF",
+    title: "Fashion Edit",
+    discount: "UP TO 50% OFF",
+    text: "New season styles at better prices.",
   },
   {
-    name: "Sports Running Shoes",
-    image: "/products/sports-running-shoes.png",
-    price: "₹1,999",
-    oldPrice: "₹3,999",
-    discount: "50% OFF",
+    title: "Home Essentials",
+    discount: "UP TO 35% OFF",
+    text: "Make your space feel better.",
   },
 ];
 
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function HomePage() {
-  const [openMenu, setOpenMenu] = useState(false);
-  const [categoryMenu, setCategoryMenu] = useState(false);
-  const [mobileSearch, setMobileSearch] = useState(false);
-  const [search, setSearch] = useState("");
-  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
 
-  const toggleWishlist = (id: number) => {
-    setWishlist((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id]
-    );
-  };
+  function handleSubscribe(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!email.trim()) return;
+
+    setSubscribed(true);
+    setEmail("");
+  }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#faf8f3] text-[#211d17]">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcfaf6] text-[#171614]">
+      {/* =========================================================
+          TOP BAR
+      ========================================================= */}
 
-      {/* =====================================================
-          TOP ANNOUNCEMENT BAR
-      ====================================================== */}
+      <div className="bg-[#171614] text-white">
+        <div className="mx-auto flex min-h-[34px] max-w-[1440px] items-center justify-between gap-4 px-4 text-[10px] sm:px-6 sm:text-[11px] lg:px-8">
+          <div className="flex items-center gap-2">
+            <Sparkles size={12} className="text-[#d8b45f]" />
+            <span>Premium shopping. Better value.</span>
+          </div>
 
-      <div className="bg-[#211d17] px-4 py-2 text-center text-[10px] font-medium tracking-wide text-white sm:text-[11px]">
-        <span className="text-[#e1bd68]">✨</span>{" "}
-        Free delivery on orders above ₹499
-        <span className="mx-2 text-[#756b5d]">•</span>
-        Easy Returns
-        <span className="mx-2 text-[#756b5d]">•</span>
-        Secure Payments
+          <div className="hidden items-center gap-5 sm:flex">
+            <span>Free delivery above ₹499</span>
+            <span className="h-3 w-px bg-white/20" />
+            <span>Easy returns</span>
+            <span className="h-3 w-px bg-white/20" />
+            <span>Secure checkout</span>
+          </div>
+        </div>
       </div>
 
-      {/* =====================================================
+      {/* =========================================================
           NAVBAR
-      ====================================================== */}
+      ========================================================= */}
 
-      <nav className="sticky top-0 z-50 border-b border-[#e8dfd0] bg-white/95 backdrop-blur-xl">
-
-        <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:h-[76px] lg:px-8">
-
-          {/* MOBILE MENU */}
-
-          <button
-            onClick={() => setOpenMenu(true)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e5dccd] bg-white lg:hidden"
-            aria-label="Open menu"
-          >
-            <Menu size={20} />
-          </button>
-
-          {/* LOGO */}
-
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-
-            <Image
-              src="/logo.png"
-              alt="PrimeCart"
-              width={52}
-              height={52}
-              priority
-              className="h-11 w-11 object-contain sm:h-12 sm:w-12"
-            />
-
-            <div className="hidden xs:block sm:block">
-              <h1 className="text-[20px] font-bold leading-none tracking-tight text-[#211d17] sm:text-[23px]">
-                Prime<span className="text-[#c79a3b]">Cart</span>
-              </h1>
-
-              <p className="mt-1 text-[8px] font-medium uppercase tracking-[0.16em] text-[#968b7b] sm:text-[9px]">
-                Premium Shopping
-              </p>
-            </div>
-
-          </Link>
-
-          {/* DESKTOP NAVIGATION */}
-
-          <div className="ml-6 hidden items-center gap-7 lg:flex">
+      <header className="sticky top-0 z-50 border-b border-[#ebe5d9] bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.035)] backdrop-blur-xl">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-[72px] items-center gap-5 lg:h-[78px]">
+            {/* LOGO */}
 
             <Link
               href="/"
-              className="text-sm font-semibold text-[#c08d2d]"
+              onClick={() => setMenuOpen(false)}
+              className="flex shrink-0 items-center gap-2.5"
             >
-              Home
-            </Link>
+              <Image
+                src="/logo.png"
+                alt="PrimeCart"
+                width={52}
+                height={52}
+                priority
+                className="h-11 w-11 object-contain sm:h-12 sm:w-12"
+              />
 
-            <Link
-              href="/dashboard/products"
-              className="text-sm font-medium text-[#5e574d] transition hover:text-[#c08d2d]"
-            >
-              Shop
-            </Link>
-
-            <div
-              className="relative"
-              onMouseEnter={() => setCategoryMenu(true)}
-              onMouseLeave={() => setCategoryMenu(false)}
-            >
-
-              <button className="flex items-center gap-1 text-sm font-medium text-[#5e574d] transition hover:text-[#c08d2d]">
-                Categories
-                <ChevronDown size={14} />
-              </button>
-
-              {categoryMenu && (
-                <div className="absolute left-1/2 top-full w-[600px] -translate-x-1/2 pt-4">
-                  <div className="rounded-2xl border border-[#e6dccb] bg-white p-5 shadow-[0_20px_60px_rgba(60,45,20,0.14)]">
-
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-[#c08d2d]">
-                          Explore
-                        </p>
-                        <h3 className="mt-1 text-lg font-bold">
-                          Shop by Category
-                        </h3>
-                      </div>
-
-                      <Link
-                        href="/dashboard/products"
-                        className="text-xs font-semibold text-[#c08d2d]"
-                      >
-                        View All →
-                      </Link>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      {categories.map((category) => (
-                        <Link
-                          key={category.slug}
-                          href={`/categories/${category.slug}`}
-                          className="group rounded-xl border border-[#eee6d9] p-3 transition hover:border-[#d6b66d] hover:bg-[#fcf8ef]"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#faf6ed]">
-                              <Image
-                                src={category.image}
-                                alt={category.name}
-                                width={44}
-                                height={44}
-                                className="h-full w-full object-contain p-1"
-                              />
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-bold">
-                                {category.name}
-                              </p>
-                              <p className="mt-1 text-[9px] text-[#958b7d]">
-                                {category.count}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-
-                  </div>
+              <div>
+                <div className="text-[21px] font-extrabold tracking-[-0.04em] sm:text-[23px]">
+                  Prime<span className="text-[#c79a3b]">Cart</span>
                 </div>
-              )}
 
-            </div>
-
-            <Link
-              href="/products?deal=true"
-              className="text-sm font-medium text-[#5e574d] transition hover:text-[#c08d2d]"
-            >
-              Deals
+                <div className="hidden text-[8px] font-bold uppercase tracking-[0.23em] text-gray-400 sm:block">
+                  Premium Shopping
+                </div>
+              </div>
             </Link>
 
-            <Link
-              href="/dashboard/prime-match"
-              className="text-sm font-medium text-[#5e574d] transition hover:text-[#c08d2d]"
-            >
-              PrimeMatch
-            </Link>
+            {/* DESKTOP NAV */}
 
-          </div>
-
-          {/* DESKTOP SEARCH */}
-
-          <div className="ml-auto hidden max-w-[370px] flex-1 lg:block">
-
-            <div className="relative">
-
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#938a7c]"
-              />
-
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products, brands and more..."
-                className="h-11 w-full rounded-full border border-[#e3d8c6] bg-[#faf8f3] pl-11 pr-4 text-sm text-[#29241e] outline-none transition placeholder:text-[#aaa195] focus:border-[#c79a3b] focus:bg-white"
-              />
-
-            </div>
-
-          </div>
-
-          {/* RIGHT ACTIONS */}
-
-          <div className="ml-auto flex items-center gap-1 sm:gap-2 lg:ml-4">
-
-            <button
-              onClick={() => setMobileSearch(!mobileSearch)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-[#f5efe4] lg:hidden"
-              aria-label="Search"
-            >
-              <Search size={20} />
-            </button>
-
-            <Link
-              href="/dashboard/wishlist"
-              className="relative hidden h-10 w-10 items-center justify-center rounded-xl transition hover:bg-[#f5efe4] sm:flex"
-              aria-label="Wishlist"
-            >
-              <Heart size={20} />
-
-              {wishlist.length > 0 && (
-                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c79a3b] px-1 text-[8px] font-bold text-white">
-                  {wishlist.length}
-                </span>
-              )}
-            </Link>
-
-            <Link
-              href="/dashboard/cart"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-[#f5efe4]"
-              aria-label="Cart"
-            >
-              <ShoppingCart size={20} />
-
-              <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c79a3b] px-1 text-[8px] font-bold text-white">
-                0
-              </span>
-            </Link>
-
-            <Link
-              href="/auth/login"
-              className="hidden h-10 items-center gap-2 rounded-xl border border-[#d8ccb9] px-5 text-sm font-semibold transition hover:border-[#c79a3b] hover:bg-[#fcf8ef] sm:flex"
-            >
-              <User size={16} />
-              Login
-            </Link>
-
-            <Link
-              href="/auth/register"
-              className="hidden h-10 items-center rounded-xl bg-[#c79a3b] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#b8872d] md:flex"
-            >
-              Register
-            </Link>
-
-          </div>
-
-        </div>
-
-        {/* MOBILE SEARCH */}
-
-        {mobileSearch && (
-          <div className="border-t border-[#e8dfd0] bg-white px-4 py-3 lg:hidden">
-
-            <div className="relative">
-
-              <Search
-                size={17}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#958b7e]"
-              />
-
-              <input
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
-                className="h-11 w-full rounded-full border border-[#dfd4c2] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#c79a3b]"
-              />
-
-            </div>
-
-          </div>
-        )}
-
-      </nav>
-
-      {/* =====================================================
-          MOBILE DRAWER
-      ====================================================== */}
-
-      {openMenu && (
-        <div className="fixed inset-0 z-[100] lg:hidden">
-
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
-            onClick={() => setOpenMenu(false)}
-          />
-
-          <aside className="absolute left-0 top-0 flex h-full w-[86%] max-w-[350px] flex-col bg-[#fffdf9] shadow-2xl">
-
-            <div className="flex items-center justify-between border-b border-[#e8dfd0] px-5 py-5">
-
+            <div className="ml-4 hidden items-center gap-7 lg:flex">
               <Link
                 href="/"
-                onClick={() => setOpenMenu(false)}
-                className="flex items-center gap-2"
+                className="text-sm font-bold text-[#b17e24]"
               >
+                Home
+              </Link>
 
-                <Image
-                  src="/logo.png"
-                  alt="PrimeCart"
-                  width={45}
-                  height={45}
-                  className="h-10 w-10 object-contain"
-                />
-
-                <div>
-                  <p className="text-lg font-bold">
-                    Prime<span className="text-[#c79a3b]">Cart</span>
-                  </p>
-                  <p className="text-[8px] uppercase tracking-wider text-[#958b7d]">
-                    Premium Shopping
-                  </p>
-                </div>
-
+              <Link
+                href="#categories"
+                className="text-sm font-medium text-gray-600 transition hover:text-[#b17e24]"
+              >
+                Shop
               </Link>
 
               <button
-                onClick={() => setOpenMenu(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f4eee4]"
+                type="button"
+                onClick={() => setCategoryOpen(!categoryOpen)}
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 transition hover:text-[#b17e24]"
               >
-                <X size={18} />
+                Categories
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${
+                    categoryOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
 
+              <Link
+                href="#deals"
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 transition hover:text-[#b17e24]"
+              >
+                Deals
+                <span className="rounded-full bg-[#fff0ca] px-1.5 py-0.5 text-[8px] font-bold uppercase text-[#a87520]">
+                  Hot
+                </span>
+              </Link>
+
+              <Link
+                href="#why"
+                className="text-sm font-medium text-gray-600 transition hover:text-[#b17e24]"
+              >
+                Why PrimeCart
+              </Link>
             </div>
 
-            <div className="overflow-y-auto px-4 py-5">
+            {/* SEARCH */}
 
-              <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#b8872d]">
-                Menu
-              </p>
+            <div className="ml-auto hidden max-w-[300px] flex-1 xl:block">
+              <div className="group flex h-11 items-center gap-3 rounded-xl border border-[#e8e2d7] bg-[#faf9f5] px-4 transition focus-within:border-[#d4b56f] focus-within:bg-white">
+                <Search
+                  size={17}
+                  className="shrink-0 text-gray-400 group-focus-within:text-[#b17e24]"
+                />
 
-              <div className="flex flex-col">
+                <input
+                  type="text"
+                  placeholder="Search products, brands..."
+                  className="w-full bg-transparent text-xs text-gray-700 outline-none placeholder:text-gray-400"
+                />
 
+                <span className="hidden rounded-md border border-[#e4ddd0] bg-white px-1.5 py-0.5 text-[8px] text-gray-400 2xl:block">
+                  /
+                </span>
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+
+            <div className="ml-auto flex items-center gap-2 xl:ml-0">
+              <Link
+                href="/auth/login"
+                className="hidden h-10 w-10 items-center justify-center rounded-xl border border-[#ebe5da] bg-[#faf9f5] text-gray-600 transition hover:border-[#d8bb78] hover:text-[#b17e24] sm:flex"
+              >
+                <Search size={18} />
+              </Link>
+
+              <Link
+                href="/auth/login"
+                className="hidden h-10 w-10 items-center justify-center rounded-xl border border-[#ebe5da] bg-[#faf9f5] text-gray-600 transition hover:border-[#d8bb78] hover:text-[#b17e24] md:flex"
+              >
+                <Heart size={18} />
+              </Link>
+
+              <Link
+                href="/auth/login"
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#ebe5da] bg-[#faf9f5] text-gray-600 transition hover:border-[#d8bb78] hover:text-[#b17e24]"
+              >
+                <ShoppingCart size={18} />
+
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c79a3b] px-1 text-[8px] font-bold text-white">
+                  0
+                </span>
+              </Link>
+
+              <Link
+                href="/auth/login"
+                className="hidden h-10 items-center gap-2 rounded-xl border border-[#ddd7cc] px-4 text-sm font-semibold text-gray-700 transition hover:border-[#c79a3b] hover:text-[#b17e24] md:flex"
+              >
+                <UserRound size={16} />
+                Login
+              </Link>
+
+              <Link
+                href="/auth/register"
+                className="hidden h-10 items-center rounded-xl bg-[#c79a3b] px-5 text-sm font-bold text-white shadow-[0_7px_18px_rgba(199,154,59,0.18)] transition hover:-translate-y-0.5 hover:bg-[#b8872d] md:flex"
+              >
+                Register
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#ebe5da] bg-[#faf9f5] text-gray-700 lg:hidden"
+                aria-label="Menu"
+              >
+                {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* CATEGORY DROPDOWN */}
+
+          {categoryOpen && (
+            <div className="absolute left-0 right-0 top-full hidden border-b border-[#e9e2d7] bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)] lg:block">
+              <div className="mx-auto max-w-[1200px] px-8 py-7">
+                <div className="grid grid-cols-3 gap-4">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.name}
+                      href={category.href}
+                      onClick={() => setCategoryOpen(false)}
+                      className="group flex items-center gap-4 rounded-2xl border border-transparent p-3 transition hover:border-[#e9dfc8] hover:bg-[#fffaf0]"
+                    >
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#f8f4ea]">
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          width={70}
+                          height={70}
+                          className="h-full w-full object-contain p-2 transition group-hover:scale-105"
+                        />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900">
+                          {category.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {category.subtitle}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        size={16}
+                        className="ml-auto text-gray-300 group-hover:text-[#b17e24]"
+                      />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE MENU */}
+
+          {menuOpen && (
+            <div className="border-t border-[#eee7dc] py-4 lg:hidden">
+              <div className="flex flex-col gap-1">
                 {[
-                  ["Home", "/"],
-                  ["Shop All Products", "/dashboard/products"],
-                  ["Deals", "/products?deal=true"],
-                  ["PrimeMatch", "/dashboard/prime-match"],
-                  ["Budget Builder", "/dashboard/budget-builder"],
-                  ["Build My Setup", "/dashboard/setup-builder"],
-                  ["PrimePoints", "/dashboard/prime-points"],
+                  ["Home", "#home"],
+                  ["Shop", "#categories"],
+                  ["Categories", "#categories"],
+                  ["Deals", "#deals"],
+                  ["Why PrimeCart", "#why"],
                 ].map(([label, href]) => (
                   <Link
                     key={label}
                     href={href}
-                    onClick={() => setOpenMenu(false)}
-                    className="flex items-center justify-between rounded-xl px-4 py-3.5 text-sm font-medium text-[#4e483f] transition hover:bg-[#f7f0e3] hover:text-[#b8872d]"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-between rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-700 hover:bg-[#faf7ef] hover:text-[#b17e24]"
                   >
                     {label}
-                    <ChevronRight size={15} className="text-[#b5a991]" />
+                    <ChevronRight size={16} />
                   </Link>
                 ))}
 
-              </div>
-
-              <p className="mb-3 mt-7 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#b8872d]">
-                Categories
-              </p>
-
-              <div className="grid grid-cols-2 gap-2">
-
-                {categories.map((category) => (
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#eee7dc] pt-4">
                   <Link
-                    key={category.slug}
-                    href={`/categories/${category.slug}`}
-                    onClick={() => setOpenMenu(false)}
-                    className="rounded-xl border border-[#e8dfd0] bg-white p-3"
+                    href="/auth/login"
+                    className="flex h-11 items-center justify-center rounded-xl border border-[#ddd7cc] text-sm font-bold"
                   >
-                    <div className="flex items-center gap-2">
-
-                      <div className="h-9 w-9 rounded-lg bg-[#faf7ef]">
-                        <Image
-                          src={category.image}
-                          alt={category.name}
-                          width={36}
-                          height={36}
-                          className="h-full w-full object-contain p-1"
-                        />
-                      </div>
-
-                      <p className="text-[10px] font-semibold">
-                        {category.name}
-                      </p>
-
-                    </div>
+                    Login
                   </Link>
-                ))}
 
+                  <Link
+                    href="/auth/register"
+                    className="flex h-11 items-center justify-center rounded-xl bg-[#c79a3b] text-sm font-bold text-white"
+                  >
+                    Register
+                  </Link>
+                </div>
               </div>
-
             </div>
-
-            <div className="mt-auto border-t border-[#e8dfd0] p-4">
-
-              <div className="grid grid-cols-2 gap-3">
-
-                <Link
-                  href="/auth/login"
-                  onClick={() => setOpenMenu(false)}
-                  className="flex h-11 items-center justify-center rounded-xl border border-[#d8ccb9] text-sm font-semibold"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  href="/auth/register"
-                  onClick={() => setOpenMenu(false)}
-                  className="flex h-11 items-center justify-center rounded-xl bg-[#c79a3b] text-sm font-bold text-white"
-                >
-                  Register
-                </Link>
-
-              </div>
-
-            </div>
-
-          </aside>
-
+          )}
         </div>
-      )}
+      </header>
 
-      {/* =====================================================
+      {/* =========================================================
           HERO
-      ====================================================== */}
+      ========================================================= */}
 
-      <section className="border-b border-[#e9dfcf] bg-[#f7f0e3]">
+      <section
+        id="home"
+        className="relative overflow-hidden scroll-mt-24"
+      >
+        <div className="absolute left-[-150px] top-20 h-[400px] w-[400px] rounded-full bg-[#e8d19a]/20 blur-[100px]" />
+        <div className="absolute bottom-0 right-[-150px] h-[450px] w-[450px] rounded-full bg-[#e5c67e]/15 blur-[100px]" />
 
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <div className="relative overflow-hidden rounded-[30px] border border-[#e8deca] bg-white shadow-[0_25px_70px_rgba(72,53,18,0.08)] sm:rounded-[40px]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_45%,rgba(213,178,95,0.14),transparent_30%)]" />
 
-          <div className="grid min-h-[480px] items-center lg:grid-cols-[0.9fr_1.1fr] lg:min-h-[550px]">
+            <div className="grid min-h-[570px] lg:grid-cols-[0.92fr_1.08fr]">
+              {/* CONTENT */}
 
-            {/* LEFT */}
-
-            <div className="relative z-10 py-12 sm:py-16 lg:py-20">
-
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8c08a] bg-white/75 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#a47623] sm:text-xs">
-                <Sparkles size={13} />
-                Premium Shopping Experience
-              </div>
-
-              <h1 className="max-w-[620px] text-[44px] font-black leading-[0.98] tracking-[-0.045em] text-[#211d17] sm:text-[58px] lg:text-[76px]">
-
-                Shop More.
-
-                <br />
-
-                <span className="text-[#b8872d]">
-                  Pay Less.
-                </span>
-
-              </h1>
-
-              <p className="mt-6 max-w-[540px] text-sm leading-6 text-[#6d655a] sm:text-base sm:leading-7">
-                Discover products you love at prices you'll love even more.
-                From everyday essentials to premium picks, PrimeCart brings
-                smarter shopping to your fingertips.
-              </p>
-
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-
-                <Link
-                  href="/dashboard/products"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c79a3b] px-7 text-sm font-bold text-white shadow-lg shadow-[#c79a3b]/20 transition hover:-translate-y-0.5 hover:bg-[#b8872d]"
-                >
-                  Shop Now
-                  <ArrowRight size={17} />
-                </Link>
-
-                <Link
-                  href="/products?deal=true"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#d6c5a7] bg-white px-7 text-sm font-bold text-[#433c33] transition hover:border-[#c79a3b]"
-                >
-                  <Zap size={16} className="text-[#b8872d]" />
-                  Explore Deals
-                </Link>
-
-              </div>
-
-              {/* STATS */}
-
-              <div className="mt-9 flex flex-wrap items-center gap-6 border-t border-[#dfd2bd] pt-6">
-
-                <div>
-                  <p className="text-lg font-black text-[#2b251e]">
-                    10K+
-                  </p>
-                  <p className="text-[10px] text-[#8b8174]">
-                    Happy Customers
-                  </p>
+              <div className="relative z-10 flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 xl:px-16">
+                <div className="flex w-fit items-center gap-2 rounded-full border border-[#e5cc91] bg-[#fffaf0] px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#aa7620] sm:text-[11px]">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#c79a3b] text-white">
+                    <Zap size={10} fill="currentColor" />
+                  </span>
+                  Summer Mega Sale
                 </div>
 
-                <div className="h-8 w-px bg-[#d9ccb5]" />
+                <h1 className="mt-6 max-w-[650px] text-[46px] font-extrabold leading-[0.96] tracking-[-0.055em] sm:text-[61px] lg:text-[72px] xl:text-[80px]">
+                  Everything
+                  <br />
+                  you want.
+                  <br />
+                  <span className="text-[#c79a3b]">Better prices.</span>
+                </h1>
 
-                <div>
-                  <p className="text-lg font-black text-[#2b251e]">
-                    5K+
-                  </p>
-                  <p className="text-[10px] text-[#8b8174]">
-                    Products
-                  </p>
-                </div>
+                <p className="mt-6 max-w-xl text-sm leading-7 text-gray-500 sm:text-base lg:text-[17px]">
+                  Discover trending products, exclusive deals and everyday
+                  essentials — all in one premium shopping destination.
+                </p>
 
-                <div className="h-8 w-px bg-[#d9ccb5]" />
-
-                <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-lg font-black text-[#2b251e]">
-                      4.8
-                    </p>
-                    <Star
-                      size={13}
-                      fill="currentColor"
-                      className="text-[#c79a3b]"
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <Link
+                    href="/lauth/ogin"
+                    className="group flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#c79a3b] px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(199,154,59,0.25)] transition hover:-translate-y-1 hover:bg-[#b8872d]"
+                  >
+                    Start Shopping
+                    <ArrowRight
+                      size={18}
+                      className="transition group-hover:translate-x-1"
                     />
-                  </div>
-                  <p className="text-[10px] text-[#8b8174]">
-                    Customer Rating
-                  </p>
+                  </Link>
+
+                  <Link
+                    href="#deals"
+                    className="group flex h-13 items-center justify-center gap-2 rounded-2xl border border-[#ded8cc] bg-white px-7 py-3.5 text-sm font-bold text-gray-800 transition hover:-translate-y-1 hover:border-[#c79a3b]"
+                  >
+                    View Deals
+                    <ArrowUpRight
+                      size={17}
+                      className="transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                    />
+                  </Link>
                 </div>
 
-              </div>
-
-            </div>
-
-            {/* RIGHT IMAGE */}
-
-            <div className="relative flex min-h-[270px] items-center justify-center lg:min-h-[550px]">
-
-              <div className="absolute h-[250px] w-[250px] rounded-full bg-[#d4af37]/10 blur-3xl sm:h-[350px] sm:w-[350px] lg:h-[430px] lg:w-[430px]" />
-
-              <Image
-                src="/hero-product.png"
-                alt="PrimeCart Products"
-                width={900}
-                height={700}
-                priority
-                className="relative z-10 h-auto max-h-[330px] w-full max-w-[650px] object-contain sm:max-h-[410px] lg:max-h-[500px]"
-              />
-
-              {/* FLOATING DEAL */}
-
-              <div className="absolute bottom-7 left-2 z-20 hidden rounded-2xl border border-white/80 bg-white/90 p-3 shadow-xl backdrop-blur sm:block lg:left-0">
-
-                <div className="flex items-center gap-3">
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbf0d9] text-[#b8872d]">
-                    <Tag size={18} />
+                <div className="mt-9 flex flex-wrap items-center gap-5 border-t border-[#eee8dc] pt-6">
+                  <div className="flex -space-x-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#e6d3a7] text-[10px] font-bold">
+                      A
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#cbb98f] text-[10px] font-bold">
+                      R
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#aa956b] text-[10px] font-bold">
+                      S
+                    </div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#25221d] text-[9px] font-bold text-white">
+                      +10K
+                    </div>
                   </div>
 
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#9b8c75]">
-                      Today's Deals
-                    </p>
-                    <p className="text-sm font-black">
-                      Up to 50% OFF
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          size={12}
+                          fill="#c79a3b"
+                          className="text-[#c79a3b]"
+                        />
+                      ))}
+                      <span className="ml-1 text-xs font-bold">4.9</span>
+                    </div>
+
+                    <p className="mt-0.5 text-[11px] text-gray-500">
+                      Trusted by 10,000+ shoppers
                     </p>
                   </div>
-
                 </div>
-
               </div>
 
-              <div className="absolute right-2 top-10 z-20 hidden rounded-2xl border border-white/80 bg-white/90 p-3 shadow-xl backdrop-blur sm:block lg:right-8">
+              {/* VISUAL */}
 
-                <div className="flex items-center gap-2">
+              <div className="relative flex min-h-[330px] items-center justify-center overflow-hidden bg-[#f8f3e8] px-4 pb-8 sm:min-h-[430px] sm:px-8 lg:min-h-full lg:pb-0">
+                <div className="absolute left-1/2 top-1/2 h-[250px] w-[250px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e5cb8e]/25 blur-3xl sm:h-[400px] sm:w-[400px] lg:h-[500px] lg:w-[500px]" />
 
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f7ead0] text-[#b8872d]">
-                    <Truck size={15} />
-                  </div>
+                <div className="absolute left-1/2 top-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d7bd7b]/30 sm:h-[390px] sm:w-[390px] lg:h-[500px] lg:w-[500px]" />
 
-                  <div>
-                    <p className="text-[9px] text-[#958b7e]">
-                      Delivery
-                    </p>
-                    <p className="text-xs font-bold">
-                      Fast & Easy
-                    </p>
-                  </div>
-
+                <div className="relative z-10 w-full max-w-[500px] lg:max-w-[630px]">
+                  <Image
+                    src="/hero-product.png"
+                    alt="PrimeCart products"
+                    width={900}
+                    height={900}
+                    priority
+                    className="h-auto w-full object-contain drop-shadow-[0_30px_35px_rgba(55,42,16,0.14)] transition duration-700 hover:scale-[1.025]"
+                  />
                 </div>
 
-              </div>
+                {/* OFFER FLOAT */}
 
+                <div className="absolute left-4 top-5 z-20 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-xl backdrop-blur-md sm:left-7 sm:top-8">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#171614] text-[#e1bd68]">
+                      <Sparkles size={17} />
+                    </div>
+
+                    <div>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400">
+                        Today only
+                      </p>
+                      <p className="text-xs font-extrabold text-gray-900">
+                        Special Deals
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DELIVERY FLOAT */}
+
+                <div className="absolute bottom-5 right-4 z-20 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-xl backdrop-blur-md sm:bottom-9 sm:right-7">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff3d4] text-[#b17e24]">
+                      <Truck size={17} />
+                    </div>
+
+                    <div>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400">
+                        Delivery
+                      </p>
+                      <p className="text-xs font-extrabold text-gray-900">
+                        Fast & Reliable
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
-      {/* =====================================================
-          SERVICE STRIP
-      ====================================================== */}
+      {/* =========================================================
+          QUICK STATS
+      ========================================================= */}
 
-      <section className="border-b border-[#e8dfd0] bg-white">
-
-        <div className="mx-auto grid max-w-[1440px] grid-cols-2 divide-x divide-y divide-[#eee7dc] sm:grid-cols-4 sm:divide-y-0">
-
+      <section className="mx-auto max-w-[1300px] px-4 py-4 sm:px-6 lg:px-8">
+        <div className="grid overflow-hidden rounded-[24px] border border-[#e9e2d5] bg-white shadow-[0_8px_30px_rgba(70,50,15,0.045)] sm:grid-cols-2 lg:grid-cols-4">
           {[
-            {
-              icon: Truck,
-              title: "Free Delivery",
-              text: "On orders above ₹499",
-            },
-            {
-              icon: ShieldCheck,
-              title: "Secure Payment",
-              text: "100% secure checkout",
-            },
-            {
-              icon: RotateCcw,
-              title: "Easy Returns",
-              text: "Simple return process",
-            },
-            {
-              icon: Headphones,
-              title: "24/7 Support",
-              text: "We're here to help",
-            },
-          ].map((item) => {
-
-            const Icon = item.icon;
-
-            return (
-              <div
-                key={item.title}
-                className="flex items-center gap-3 px-4 py-5 sm:px-6 lg:px-8"
-              >
-
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#faf3e3] text-[#b8872d]">
-                  <Icon size={18} />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-[#332d25] sm:text-sm">
-                    {item.title}
-                  </p>
-
-                  <p className="mt-0.5 truncate text-[9px] text-[#91887b] sm:text-[10px]">
-                    {item.text}
-                  </p>
-                </div>
-
+            ["10K+", "Happy Customers"],
+            ["8K+", "Products"],
+            ["50+", "Trusted Brands"],
+            ["24/7", "Customer Support"],
+          ].map(([number, label], index) => (
+            <div
+              key={label}
+              className={`flex items-center justify-center gap-3 px-4 py-5 sm:py-6 ${
+                index !== 3
+                  ? "border-b border-[#eee8dc] lg:border-b-0 lg:border-r"
+                  : ""
+              }`}
+            >
+              <div className="text-2xl font-extrabold tracking-tight text-[#b17e24] sm:text-3xl">
+                {number}
               </div>
-            );
-          })}
 
+              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-500">
+                {label}
+              </div>
+            </div>
+          ))}
         </div>
-
       </section>
 
-      {/* =====================================================
+      {/* =========================================================
           CATEGORIES
-      ====================================================== */}
+      ========================================================= */}
 
       <section
         id="categories"
-        className="bg-[#faf8f3] py-12 sm:py-16 lg:py-20"
+        className="mx-auto max-w-[1300px] scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
       >
-
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-
-          <div className="mb-7 flex items-end justify-between">
-
-            <div>
-
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8872d]">
-                Explore Collections
-              </p>
-
-              <h2 className="text-2xl font-black tracking-tight text-[#29241e] sm:text-3xl">
-                Shop by Category
-              </h2>
-
-              <p className="mt-2 text-xs text-[#81786b] sm:text-sm">
-                Everything you need, all in one place.
-              </p>
-
+        <div className="flex items-end justify-between gap-5">
+          <div>
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b17e24] sm:text-xs">
+              <span className="h-px w-7 bg-[#c79a3b]" />
+              Explore Collections
             </div>
 
-            <Link
-              href="/products"
-              className="hidden items-center gap-1 text-xs font-bold text-[#b8872d] sm:flex"
-            >
-              View All
-              <ArrowRight size={14} />
-            </Link>
+            <h2 className="text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">
+              Shop by Category
+            </h2>
 
+            <p className="mt-2 max-w-xl text-sm text-gray-500">
+              Explore everything from everyday essentials to premium finds.
+            </p>
           </div>
 
-          {/* MOBILE SCROLL / DESKTOP GRID */}
-
-          <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible">
-
-            {categories.map((category) => (
-              <Link
-                key={category.slug}
-                href={`/categories/${category.slug}`}
-                className="group w-[145px] shrink-0 snap-start sm:w-auto"
-              >
-
-                <div className="relative aspect-square overflow-hidden rounded-2xl border border-[#e9dfd0] bg-white transition duration-300 group-hover:-translate-y-1 group-hover:border-[#d4b56b] group-hover:shadow-[0_15px_35px_rgba(70,50,20,0.10)]">
-
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    sizes="(max-width: 640px) 145px, 16vw"
-                    className="object-contain p-5 transition duration-500 group-hover:scale-105"
-                  />
-
-                  <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2 py-1 text-[8px] font-bold text-[#a47725] shadow-sm">
-                    Shop
-                  </span>
-
-                </div>
-
-                <div className="pt-3">
-
-                  <h3 className="text-xs font-bold text-[#342e27] sm:text-sm">
-                    {category.name}
-                  </h3>
-
-                  <p className="mt-1 text-[9px] text-[#968c7e] sm:text-[10px]">
-                    {category.count}
-                  </p>
-
-                </div>
-
-              </Link>
-            ))}
-
-          </div>
-
+          <Link
+            href="/auth/login"
+            className="hidden items-center gap-2 text-xs font-bold text-[#a87520] sm:flex"
+          >
+            View all
+            <ArrowRight size={15} />
+          </Link>
         </div>
 
-      </section>
-
-      {/* =====================================================
-          DEAL OF THE DAY
-      ====================================================== */}
-
-      <section
-        id="deals"
-        className="border-y border-[#e8dfd0] bg-white py-12 sm:py-16 lg:py-20"
-      >
-
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-
-          <div className="mb-7 flex items-end justify-between">
-
-            <div>
-
-              <div className="mb-2 flex items-center gap-2">
-                <Zap
-                  size={15}
-                  fill="currentColor"
-                  className="text-[#c79a3b]"
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+          {categories.map((category) => (
+            <Link
+              key={category.name}
+              href={category.href}
+              className="group overflow-hidden rounded-[22px] border border-[#ebe4d8] bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#dbc07e] hover:shadow-[0_18px_35px_rgba(73,53,17,0.1)]"
+            >
+              <div className="relative flex h-[135px] items-center justify-center bg-[#faf7ef] sm:h-[155px]">
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  width={240}
+                  height={180}
+                  className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-110"
                 />
 
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8872d]">
-                  Limited Time
+                <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[7px] font-bold uppercase tracking-wider text-[#b17e24] opacity-0 shadow-sm transition group-hover:opacity-100">
+                  Explore
                 </span>
               </div>
 
-              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-                Deal of the Day
+              <div className="p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="truncate text-sm font-bold text-gray-900">
+                    {category.name}
+                  </h3>
+
+                  <ChevronRight
+                    size={14}
+                    className="shrink-0 text-gray-300 transition group-hover:translate-x-1 group-hover:text-[#b17e24]"
+                  />
+                </div>
+
+                <p className="mt-1 text-[10px] font-medium text-gray-400">
+                  {category.products}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================
+          TRENDING PRODUCTS
+      ========================================================= */}
+
+      <section className="bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b17e24] sm:text-xs">
+                <Sparkles size={14} />
+                Trending now
+              </div>
+
+              <h2 className="text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">
+                Popular right now
               </h2>
 
-              <p className="mt-2 text-xs text-[#81786b] sm:text-sm">
-                Grab it before the deal disappears.
+              <p className="mt-2 text-sm text-gray-500">
+                Discover products shoppers are loving.
               </p>
-
             </div>
 
             <Link
-              href="/products?deal=true"
-              className="hidden items-center gap-1 text-xs font-bold text-[#b8872d] sm:flex"
+              href="/auth/login"
+              className="hidden items-center gap-2 text-xs font-bold text-[#a87520] sm:flex"
             >
-              View All Deals
-              <ArrowRight size={14} />
+              Shop all
+              <ArrowRight size={15} />
             </Link>
-
           </div>
 
-          <div className="grid overflow-hidden rounded-[24px] border border-[#e8dfd0] bg-[#f8f1e5] lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="mt-9 grid grid-cols-2 gap-4 md:grid-cols-4">
+            {[
+              {
+                name: "Premium Collection",
+                label: "Editor's Pick",
+              },
+              {
+                name: "Smart Essentials",
+                label: "Trending",
+              },
+              {
+                name: "Everyday Favorites",
+                label: "Popular",
+              },
+              {
+                name: "Premium Finds",
+                label: "Top Rated",
+              },
+            ].map((product) => (
+              <Link
+                key={product.name}
+                href="/auth/login"
+                className="group relative overflow-hidden rounded-[24px] border border-[#ebe5da] bg-[#faf8f3] p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(71,51,15,0.09)]"
+              >
+                <div className="relative flex h-[180px] items-center justify-center overflow-hidden rounded-[18px] bg-white sm:h-[220px]">
+                  <Image
+                    src="/hero-product.png"
+                    alt={product.name}
+                    width={350}
+                    height={350}
+                    className="h-full w-full object-contain p-5 transition duration-500 group-hover:scale-105"
+                  />
 
-            {/* DEAL INFO */}
+                  <span className="absolute left-3 top-3 rounded-full bg-[#171614] px-2.5 py-1 text-[8px] font-bold uppercase tracking-wider text-white">
+                    {product.label}
+                  </span>
 
-            <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
-
-              <span className="w-fit rounded-full bg-[#211d17] px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-white">
-                Flash Sale
-              </span>
-
-              <h3 className="mt-5 text-2xl font-black leading-tight sm:text-3xl">
-                Upgrade your everyday essentials.
-              </h3>
-
-              <p className="mt-3 max-w-[430px] text-xs leading-5 text-[#756c60] sm:text-sm">
-                Limited-time prices on products customers are loving right now.
-              </p>
-
-              <div className="mt-6 flex gap-2">
-
-                {[
-                  ["08", "HRS"],
-                  ["24", "MIN"],
-                  ["36", "SEC"],
-                ].map(([number, label]) => (
-                  <div
-                    key={label}
-                    className="flex h-14 w-14 flex-col items-center justify-center rounded-xl border border-[#dfcfb2] bg-white"
+                  <button
+                    type="button"
+                    aria-label="Add to wishlist"
+                    onClick={(e) => e.preventDefault()}
+                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm"
                   >
-                    <span className="text-sm font-black">
-                      {number}
+                    <Heart size={14} className="text-gray-500" />
+                  </button>
+                </div>
+
+                <div className="px-1 pb-1 pt-4">
+                  <div className="flex items-center gap-1">
+                    <Star
+                      size={11}
+                      fill="#c79a3b"
+                      className="text-[#c79a3b]"
+                    />
+                    <span className="text-[10px] font-bold">4.8</span>
+                  </div>
+
+                  <h3 className="mt-1.5 truncate text-sm font-bold text-gray-900">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-400">
+                      Explore collection
                     </span>
 
-                    <span className="text-[7px] font-bold text-[#988c7b]">
-                      {label}
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fff3d5] text-[#b17e24] transition group-hover:bg-[#c79a3b] group-hover:text-white">
+                      <ArrowUpRight size={14} />
                     </span>
                   </div>
-                ))}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
+      {/* =========================================================
+          DEALS
+      ========================================================= */}
+
+      <section
+        id="deals"
+        className="scroll-mt-24 bg-[#fcfaf6] py-16 sm:py-20"
+      >
+        <div className="mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b17e24] sm:text-xs">
+                <Zap size={14} />
+                Limited offers
               </div>
 
-              <Link
-                href="/products?deal=true"
-                className="mt-6 flex h-11 w-fit items-center gap-2 rounded-xl bg-[#c79a3b] px-6 text-xs font-bold text-white transition hover:bg-[#b8872d]"
-              >
-                Shop Flash Deals
-                <ArrowRight size={14} />
-              </Link>
-
+              <h2 className="text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">
+                Deals worth checking
+              </h2>
             </div>
 
-            {/* DEAL PRODUCTS */}
+            <Link
+              href="/auth/login"
+              className="hidden items-center gap-2 text-xs font-bold text-[#a87520] sm:flex"
+            >
+              See all deals
+              <ArrowRight size={15} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-3 gap-2 p-3 sm:gap-4 sm:p-5">
+          <div className="mt-9 grid gap-4 lg:grid-cols-3">
+            {deals.map((deal, index) => (
+              <Link
+                href="/login"
+                key={deal.title}
+                className={`group relative min-h-[245px] overflow-hidden rounded-[28px] p-7 transition duration-300 hover:-translate-y-1 ${
+                  index === 1
+                    ? "bg-[#efe1bf]"
+                    : index === 2
+                    ? "bg-[#ebe7de]"
+                    : "bg-[#e9dfc7]"
+                }`}
+              >
+                <div className="absolute -bottom-20 -right-12 h-52 w-52 rounded-full border-[35px] border-white/25 transition duration-500 group-hover:scale-110" />
 
-              {deals.map((deal) => (
-                <Link
-                  key={deal.name}
-                  href="/dashboard/products"
-                  className="group overflow-hidden rounded-2xl border border-[#e6dac6] bg-white p-2.5 transition hover:-translate-y-1 hover:shadow-lg sm:p-4"
-                >
+                <div className="relative z-10">
+                  <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] text-[#9d7127]">
+                    Limited Time
+                  </span>
 
-                  <div className="relative aspect-square rounded-xl bg-[#faf8f3]">
+                  <h3 className="mt-6 text-2xl font-extrabold tracking-[-0.035em]">
+                    {deal.title}
+                  </h3>
 
-                    <Image
-                      src={deal.image}
-                      alt={deal.name}
-                      fill
-                      className="object-contain p-2 transition duration-500 group-hover:scale-105 sm:p-4"
-                    />
+                  <p className="mt-2 max-w-[240px] text-sm leading-6 text-gray-600">
+                    {deal.text}
+                  </p>
 
-                    <span className="absolute left-1.5 top-1.5 rounded-full bg-[#211d17] px-1.5 py-1 text-[7px] font-bold text-white sm:left-2 sm:top-2 sm:text-[8px]">
+                  <div className="mt-5 flex items-center justify-between">
+                    <span className="text-sm font-extrabold text-[#a87520]">
                       {deal.discount}
                     </span>
 
-                  </div>
-
-                  <p className="mt-2 line-clamp-1 text-[9px] font-bold sm:text-xs">
-                    {deal.name}
-                  </p>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-
-                    <span className="text-xs font-black sm:text-sm">
-                      {deal.price}
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#171614] text-white transition group-hover:rotate-45">
+                      <ArrowUpRight size={16} />
                     </span>
-
-                    <span className="text-[8px] text-[#a29a8e] line-through sm:text-[10px]">
-                      {deal.oldPrice}
-                    </span>
-
                   </div>
-
-                </Link>
-              ))}
-
-            </div>
-
+                </div>
+              </Link>
+            ))}
           </div>
-
         </div>
-
       </section>
 
-      {/* =====================================================
-          FEATURED PRODUCTS
-      ====================================================== */}
+      {/* =========================================================
+          BIG PROMO
+      ========================================================= */}
 
-      <section className="bg-[#faf8f3] py-12 sm:py-16 lg:py-20">
+      <section className="mx-auto max-w-[1300px] px-4 py-2 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-[30px] bg-[#171614] px-6 py-10 sm:px-10 sm:py-12 lg:px-14">
+          <div className="absolute right-[-80px] top-[-120px] h-[350px] w-[350px] rounded-full border-[55px] border-[#c79a3b]/10" />
+          <div className="absolute bottom-[-150px] left-[40%] h-[350px] w-[350px] rounded-full bg-[#c79a3b]/5 blur-3xl" />
 
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-
-          <div className="mb-7 flex items-end justify-between">
-
+          <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1fr_auto]">
             <div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.17em] text-[#dfbc6d]">
+                <Sparkles size={14} />
+                PrimeCart Exclusive
+              </div>
 
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8872d]">
-                Handpicked For You
-              </p>
-
-              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-                Featured Products
+              <h2 className="mt-4 max-w-2xl text-3xl font-extrabold leading-tight tracking-[-0.04em] text-white sm:text-4xl lg:text-5xl">
+                Your wishlist deserves
+                <span className="text-[#d7b360]"> better prices.</span>
               </h2>
 
-              <p className="mt-2 text-xs text-[#81786b] sm:text-sm">
-                Popular picks worth checking out.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-gray-400 sm:text-base">
+                Find quality products, discover special offers and make every
+                purchase feel worth it.
               </p>
-
             </div>
 
             <Link
-              href="/dashboard/products"
-              className="hidden items-center gap-1 text-xs font-bold text-[#b8872d] sm:flex"
+              href="/auth/login"
+              className="group flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c79a3b] px-6 text-sm font-bold text-white transition hover:bg-[#d4ac50]"
             >
-              View All Products
-              <ArrowRight size={14} />
+              Explore PrimeCart
+              <ArrowRight
+                size={17}
+                className="transition group-hover:translate-x-1"
+              />
             </Link>
-
           </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
-
-            {products.map((product) => {
-
-              const isWishlisted = wishlist.includes(product.id);
-
-              return (
-                <article
-                  key={product.id}
-                  className="group overflow-hidden rounded-2xl border border-[#e8dfd0] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#d6b66d] hover:shadow-[0_18px_45px_rgba(70,50,20,0.10)]"
-                >
-
-                  {/* IMAGE */}
-
-                  <div className="relative aspect-square overflow-hidden bg-[#faf8f3]">
-
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-contain p-4 transition duration-500 group-hover:scale-105 sm:p-6"
-                    />
-
-                    <span className="absolute left-2.5 top-2.5 rounded-full bg-[#211d17] px-2 py-1 text-[7px] font-bold text-white sm:text-[8px]">
-                      {product.badge}
-                    </span>
-
-                    <button
-                      onClick={() => toggleWishlist(product.id)}
-                      className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border bg-white/90 transition ${
-                        isWishlisted
-                          ? "border-[#d3af5e] text-[#b8872d]"
-                          : "border-[#e8dfd0] text-[#6f675c]"
-                      }`}
-                      aria-label="Add to wishlist"
-                    >
-                      <Heart
-                        size={14}
-                        fill={isWishlisted ? "currentColor" : "none"}
-                      />
-                    </button>
-
-                  </div>
-
-                  {/* CONTENT */}
-
-                  <div className="p-3 sm:p-4">
-
-                    <p className="text-[8px] font-medium uppercase tracking-wide text-[#a39176] sm:text-[9px]">
-                      {product.category}
-                    </p>
-
-                    <h3 className="mt-1 line-clamp-1 text-xs font-bold text-[#302a23] sm:text-sm">
-                      {product.name}
-                    </h3>
-
-                    <div className="mt-2 flex items-center gap-1.5">
-
-                      <span className="flex items-center gap-0.5 rounded bg-[#f5ead4] px-1.5 py-0.5 text-[8px] font-bold text-[#986d21] sm:text-[9px]">
-                        {product.rating}
-                        <Star size={8} fill="currentColor" />
-                      </span>
-
-                      <span className="text-[8px] text-[#9c9489] sm:text-[9px]">
-                        {product.reviews}
-                      </span>
-
-                    </div>
-
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-
-                      <span className="text-sm font-black sm:text-lg">
-                        {product.price}
-                      </span>
-
-                      <span className="text-[8px] text-[#a39a8e] line-through sm:text-[10px]">
-                        {product.oldPrice}
-                      </span>
-
-                    </div>
-
-                    <p className="mt-1 text-[8px] font-bold text-[#4e8b4c] sm:text-[9px]">
-                      {product.discount}
-                    </p>
-
-                    <Link
-                      href={`/products/${product.slug}`}
-                      className="mt-3 flex h-9 items-center justify-center gap-1 rounded-lg border border-[#dcc9a4] text-[9px] font-bold text-[#9f7629] transition hover:bg-[#faf3e4] sm:h-10 sm:text-[10px]"
-                    >
-                      View Product
-                      <ArrowRight size={11} />
-                    </Link>
-
-                  </div>
-
-                </article>
-              );
-
-            })}
-
-          </div>
-
         </div>
-
       </section>
 
-      {/* =====================================================
-          PROMOTIONAL BANNERS
-      ====================================================== */}
+      {/* =========================================================
+          LIFESTYLE
+      ========================================================= */}
 
-      <section className="bg-white py-12 sm:py-16">
-
-        <div className="mx-auto grid max-w-[1440px] gap-4 px-4 sm:px-6 md:grid-cols-2 lg:px-8">
-
-          {/* BANNER 1 */}
-
-          <Link
-            href="/products?deal=true"
-            className="group relative min-h-[260px] overflow-hidden rounded-[24px] bg-[#211d17] p-7 sm:p-9"
-          >
-
-            <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[#c79a3b]/20 blur-2xl" />
-
-            <div className="relative z-10 max-w-[290px]">
-
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#d7b65e]">
-                Limited Offer
-              </span>
-
-              <h3 className="mt-4 text-2xl font-black leading-tight text-white sm:text-3xl">
-                Big savings.
-                <br />
-                Small prices.
-              </h3>
-
-              <p className="mt-3 text-xs leading-5 text-[#c6bcae]">
-                Discover selected products with special prices for a limited
-                time.
-              </p>
-
-              <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[#e1c477]">
-                Shop Deals
-                <ArrowRight
-                  size={14}
-                  className="transition group-hover:translate-x-1"
-                />
-              </span>
-
-            </div>
-
-          </Link>
-
-          {/* BANNER 2 */}
-
-          <Link
-            href="/dashboard/prime-match"
-            className="group relative min-h-[260px] overflow-hidden rounded-[24px] border border-[#e6dac7] bg-[#f7efe1] p-7 sm:p-9"
-          >
-
-            <div className="absolute -right-10 -bottom-20 h-60 w-60 rounded-full bg-[#d4af37]/10 blur-2xl" />
-
-            <div className="relative z-10 max-w-[310px]">
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#b8872d] shadow-sm">
-                <Sparkles size={19} />
-              </div>
-
-              <h3 className="mt-5 text-2xl font-black leading-tight text-[#29231c] sm:text-3xl">
-                Not sure what to buy?
-              </h3>
-
-              <p className="mt-3 text-xs leading-5 text-[#766d60]">
-                Let PrimeMatch help you discover products based on your needs,
-                preferences and budget.
-              </p>
-
-              <span className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-[#a27624]">
-                Try PrimeMatch
-                <ArrowRight
-                  size={14}
-                  className="transition group-hover:translate-x-1"
-                />
-              </span>
-
-            </div>
-
-          </Link>
-
-        </div>
-
-      </section>
-
-      {/* =====================================================
-          SMART SHOPPING
-      ====================================================== */}
-
-      <section className="bg-[#faf8f3] py-12 sm:py-16">
-
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-
-          <div className="mb-8 text-center">
-
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b8872d]">
-              The PrimeCart Difference
-            </p>
-
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
-              More Than Just Shopping
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-[620px] text-xs leading-5 text-[#81786b] sm:text-sm">
-              Smart tools that make choosing, planning and shopping easier.
-            </p>
-
+      <section className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <div className="text-center">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b17e24] sm:text-xs">
+            Curated for you
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">
+            Shop by lifestyle
+          </h2>
 
-            {[
-              {
-                icon: Sparkles,
-                title: "PrimeMatch",
-                text: "Find products that fit your needs.",
-                href: "/dashboard/prime-match",
-              },
-              {
-                icon: Tag,
-                title: "Budget Builder",
-                text: "Plan your shopping within your budget.",
-                href: "/dashboard/budget-builder",
-              },
-              {
-                icon: Gift,
-                title: "Build My Setup",
-                text: "Create complete product setups.",
-                href: "/dashboard/setup-builder",
-              },
-              {
-                icon: Star,
-                title: "PrimePoints",
-                text: "Earn rewards while you shop.",
-                href: "/dashboard/prime-points",
-              },
-            ].map((item) => {
-
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="group flex items-center gap-4 rounded-2xl border border-[#e8dfd0] bg-white p-4 transition hover:-translate-y-1 hover:border-[#d6b66d] hover:shadow-lg sm:p-5"
-                >
-
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#faf1dc] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white">
-                    <Icon size={19} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-
-                    <h3 className="text-sm font-black">
-                      {item.title}
-                    </h3>
-
-                    <p className="mt-1 text-[10px] leading-4 text-[#847b6e]">
-                      {item.text}
-                    </p>
-
-                  </div>
-
-                  <ArrowRight
-                    size={15}
-                    className="shrink-0 text-[#b8872d] transition group-hover:translate-x-1"
-                  />
-
-                </Link>
-              );
-
-            })}
-
-          </div>
-
+          <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500">
+            Explore collections built around the way you live, work and play.
+          </p>
         </div>
 
-      </section>
-
-      {/* =====================================================
-          NEWSLETTER
-      ====================================================== */}
-
-      <section className="bg-white px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-
-        <div className="mx-auto max-w-[1440px]">
-
-          <div className="rounded-[24px] border border-[#e6dac7] bg-[#f7f0e4] px-5 py-9 text-center sm:px-10">
-
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#b8872d] shadow-sm">
-              <Headphones size={20} />
-            </div>
-
-            <h2 className="mt-4 text-xl font-black sm:text-2xl">
-              Stay in the PrimeCart loop
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-[520px] text-xs leading-5 text-[#81786b]">
-              Get notified about new arrivals, exclusive deals and special
-              offers.
-            </p>
-
-            <div className="mx-auto mt-5 flex max-w-[470px] rounded-xl border border-[#ddd0b9] bg-white p-1.5">
-
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="min-w-0 flex-1 bg-transparent px-3 text-xs outline-none placeholder:text-[#aaa195]"
+        <div className="mt-9 grid gap-4 md:grid-cols-3">
+          {lifestyle.map((item, index) => (
+            <Link
+              href="/auth/login"
+              key={item.title}
+              className="group relative min-h-[250px] overflow-hidden rounded-[28px] border border-[#e8e0d1] bg-white p-7 transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(69,50,14,0.08)]"
+            >
+              <div
+                className={`absolute bottom-[-80px] right-[-70px] h-64 w-64 rounded-full ${
+                  index === 0
+                    ? "bg-[#eee1c1]"
+                    : index === 1
+                    ? "bg-[#e5dfd1]"
+                    : "bg-[#f0dfb7]"
+                } transition duration-500 group-hover:scale-110`}
               />
 
-              <button className="rounded-lg bg-[#c79a3b] px-4 py-2.5 text-[10px] font-bold text-white transition hover:bg-[#b8872d] sm:px-6">
-                Subscribe
-              </button>
+              <div className="relative z-10">
+                <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#b17e24]">
+                  PrimeCart Collection
+                </span>
 
-            </div>
+                <h3 className="mt-5 text-2xl font-extrabold tracking-[-0.035em]">
+                  {item.title}
+                </h3>
 
-          </div>
+                <p className="mt-2 max-w-[220px] text-sm leading-6 text-gray-500">
+                  {item.text}
+                </p>
 
+                <div className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-[#a87520]">
+                  {item.tag}
+                  <ArrowRight
+                    size={14}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-
       </section>
 
-      {/* =====================================================
+      {/* =========================================================
+          WHY PRIMECART
+      ========================================================= */}
+
+      <section
+        id="why"
+        className="scroll-mt-24 bg-white py-16 sm:py-20"
+      >
+        <div className="mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b17e24] sm:text-xs">
+                <BadgeCheck size={14} />
+                Why PrimeCart
+              </div>
+
+              <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.045em] sm:text-4xl lg:text-5xl">
+                A better way to
+                <span className="text-[#c79a3b]"> shop online.</span>
+              </h2>
+
+              <p className="mt-4 max-w-lg text-sm leading-7 text-gray-500 sm:text-base">
+                Everything you need for a smooth shopping experience — from
+                discovery and deals to secure checkout and reliable delivery.
+              </p>
+
+              <Link
+                href="/auth/login"
+                className="group mt-7 inline-flex items-center gap-2 rounded-xl border border-[#ddd6c9] px-5 py-3 text-sm font-bold transition hover:border-[#c79a3b] hover:text-[#b17e24]"
+              >
+                Discover PrimeCart
+                <ArrowRight
+                  size={16}
+                  className="transition group-hover:translate-x-1"
+                />
+              </Link>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {benefits.map((benefit) => {
+                const Icon = benefit.icon;
+
+                return (
+                  <div
+                    key={benefit.title}
+                    className="group rounded-[24px] border border-[#ebe5da] bg-[#fcfaf6] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#dcc184] hover:bg-white hover:shadow-[0_15px_30px_rgba(72,52,15,0.07)]"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff3d6] text-[#b17e24] transition group-hover:scale-105">
+                      <Icon size={20} />
+                    </div>
+
+                    <h3 className="mt-5 text-sm font-extrabold">
+                      {benefit.title}
+                    </h3>
+
+                    <p className="mt-2 text-xs leading-6 text-gray-500">
+                      {benefit.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          NEWSLETTER
+      ========================================================= */}
+
+      <section className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-[30px] bg-[#f0e4c7] px-6 py-9 sm:px-10 sm:py-11 lg:px-14">
+          <div className="absolute right-[-80px] top-[-120px] h-72 w-72 rounded-full bg-white/30 blur-3xl" />
+
+          <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1fr_0.9fr]">
+            <div>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.17em] text-[#a87520]">
+                <Mail size={14} />
+                Stay in the loop
+              </div>
+
+              <h2 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">
+                Get the best deals before everyone else.
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">
+                Subscribe for new arrivals, exclusive offers and PrimeCart
+                updates.
+              </p>
+            </div>
+
+            <div>
+              {subscribed ? (
+                <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-white/80 px-5 py-4 text-sm font-bold text-green-700">
+                  <BadgeCheck size={20} />
+                  You're subscribed!
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleSubscribe}
+                  className="flex flex-col gap-2 rounded-2xl bg-white/70 p-2 sm:flex-row"
+                >
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email address"
+                    className="h-12 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none placeholder:text-gray-400"
+                  />
+
+                  <button
+                    type="submit"
+                    className="h-12 rounded-xl bg-[#171614] px-6 text-sm font-bold text-white transition hover:bg-[#2c2925]"
+                  >
+                    Subscribe
+                  </button>
+                </form>
+              )}
+
+              <p className="mt-2 px-1 text-[9px] text-gray-500">
+                No spam. Unsubscribe anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
           FOOTER
-      ====================================================== */}
+      ========================================================= */}
 
-      <footer className="border-t border-[#e8dfd0] bg-[#fffdf9] pb-24 sm:pb-0">
-
-        <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-
-          <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-
+      <footer className="border-t border-[#e9e2d7] bg-white">
+        <div className="mx-auto max-w-[1300px] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1fr]">
             {/* BRAND */}
 
             <div>
-
-              <Link href="/" className="flex items-center gap-2">
-
+              <Link href="/" className="flex w-fit items-center gap-3">
                 <Image
                   src="/logo.png"
                   alt="PrimeCart"
-                  width={48}
-                  height={48}
-                  className="h-11 w-11 object-contain"
+                  width={52}
+                  height={52}
+                  className="object-contain"
                 />
 
                 <div>
-
-                  <h2 className="text-xl font-bold">
+                  <h2 className="text-2xl font-extrabold tracking-[-0.04em]">
                     Prime<span className="text-[#c79a3b]">Cart</span>
                   </h2>
 
-                  <p className="text-[8px] uppercase tracking-[0.16em] text-[#978d7e]">
+                  <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400">
                     Premium Shopping
                   </p>
-
                 </div>
-
               </Link>
 
-              <p className="mt-4 max-w-[330px] text-xs leading-5 text-[#81786b]">
-                Your smarter destination for quality products, great prices and
-                a better shopping experience.
+              <p className="mt-5 max-w-sm text-sm leading-7 text-gray-500">
+                Your destination for quality products, better prices and a
+                shopping experience made around you.
               </p>
 
+              <div className="mt-5 flex gap-2">
+                {[Instagram, Facebook, Twitter].map((Icon, index) => (
+                  <a
+                    key={index}
+                    href="#"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e8e1d5] text-gray-500 transition hover:border-[#c79a3b] hover:bg-[#fff9ed] hover:text-[#b17e24]"
+                  >
+                    <Icon size={15} />
+                  </a>
+                ))}
+              </div>
             </div>
 
             {/* SHOP */}
 
             <div>
+              <h3 className="text-sm font-extrabold">Shop</h3>
 
-              <h3 className="text-sm font-black">
-                Shop
-              </h3>
-
-              <div className="mt-4 flex flex-col gap-3 text-xs text-[#766e62]">
-
-                <Link
-                  href="/dashboard/products"
-                  className="hover:text-[#b8872d]"
-                >
-                  All Products
-                </Link>
-
-                <Link
-                  href="#categories"
-                  className="hover:text-[#b8872d]"
-                >
+              <div className="mt-5 flex flex-col gap-3 text-sm text-gray-500">
+                <Link href="#categories" className="hover:text-[#b17e24]">
                   Categories
                 </Link>
 
-                <Link
-                  href="/products?deal=true"
-                  className="hover:text-[#b8872d]"
-                >
+                <Link href="#deals" className="hover:text-[#b17e24]">
                   Deals
                 </Link>
 
-                <Link
-                  href="/dashboard/wishlist"
-                  className="hover:text-[#b8872d]"
-                >
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
+                  Products
+                </Link>
+
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
                   Wishlist
                 </Link>
-
               </div>
-
-            </div>
-
-            {/* PRIME CART */}
-
-            <div>
-
-              <h3 className="text-sm font-black">
-                PrimeCart
-              </h3>
-
-              <div className="mt-4 flex flex-col gap-3 text-xs text-[#766e62]">
-
-                <Link
-                  href="/dashboard/prime-match"
-                  className="hover:text-[#b8872d]"
-                >
-                  PrimeMatch
-                </Link>
-
-                <Link
-                  href="/dashboard/budget-builder"
-                  className="hover:text-[#b8872d]"
-                >
-                  Budget Builder
-                </Link>
-
-                <Link
-                  href="/dashboard/setup-builder"
-                  className="hover:text-[#b8872d]"
-                >
-                  Build My Setup
-                </Link>
-
-                <Link
-                  href="/dashboard/prime-points"
-                  className="hover:text-[#b8872d]"
-                >
-                  PrimePoints
-                </Link>
-
-              </div>
-
             </div>
 
             {/* SUPPORT */}
 
             <div>
+              <h3 className="text-sm font-extrabold">Support</h3>
 
-              <h3 className="text-sm font-black">
-                Support
-              </h3>
-
-              <div className="mt-4 flex flex-col gap-3 text-xs text-[#766e62]">
-
-                <Link
-                  href="/auth/login"
-                  className="hover:text-[#b8872d]"
-                >
+              <div className="mt-5 flex flex-col gap-3 text-sm text-gray-500">
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
                   Contact Us
                 </Link>
 
-                <Link
-                  href="/auth/login"
-                  className="hover:text-[#b8872d]"
-                >
-                  Shipping Policy
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
+                  Shipping
                 </Link>
 
-                <Link
-                  href="/auth/login"
-                  className="hover:text-[#b8872d]"
-                >
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
                   Returns
                 </Link>
 
-                <Link
-                  href="/auth/login"
-                  className="hover:text-[#b8872d]"
-                >
-                  Privacy Policy
+                <Link href="/auth/login" className="hover:text-[#b17e24]">
+                  Privacy
                 </Link>
-
               </div>
-
             </div>
 
+            {/* SERVICE */}
+
+            <div>
+              <h3 className="text-sm font-extrabold">PrimeCart Promise</h3>
+
+              <div className="mt-5 space-y-4">
+                <div className="flex gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fff4dc] text-[#b17e24]">
+                    <ShieldCheck size={16} />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold">Secure Shopping</p>
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      Protected checkout
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fff4dc] text-[#b17e24]">
+                    <Headphones size={16} />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold">24/7 Support</p>
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      We're here to help
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-10 border-t border-[#e8dfd0] pt-6 text-center text-[10px] text-[#938a7e] sm:flex sm:items-center sm:justify-between sm:text-left">
+          <div className="mt-10 flex flex-col gap-3 border-t border-[#eee8dc] pt-6 text-[10px] text-gray-400 sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2026 PrimeCart. All Rights Reserved.</p>
 
-            <p>
-              © {new Date().getFullYear()} PrimeCart. All rights reserved.
-            </p>
-
-            <p className="mt-2 sm:mt-0">
-              Premium shopping. Smarter choices.
-            </p>
-
+            <div className="flex flex-wrap gap-4">
+              <span>Secure Payments</span>
+              <span>•</span>
+              <span>Easy Returns</span>
+              <span>•</span>
+              <span>Quality Products</span>
+            </div>
           </div>
-
         </div>
-
       </footer>
 
-      {/* =====================================================
+      {/* =========================================================
           MOBILE BOTTOM NAV
-      ====================================================== */}
+      ========================================================= */}
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e4dac9] bg-white/95 px-2 pb-[max(7px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:hidden">
+      <div className="fixed bottom-3 left-3 right-3 z-50 flex items-center justify-around rounded-2xl border border-[#e2d8c4] bg-white/95 p-1.5 shadow-[0_15px_40px_rgba(45,33,13,0.15)] backdrop-blur-xl md:hidden">
+        <Link
+          href="#home"
+          className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[#b17e24]"
+        >
+          <ShoppingBag size={17} />
+          <span className="text-[8px] font-bold">Home</span>
+        </Link>
 
-        <div className="grid grid-cols-5">
+        <Link
+          href="#categories"
+          className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-gray-500"
+        >
+          <Search size={17} />
+          <span className="text-[8px] font-bold">Explore</span>
+        </Link>
 
-          <Link
-            href="/"
-            className="flex flex-col items-center gap-1 py-1 text-[#b8872d]"
-          >
-            <Search size={18} />
-            <span className="text-[8px] font-bold">
-              Home
-            </span>
-          </Link>
+        <Link
+          href="/auth/login"
+          className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-gray-500"
+        >
+          <Heart size={17} />
+          <span className="text-[8px] font-bold">Wishlist</span>
+        </Link>
 
-          <Link
-            href="/dashboard/products"
-            className="flex flex-col items-center gap-1 py-1 text-[#756d62]"
-          >
-            <ShoppingCart size={18} />
-            <span className="text-[8px] font-medium">
-              Shop
-            </span>
-          </Link>
+        <Link
+          href="/auth/login"
+          className="relative flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-gray-500"
+        >
+          <ShoppingCart size={17} />
+          <span className="text-[8px] font-bold">Cart</span>
+          <span className="absolute right-3 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#c79a3b] px-1 text-[7px] font-bold text-white">
+            0
+          </span>
+        </Link>
 
-          <Link
-            href="/products?deal=true"
-            className="flex flex-col items-center gap-1 py-1 text-[#756d62]"
-          >
-            <Zap size={18} />
-            <span className="text-[8px] font-medium">
-              Deals
-            </span>
-          </Link>
-
-          <Link
-            href="/dashboard/wishlist"
-            className="flex flex-col items-center gap-1 py-1 text-[#756d62]"
-          >
-            <Heart size={18} />
-            <span className="text-[8px] font-medium">
-              Wishlist
-            </span>
-          </Link>
-
-          <Link
-            href="/auth/login"
-            className="flex flex-col items-center gap-1 py-1 text-[#756d62]"
-          >
-            <User size={18} />
-            <span className="text-[8px] font-medium">
-              Account
-            </span>
-          </Link>
-
-        </div>
-
+        <Link
+          href="/auth/login"
+          className="flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-gray-500"
+        >
+          <UserRound size={17} />
+          <span className="text-[8px] font-bold">Account</span>
+        </Link>
       </div>
 
+      {/* Bottom spacing for mobile fixed nav */}
+
+      <div className="h-20 md:hidden" />
     </main>
   );
 }
