@@ -1504,6 +1504,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          </section>
 
         {/* CATEGORIES */}
         <section className="category-section">
@@ -2243,9 +2244,9 @@ export default function DashboardPage() {
         }
 
         .prime-logo {
-          width: 178px;
+          width: 110px;
           max-width: 100%;
-          height: auto;
+          height: 38px;
           object-fit: contain;
           display: block;
         }
