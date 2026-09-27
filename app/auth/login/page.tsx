@@ -1,5 +1,3 @@
-// app/auth/login/page.tsx
-
 "use client";
 
 import Image from "next/image";
@@ -16,6 +14,7 @@ import {
   Mail,
   ShieldCheck,
   Sparkles,
+  Star,
   Truck,
   Zap,
 } from "lucide-react";
@@ -31,6 +30,10 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  /* =========================================================
+     EXISTING REMEMBER-ME LOGIC
+  ========================================================= */
+
   useEffect(() => {
     try {
       const savedEmail = localStorage.getItem(
@@ -45,6 +48,10 @@ export default function LoginPage() {
       // Ignore localStorage errors
     }
   }, []);
+
+  /* =========================================================
+     EXISTING LOGIN LOGIC — KEPT INTACT
+  ========================================================= */
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -146,22 +153,25 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      {/* BACKGROUND */}
-      <div className="bg-orb orb-one" />
-      <div className="bg-orb orb-two" />
-      <div className="bg-grid" />
+      {/* =====================================================
+          DECORATIVE BACKGROUND
+      ===================================================== */}
 
-      <div className="login-shell">
-        {/* =====================================================
-            LEFT BRAND / EXPERIENCE PANEL
-        ===================================================== */}
+      <div className="background-grid" />
+      <div className="ambient ambient-top" />
+      <div className="ambient ambient-bottom" />
 
-        <section className="experience-panel">
-          <div className="experience-inner">
+      <div className="login-container">
+        {/* ===================================================
+            LEFT PREMIUM SHOWCASE
+        =================================================== */}
+
+        <section className="showcase">
+          <div className="showcase-inner">
             {/* BRAND */}
 
             <Link href="/" className="brand">
-              <div className="brand-mark">
+              <div className="brand-logo">
                 <Image
                   src="/logo.png"
                   alt="PrimeCart"
@@ -171,117 +181,147 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="brand-text">
+              <div className="brand-name">
                 Prime<span>Cart</span>
               </div>
             </Link>
 
-            {/* MAIN */}
+            {/* HERO COPY */}
 
-            <div className="experience-content">
-              <div className="premium-badge">
-                <span className="badge-dot" />
+            <div className="showcase-copy">
+              <div className="showcase-badge">
                 <Sparkles size={13} />
-                <span>Smarter shopping starts here</span>
+                <span>THE SMARTER WAY TO SHOP</span>
               </div>
 
               <h1>
-                Shop smarter.
+                Everything you need.
                 <br />
-                <span>Live better.</span>
+                <span>All in one place.</span>
               </h1>
 
-              <p className="experience-description">
-                Your everyday shopping destination for
-                carefully selected products, exciting deals
-                and a simpler way to discover what you need.
+              <p>
+                Discover products you love, find smarter
+                deals and enjoy a shopping experience designed
+                around you.
               </p>
+            </div>
 
-              {/* FEATURE CARDS */}
+            {/* =================================================
+                PREMIUM PRODUCT VISUAL
+            ================================================= */}
 
-              <div className="feature-cards">
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <Zap size={17} />
-                  </div>
+            <div className="product-stage">
+              {/* Decorative circles */}
 
-                  <div>
-                    <h3>Smart discovery</h3>
-                    <p>
-                      Find products that match your needs.
-                    </p>
-                  </div>
+              <div className="stage-glow" />
+              <div className="stage-ring ring-one" />
+              <div className="stage-ring ring-two" />
 
-                  <div className="feature-arrow">
-                    <ArrowRight size={14} />
-                  </div>
+              {/* Main product card */}
+
+              <div className="product-main-card">
+                <div className="product-image-wrap">
+                  <Image
+                    src="/hero-product.png"
+                    alt="PrimeCart featured products"
+                    fill
+                    sizes="(max-width: 1050px) 70vw, 420px"
+                    className="product-image"
+                    priority
+                  />
                 </div>
 
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <Truck size={17} />
-                  </div>
-
+                <div className="product-info">
                   <div>
-                    <h3>Easy shopping</h3>
-                    <p>
-                      A smooth experience from browse to buy.
-                    </p>
+                    <span>PRIMECART PICKS</span>
+                    <strong>Curated for you</strong>
                   </div>
 
-                  <div className="feature-arrow">
-                    <ArrowRight size={14} />
-                  </div>
-                </div>
-
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <ShieldCheck size={17} />
-                  </div>
-
-                  <div>
-                    <h3>Secure account</h3>
-                    <p>
-                      Your shopping experience stays protected.
-                    </p>
-                  </div>
-
-                  <div className="feature-arrow">
-                    <ArrowRight size={14} />
+                  <div className="product-rating">
+                    <Star
+                      size={11}
+                      fill="currentColor"
+                    />
+                    <span>4.8</span>
                   </div>
                 </div>
               </div>
 
-              {/* TRUST STATS */}
+              {/* Floating mini card */}
 
-              <div className="trust-row">
-                <div className="trust-item">
-                  <strong>10K+</strong>
-                  <span>Products</span>
+              <div className="floating-card floating-deal">
+                <div className="floating-icon">
+                  <Zap size={15} />
                 </div>
 
-                <div className="trust-separator" />
+                <div>
+                  <span>SMART DEAL</span>
+                  <strong>Great value</strong>
+                </div>
+              </div>
 
-                <div className="trust-item">
-                  <strong>24/7</strong>
-                  <span>Shopping</span>
+              {/* Floating secure card */}
+
+              <div className="floating-card floating-secure">
+                <div className="floating-icon secure">
+                  <ShieldCheck size={15} />
                 </div>
 
-                <div className="trust-separator" />
+                <div>
+                  <span>SHOP SECURE</span>
+                  <strong>Protected</strong>
+                </div>
+              </div>
+            </div>
 
-                <div className="trust-item">
-                  <strong>Easy</strong>
-                  <span>Returns</span>
+            {/* TRUST FEATURES */}
+
+            <div className="showcase-features">
+              <div className="showcase-feature">
+                <div className="feature-icon">
+                  <Zap size={16} />
+                </div>
+
+                <div>
+                  <strong>Smart deals</strong>
+                  <span>Value that makes sense</span>
+                </div>
+              </div>
+
+              <div className="feature-divider" />
+
+              <div className="showcase-feature">
+                <div className="feature-icon">
+                  <Truck size={16} />
+                </div>
+
+                <div>
+                  <strong>Easy shopping</strong>
+                  <span>Simple from start to finish</span>
+                </div>
+              </div>
+
+              <div className="feature-divider" />
+
+              <div className="showcase-feature">
+                <div className="feature-icon">
+                  <ShieldCheck size={16} />
+                </div>
+
+                <div>
+                  <strong>Secure experience</strong>
+                  <span>Shopping with confidence</span>
                 </div>
               </div>
             </div>
 
             {/* FOOTER */}
 
-            <div className="experience-footer">
+            <div className="showcase-footer">
               <span>© 2026 PrimeCart</span>
 
-              <div>
+              <div className="footer-links">
                 <span>Secure</span>
                 <i>•</i>
                 <span>Simple</span>
@@ -292,20 +332,19 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* =====================================================
-            LOGIN PANEL
-        ===================================================== */}
+        {/* ===================================================
+            RIGHT LOGIN
+        =================================================== */}
 
-        <section className="login-area">
+        <section className="login-section">
           <div className="login-card">
-            {/* TOP GOLD LINE */}
-            <div className="gold-line" />
+            <div className="card-top-line" />
 
             {/* MOBILE BRAND */}
 
             <div className="mobile-brand">
               <Link href="/" className="brand">
-                <div className="brand-mark">
+                <div className="brand-logo">
                   <Image
                     src="/logo.png"
                     alt="PrimeCart"
@@ -314,60 +353,75 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="brand-text">
+                <div className="brand-name">
                   Prime<span>Cart</span>
                 </div>
               </Link>
             </div>
 
-            {/* LOGIN HEADER */}
+            {/* LOGIN HEADING */}
 
-            <div className="login-header">
-              <div className="login-icon">
+            <div className="login-heading">
+              <div className="login-heading-icon">
                 <LockKeyhole size={20} />
               </div>
 
               <div>
-                <span className="overline">
+                <span className="heading-label">
                   PRIME CART ACCOUNT
                 </span>
 
                 <h2>Welcome back</h2>
 
                 <p>
-                  Sign in to continue to your account.
+                  Sign in to continue your shopping journey.
                 </p>
               </div>
             </div>
 
-            {/* ERROR */}
+            {/* =================================================
+                EXISTING ERROR — POLISHED UI
+            ================================================= */}
 
             {error && (
-              <div className="alert alert-error" role="alert">
-                <div className="alert-icon">
-                  <AlertCircle size={16} />
+              <div
+                className="status-message error"
+                role="alert"
+              >
+                <div className="status-icon">
+                  <AlertCircle size={17} />
                 </div>
 
-                <span>{error}</span>
+                <div className="status-content">
+                  <strong>Unable to sign in</strong>
+                  <span>{error}</span>
+                </div>
               </div>
             )}
 
-            {/* SUCCESS */}
+            {/* =================================================
+                EXISTING SUCCESS — POLISHED UI
+            ================================================= */}
 
             {success && (
               <div
-                className="alert alert-success"
+                className="status-message success"
                 role="status"
               >
-                <div className="alert-icon">
-                  <CheckCircle2 size={16} />
+                <div className="status-icon">
+                  <CheckCircle2 size={17} />
                 </div>
 
-                <span>{success}</span>
+                <div className="status-content">
+                  <strong>Welcome back!</strong>
+                  <span>{success}</span>
+                </div>
               </div>
             )}
 
-            {/* FORM */}
+            {/* =================================================
+                LOGIN FORM
+            ================================================= */}
 
             <form
               onSubmit={handleLogin}
@@ -375,13 +429,13 @@ export default function LoginPage() {
             >
               {/* EMAIL */}
 
-              <div className="form-field">
+              <div className="form-group">
                 <label htmlFor="email">
                   Email address
                 </label>
 
-                <div className="input-container">
-                  <div className="input-leading">
+                <div className="input-box">
+                  <div className="input-icon">
                     <Mail size={17} />
                   </div>
 
@@ -403,8 +457,8 @@ export default function LoginPage() {
 
               {/* PASSWORD */}
 
-              <div className="form-field">
-                <div className="password-label-row">
+              <div className="form-group">
+                <div className="password-header">
                   <label htmlFor="password">
                     Password
                   </label>
@@ -414,8 +468,8 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <div className="input-container">
-                  <div className="input-leading">
+                <div className="input-box password-box">
+                  <div className="input-icon">
                     <LockKeyhole size={17} />
                   </div>
 
@@ -435,9 +489,11 @@ export default function LoginPage() {
                     required
                   />
 
+                  {/* Refined touch-friendly eye button */}
+
                   <button
                     type="button"
-                    className="eye-button"
+                    className="password-toggle"
                     onClick={() =>
                       setShowPassword((value) => !value)
                     }
@@ -449,15 +505,15 @@ export default function LoginPage() {
                     }
                   >
                     {showPassword ? (
-                      <EyeOff size={17} />
+                      <EyeOff size={18} />
                     ) : (
-                      <Eye size={17} />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
               </div>
 
-              {/* REMEMBER */}
+              {/* REMEMBER ME */}
 
               <label className="remember-row">
                 <input
@@ -469,14 +525,14 @@ export default function LoginPage() {
                   disabled={loading}
                 />
 
-                <span className="fake-checkbox">
+                <span className="custom-checkbox">
                   <span>✓</span>
                 </span>
 
                 <span>Remember me</span>
               </label>
 
-              {/* LOGIN */}
+              {/* LOGIN BUTTON */}
 
               <button
                 type="submit"
@@ -488,14 +544,15 @@ export default function LoginPage() {
                     <>
                       <Loader2
                         size={18}
-                        className="loading-icon"
+                        className="loading-spinner"
                       />
                       <span>Signing in...</span>
                     </>
                   ) : (
                     <>
                       <span>Sign in to PrimeCart</span>
-                      <span className="button-icon">
+
+                      <span className="button-arrow">
                         <ArrowRight size={17} />
                       </span>
                     </>
@@ -506,16 +563,16 @@ export default function LoginPage() {
 
             {/* REGISTER */}
 
-            <div className="register-section">
+            <div className="register-area">
               <div className="register-divider">
-                <span>Don't have an account?</span>
+                <span>New to PrimeCart?</span>
               </div>
 
               <Link
                 href="/auth/register"
                 className="register-button"
               >
-                <span>Create your PrimeCart account</span>
+                <span>Create your account</span>
 
                 <span className="register-arrow">
                   <ArrowRight size={15} />
@@ -525,28 +582,27 @@ export default function LoginPage() {
 
             {/* SECURITY */}
 
-            <div className="security-box">
-              <div className="security-symbol">
+            <div className="security-panel">
+              <div className="security-icon">
                 <ShieldCheck size={16} />
               </div>
 
-              <div>
-                <strong>Secure & protected</strong>
+              <div className="security-copy">
+                <strong>Secure sign in</strong>
                 <span>
-                  Your account information is handled
-                  securely.
+                  Your account information is protected.
                 </span>
               </div>
 
-              <div className="verified-badge">
-                <CheckCircle2 size={13} />
-                Verified
+              <div className="secure-status">
+                <span />
+                Secure
               </div>
             </div>
 
-            {/* BENEFITS */}
+            {/* BOTTOM BENEFITS */}
 
-            <div className="bottom-benefits">
+            <div className="login-benefits">
               <span>
                 <CheckCircle2 size={12} />
                 Easy returns
@@ -565,6 +621,10 @@ export default function LoginPage() {
           </div>
         </section>
       </div>
+
+      {/* =====================================================
+          PREMIUM UI / CSS ONLY
+      ===================================================== */}
 
       <style jsx global>{`
         * {
@@ -595,18 +655,18 @@ export default function LoginPage() {
           position: relative;
           min-height: 100vh;
           min-height: 100dvh;
-          overflow: hidden;
+          overflow-x: hidden;
           color: #24211b;
           background:
             radial-gradient(
-              circle at 80% 5%,
-              rgba(212, 175, 55, 0.11),
+              circle at 82% 8%,
+              rgba(212, 175, 55, 0.12),
               transparent 24%
             ),
             radial-gradient(
-              circle at 5% 95%,
+              circle at 8% 90%,
               rgba(212, 175, 55, 0.07),
-              transparent 27%
+              transparent 26%
             ),
             #faf8f3;
           font-family:
@@ -623,66 +683,71 @@ export default function LoginPage() {
            BACKGROUND
         ===================================================== */
 
-        .bg-orb {
-          position: fixed;
-          z-index: 0;
-          border-radius: 999px;
-          pointer-events: none;
-          filter: blur(90px);
-        }
-
-        .orb-one {
-          top: -190px;
-          right: -120px;
-          width: 390px;
-          height: 390px;
-          background: rgba(212, 175, 55, 0.11);
-        }
-
-        .orb-two {
-          bottom: -220px;
-          left: -160px;
-          width: 430px;
-          height: 430px;
-          background: rgba(207, 165, 58, 0.08);
-        }
-
-        .bg-grid {
+        .background-grid {
           position: fixed;
           inset: 0;
           z-index: 0;
           pointer-events: none;
-          opacity: 0.3;
+          opacity: 0.4;
           background-image:
             linear-gradient(
-              rgba(170, 135, 53, 0.025) 1px,
+              rgba(184, 142, 44, 0.026) 1px,
               transparent 1px
             ),
             linear-gradient(
               90deg,
-              rgba(170, 135, 53, 0.025) 1px,
+              rgba(184, 142, 44, 0.026) 1px,
               transparent 1px
             );
-          background-size: 44px 44px;
+          background-size: 46px 46px;
+          mask-image: linear-gradient(
+            to bottom,
+            black,
+            transparent 92%
+          );
+        }
+
+        .ambient {
+          position: fixed;
+          z-index: 0;
+          border-radius: 999px;
+          pointer-events: none;
+          filter: blur(100px);
+        }
+
+        .ambient-top {
+          width: 370px;
+          height: 370px;
+          top: -220px;
+          right: -100px;
+          background: rgba(212, 175, 55, 0.12);
+        }
+
+        .ambient-bottom {
+          width: 400px;
+          height: 400px;
+          bottom: -250px;
+          left: -180px;
+          background: rgba(212, 175, 55, 0.07);
         }
 
         /* =====================================================
-           SHELL
+           MAIN LAYOUT
         ===================================================== */
 
-        .login-shell {
+        .login-container {
           position: relative;
-          z-index: 2;
-          width: min(1260px, calc(100% - 64px));
+          z-index: 1;
+          width: min(1280px, calc(100% - 64px));
           min-height: 100vh;
           min-height: 100dvh;
           margin: 0 auto;
-          padding: 30px 0;
+          padding: 32px 0;
           display: grid;
           grid-template-columns:
             minmax(0, 1fr)
-            minmax(410px, 480px);
-          gap: 75px;
+            minmax(410px, 475px);
+          gap: 68px;
           align-items: center;
         }
 
@@ -692,54 +757,54 @@ export default function LoginPage() {
 
         .brand {
           display: inline-flex;
-          width: fit-content;
           align-items: center;
           gap: 11px;
+          width: fit-content;
           color: #24211b;
           text-decoration: none;
         }
 
-        .brand-mark {
+        .brand-logo {
           width: 45px;
           height: 45px;
           display: grid;
           place-items: center;
           overflow: hidden;
-          border: 1px solid #e7decc;
+          border: 1px solid #e6decd;
           border-radius: 13px;
           background: #ffffff;
           box-shadow:
-            0 8px 25px rgba(63, 47, 17, 0.07);
+            0 8px 24px rgba(67, 50, 17, 0.07);
         }
 
-        .brand-mark img {
+        .brand-logo img {
           width: 100%;
           height: 100%;
           object-fit: contain;
         }
 
-        .brand-text {
+        .brand-name {
           font-size: 24px;
           line-height: 1;
           font-weight: 900;
           letter-spacing: -1px;
         }
 
-        .brand-text span {
+        .brand-name span {
           color: #c69624;
         }
 
         /* =====================================================
-           EXPERIENCE PANEL
+           SHOWCASE
         ===================================================== */
 
-        .experience-panel {
+        .showcase {
           min-height: 650px;
           display: flex;
           align-items: center;
         }
 
-        .experience-inner {
+        .showcase-inner {
           width: 100%;
           min-height: 610px;
           display: flex;
@@ -747,192 +812,341 @@ export default function LoginPage() {
           justify-content: space-between;
         }
 
-        .experience-content {
-          max-width: 640px;
+        .showcase-copy {
+          max-width: 620px;
+          margin-top: 22px;
         }
 
-        .premium-badge {
+        .showcase-badge {
           width: fit-content;
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          margin-bottom: 23px;
-          padding: 7px 12px 7px 9px;
-          border: 1px solid #eadfc8;
+          padding: 7px 12px 7px 10px;
+          margin-bottom: 19px;
+          border: 1px solid #e8ddc6;
           border-radius: 999px;
           background: rgba(255, 255, 255, 0.72);
-          color: #947126;
-          font-size: 10px;
-          font-weight: 800;
-          box-shadow:
-            0 8px 25px rgba(61, 45, 18, 0.035);
-        }
-
-        .badge-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #c69624;
-          box-shadow:
-            0 0 0 4px rgba(198, 150, 36, 0.09);
-        }
-
-        .experience-content h1 {
-          margin: 0;
-          color: #24211b;
-          font-size: clamp(48px, 5vw, 72px);
-          line-height: 0.98;
-          letter-spacing: -4.5px;
+          color: #957326;
+          font-size: 8px;
+          letter-spacing: 1.25px;
           font-weight: 900;
         }
 
-        .experience-content h1 span {
+        .showcase-copy h1 {
+          margin: 0;
+          color: #24211b;
+          font-size: clamp(46px, 5vw, 70px);
+          line-height: 0.98;
+          letter-spacing: -4px;
+          font-weight: 900;
+        }
+
+        .showcase-copy h1 span {
           color: #c69624;
         }
 
-        .experience-description {
-          max-width: 555px;
-          margin: 25px 0 29px;
-          color: #7e776c;
-          font-size: 14px;
+        .showcase-copy p {
+          max-width: 540px;
+          margin: 22px 0 0;
+          color: #7f786e;
+          font-size: 13px;
           line-height: 1.8;
         }
 
         /* =====================================================
-           FEATURE CARDS
+           PRODUCT STAGE
         ===================================================== */
 
-        .feature-cards {
-          display: grid;
-          gap: 9px;
-          width: min(580px, 100%);
-        }
-
-        .feature-card {
+        .product-stage {
           position: relative;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-height: 60px;
-          padding: 10px 12px;
-          border: 1px solid rgba(229, 221, 207, 0.7);
-          border-radius: 15px;
-          background: rgba(255, 255, 255, 0.58);
-          transition:
-            transform 0.22s ease,
-            border-color 0.22s ease,
-            background 0.22s ease,
-            box-shadow 0.22s ease;
+          width: min(620px, 100%);
+          height: 255px;
+          margin-top: 10px;
         }
 
-        .feature-card:hover {
-          transform: translateX(5px);
-          border-color: #e0c986;
-          background: rgba(255, 255, 255, 0.9);
+        .stage-glow {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 320px;
+          height: 180px;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: rgba(213, 174, 74, 0.1);
+          filter: blur(55px);
+        }
+
+        .stage-ring {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          border: 1px solid rgba(198, 150, 36, 0.11);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+        }
+
+        .ring-one {
+          width: 410px;
+          height: 220px;
+        }
+
+        .ring-two {
+          width: 300px;
+          height: 160px;
+        }
+
+        .product-main-card {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: min(430px, 70%);
+          height: 225px;
+          transform: translate(-50%, -50%);
+          overflow: hidden;
+          border: 1px solid #e7ddca;
+          border-radius: 24px;
+          background:
+            linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.98),
+              rgba(255, 252, 245, 0.96)
+            );
           box-shadow:
-            0 10px 25px rgba(71, 52, 16, 0.05);
+            0 25px 55px rgba(64, 47, 16, 0.1),
+            0 4px 15px rgba(64, 47, 16, 0.04);
+          animation: productFloat 5s ease-in-out infinite;
         }
 
-        .feature-icon {
-          width: 38px;
-          height: 38px;
-          flex: 0 0 38px;
-          display: grid;
-          place-items: center;
-          border-radius: 11px;
-          background: #f8edd2;
-          color: #9a741e;
+        .product-image-wrap {
+          position: absolute;
+          inset: 0;
         }
 
-        .feature-card h3 {
-          margin: 0 0 2px;
-          color: #373229;
-          font-size: 11px;
-          font-weight: 850;
+        .product-image {
+          object-fit: contain;
+          object-position: center;
+          padding: 7px 22px 40px;
+          transform: scale(1.02);
         }
 
-        .feature-card p {
-          margin: 0;
-          color: #928b80;
-          font-size: 10px;
-        }
-
-        .feature-arrow {
-          margin-left: auto;
-          color: #c3b18d;
-          transition: transform 0.22s ease;
-        }
-
-        .feature-card:hover .feature-arrow {
-          transform: translateX(3px);
-          color: #aa8228;
-        }
-
-        /* =====================================================
-           TRUST
-        ===================================================== */
-
-        .trust-row {
-          width: min(510px, 100%);
-          display: flex;
-          align-items: center;
-          gap: 22px;
-          margin-top: 28px;
-          padding-top: 22px;
-          border-top: 1px solid #e7dfd1;
-        }
-
-        .trust-item {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-        }
-
-        .trust-item strong {
-          color: #343027;
-          font-size: 14px;
-          font-weight: 900;
-        }
-
-        .trust-item span {
-          color: #9b9489;
-          font-size: 9px;
-        }
-
-        .trust-separator {
-          width: 1px;
-          height: 27px;
-          background: #ded6c7;
-        }
-
-        /* =====================================================
-           FOOTER
-        ===================================================== */
-
-        .experience-footer {
-          width: min(640px, 100%);
+        .product-info {
+          position: absolute;
+          left: 15px;
+          right: 15px;
+          bottom: 12px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          color: #aaa298;
-          font-size: 9px;
+          padding: 9px 11px;
+          border: 1px solid rgba(226, 215, 192, 0.8);
+          border-radius: 11px;
+          background: rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(12px);
         }
 
-        .experience-footer div {
+        .product-info div:first-child {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .product-info span {
+          color: #a78a50;
+          font-size: 6px;
+          letter-spacing: 1px;
+          font-weight: 900;
+        }
+
+        .product-info strong {
+          color: #4a4439;
+          font-size: 9px;
+          font-weight: 850;
+        }
+
+        .product-rating {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          color: #a47b1f;
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .floating-card {
+          position: absolute;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 9px 11px;
+          border: 1px solid #e7ddca;
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow:
+            0 15px 35px rgba(64, 47, 16, 0.09);
+          backdrop-filter: blur(12px);
+        }
+
+        .floating-deal {
+          left: 2%;
+          top: 16%;
+          animation: floatingOne 4.5s ease-in-out infinite;
+        }
+
+        .floating-secure {
+          right: 2%;
+          bottom: 13%;
+          animation: floatingTwo 5s ease-in-out infinite;
+        }
+
+        .floating-icon {
+          width: 28px;
+          height: 28px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: #f8ecd0;
+          color: #a0781e;
+        }
+
+        .floating-icon.secure {
+          background: #eef6e9;
+          color: #5f7f58;
+        }
+
+        .floating-card div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .floating-card span {
+          color: #a18d66;
+          font-size: 6px;
+          letter-spacing: 0.8px;
+          font-weight: 900;
+        }
+
+        .floating-card strong {
+          color: #484238;
+          font-size: 8px;
+          font-weight: 850;
+        }
+
+        @keyframes productFloat {
+          0%,
+          100% {
+            transform: translate(-50%, -50%);
+          }
+
+          50% {
+            transform: translate(-50%, calc(-50% - 5px));
+          }
+        }
+
+        @keyframes floatingOne {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(-7px);
+          }
+        }
+
+        @keyframes floatingTwo {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(6px);
+          }
+        }
+
+        /* =====================================================
+           SHOWCASE FEATURES
+        ===================================================== */
+
+        .showcase-features {
+          width: min(600px, 100%);
+          display: flex;
+          align-items: center;
+          gap: 17px;
+          padding-top: 16px;
+          border-top: 1px solid #e7dfd2;
+        }
+
+        .showcase-feature {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .feature-icon {
+          width: 32px;
+          height: 32px;
+          flex: 0 0 32px;
+          display: grid;
+          place-items: center;
+          border-radius: 9px;
+          background: #f8edd3;
+          color: #99741f;
+        }
+
+        .showcase-feature div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .showcase-feature strong {
+          color: #464037;
+          font-size: 8px;
+          font-weight: 850;
+        }
+
+        .showcase-feature span {
+          color: #a09a90;
+          font-size: 7px;
+          white-space: nowrap;
+        }
+
+        .feature-divider {
+          width: 1px;
+          height: 28px;
+          background: #ddd5c7;
+        }
+
+        .showcase-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: min(600px, 100%);
+          color: #aaa298;
+          font-size: 8px;
+        }
+
+        .footer-links {
           display: flex;
           gap: 7px;
         }
 
-        .experience-footer i {
-          color: #cfab5d;
+        .footer-links i {
+          color: #cfaa58;
           font-style: normal;
         }
 
         /* =====================================================
-           LOGIN AREA
+           LOGIN SECTION
         ===================================================== */
 
-        .login-area {
+        .login-section {
           display: flex;
           justify-content: center;
           width: 100%;
@@ -945,39 +1159,59 @@ export default function LoginPage() {
           overflow: hidden;
           border: 1px solid #e5ddcf;
           border-radius: 28px;
-          background: rgba(255, 255, 255, 0.96);
+          background: rgba(255, 255, 255, 0.97);
           box-shadow:
-            0 35px 80px rgba(57, 44, 19, 0.09),
-            0 8px 25px rgba(57, 44, 19, 0.035);
-          backdrop-filter: blur(20px);
+            0 35px 80px rgba(59, 45, 17, 0.09),
+            0 7px 22px rgba(59, 45, 17, 0.035);
+          backdrop-filter: blur(18px);
+          animation: cardEntrance 0.65s cubic-bezier(
+              0.22,
+              1,
+              0.36,
+              1
+            )
+            both;
         }
 
         .login-card::after {
           content: "";
           position: absolute;
-          right: -100px;
-          top: -110px;
           width: 230px;
           height: 230px;
+          right: -130px;
+          top: -130px;
           border-radius: 50%;
-          background: rgba(212, 175, 55, 0.06);
+          background: rgba(212, 175, 55, 0.055);
           filter: blur(35px);
           pointer-events: none;
         }
 
-        .gold-line {
+        .card-top-line {
           position: absolute;
+          left: 13%;
+          right: 13%;
           top: 0;
-          left: 14%;
-          right: 14%;
           height: 2px;
+          border-radius: 999px;
           background: linear-gradient(
             90deg,
             transparent,
             #d4af37,
-            #b98a21,
+            #b8861c,
             transparent
           );
+        }
+
+        @keyframes cardEntrance {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.985);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .mobile-brand {
@@ -985,63 +1219,63 @@ export default function LoginPage() {
         }
 
         /* =====================================================
-           HEADER
+           LOGIN HEADING
         ===================================================== */
 
-        .login-header {
+        .login-heading {
           position: relative;
           z-index: 1;
           display: flex;
           gap: 13px;
-          margin-bottom: 25px;
+          margin-bottom: 24px;
         }
 
-        .login-icon {
+        .login-heading-icon {
           width: 46px;
           height: 46px;
           flex: 0 0 46px;
           display: grid;
           place-items: center;
-          border: 1px solid #eadcbf;
+          border: 1px solid #eadfc7;
           border-radius: 14px;
           background: linear-gradient(
             145deg,
-            #fff9ea,
-            #f5e6bf
+            #fffaf0,
+            #f4e7c4
           );
-          color: #96701b;
+          color: #96701a;
         }
 
-        .overline {
+        .heading-label {
           display: block;
           margin-bottom: 4px;
-          color: #b28a35;
+          color: #b18a39;
           font-size: 7px;
-          letter-spacing: 1.7px;
+          letter-spacing: 1.65px;
           font-weight: 900;
         }
 
-        .login-header h2 {
+        .login-heading h2 {
           margin: 0;
           color: #25221c;
           font-size: 29px;
           line-height: 1.05;
-          letter-spacing: -1.2px;
+          letter-spacing: -1.3px;
           font-weight: 900;
         }
 
-        .login-header p {
+        .login-heading p {
           margin: 6px 0 0;
-          color: #8c857b;
+          color: #8b8479;
           font-size: 10px;
           line-height: 1.5;
         }
 
         /* =====================================================
-           ALERT
+           ERROR / SUCCESS
         ===================================================== */
 
-        .alert {
+        .status-message {
           position: relative;
           z-index: 2;
           display: flex;
@@ -1050,25 +1284,65 @@ export default function LoginPage() {
           margin-bottom: 15px;
           padding: 11px 12px;
           border-radius: 11px;
-          font-size: 10px;
-          line-height: 1.5;
+          animation: statusIn 0.25s ease both;
         }
 
-        .alert-icon {
-          flex: 0 0 auto;
-          margin-top: 1px;
+        .status-icon {
+          width: 26px;
+          height: 26px;
+          flex: 0 0 26px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
         }
 
-        .alert-error {
-          border: 1px solid #efd5d2;
+        .status-content {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .status-content strong {
+          font-size: 9px;
+          font-weight: 850;
+        }
+
+        .status-content span {
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        .status-message.error {
+          border: 1px solid #efd6d2;
           background: #fff5f4;
-          color: #9b4945;
+          color: #994943;
         }
 
-        .alert-success {
-          border: 1px solid #d6e8d1;
+        .status-message.error .status-icon {
+          background: #fbe3e0;
+        }
+
+        .status-message.success {
+          border: 1px solid #d5e8d0;
           background: #f4faf1;
-          color: #557650;
+          color: #567651;
+        }
+
+        .status-message.success .status-icon {
+          background: #e2f1dc;
+        }
+
+        @keyframes statusIn {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         /* =====================================================
@@ -1083,47 +1357,46 @@ export default function LoginPage() {
           gap: 17px;
         }
 
-        .form-field {
+        .form-group {
           display: flex;
           flex-direction: column;
           gap: 7px;
         }
 
-        .form-field label {
-          color: #39342b;
+        .form-group label {
+          color: #39342c;
           font-size: 10px;
           font-weight: 850;
         }
 
-        .password-label-row {
+        .password-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
 
-        .password-label-row a {
-          color: #a67b20;
+        .password-header a {
+          color: #a2771e;
           font-size: 9px;
           font-weight: 800;
           text-decoration: none;
-          transition: color 0.2s ease;
         }
 
-        .password-label-row a:hover {
-          color: #76560f;
+        .password-header a:hover {
+          color: #76570f;
         }
 
         /* =====================================================
            INPUT
         ===================================================== */
 
-        .input-container {
+        .input-box {
           position: relative;
           display: flex;
           align-items: center;
         }
 
-        .input-container::after {
+        .input-box::after {
           content: "";
           position: absolute;
           left: 13px;
@@ -1133,8 +1406,8 @@ export default function LoginPage() {
           border-radius: 999px;
           background: linear-gradient(
             90deg,
-            #b9891c,
-            #e1be68
+            #b8861b,
+            #e0bd68
           );
           transform: scaleX(0);
           transform-origin: center;
@@ -1142,32 +1415,32 @@ export default function LoginPage() {
           pointer-events: none;
         }
 
-        .input-container:focus-within::after {
+        .input-box:focus-within::after {
           transform: scaleX(1);
         }
 
-        .input-leading {
+        .input-icon {
           position: absolute;
           left: 14px;
           z-index: 2;
           display: grid;
           place-items: center;
-          color: #aaa297;
+          color: #aaa298;
           pointer-events: none;
           transition:
             color 0.2s ease,
             transform 0.2s ease;
         }
 
-        .input-container:focus-within .input-leading {
-          color: #b2821a;
+        .input-box:focus-within .input-icon {
+          color: #b3831c;
           transform: scale(1.05);
         }
 
-        .input-container input {
+        .input-box input {
           width: 100%;
           height: 51px;
-          padding: 0 44px;
+          padding: 0 45px;
           border: 1px solid #e3ddd3;
           border-radius: 12px;
           outline: none;
@@ -1180,47 +1453,57 @@ export default function LoginPage() {
             background 0.2s ease;
         }
 
-        .input-container input:hover:not(:disabled) {
-          border-color: #d5c9b6;
+        .input-box input:hover:not(:disabled) {
+          border-color: #d5c9b7;
         }
 
-        .input-container input:focus {
+        .input-box input:focus {
           border-color: #d0a03c;
           background: #fffefa;
           box-shadow:
-            0 0 0 4px rgba(208, 160, 60, 0.07);
+            0 0 0 4px rgba(208, 160, 60, 0.075),
+            0 7px 18px rgba(74, 57, 24, 0.025);
         }
 
-        .input-container input::placeholder {
-          color: #b8b1a7;
+        .input-box input::placeholder {
+          color: #b6afa5;
         }
 
-        .input-container input:disabled {
+        .input-box input:disabled {
           opacity: 0.65;
           cursor: not-allowed;
         }
 
-        .eye-button {
+        /* =====================================================
+           PASSWORD TOGGLE
+        ===================================================== */
+
+        .password-toggle {
           position: absolute;
-          right: 8px;
+          right: 7px;
           z-index: 3;
-          width: 32px;
-          height: 32px;
+          width: 38px;
+          height: 38px;
           display: grid;
           place-items: center;
           border: 0;
-          border-radius: 8px;
+          border-radius: 9px;
           background: transparent;
-          color: #9d968c;
+          color: #969087;
           cursor: pointer;
           transition:
+            color 0.2s ease,
             background 0.2s ease,
-            color 0.2s ease;
+            transform 0.2s ease;
         }
 
-        .eye-button:hover {
-          background: #f7f0e2;
-          color: #9a731d;
+        .password-toggle:hover {
+          color: #9a711b;
+          background: #f8f1e3;
+        }
+
+        .password-toggle:active {
+          transform: scale(0.94);
         }
 
         /* =====================================================
@@ -1228,7 +1511,6 @@ export default function LoginPage() {
         ===================================================== */
 
         .remember-row {
-          position: relative;
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -1245,17 +1527,17 @@ export default function LoginPage() {
           pointer-events: none;
         }
 
-        .fake-checkbox {
+        .custom-checkbox {
           width: 17px;
           height: 17px;
           display: grid;
           place-items: center;
-          border: 1px solid #d6cfc2;
+          border: 1px solid #d5cec2;
           border-radius: 5px;
           background: #fff;
         }
 
-        .fake-checkbox span {
+        .custom-checkbox span {
           opacity: 0;
           color: #fff;
           font-size: 10px;
@@ -1266,7 +1548,7 @@ export default function LoginPage() {
 
         .remember-row
           input:checked
-          + .fake-checkbox {
+          + .custom-checkbox {
           border-color: #c69624;
           background: #c69624;
           box-shadow:
@@ -1275,7 +1557,7 @@ export default function LoginPage() {
 
         .remember-row
           input:checked
-          + .fake-checkbox
+          + .custom-checkbox
           span {
           opacity: 1;
           transform: scale(1);
@@ -1300,18 +1582,39 @@ export default function LoginPage() {
           color: #fff;
           cursor: pointer;
           box-shadow:
-            0 12px 25px rgba(190, 140, 31, 0.22);
+            0 13px 27px rgba(190, 140, 31, 0.21);
           transition:
             transform 0.2s ease,
             box-shadow 0.2s ease,
             filter 0.2s ease;
         }
 
+        .login-button::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -90%;
+          width: 55%;
+          height: 100%;
+          transform: skewX(-20deg);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.18),
+            transparent
+          );
+          transition: left 0.7s ease;
+        }
+
+        .login-button:hover:not(:disabled)::before {
+          left: 140%;
+        }
+
         .login-button:hover:not(:disabled) {
           transform: translateY(-2px);
           filter: brightness(1.035);
           box-shadow:
-            0 16px 30px rgba(190, 140, 31, 0.28);
+            0 17px 32px rgba(190, 140, 31, 0.28);
         }
 
         .login-button:active:not(:disabled) {
@@ -1335,16 +1638,21 @@ export default function LoginPage() {
           font-weight: 850;
         }
 
-        .button-icon {
+        .button-arrow {
           width: 27px;
           height: 27px;
           display: grid;
           place-items: center;
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.14);
+          transition: transform 0.2s ease;
         }
 
-        .loading-icon {
+        .login-button:hover .button-arrow {
+          transform: translateX(3px);
+        }
+
+        .loading-spinner {
           animation: spin 0.8s linear infinite;
         }
 
@@ -1358,7 +1666,7 @@ export default function LoginPage() {
            REGISTER
         ===================================================== */
 
-        .register-section {
+        .register-area {
           position: relative;
           z-index: 2;
           margin-top: 20px;
@@ -1382,8 +1690,8 @@ export default function LoginPage() {
         }
 
         .register-button {
-          height: 44px;
           width: 100%;
+          height: 44px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -1396,14 +1704,14 @@ export default function LoginPage() {
           font-weight: 800;
           text-decoration: none;
           transition:
+            transform 0.2s ease,
             border-color 0.2s ease,
-            background 0.2s ease,
-            transform 0.2s ease;
+            background 0.2s ease;
         }
 
         .register-button:hover {
           transform: translateY(-1px);
-          border-color: #d9bb70;
+          border-color: #d8ba6e;
           background: #fffdf8;
         }
 
@@ -1421,60 +1729,72 @@ export default function LoginPage() {
            SECURITY
         ===================================================== */
 
-        .security-box {
+        .security-panel {
           position: relative;
           z-index: 2;
           display: flex;
           align-items: center;
           gap: 9px;
-          margin-top: 17px;
-          padding: 12px;
-          border: 1px solid #e5eadf;
+          margin-top: 16px;
+          padding: 11px;
+          border: 1px solid #e3eadd;
           border-radius: 11px;
           background: #fbfdf9;
         }
 
-        .security-symbol {
+        .security-icon {
           width: 29px;
           height: 29px;
           flex: 0 0 29px;
           display: grid;
           place-items: center;
           border-radius: 8px;
-          background: #eef6e9;
-          color: #5d8055;
+          background: #edf5e9;
+          color: #5f8058;
         }
 
-        .security-box strong {
-          display: block;
-          margin-bottom: 2px;
-          color: #5c6658;
+        .security-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .security-copy strong {
+          color: #596354;
           font-size: 8px;
           font-weight: 850;
         }
 
-        .security-box span {
-          display: block;
-          color: #9a9d96;
+        .security-copy span {
+          color: #989d94;
           font-size: 8px;
         }
 
-        .verified-badge {
+        .secure-status {
           margin-left: auto;
           display: inline-flex;
           align-items: center;
-          gap: 3px;
-          color: #65825e;
+          gap: 4px;
+          color: #64825d;
           font-size: 7px;
-          font-weight: 800;
-          white-space: nowrap;
+          font-weight: 850;
+        }
+
+        .secure-status span {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #72a467;
+          box-shadow:
+            0 0 0 3px rgba(114, 164, 103, 0.1);
         }
 
         /* =====================================================
-           BOTTOM BENEFITS
+           BENEFITS
         ===================================================== */
 
-        .bottom-benefits {
+        .login-benefits {
           position: relative;
           z-index: 2;
           display: flex;
@@ -1484,7 +1804,7 @@ export default function LoginPage() {
           margin-top: 13px;
         }
 
-        .bottom-benefits span {
+        .login-benefits span {
           display: inline-flex;
           align-items: center;
           gap: 4px;
@@ -1493,7 +1813,7 @@ export default function LoginPage() {
           white-space: nowrap;
         }
 
-        .bottom-benefits svg {
+        .login-benefits svg {
           color: #a17a21;
         }
 
@@ -1501,20 +1821,20 @@ export default function LoginPage() {
            TABLET
         ===================================================== */
 
-        @media (max-width: 1050px) {
-          .login-shell {
-            width: min(700px, calc(100% - 32px));
+        @media (max-width: 1080px) {
+          .login-container {
+            width: min(700px, calc(100% - 34px));
             grid-template-columns: 1fr;
             gap: 0;
-            padding: 25px 0;
+            padding: 26px 0;
           }
 
-          .experience-panel {
+          .showcase {
             display: none;
           }
 
-          .login-area {
-            min-height: calc(100dvh - 50px);
+          .login-section {
+            min-height: calc(100dvh - 52px);
             align-items: center;
           }
 
@@ -1525,7 +1845,7 @@ export default function LoginPage() {
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: 23px;
           }
         }
 
@@ -1538,13 +1858,13 @@ export default function LoginPage() {
             overflow-y: auto;
           }
 
-          .login-shell {
+          .login-container {
             width: calc(100% - 14px);
             min-height: 100dvh;
             padding: 7px 0;
           }
 
-          .login-area {
+          .login-section {
             min-height: calc(100dvh - 14px);
           }
 
@@ -1554,36 +1874,36 @@ export default function LoginPage() {
           }
 
           .mobile-brand {
-            margin-bottom: 20px;
+            margin-bottom: 19px;
           }
 
-          .brand-mark {
+          .brand-logo {
             width: 39px;
             height: 39px;
             border-radius: 11px;
           }
 
-          .brand-text {
+          .brand-name {
             font-size: 21px;
           }
 
-          .login-header {
+          .login-heading {
             gap: 10px;
             margin-bottom: 21px;
           }
 
-          .login-icon {
+          .login-heading-icon {
             width: 42px;
             height: 42px;
             flex-basis: 42px;
             border-radius: 12px;
           }
 
-          .login-header h2 {
+          .login-heading h2 {
             font-size: 25px;
           }
 
-          .login-header p {
+          .login-heading p {
             font-size: 9px;
           }
 
@@ -1591,15 +1911,20 @@ export default function LoginPage() {
             gap: 15px;
           }
 
-          .input-container input {
+          .input-box input {
             height: 49px;
+          }
+
+          .password-toggle {
+            width: 40px;
+            height: 40px;
           }
 
           .login-button {
             height: 50px;
           }
 
-          .security-box {
+          .security-panel {
             padding: 10px;
           }
         }
@@ -1609,7 +1934,7 @@ export default function LoginPage() {
         ===================================================== */
 
         @media (max-width: 380px) {
-          .login-shell {
+          .login-container {
             width: calc(100% - 10px);
           }
 
@@ -1622,15 +1947,15 @@ export default function LoginPage() {
             margin-bottom: 17px;
           }
 
-          .login-header h2 {
+          .login-heading h2 {
             font-size: 23px;
           }
 
-          .login-header p {
+          .login-heading p {
             font-size: 8px;
           }
 
-          .input-container input {
+          .input-box input {
             height: 47px;
           }
 
@@ -1638,15 +1963,11 @@ export default function LoginPage() {
             height: 48px;
           }
 
-          .bottom-benefits {
-            gap: 3px;
-          }
-
-          .bottom-benefits span {
+          .login-benefits span {
             font-size: 6.5px;
           }
 
-          .verified-badge {
+          .secure-status {
             display: none;
           }
         }
@@ -1655,15 +1976,30 @@ export default function LoginPage() {
            ACCESSIBILITY
         ===================================================== */
 
-        .brand:focus-visible,
-        .password-label-row a:focus-visible,
-        .register-button:focus-visible,
-        .eye-button:focus-visible,
-        .login-button:focus-visible,
-        input:focus-visible {
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        label:focus-visible {
           outline: 2px solid #c69624;
           outline-offset: 3px;
         }
+
+        .password-toggle:focus-visible {
+          outline: 2px solid #c69624;
+          outline-offset: 2px;
+          background: #f8f1e3;
+          color: #966e16;
+        }
+
+        .remember-row:has(input:focus-visible)
+          .custom-checkbox {
+          outline: 2px solid #c69624;
+          outline-offset: 2px;
+        }
+
+        /* =====================================================
+           REDUCED MOTION
+        ===================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           *,
@@ -1672,6 +2008,7 @@ export default function LoginPage() {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
