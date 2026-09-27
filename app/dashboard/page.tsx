@@ -2895,12 +2895,9 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .hero-layout {
-          display: grid;
-          grid-template-columns:
-            minmax(0, 1fr)
-            300px;
-          gap: 21px;
-          align-items: stretch;
+          display: block;
+          width: 100%;
+          min-width: 0;
         }
 
         .hero-carousel {
