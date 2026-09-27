@@ -273,24 +273,140 @@ export default function HomePage() {
   const previousSlide = () => {
     setActiveSlide(
       (value) =>
-        (value - 1 + heroSlides.length) % heroSlides.length
+        (value - 1 + heroSlides.length) %
+        heroSlides.length
     );
   };
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-[#faf8f3] pb-20 text-[#171512] md:pb-0">
+    <main className="min-h-screen overflow-x-hidden bg-[#faf8f3] text-[#171512]">
+
+      {/* =========================================================
+          ANIMATION STYLES
+      ========================================================= */}
+
+      <style jsx global>{`
+        @keyframes pc-fade-up {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes pc-fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes pc-float {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes pc-pulse-soft {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 1;
+          }
+        }
+
+        @keyframes pc-shimmer {
+          0% {
+            transform: translateX(-120%);
+          }
+          100% {
+            transform: translateX(120%);
+          }
+        }
+
+        .pc-fade-up {
+          animation: pc-fade-up 0.7s ease-out both;
+        }
+
+        .pc-fade-up-delay-1 {
+          animation: pc-fade-up 0.7s ease-out 0.08s both;
+        }
+
+        .pc-fade-up-delay-2 {
+          animation: pc-fade-up 0.7s ease-out 0.16s both;
+        }
+
+        .pc-fade-up-delay-3 {
+          animation: pc-fade-up 0.7s ease-out 0.24s both;
+        }
+
+        .pc-fade-up-delay-4 {
+          animation: pc-fade-up 0.7s ease-out 0.32s both;
+        }
+
+        .pc-fade-in {
+          animation: pc-fade-in 0.7s ease-out both;
+        }
+
+        .pc-float {
+          animation: pc-float 5s ease-in-out infinite;
+        }
+
+        .pc-pulse-soft {
+          animation: pc-pulse-soft 4s ease-in-out infinite;
+        }
+
+        .pc-scrollbar-none {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .pc-scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pc-fade-up,
+          .pc-fade-up-delay-1,
+          .pc-fade-up-delay-2,
+          .pc-fade-up-delay-3,
+          .pc-fade-up-delay-4,
+          .pc-fade-in,
+          .pc-float,
+          .pc-pulse-soft {
+            animation: none !important;
+          }
+
+          * {
+            scroll-behavior: auto !important;
+          }
+        }
+      `}</style>
 
       {/* =========================================================
           TOP ANNOUNCEMENT
       ========================================================= */}
 
       <div className="hidden bg-[#171512] text-white sm:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 text-[11px] sm:px-6 sm:text-xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-2 text-xs sm:px-6">
           <p className="font-medium tracking-wide">
             ✨ Premium shopping. Better prices. Smarter choices.
           </p>
 
-          <div className="flex items-center gap-5 text-white/70">
+          <div className="flex items-center gap-6 text-white/75">
             <span>Free delivery above ₹499</span>
             <span>Easy returns</span>
             <span>Secure checkout</span>
@@ -303,14 +419,13 @@ export default function HomePage() {
       ========================================================= */}
 
       <nav className="sticky top-0 z-50 border-b border-[#ece7db] bg-white/95 shadow-[0_4px_20px_rgba(40,30,10,0.04)] backdrop-blur-xl">
-
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-2 px-3 sm:h-[74px] sm:gap-4 sm:px-6">
+        <div className="mx-auto flex h-[70px] max-w-7xl items-center gap-3 px-3 sm:h-[74px] sm:gap-4 sm:px-6">
 
           {/* LOGO */}
 
           <Link
             href="/"
-            className="flex min-w-0 shrink-0 items-center gap-2"
+            className="flex shrink-0 items-center gap-2"
           >
             <Image
               src="/logo.png"
@@ -321,27 +436,20 @@ export default function HomePage() {
               priority
             />
 
-            <div className="hidden min-w-0 sm:block">
+            <div className="hidden min-[390px]:block">
               <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
                 Prime<span className="text-[#D4AF37]">Cart</span>
               </h1>
 
-              <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-gray-500">
+              <p className="hidden text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 sm:block">
                 Premium Shopping
               </p>
-            </div>
-
-            {/* compact mobile brand */}
-            <div className="block sm:hidden">
-              <h1 className="text-lg font-extrabold tracking-tight">
-                Prime<span className="text-[#D4AF37]">Cart</span>
-              </h1>
             </div>
           </Link>
 
           {/* DESKTOP NAV */}
 
-          <div className="ml-3 hidden items-center gap-6 lg:flex">
+          <div className="ml-5 hidden items-center gap-7 lg:flex">
             <Link
               href="/"
               className="font-semibold text-[#D4AF37]"
@@ -366,6 +474,7 @@ export default function HomePage() {
               </button>
 
               <div className="invisible absolute left-1/2 top-full mt-4 w-[540px] -translate-x-1/2 translate-y-2 rounded-3xl border border-[#ece7db] bg-white p-5 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-lg font-bold">
@@ -401,7 +510,7 @@ export default function HomePage() {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">
+                        <p className="font-semibold">
                           {category.name}
                         </p>
 
@@ -500,14 +609,13 @@ export default function HomePage() {
 
           {/* ACTIONS */}
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 md:ml-3">
-
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() =>
                 setSearchOpen((value) => !value)
               }
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 md:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] md:hidden sm:h-10 sm:w-10"
               aria-label="Search"
             >
               <Search size={18} />
@@ -518,17 +626,17 @@ export default function HomePage() {
               className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:flex"
               aria-label="Wishlist"
             >
-              <Heart size={18} />
+              <Heart size={19} />
             </Link>
 
             <Link
               href="/auth/login"
-              className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 sm:h-10 sm:w-10"
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:h-10 sm:w-10"
               aria-label="Shopping cart"
             >
               <ShoppingCart size={18} />
 
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[8px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[9px] font-bold text-white">
                 0
               </span>
             </Link>
@@ -552,7 +660,7 @@ export default function HomePage() {
               onClick={() =>
                 setOpenMenu((value) => !value)
               }
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ece7db] active:scale-95 lg:hidden sm:h-10 sm:w-10"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#ece7db] lg:hidden sm:h-10 sm:w-10"
               aria-label="Open menu"
             >
               {openMenu ? (
@@ -567,7 +675,7 @@ export default function HomePage() {
         {/* MOBILE SEARCH */}
 
         {searchOpen && (
-          <div className="border-t border-[#ece7db] bg-white px-3 py-3 sm:px-4 md:hidden">
+          <div className="border-t border-[#ece7db] bg-white px-3 py-3 md:hidden sm:px-4">
             <div className="relative">
               <Search
                 size={18}
@@ -581,12 +689,12 @@ export default function HomePage() {
                   setSearch(event.target.value)
                 }
                 placeholder="Search products or categories..."
-                className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10"
+                className="h-11 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37]"
               />
             </div>
 
             {search.trim() && (
-              <div className="mt-2 max-h-64 overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
+              <div className="mt-2 rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
                 {filteredCategories.length > 0 ? (
                   filteredCategories.map((category) => (
                     <Link
@@ -596,7 +704,7 @@ export default function HomePage() {
                         setSearchOpen(false);
                         setSearch("");
                       }}
-                      className="flex items-center gap-3 rounded-xl p-3 active:bg-[#faf8f3]"
+                      className="flex items-center gap-3 rounded-xl p-3 hover:bg-[#faf8f3]"
                     >
                       <Image
                         src={category.image}
@@ -606,8 +714,8 @@ export default function HomePage() {
                         className="h-9 w-9 object-contain"
                       />
 
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold">
+                      <div>
+                        <p className="font-semibold">
                           {category.name}
                         </p>
 
@@ -630,7 +738,7 @@ export default function HomePage() {
         {/* MOBILE MENU */}
 
         {openMenu && (
-          <div className="max-h-[calc(100vh-64px)] overflow-y-auto border-t border-[#ece7db] bg-white px-3 py-4 shadow-xl sm:px-4 lg:hidden">
+          <div className="border-t border-[#ece7db] bg-white px-4 py-4 shadow-xl lg:hidden">
             <div className="grid gap-1.5">
               {[
                 ["Home", "/"],
@@ -646,13 +754,13 @@ export default function HomePage() {
                   key={label}
                   href={href}
                   onClick={() => setOpenMenu(false)}
-                  className="rounded-xl px-4 py-3.5 font-medium text-gray-700 transition active:bg-[#faf8f3] hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+                  className="rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-[#faf8f3] hover:text-[#D4AF37]"
                 >
                   {label}
                 </Link>
               ))}
 
-              <div className="mt-2 grid grid-cols-2 gap-2.5">
+              <div className="mt-2 grid grid-cols-2 gap-3">
                 <Link
                   href="/auth/login"
                   onClick={() => setOpenMenu(false)}
@@ -678,33 +786,31 @@ export default function HomePage() {
           HERO
       ========================================================= */}
 
-      <section className="px-3 pb-5 pt-3 sm:px-6 sm:pb-8 sm:pt-5 lg:pt-8">
+      <section className="px-3 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5 lg:pt-8">
         <div className="mx-auto max-w-7xl">
 
-          <div className="relative overflow-hidden rounded-[24px] border border-[#e9e1d2] bg-white shadow-[0_15px_45px_rgba(74,57,20,0.07)] sm:rounded-[40px]">
+          <div className="relative min-h-[650px] overflow-hidden rounded-[28px] border border-[#e9e1d2] bg-white shadow-[0_20px_70px_rgba(74,57,20,0.08)] sm:min-h-[540px] sm:rounded-[40px]">
 
-            <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#D4AF37]/10 blur-3xl sm:h-80 sm:w-80" />
+            <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-[#D4AF37]/10 blur-3xl pc-pulse-soft" />
 
-            <div className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-[#f4e8c8] blur-3xl sm:h-80 sm:w-80" />
+            <div className="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-[#f4e8c8] blur-3xl" />
 
-            <div className="relative grid lg:min-h-[540px] lg:grid-cols-[1.02fr_.98fr]">
+            <div className="relative grid min-h-[650px] items-center sm:min-h-[540px] lg:grid-cols-[1.02fr_.98fr]">
 
               {/* HERO LEFT */}
 
-              <div className="relative z-10 px-5 pb-6 pt-7 sm:px-10 sm:py-12 lg:px-14 lg:py-16">
+              <div className="z-10 px-5 py-9 sm:px-10 sm:py-12 lg:px-14 lg:py-16">
 
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#fffaf0] px-3 py-1.5 text-[10px] font-bold tracking-wide text-[#b58c24] sm:px-4 sm:py-2 sm:text-sm">
-                  <Sparkles size={13} className="shrink-0 sm:h-[15px] sm:w-[15px]" />
-                  <span className="truncate">
-                    {currentSlide.eyebrow}
-                  </span>
+                <div className="pc-fade-up inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#fffaf0] px-3.5 py-2 text-[11px] font-bold tracking-wide text-[#b58c24] sm:px-4 sm:text-sm">
+                  <Sparkles size={14} />
+                  {currentSlide.eyebrow}
                 </div>
 
-                <div className="mt-3 inline-flex rounded-full bg-[#171512] px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-5 sm:text-xs">
+                <div className="pc-fade-up-delay-1 mt-4 inline-flex rounded-full bg-[#171512] px-3 py-1.5 text-[11px] font-semibold text-white sm:mt-5 sm:text-xs">
                   {currentSlide.badge}
                 </div>
 
-                <h2 className="mt-4 max-w-2xl text-[40px] font-black leading-[0.98] tracking-[-0.045em] text-[#171512] sm:mt-6 sm:text-[60px] lg:text-[76px]">
+                <h2 className="pc-fade-up-delay-1 mt-5 max-w-2xl text-[43px] font-black leading-[0.96] tracking-[-0.045em] text-[#171512] sm:mt-6 sm:text-[64px] lg:text-[76px]">
                   {currentSlide.title}
                   <br />
                   <span className="text-[#D4AF37]">
@@ -712,14 +818,14 @@ export default function HomePage() {
                   </span>
                 </h2>
 
-                <p className="mt-4 max-w-xl text-sm leading-6 text-gray-600 sm:mt-6 sm:text-lg sm:leading-7">
+                <p className="pc-fade-up-delay-2 mt-5 max-w-xl text-[14px] leading-6 text-gray-600 sm:mt-6 sm:text-lg sm:leading-7">
                   {currentSlide.description}
                 </p>
 
-                <div className="mt-6 grid grid-cols-1 gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
+                <div className="pc-fade-up-delay-2 mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-3">
                   <Link
                     href="/auth/login"
-                    className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 font-bold text-white shadow-lg shadow-[#D4AF37]/20 transition hover:-translate-y-0.5 hover:bg-[#c69f2f] active:scale-[0.98] sm:px-6 sm:py-3.5"
+                    className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#D4AF37]/20 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c69f2f] hover:shadow-xl sm:px-6"
                   >
                     {currentSlide.button}
 
@@ -731,46 +837,51 @@ export default function HomePage() {
 
                   <Link
                     href="/auth/login"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#ded8ca] bg-white px-5 py-3 font-semibold text-gray-800 transition hover:border-[#D4AF37] hover:text-[#b58c24] active:scale-[0.98] sm:px-6 sm:py-3.5"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#ded8ca] bg-white px-5 py-3.5 text-sm font-semibold text-gray-800 transition duration-300 hover:border-[#D4AF37] hover:text-[#b58c24] sm:px-6"
                   >
                     {currentSlide.secondary}
                   </Link>
                 </div>
 
-                {/* MOBILE STATS */}
+                {/* TRUST STATS */}
 
-                <div className="mt-7 grid grid-cols-3 divide-x divide-[#e7e0d2] border-y border-[#eee8dc] py-4 sm:mt-9 sm:flex sm:items-center sm:gap-x-7 sm:divide-x-0 sm:border-0 sm:py-0">
+                <div className="pc-fade-up-delay-3 mt-7 grid grid-cols-3 gap-3 sm:mt-9 sm:flex sm:flex-wrap sm:items-center sm:gap-x-7 sm:gap-y-4">
 
-                  <div className="text-center sm:text-left">
+                  <div>
                     <p className="text-lg font-black sm:text-xl">
                       10K+
                     </p>
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
+
+                    <p className="text-[10px] text-gray-500 sm:text-xs">
                       Happy Customers
                     </p>
                   </div>
 
-                  <div className="text-center sm:text-left">
-                    <p className="flex items-center justify-center gap-1 text-lg font-black sm:justify-start sm:text-xl">
+                  <div className="hidden h-9 w-px bg-[#e7e0d2] sm:block" />
+
+                  <div>
+                    <p className="flex items-center gap-1 text-lg font-black sm:text-xl">
                       4.8
                       <Star
-                        size={14}
+                        size={15}
                         fill="currentColor"
                         className="text-[#D4AF37]"
                       />
                     </p>
 
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
+                    <p className="text-[10px] text-gray-500 sm:text-xs">
                       Customer Rating
                     </p>
                   </div>
 
-                  <div className="text-center sm:text-left">
+                  <div className="hidden h-9 w-px bg-[#e7e0d2] sm:block" />
+
+                  <div>
                     <p className="text-lg font-black sm:text-xl">
                       2500+
                     </p>
 
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
+                    <p className="text-[10px] text-gray-500 sm:text-xs">
                       Products
                     </p>
                   </div>
@@ -778,11 +889,11 @@ export default function HomePage() {
 
                 {/* SLIDER */}
 
-                <div className="mt-6 flex items-center justify-center gap-3 sm:mt-9 sm:justify-start">
+                <div className="pc-fade-up-delay-4 mt-6 flex items-center gap-3 sm:mt-9">
                   <button
                     type="button"
                     onClick={previousSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] sm:h-10 sm:w-10"
                     aria-label="Previous slide"
                   >
                     <ChevronLeft size={17} />
@@ -793,8 +904,12 @@ export default function HomePage() {
                       <button
                         key={index}
                         type="button"
-                        onClick={() => setActiveSlide(index)}
-                        aria-label={`Go to slide ${index + 1}`}
+                        onClick={() =>
+                          setActiveSlide(index)
+                        }
+                        aria-label={`Go to slide ${
+                          index + 1
+                        }`}
                         className={`h-2 rounded-full transition-all ${
                           activeSlide === index
                             ? "w-7 bg-[#D4AF37]"
@@ -807,7 +922,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={nextSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] sm:h-10 sm:w-10"
                     aria-label="Next slide"
                   >
                     <ChevronRight size={17} />
@@ -817,13 +932,13 @@ export default function HomePage() {
 
               {/* HERO RIGHT */}
 
-              <div className="relative flex min-h-[265px] items-center justify-center overflow-hidden px-4 pb-7 sm:min-h-[350px] sm:px-5 sm:pb-10 lg:min-h-full lg:px-8 lg:pb-0">
+              <div className="relative flex min-h-[280px] items-center justify-center px-4 pb-7 sm:min-h-[350px] sm:px-5 sm:pb-10 lg:min-h-full lg:px-8 lg:pb-0">
 
-                <div className="absolute h-[220px] w-[220px] rounded-full bg-[#f5ead0] sm:h-[380px] sm:w-[380px] lg:h-[470px] lg:w-[470px]" />
+                <div className="absolute h-[250px] w-[250px] rounded-full bg-[#f5ead0] sm:h-[380px] sm:w-[380px] lg:h-[470px] lg:w-[470px]" />
 
-                <div className="absolute right-4 top-5 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:right-12 lg:top-10">
+                <div className="absolute right-5 top-5 z-10 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:right-12 lg:top-10 pc-float">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Today&apos;s highlight
+                    Today's highlight
                   </p>
 
                   <p className="mt-1 font-bold">
@@ -831,7 +946,7 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                <div className="absolute bottom-6 left-4 z-10 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:bottom-12 lg:left-10">
+                <div className="absolute bottom-7 left-4 z-10 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:bottom-12 lg:left-10 pc-float">
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d8] text-[#b58c24]">
                       <ShieldCheck size={16} />
@@ -855,7 +970,7 @@ export default function HomePage() {
                   width={900}
                   height={900}
                   priority
-                  className="relative z-[1] w-[82%] max-w-[310px] object-contain drop-shadow-[0_20px_25px_rgba(50,35,10,0.12)] sm:w-[75%] sm:max-w-[570px] lg:w-full"
+                  className="relative z-[1] w-[82%] max-w-[480px] object-contain drop-shadow-[0_25px_30px_rgba(50,35,10,0.12)] transition duration-700 hover:scale-[1.03] sm:w-[75%] lg:w-full lg:max-w-[570px]"
                 />
               </div>
             </div>
@@ -867,9 +982,8 @@ export default function HomePage() {
           BENEFITS
       ========================================================= */}
 
-      <section className="px-3 py-3 sm:px-6 sm:py-5">
+      <section className="px-3 py-4 sm:px-6 sm:py-5">
         <div className="mx-auto max-w-7xl">
-
           <div className="grid overflow-hidden rounded-3xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4">
 
             {benefits.map((benefit, index) => {
@@ -878,22 +992,22 @@ export default function HomePage() {
               return (
                 <div
                   key={benefit.title}
-                  className={`flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-6 ${
+                  className={`flex items-center gap-3 px-4 py-4 transition duration-300 hover:bg-[#fffaf0] sm:gap-4 sm:px-5 sm:py-6 ${
                     index !== benefits.length - 1
                       ? "border-b border-[#eee8dc] sm:border-r lg:border-b-0"
                       : ""
                   }`}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12 sm:rounded-2xl">
-                    <Icon size={19} className="sm:h-[22px] sm:w-[22px]" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12">
+                    <Icon size={20} />
                   </div>
 
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-bold sm:text-base">
+                  <div>
+                    <h3 className="text-sm font-bold sm:text-base">
                       {benefit.title}
                     </h3>
 
-                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500 sm:text-xs">
+                    <p className="mt-0.5 text-[10px] text-gray-500 sm:text-xs">
                       {benefit.description}
                     </p>
                   </div>
@@ -904,219 +1018,113 @@ export default function HomePage() {
         </div>
       </section>
 
-{/* =========================================================
-    FLASH DEALS
-========================================================= */}
+      {/* =========================================================
+          FLASH DEALS
+      ========================================================= */}
 
-<section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
-  <div className="mx-auto max-w-7xl">
+      <section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
+        <div className="mx-auto max-w-7xl">
 
-    {/* HEADER */}
+          <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 sm:flex-row sm:items-end">
 
-    <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div className="pc-fade-up">
+              <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
+                <Zap size={15} />
+                Limited Time
+              </div>
 
-      <div>
-        <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
-          <Zap size={15} />
-          Limited Time
-        </div>
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Flash Deals
+              </h2>
 
-        <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-          Flash Deals
-        </h2>
-
-        <p className="mt-2 text-sm text-gray-500 sm:text-base">
-          Grab the deal before the clock runs out.
-        </p>
-      </div>
-
-      {/* TIMER */}
-
-      <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.hours}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Hrs
-          </p>
-        </div>
-
-        <span className="font-bold text-[#b58c24]">
-          :
-        </span>
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.minutes}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Min
-          </p>
-        </div>
-
-        <span className="font-bold text-[#b58c24]">
-          :
-        </span>
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.seconds}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Sec
-          </p>
-        </div>
-      </div>
-    </div>
-
-    {/* DEAL CARDS */}
-
-    <div
-      className="
-        flex
-        gap-4
-        overflow-x-auto
-        pb-4
-        snap-x
-        snap-mandatory
-        scrollbar-hide
-
-        sm:grid
-        sm:grid-cols-2
-        sm:gap-5
-        sm:overflow-visible
-        sm:pb-0
-        sm:snap-none
-
-        md:grid-cols-3
-      "
-      style={{
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-    >
-
-      {dealItems.map((deal) => (
-        <Link
-          key={deal.title}
-          href={deal.href}
-          className="
-            group
-            relative
-            w-[82vw]
-            min-w-[82vw]
-            shrink-0
-            snap-start
-            overflow-hidden
-            rounded-[24px]
-            border
-            border-[#e9e2d5]
-            bg-white
-            p-3.5
-            shadow-sm
-            transition
-            duration-300
-            active:scale-[0.98]
-
-            sm:w-auto
-            sm:min-w-0
-            sm:shrink
-            sm:rounded-[28px]
-            sm:p-5
-            sm:active:scale-100
-
-            sm:hover:-translate-y-1
-            sm:hover:shadow-xl
-          "
-        >
-
-          {/* DISCOUNT BADGE */}
-
-          <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
-            {deal.discount}
-          </div>
-
-          {/* IMAGE */}
-
-          <div className="flex h-[190px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
-
-            <Image
-              src={deal.image}
-              alt={deal.title}
-              width={300}
-              height={240}
-              className="
-                h-[160px]
-                w-full
-                object-contain
-                transition
-                duration-500
-                sm:h-[190px]
-                sm:group-hover:scale-105
-              "
-            />
-
-          </div>
-
-          {/* CONTENT */}
-
-          <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
-
-            <div className="min-w-0">
-
-              <p className="truncate text-lg font-black sm:text-xl">
-                {deal.title}
+              <p className="mt-2 text-xs text-gray-500 sm:text-base">
+                Grab the deal before the clock runs out.
               </p>
-
-              <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
-                {deal.subtitle}
-              </p>
-
             </div>
 
-            <div
-              className="
-                flex
-                h-9
-                w-9
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#e8e1d4]
-                transition
+            <div className="flex items-center gap-1.5 self-start sm:gap-2 sm:self-auto">
+              {[
+                [formattedTime.hours, "Hrs"],
+                [formattedTime.minutes, "Min"],
+                [formattedTime.seconds, "Sec"],
+              ].map(([value, label], index) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-1.5"
+                >
+                  <div className="rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:px-3">
+                    <p className="text-base font-black leading-none sm:text-lg">
+                      {value}
+                    </p>
 
-                sm:h-10
-                sm:w-10
-                sm:group-hover:border-[#D4AF37]
-                sm:group-hover:bg-[#D4AF37]
-                sm:group-hover:text-white
-              "
-            >
-              <ArrowUpRight size={17} />
+                    <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+                      {label}
+                    </p>
+                  </div>
+
+                  {index < 2 && (
+                    <span className="font-bold text-[#b58c24]">
+                      :
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
-
           </div>
-        </Link>
-      ))}
-    </div>
 
-    {/* MOBILE SWIPE INDICATOR */}
+          {/* MOBILE HORIZONTAL / DESKTOP GRID */}
 
-    <div className="mt-3 flex items-center justify-center gap-1.5 sm:hidden">
-      <span className="h-1.5 w-5 rounded-full bg-[#D4AF37]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
-    </div>
+          <div className="pc-scrollbar-none flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0 sm:snap-none md:grid-cols-3">
 
-  </div>
-</section>
+            {dealItems.map((deal) => (
+              <Link
+                key={deal.title}
+                href={deal.href}
+                className="group relative min-w-[82vw] shrink-0 snap-start overflow-hidden rounded-[26px] border border-[#e9e2d5] bg-white p-4 shadow-sm transition duration-500 hover:-translate-y-1 hover:shadow-xl sm:min-w-0 sm:p-5"
+              >
+                <div className="absolute right-4 top-4 z-10 rounded-full bg-[#171512] px-3 py-1.5 text-[9px] font-bold tracking-wider text-white sm:text-[10px]">
+                  {deal.discount}
+                </div>
+
+                <div className="flex h-[205px] items-center justify-center overflow-hidden rounded-[22px] bg-[#faf8f3] sm:h-[220px]">
+                  <Image
+                    src={deal.image}
+                    alt={deal.title}
+                    width={300}
+                    height={240}
+                    className="h-[175px] w-full object-contain transition duration-500 group-hover:scale-105 sm:h-[190px]"
+                  />
+                </div>
+
+                <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
+                  <div>
+                    <p className="text-lg font-black sm:text-xl">
+                      {deal.title}
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+                      {deal.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e1d4] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
+                    <ArrowUpRight size={17} />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-1 flex justify-center gap-1 sm:hidden">
+            {dealItems.map((deal) => (
+              <span
+                key={deal.title}
+                className="h-1.5 w-5 rounded-full bg-[#d9d2c5] first:bg-[#D4AF37]"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* =========================================================
           CATEGORIES
@@ -1125,9 +1133,9 @@ export default function HomePage() {
       <section className="bg-white px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl">
 
-          <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-7 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
 
-            <div>
+            <div className="pc-fade-up">
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
                 Explore Store
               </p>
@@ -1136,14 +1144,14 @@ export default function HomePage() {
                 Shop By Category
               </h2>
 
-              <p className="mt-2 max-w-xl text-sm text-gray-500 sm:text-base">
+              <p className="mt-2 max-w-xl text-sm text-gray-500">
                 Find exactly what you need from our growing collection.
               </p>
             </div>
 
             <Link
               href="/dashboard/categories/electronics"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3"
             >
               View all categories
               <ArrowRight size={17} />
@@ -1155,9 +1163,9 @@ export default function HomePage() {
               <Link
                 key={category.name}
                 href={`/dashboard/categories/${category.slug}`}
-                className="group overflow-hidden rounded-2xl border border-[#ece7db] bg-[#faf8f3] transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-white hover:shadow-xl sm:rounded-3xl"
+                className="group overflow-hidden rounded-3xl border border-[#ece7db] bg-[#faf8f3] transition duration-500 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-white hover:shadow-xl"
               >
-                <div className="flex h-28 items-center justify-center overflow-hidden px-3 pt-3 sm:h-40 sm:px-4 sm:pt-4">
+                <div className="flex h-32 items-center justify-center overflow-hidden px-3 pt-3 sm:h-40 sm:px-4 sm:pt-4">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -1169,13 +1177,13 @@ export default function HomePage() {
 
                 <div className="bg-white p-3 sm:p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="truncate text-sm font-bold sm:text-base">
+                    <h3 className="text-sm font-bold sm:text-base">
                       {category.name}
                     </h3>
 
                     <ArrowUpRight
                       size={14}
-                      className="shrink-0 text-gray-300 transition group-hover:text-[#D4AF37]"
+                      className="text-gray-300 transition group-hover:text-[#D4AF37]"
                     />
                   </div>
 
@@ -1190,13 +1198,14 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================
-          PRIME CART EXCLUSIVE
+          PRIME CART ADVANTAGE
+          MOBILE = HORIZONTAL LIKE CATEGORY
       ========================================================= */}
 
-      <section className="px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
+      <section className="px-3 py-11 sm:px-6 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl">
 
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-9">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
               More than shopping
             </p>
@@ -1211,7 +1220,10 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
+          {/* HORIZONTAL ON MOBILE */}
+
+          <div className="pc-scrollbar-none flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:pb-0 md:snap-none">
+
             {primeFeatures.map((feature) => {
               const Icon = feature.icon;
 
@@ -1219,15 +1231,15 @@ export default function HomePage() {
                 <Link
                   key={feature.title}
                   href={feature.href}
-                  className="group relative overflow-hidden rounded-[24px] border border-[#e8e1d4] bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[30px] sm:p-8"
+                  className="group relative min-w-[82vw] snap-start overflow-hidden rounded-[26px] border border-[#e8e1d4] bg-white p-5 shadow-sm transition duration-500 hover:-translate-y-1 hover:shadow-xl sm:min-w-[62vw] sm:p-7 md:min-w-0 md:p-8"
                 >
-                  <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/10 transition group-hover:scale-150" />
+                  <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/10 transition duration-700 group-hover:scale-150" />
 
                   <div className="relative">
 
                     <div className="flex items-start justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b58c24] sm:h-14 sm:w-14">
-                        <Icon size={23} />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b58c24] transition duration-300 group-hover:scale-105 sm:h-14 sm:w-14">
+                        <Icon size={24} />
                       </div>
 
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ece7db] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
@@ -1243,11 +1255,11 @@ export default function HomePage() {
                       {feature.description}
                     </p>
 
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#b58c24] sm:mt-6">
+                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#b58c24] sm:mt-6 sm:text-sm">
                       {feature.label}
 
                       <ArrowRight
-                        size={16}
+                        size={15}
                         className="transition group-hover:translate-x-1"
                       />
                     </div>
@@ -1255,6 +1267,21 @@ export default function HomePage() {
                 </Link>
               );
             })}
+          </div>
+
+          {/* MOBILE SWIPE INDICATOR */}
+
+          <div className="mt-1 flex justify-center gap-1.5 md:hidden">
+            {primeFeatures.map((feature, index) => (
+              <span
+                key={feature.title}
+                className={`h-1.5 rounded-full ${
+                  index === 0
+                    ? "w-6 bg-[#D4AF37]"
+                    : "w-1.5 bg-[#d9d2c5]"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -1268,14 +1295,14 @@ export default function HomePage() {
 
           <div className="relative overflow-hidden rounded-[28px] bg-[#171512] px-5 py-9 text-white sm:rounded-[32px] sm:px-10 sm:py-12 lg:px-14">
 
-            <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/20 blur-3xl" />
+            <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/20 blur-3xl pc-pulse-soft" />
 
             <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-3xl" />
 
-            <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
+            <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-10">
 
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e4c46a] sm:px-4 sm:py-2 sm:text-xs">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#e4c46a] sm:px-4 sm:text-xs">
                   <Star size={13} fill="currentColor" />
                   PrimePoints
                 </div>
@@ -1283,7 +1310,8 @@ export default function HomePage() {
                 <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight sm:mt-5 sm:text-4xl lg:text-5xl">
                   Shop. Earn.
                   <span className="text-[#D4AF37]">
-                    {" "}Get Rewarded.
+                    {" "}
+                    Get Rewarded.
                   </span>
                 </h2>
 
@@ -1295,7 +1323,7 @@ export default function HomePage() {
 
                 <Link
                   href="/dashboard/prime-points"
-                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
+                  className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
                 >
                   Explore PrimePoints
                   <ArrowRight size={17} />
@@ -1310,7 +1338,7 @@ export default function HomePage() {
                 ].map(([number, label]) => (
                   <div
                     key={number}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm sm:p-6"
+                    className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm transition hover:border-[#D4AF37]/40 sm:p-6"
                   >
                     <p className="text-xl font-black text-[#D4AF37] sm:text-2xl">
                       {number}
@@ -1331,7 +1359,7 @@ export default function HomePage() {
           NEWSLETTER
       ========================================================= */}
 
-      <section className="border-y border-[#ece7db] bg-white px-3 py-12 sm:px-6 sm:py-16">
+      <section className="border-y border-[#ece7db] bg-white px-3 py-11 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl text-center">
 
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58c24] sm:h-14 sm:w-14">
@@ -1342,19 +1370,19 @@ export default function HomePage() {
             Stay in the PrimeCart loop
           </h2>
 
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-500 sm:mt-3 sm:text-base">
+          <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500 sm:mt-3 sm:text-base">
             Get notified about new arrivals, exclusive offers and
             limited-time deals.
           </p>
 
           {subscribed ? (
-            <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#d9e9d9] bg-[#f4fbf4] px-4 py-4 text-sm font-semibold text-green-700">
+            <div className="mx-auto mt-5 max-w-xl rounded-2xl border border-[#d9e9d9] bg-[#f4fbf4] px-5 py-3.5 text-sm font-semibold text-green-700 sm:mt-7">
               ✓ You&apos;re subscribed. Welcome to PrimeCart!
             </div>
           ) : (
             <form
               onSubmit={handleSubscribe}
-              className="mx-auto mt-6 flex max-w-xl flex-col gap-2 rounded-2xl border border-[#e8e1d4] bg-[#faf8f3] p-2 sm:mt-7 sm:flex-row"
+              className="mx-auto mt-5 flex max-w-xl flex-col gap-2 rounded-2xl border border-[#e8e1d4] bg-[#faf8f3] p-2 sm:mt-7 sm:flex-row"
             >
               <input
                 type="email"
@@ -1364,12 +1392,12 @@ export default function HomePage() {
                   setEmail(event.target.value)
                 }
                 placeholder="Enter your email address"
-                className="h-12 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none"
+                className="h-11 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none sm:h-12"
               />
 
               <button
                 type="submit"
-                className="h-12 rounded-xl bg-[#D4AF37] px-6 text-sm font-bold text-white transition hover:bg-[#c69f2f]"
+                className="h-11 rounded-xl bg-[#D4AF37] px-6 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:h-12"
               >
                 Subscribe
               </button>
@@ -1379,66 +1407,188 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================
-          FOOTER
+          COMPACT MOBILE FOOTER
       ========================================================= */}
 
-      <footer className="bg-[#faf8f3] px-3 pb-5 pt-12 sm:px-6 sm:pb-8 sm:pt-14">
+      <footer className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
+
         <div className="mx-auto max-w-7xl">
 
-          <div className="grid gap-8 border-b border-[#e7e0d4] pb-9 sm:grid-cols-2 sm:gap-10 sm:pb-12 lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]">
+          {/* BRAND */}
 
-            {/* BRAND */}
+          <div className="border-b border-[#e7e0d4] pb-6 sm:pb-10">
 
-            <div>
-              <Link
-                href="/"
-                className="flex items-center gap-3"
-              >
-                <Image
-                  src="/logo.png"
-                  alt="PrimeCart Logo"
-                  width={50}
-                  height={50}
-                  className="h-11 w-11 object-contain sm:h-12 sm:w-12"
-                />
+            <Link
+              href="/"
+              className="flex items-center gap-2.5"
+            >
+              <Image
+                src="/logo.png"
+                alt="PrimeCart Logo"
+                width={46}
+                height={46}
+                className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+              />
 
-                <div>
-                  <h2 className="text-xl font-black sm:text-2xl">
-                    Prime<span className="text-[#D4AF37]">
-                      Cart
-                    </span>
-                  </h2>
+              <div>
+                <h2 className="text-xl font-black sm:text-2xl">
+                  Prime<span className="text-[#D4AF37]">
+                    Cart
+                  </span>
+                </h2>
 
-                  <p className="text-[10px] text-gray-500 sm:text-xs">
-                    Premium Shopping Store
-                  </p>
-                </div>
-              </Link>
-
-              <p className="mt-4 max-w-sm text-sm leading-6 text-gray-500">
-                Your one-stop destination for premium products,
-                smart shopping tools and better deals.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-600">
-                  Secure Shopping
-                </span>
-
-                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-[10px] font-semibold text-gray-600">
-                  Easy Returns
-                </span>
+                <p className="text-[10px] text-gray-500 sm:text-xs">
+                  Premium Shopping Store
+                </p>
               </div>
-            </div>
+            </Link>
 
-            {/* QUICK LINKS */}
+            <p className="mt-3 max-w-sm text-xs leading-5 text-gray-500 sm:mt-5 sm:text-sm sm:leading-6">
+              Your one-stop destination for premium products,
+              smart shopping tools and better deals.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2 sm:mt-5">
+              <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1 text-[10px] font-semibold text-gray-600 sm:py-1.5 sm:text-xs">
+                Secure Shopping
+              </span>
+
+              <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1 text-[10px] font-semibold text-gray-600 sm:py-1.5 sm:text-xs">
+                Easy Returns
+              </span>
+            </div>
+          </div>
+
+          {/* MOBILE COMPACT LINKS */}
+
+          <div className="grid grid-cols-3 gap-3 border-b border-[#e7e0d4] py-6 sm:hidden">
 
             <div>
-              <h3 className="text-sm font-bold sm:text-base">
+              <h3 className="text-xs font-bold">
                 Quick Links
               </h3>
 
-              <div className="mt-4 flex flex-col gap-2.5 text-sm text-gray-500 sm:mt-5 sm:gap-3">
+              <div className="mt-3 flex flex-col gap-2">
+                <Link
+                  href="/"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Home
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Shop
+                </Link>
+
+                <Link
+                  href="/dashboard/categories/electronics"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Categories
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Deals
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold">
+                Support
+              </h3>
+
+              <div className="mt-3 flex flex-col gap-2">
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Contact
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Shipping
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Returns
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Privacy
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold">
+                Why Us?
+              </h3>
+
+              <div className="mt-3 space-y-2.5">
+
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck
+                    size={14}
+                    className="shrink-0 text-[#D4AF37]"
+                  />
+
+                  <span className="text-[10px] text-gray-500">
+                    Secure
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Truck
+                    size={14}
+                    className="shrink-0 text-[#D4AF37]"
+                  />
+
+                  <span className="text-[10px] text-gray-500">
+                    Reliable
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Headphones
+                    size={14}
+                    className="shrink-0 text-[#D4AF37]"
+                  />
+
+                  <span className="text-[10px] text-gray-500">
+                    Support
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* DESKTOP FOOTER LINKS */}
+
+          <div className="hidden gap-10 border-b border-[#e7e0d4] py-10 sm:grid sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr]">
+
+            <div>
+              <h3 className="font-bold">
+                Quick Links
+              </h3>
+
+              <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500">
                 <Link
                   href="/"
                   className="transition hover:text-[#D4AF37]"
@@ -1469,14 +1619,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* CUSTOMER */}
-
             <div>
-              <h3 className="text-sm font-bold sm:text-base">
+              <h3 className="font-bold">
                 Customer Service
               </h3>
 
-              <div className="mt-4 flex flex-col gap-2.5 text-sm text-gray-500 sm:mt-5 sm:gap-3">
+              <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500">
                 <Link
                   href="/auth/login"
                   className="transition hover:text-[#D4AF37]"
@@ -1507,18 +1655,17 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* TRUST */}
-
             <div>
-              <h3 className="text-sm font-bold sm:text-base">
+              <h3 className="font-bold">
                 Why PrimeCart?
               </h3>
 
-              <div className="mt-4 space-y-4 sm:mt-5">
+              <div className="mt-4 space-y-4">
+
                 <div className="flex gap-3">
                   <ShieldCheck
                     className="mt-0.5 shrink-0 text-[#D4AF37]"
-                    size={18}
+                    size={19}
                   />
 
                   <div>
@@ -1535,7 +1682,7 @@ export default function HomePage() {
                 <div className="flex gap-3">
                   <Truck
                     className="mt-0.5 shrink-0 text-[#D4AF37]"
-                    size={18}
+                    size={19}
                   />
 
                   <div>
@@ -1552,7 +1699,7 @@ export default function HomePage() {
                 <div className="flex gap-3">
                   <Headphones
                     className="mt-0.5 shrink-0 text-[#D4AF37]"
-                    size={18}
+                    size={19}
                   />
 
                   <div>
@@ -1565,11 +1712,14 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 py-5 text-center text-[10px] text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:text-xs">
+          {/* COPYRIGHT */}
+
+          <div className="flex flex-col gap-1.5 py-4 text-center text-[10px] text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:py-6 sm:text-left sm:text-xs">
             <p>
               © 2026 PrimeCart. All Rights Reserved.
             </p>
@@ -1585,13 +1735,13 @@ export default function HomePage() {
           MOBILE BOTTOM NAV
       ========================================================= */}
 
-      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#e7e0d4] bg-white/95 px-2 py-2 shadow-[0_-5px_25px_rgba(50,35,10,0.08)] backdrop-blur-xl md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e7e0d4] bg-white/95 px-2 py-1.5 shadow-[0_-5px_25px_rgba(50,35,10,0.08)] backdrop-blur-xl md:hidden">
 
-        <div className="mx-auto grid max-w-md grid-cols-5">
+        <div className="mx-auto flex max-w-md items-center justify-around">
 
           <Link
             href="/"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-[#D4AF37]"
+            className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-[#D4AF37]"
           >
             <ShoppingBag size={18} />
 
@@ -1602,7 +1752,7 @@ export default function HomePage() {
 
           <Link
             href="/dashboard/categories/electronics"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
+            className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Search size={18} />
 
@@ -1613,7 +1763,7 @@ export default function HomePage() {
 
           <Link
             href="/auth/login"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
+            className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Heart size={18} />
 
@@ -1624,11 +1774,11 @@ export default function HomePage() {
 
           <Link
             href="/auth/login"
-            className="relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
+            className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
 
-            <span className="absolute left-1/2 top-0 ml-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[7px] font-bold text-white">
+            <span className="absolute right-1 top-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[8px] font-bold text-white">
               0
             </span>
 
@@ -1639,7 +1789,7 @@ export default function HomePage() {
 
           <Link
             href="/auth/login"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-1 text-gray-500"
+            className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <UserRound size={18} />
 
@@ -1647,6 +1797,7 @@ export default function HomePage() {
               Account
             </span>
           </Link>
+
         </div>
       </div>
     </main>
