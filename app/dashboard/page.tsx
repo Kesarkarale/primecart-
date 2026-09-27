@@ -152,25 +152,35 @@ function getImageUrl(value?: string | null) {
 
 function getImageCandidates(value?: string | null) {
   if (!value?.trim()) return [];
-  const v = value.trim();
 
-  if (/^https?:\/\//i.test(v)) return [v];
-  if (v.startsWith("/")) return [v];
+  const raw = value.trim();
 
-  const clean = v.replace(/^\/+/, "");
+  if (/^https?:\/\//i.test(raw)) return [raw];
+
+  const clean = raw
+    .replace(/^https?:\/\/[^/]+\//i, "")
+    .replace(/^public\//i, "")
+    .replace(/^\/+/, "");
+
   const encoded = clean
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/");
 
-  return [
-    `/${clean}`,
-    `/products/${encoded}`,
-    `/product/${encoded}`,
-    `/product-images/${encoded}`,
-    `/images/products/${encoded}`,
-    `/images/${encoded}`,
-  ];
+  const candidates = raw.startsWith("/")
+    ? [raw]
+    : [
+        `/${encoded}`,
+        `/products/${encoded}`,
+        `/product/${encoded}`,
+        `/product-images/${encoded}`,
+        `/images/products/${encoded}`,
+        `/images/${encoded}`,
+        `/assets/products/${encoded}`,
+        `/assets/images/${encoded}`,
+      ];
+
+  return [...new Set(candidates)];
 }
 
 function SafeProductImage({
@@ -1772,50 +1782,74 @@ export default function DashboardPage() {
             </div>
 
             <div className="flash-products">
-              {flashProducts
-                .slice(0, 4)
-                .map((product) => (
+              {flashProducts.slice(0, 4).map((product) => {
+                const discount = getDiscount(
+                  product.price,
+                  product.original_price
+                );
+                const stock = Number(product.stock || 0);
+                const category =
+                  categoryMap.get(String(product.category_id)) ||
+                  "Limited Deal";
+
+                return (
                   <button
                     key={String(product.id)}
+                    type="button"
                     className="flash-product"
-                    onClick={() =>
-                      openProduct(product)
-                    }
+                    onClick={() => openProduct(product)}
+                    aria-label={`Open ${product.name}`}
                   >
                     <div className="flash-product-image">
                       <SafeProductImage
                         src={product.image_url}
                         alt={product.name}
-                        iconSize={30}
+                        iconSize={34}
                       />
-                    </div>
-
-                    <div>
-                      <strong>
-                        {product.name}
-                      </strong>
-
-                      <span>
-                        {formatPrice(
-                          product.price
-                        )}
+                      <span className="flash-image-badge">
+                        <Zap size={9} fill="currentColor" />
+                        FLASH
                       </span>
-
-                      {getDiscount(
-                        product.price,
-                        product.original_price
-                      ) > 0 && (
-                        <em>
-                          {getDiscount(
-                            product.price,
-                            product.original_price
-                          )}
-                          % OFF
-                        </em>
-                      )}
                     </div>
+
+                    <div className="flash-product-info">
+                      <small>{category}</small>
+                      <strong>{product.name}</strong>
+
+                      <div className="flash-price-row">
+                        <span>{formatPrice(product.price)}</span>
+                        {product.original_price &&
+                          product.original_price > Number(product.price || 0) && (
+                            <del>{formatPrice(product.original_price)}</del>
+                          )}
+                      </div>
+
+                      <div className="flash-meta-row">
+                        {discount > 0 && <em>{discount}% OFF</em>}
+                        <span>
+                          <Star size={10} fill="currentColor" />
+                          {Number(product.rating || 0).toFixed(1)}
+                        </span>
+                      </div>
+
+                      <div className="flash-stock">
+                        <div className="flash-stock-track">
+                          <span
+                            style={{
+                              width: `${Math.min(92, Math.max(22, 100 - Math.min(stock, 80)))}%`,
+                            }}
+                          />
+                        </div>
+                        <small>{stock > 0 && stock <= 12 ? `Only ${stock} left` : "Selling fast"}</small>
+                      </div>
+                    </div>
+
+                    <span className="flash-open">
+                      <ArrowUpRight size={15} />
+                    </span>
                   </button>
-                ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -5022,6 +5056,397 @@ export default function DashboardPage() {
             transition-duration: 0.01ms !important;
           }
         }
+        /* ============================================================ */
+        /* PRIME CART PREMIUM POLISH - FINAL OVERRIDES                  */
+        /* ============================================================ */
+
+        .page-content {
+          padding-top: 18px;
+          padding-bottom: 52px;
+        }
+
+        .hero-image-frame {
+          border: 1px solid rgba(194, 151, 58, 0.16);
+          box-shadow: 0 16px 42px rgba(72, 51, 18, 0.10);
+        }
+
+        .hero-banner {
+          object-fit: contain !important;
+          background: #fffaf0;
+        }
+
+        .product-card {
+          border-radius: 15px;
+          box-shadow: 0 8px 24px rgba(45, 34, 14, 0.055);
+        }
+
+        .product-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 18px 38px rgba(45, 34, 14, 0.12);
+        }
+
+        .product-image-wrap {
+          background: linear-gradient(145deg, #fffdf9, #f8f3e8);
+        }
+
+        .product-image {
+          object-fit: contain !important;
+          padding: 8px;
+          transition: transform .35s cubic-bezier(.2,.8,.2,1);
+        }
+
+        .product-card:hover .product-image {
+          transform: scale(1.045);
+        }
+
+        /* FLASH DEALS — premium storefront block */
+        .flash-section {
+          margin: 34px 0 38px;
+          border: 1px solid rgba(232, 197, 117, .55);
+          border-radius: 22px;
+          background: radial-gradient(circle at 10% 0%, rgba(255,255,255,.18), transparent 28%), linear-gradient(135deg, #6e4907 0%, #9a6914 42%, #d0a33e 100%);
+          box-shadow: 0 22px 55px rgba(107, 73, 10, .18);
+        }
+
+        .flash-header {
+          min-height: 88px;
+          padding: 18px 20px;
+          gap: 18px;
+        }
+
+        .flash-title {
+          font-size: 22px;
+          letter-spacing: -.55px;
+        }
+
+        .flash-title svg {
+          filter: drop-shadow(0 3px 8px rgba(255, 220, 130, .45));
+        }
+
+        .flash-header p {
+          font-size: 10px;
+          max-width: 280px;
+          opacity: .9;
+        }
+
+        .flash-timer {
+          padding: 7px 9px;
+          border-radius: 12px;
+          background: rgba(31, 19, 2, .24);
+        }
+
+        .flash-timer b {
+          min-width: 36px;
+          padding: 7px 5px;
+          border-radius: 8px;
+          background: rgba(255,255,255,.17);
+          font-size: 13px;
+        }
+
+        .flash-products {
+          padding: 16px;
+          gap: 13px;
+        }
+
+        .flash-product {
+          min-height: 148px;
+          position: relative;
+          padding: 11px;
+          border-radius: 16px;
+          background: rgba(255,255,255,.115);
+          border: 1px solid rgba(255,255,255,.20);
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+        }
+
+        .flash-product::after {
+          content: "";
+          position: absolute;
+          inset: auto -30px -45px auto;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background: rgba(255,255,255,.08);
+          pointer-events: none;
+        }
+
+        .flash-product-image {
+          width: 86px;
+          height: 116px;
+          border-radius: 12px;
+          background: linear-gradient(145deg, #fff, #f8f0dd);
+          box-shadow: 0 8px 20px rgba(53, 32, 2, .13);
+          position: relative;
+        }
+
+        .flash-product-image img,
+        .flash-product-image .image-fallback {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          padding: 7px;
+        }
+
+        .flash-image-badge {
+          position: absolute;
+          left: 5px;
+          bottom: 5px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 3px 5px;
+          border-radius: 5px;
+          background: #8c5b08;
+          color: #fff;
+          font-size: 6px;
+          font-weight: 900;
+          letter-spacing: .5px;
+        }
+
+        .flash-product-info {
+          min-width: 0;
+          flex: 1;
+          padding-right: 13px;
+        }
+
+        .flash-product-info > small {
+          display: block;
+          margin-bottom: 5px;
+          color: rgba(255,255,255,.68);
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: .65px;
+          text-transform: uppercase;
+        }
+
+        .flash-product strong {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          white-space: normal;
+          line-height: 1.3;
+          font-size: 10px;
+          min-height: 26px;
+        }
+
+        .flash-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          margin-top: 7px;
+        }
+
+        .flash-price-row span {
+          font-size: 16px;
+          font-weight: 950;
+        }
+
+        .flash-price-row del {
+          color: rgba(255,255,255,.58);
+          font-size: 8px;
+        }
+
+        .flash-meta-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 5px;
+          margin-top: 6px;
+        }
+
+        .flash-meta-row em {
+          padding: 3px 5px;
+          border-radius: 5px;
+          background: rgba(255,255,255,.16);
+          color: #fff7df;
+          font-size: 6px;
+          font-style: normal;
+          font-weight: 900;
+        }
+
+        .flash-meta-row > span {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          color: #fff0bd;
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .flash-stock {
+          margin-top: 9px;
+        }
+
+        .flash-stock-track {
+          height: 4px;
+          width: 100%;
+          overflow: hidden;
+          border-radius: 99px;
+          background: rgba(255,255,255,.17);
+        }
+
+        .flash-stock-track span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #fff1bd;
+        }
+
+        .flash-stock small {
+          display: block;
+          margin-top: 4px;
+          color: rgba(255,255,255,.65);
+          font-size: 6px;
+        }
+
+        .flash-open {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          width: 25px;
+          height: 25px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          color: #fff;
+          background: rgba(255,255,255,.12);
+          transition: transform .2s ease, background .2s ease;
+        }
+
+        .flash-product:hover .flash-open {
+          transform: translate(2px,-2px);
+          background: rgba(255,255,255,.23);
+        }
+
+        /* premium section spacing */
+        .section-head {
+          margin-top: 30px;
+          margin-bottom: 15px;
+        }
+
+        .category-section {
+          margin-top: 22px;
+          margin-bottom: 28px;
+        }
+
+        .promo-card {
+          border-radius: 17px;
+          min-height: 176px;
+          box-shadow: 0 9px 28px rgba(50, 38, 15, .07);
+        }
+
+        .trust-strip {
+          border-radius: 17px;
+          box-shadow: 0 9px 28px rgba(50, 38, 15, .055);
+        }
+
+        @media (max-width: 980px) {
+          .flash-products {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .flash-product-image {
+            width: 78px;
+            height: 105px;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .page-content {
+            padding-top: 10px;
+          }
+
+          .flash-section {
+            margin: 24px 0 28px;
+            border-radius: 17px;
+          }
+
+          .flash-header {
+            padding: 15px;
+            min-height: auto;
+          }
+
+          .flash-title {
+            font-size: 18px;
+          }
+
+          .flash-header p {
+            max-width: 220px;
+          }
+
+          .flash-timer {
+            margin-left: 0;
+          }
+
+          .flash-header > a {
+            margin-left: auto;
+          }
+
+          .flash-products {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: 9px;
+            gap: 8px;
+          }
+
+          .flash-product {
+            min-height: 135px;
+            display: block;
+            padding: 8px;
+          }
+
+          .flash-product-image {
+            width: 100%;
+            height: 105px;
+            margin-bottom: 8px;
+          }
+
+          .flash-product-info {
+            padding-right: 0;
+          }
+
+          .flash-product-info > small {
+            font-size: 6px;
+          }
+
+          .flash-product strong {
+            font-size: 8px;
+            min-height: 22px;
+          }
+
+          .flash-price-row span {
+            font-size: 13px;
+          }
+
+          .flash-price-row del {
+            display: none;
+          }
+
+          .flash-open {
+            width: 22px;
+            height: 22px;
+          }
+        }
+
+        @media (max-width: 430px) {
+          .flash-timer b {
+            min-width: 30px;
+            font-size: 10px;
+          }
+
+          .flash-timer span {
+            display: none;
+          }
+
+          .flash-header > a {
+            font-size: 8px;
+            padding: 8px 9px;
+          }
+
+          .flash-product-image {
+            height: 92px;
+          }
+        }
+
       `}</style>
     </main>
   );
