@@ -678,190 +678,222 @@ export default function HomePage() {
           HERO
       ========================================================= */}
 
-      <section className="px-3 pb-5 pt-3 sm:px-6 sm:pb-8 sm:pt-5 lg:pt-8">
-        <div className="mx-auto max-w-7xl">
-
-          <div className="relative overflow-hidden rounded-[24px] border border-[#e9e1d2] bg-white shadow-[0_15px_45px_rgba(74,57,20,0.07)] sm:rounded-[40px]">
-
-            <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#D4AF37]/10 blur-3xl sm:h-80 sm:w-80" />
-
-            <div className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-[#f4e8c8] blur-3xl sm:h-80 sm:w-80" />
-
-            <div className="relative grid lg:min-h-[540px] lg:grid-cols-[1.02fr_.98fr]">
-
-              {/* HERO LEFT */}
-
-              <div className="relative z-10 px-5 pb-6 pt-7 sm:px-10 sm:py-12 lg:px-14 lg:py-16">
-
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#fffaf0] px-3 py-1.5 text-[10px] font-bold tracking-wide text-[#b58c24] sm:px-4 sm:py-2 sm:text-sm">
-                  <Sparkles size={13} className="shrink-0 sm:h-[15px] sm:w-[15px]" />
-                  <span className="truncate">
-                    {currentSlide.eyebrow}
-                  </span>
-                </div>
-
-                <div className="mt-3 inline-flex rounded-full bg-[#171512] px-3 py-1.5 text-[10px] font-semibold text-white sm:mt-5 sm:text-xs">
-                  {currentSlide.badge}
-                </div>
-
-                <h2 className="mt-4 max-w-2xl text-[40px] font-black leading-[0.98] tracking-[-0.045em] text-[#171512] sm:mt-6 sm:text-[60px] lg:text-[76px]">
-                  {currentSlide.title}
-                  <br />
-                  <span className="text-[#D4AF37]">
-                    {currentSlide.highlight}
-                  </span>
-                </h2>
-
-                <p className="mt-4 max-w-xl text-sm leading-6 text-gray-600 sm:mt-6 sm:text-lg sm:leading-7">
-                  {currentSlide.description}
-                </p>
-
-                <div className="mt-6 grid grid-cols-1 gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
-                  <Link
-                    href="/auth/login"
-                    className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 font-bold text-white shadow-lg shadow-[#D4AF37]/20 transition hover:-translate-y-0.5 hover:bg-[#c69f2f] active:scale-[0.98] sm:px-6 sm:py-3.5"
-                  >
-                    {currentSlide.button}
-
-                    <ArrowRight
-                      size={18}
-                      className="transition group-hover:translate-x-1"
-                    />
-                  </Link>
-
-                  <Link
-                    href="/auth/login"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#ded8ca] bg-white px-5 py-3 font-semibold text-gray-800 transition hover:border-[#D4AF37] hover:text-[#b58c24] active:scale-[0.98] sm:px-6 sm:py-3.5"
-                  >
-                    {currentSlide.secondary}
-                  </Link>
-                </div>
-
-                {/* MOBILE STATS */}
-
-                <div className="mt-7 grid grid-cols-3 divide-x divide-[#e7e0d2] border-y border-[#eee8dc] py-4 sm:mt-9 sm:flex sm:items-center sm:gap-x-7 sm:divide-x-0 sm:border-0 sm:py-0">
-
-                  <div className="text-center sm:text-left">
-                    <p className="text-lg font-black sm:text-xl">
-                      10K+
-                    </p>
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
-                      Happy Customers
-                    </p>
-                  </div>
-
-                  <div className="text-center sm:text-left">
-                    <p className="flex items-center justify-center gap-1 text-lg font-black sm:justify-start sm:text-xl">
-                      4.8
-                      <Star
-                        size={14}
-                        fill="currentColor"
-                        className="text-[#D4AF37]"
-                      />
-                    </p>
-
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
-                      Customer Rating
-                    </p>
-                  </div>
-
-                  <div className="text-center sm:text-left">
-                    <p className="text-lg font-black sm:text-xl">
-                      2500+
-                    </p>
-
-                    <p className="text-[9px] text-gray-500 sm:text-xs">
-                      Products
-                    </p>
-                  </div>
-                </div>
-
-                {/* SLIDER */}
-
-                <div className="mt-6 flex items-center justify-center gap-3 sm:mt-9 sm:justify-start">
-                  <button
-                    type="button"
-                    onClick={previousSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
-                    aria-label="Previous slide"
-                  >
-                    <ChevronLeft size={17} />
-                  </button>
-
-                  <div className="flex items-center gap-1.5">
-                    {heroSlides.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setActiveSlide(index)}
-                        aria-label={`Go to slide ${index + 1}`}
-                        className={`h-2 rounded-full transition-all ${
-                          activeSlide === index
-                            ? "w-7 bg-[#D4AF37]"
-                            : "w-2 bg-[#d9d2c5]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={nextSlide}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] active:scale-95 sm:h-10 sm:w-10"
-                    aria-label="Next slide"
-                  >
-                    <ChevronRight size={17} />
-                  </button>
-                </div>
-              </div>
-
-              {/* HERO RIGHT */}
-
-              <div className="relative flex min-h-[265px] items-center justify-center overflow-hidden px-4 pb-7 sm:min-h-[350px] sm:px-5 sm:pb-10 lg:min-h-full lg:px-8 lg:pb-0">
-
-                <div className="absolute h-[220px] w-[220px] rounded-full bg-[#f5ead0] sm:h-[380px] sm:w-[380px] lg:h-[470px] lg:w-[470px]" />
-
-                <div className="absolute right-4 top-5 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:right-12 lg:top-10">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Today&apos;s highlight
-                  </p>
-
-                  <p className="mt-1 font-bold">
-                    Premium Deals
-                  </p>
-                </div>
-
-                <div className="absolute bottom-6 left-4 z-10 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-4 py-3 shadow-xl sm:block lg:bottom-12 lg:left-10">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d8] text-[#b58c24]">
-                      <ShieldCheck size={16} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-bold">
-                        Safe Shopping
-                      </p>
-
-                      <p className="text-[10px] text-gray-500">
-                        Secure checkout
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Image
-                  src="/hero-product.png"
-                  alt="PrimeCart premium shopping"
-                  width={900}
-                  height={900}
-                  priority
-                  className="relative z-[1] w-[82%] max-w-[310px] object-contain drop-shadow-[0_20px_25px_rgba(50,35,10,0.12)] sm:w-[75%] sm:max-w-[570px] lg:w-full"
-                />
-              </div>
-            </div>
-          </div>
+      <section className="px-4 sm:px-6 lg:px-8">
+  <div
+    className="
+      relative
+      mx-auto
+      max-w-[1380px]
+      overflow-hidden
+      rounded-[28px]
+      border
+      border-[#eadfc9]
+      bg-[#fffdfa]
+      shadow-[0_18px_50px_rgba(80,60,20,0.10)]
+    "
+  >
+    <div
+      className="
+        grid
+        min-h-[560px]
+        grid-cols-1
+        lg:grid-cols-2
+      "
+    >
+      {/* ================= LEFT CONTENT ================= */}
+      <div
+        className="
+          relative
+          z-10
+          flex
+          flex-col
+          justify-center
+          px-6
+          py-12
+          sm:px-10
+          sm:py-14
+          lg:px-14
+          xl:px-16
+          lg:py-16
+        "
+      >
+        {/* Sale Badge */}
+        <div
+          className="
+            mb-7
+            inline-flex
+            w-fit
+            items-center
+            gap-2
+            rounded-full
+            border
+            border-[#ead9b7]
+            bg-[#fffaf0]
+            px-4
+            py-2
+            text-sm
+            font-medium
+            text-[#c28f20]
+          "
+        >
+          <span className="text-base">🔥</span>
+          <span>Super Sale is Live!</span>
         </div>
-      </section>
+
+        {/* Heading */}
+        <h1
+          className="
+            max-w-[620px]
+            font-serif
+            text-[48px]
+            font-bold
+            leading-[0.96]
+            tracking-[-2px]
+            text-[#111111]
+            sm:text-[60px]
+            lg:text-[68px]
+            xl:text-[76px]
+          "
+        >
+          Shop More.
+          <br />
+          <span className="text-[#d5ad32]">
+            Pay Less.
+          </span>
+        </h1>
+
+        {/* Description */}
+        <p
+          className="
+            mt-7
+            max-w-[560px]
+            text-[15px]
+            leading-7
+            text-[#4f4a42]
+            sm:text-[17px]
+            lg:text-[18px]
+          "
+        >
+          Discover the best products at unbeatable prices.
+          Your one-stop destination for all your needs.
+        </p>
+
+        {/* Buttons */}
+        <div
+          className="
+            mt-8
+            flex
+            flex-col
+            gap-3
+            sm:flex-row
+          "
+        >
+          <Link
+            href="/dashboard/products"
+            className="
+              inline-flex
+              h-14
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-[#d8af32]
+              px-8
+              text-[15px]
+              font-semibold
+              text-white
+              shadow-[0_10px_24px_rgba(207,166,45,0.22)]
+              transition-all
+              duration-300
+              hover:-translate-y-1
+              hover:bg-[#c99f25]
+              hover:shadow-[0_14px_30px_rgba(207,166,45,0.28)]
+            "
+          >
+            Shop Now
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+
+          <Link
+            href="/dashboard/products"
+            className="
+              inline-flex
+              h-14
+              items-center
+              justify-center
+              rounded-xl
+              border
+              border-[#d9dce2]
+              bg-white
+              px-8
+              text-[15px]
+              font-semibold
+              text-[#171717]
+              transition-all
+              duration-300
+              hover:-translate-y-1
+              hover:border-[#d5ad32]
+              hover:text-[#b88b20]
+              hover:shadow-[0_10px_25px_rgba(0,0,0,0.06)]
+            "
+          >
+            Explore Deals
+          </Link>
+        </div>
+
+        {/* Customers */}
+        <div
+          className="
+            mt-10
+            flex
+            items-center
+            gap-4
+          "
+        >
+          <div className="flex -space-x-3">
+            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#d9dde5]" />
+            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#aeb7c8]" />
+            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#737e92]" />
+          </div>
+
+          <p className="text-sm text-[#444]">
+            Join
+            <span className="font-semibold text-[#d0a52e]">
+              10,000+
+            </span>
+            Happy Customers
+          </p>
+        </div>
+      </div>
+
+      {/* ================= RIGHT IMAGE ================= */}
+      <div
+        className="
+          relative
+          min-h-[340px]
+          overflow-hidden
+          lg:min-h-full
+        "
+      >
+        <Image
+          src="/hero-product.png"
+          alt="PrimeCart premium collection"
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="
+            object-cover
+            object-center
+            transition-transform
+            duration-700
+            ease-out
+            hover:scale-[1.015]
+          "
+        />
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* =========================================================
           BENEFITS
