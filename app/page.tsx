@@ -819,7 +819,7 @@ lg:min-h-[540px]
           "
         >
           <Link
-            href="/dashboard/products"
+            href="/auth/login"
             className="
               inline-flex
               h-9
@@ -864,7 +864,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/dashboard/products"
+            href="/auth/login"
             className="
               inline-flex
               h-9
@@ -1254,7 +1254,7 @@ lg:min-h-[540px]
             </div>
 
             <Link
-              href="/dashboard/categories/electronics"
+              href="/auth/login"
               className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
             >
               View all categories
@@ -1425,7 +1425,7 @@ lg:min-h-[540px]
                 </p>
 
                 <Link
-                  href="/dashboard/prime-points"
+                  href="/auth/login"
                   className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
                 >
                   Explore PrimePoints
@@ -1587,7 +1587,7 @@ lg:min-h-[540px]
                 </Link>
 
                 <Link
-                  href="/dashboard/categories/electronics"
+                  href="/auth/login"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
@@ -1707,7 +1707,7 @@ lg:min-h-[540px]
                 </Link>
 
                 <Link
-                  href="/dashboard/categories/electronics"
+                  href="/auth/login"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Categories
