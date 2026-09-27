@@ -904,116 +904,219 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* =========================================================
-          FLASH DEALS
-      ========================================================= */}
+{/* =========================================================
+    FLASH DEALS
+========================================================= */}
 
-      <section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
-        <div className="mx-auto max-w-7xl">
+<section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
+  <div className="mx-auto max-w-7xl">
 
-          <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+    {/* HEADER */}
 
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
-                <Zap size={15} />
-                Limited Time
-              </div>
+    <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
 
-              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-                Flash Deals
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-500 sm:text-base">
-                Grab the deal before the clock runs out.
-              </p>
-            </div>
-
-            {/* TIMER */}
-
-            <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
-
-              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-                <p className="text-lg font-black leading-none">
-                  {formattedTime.hours}
-                </p>
-
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-                  Hrs
-                </p>
-              </div>
-
-              <span className="font-bold text-[#b58c24]">
-                :
-              </span>
-
-              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-                <p className="text-lg font-black leading-none">
-                  {formattedTime.minutes}
-                </p>
-
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-                  Min
-                </p>
-              </div>
-
-              <span className="font-bold text-[#b58c24]">
-                :
-              </span>
-
-              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-                <p className="text-lg font-black leading-none">
-                  {formattedTime.seconds}
-                </p>
-
-                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-                  Sec
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
-
-            {dealItems.map((deal) => (
-              <Link
-                key={deal.title}
-                href={deal.href}
-                className="group relative overflow-hidden rounded-[24px] border border-[#e9e2d5] bg-white p-3.5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[28px] sm:p-5"
-              >
-                <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
-                  {deal.discount}
-                </div>
-
-                <div className="flex h-[185px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
-                  <Image
-                    src={deal.image}
-                    alt={deal.title}
-                    width={300}
-                    height={240}
-                    className="h-[155px] w-full object-contain transition duration-500 group-hover:scale-105 sm:h-[190px]"
-                  />
-                </div>
-
-                <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
-                  <div className="min-w-0">
-                    <p className="truncate text-lg font-black sm:text-xl">
-                      {deal.title}
-                    </p>
-
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
-                      {deal.subtitle}
-                    </p>
-                  </div>
-
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e1d4] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
-                    <ArrowUpRight size={17} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+      <div>
+        <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
+          <Zap size={15} />
+          Limited Time
         </div>
-      </section>
+
+        <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+          Flash Deals
+        </h2>
+
+        <p className="mt-2 text-sm text-gray-500 sm:text-base">
+          Grab the deal before the clock runs out.
+        </p>
+      </div>
+
+      {/* TIMER */}
+
+      <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
+
+        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+          <p className="text-lg font-black leading-none">
+            {formattedTime.hours}
+          </p>
+
+          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+            Hrs
+          </p>
+        </div>
+
+        <span className="font-bold text-[#b58c24]">
+          :
+        </span>
+
+        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+          <p className="text-lg font-black leading-none">
+            {formattedTime.minutes}
+          </p>
+
+          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+            Min
+          </p>
+        </div>
+
+        <span className="font-bold text-[#b58c24]">
+          :
+        </span>
+
+        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+          <p className="text-lg font-black leading-none">
+            {formattedTime.seconds}
+          </p>
+
+          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+            Sec
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* DEAL CARDS */}
+
+    <div
+      className="
+        flex
+        gap-4
+        overflow-x-auto
+        pb-4
+        snap-x
+        snap-mandatory
+        scrollbar-hide
+
+        sm:grid
+        sm:grid-cols-2
+        sm:gap-5
+        sm:overflow-visible
+        sm:pb-0
+        sm:snap-none
+
+        md:grid-cols-3
+      "
+      style={{
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      }}
+    >
+
+      {dealItems.map((deal) => (
+        <Link
+          key={deal.title}
+          href={deal.href}
+          className="
+            group
+            relative
+            w-[82vw]
+            min-w-[82vw]
+            shrink-0
+            snap-start
+            overflow-hidden
+            rounded-[24px]
+            border
+            border-[#e9e2d5]
+            bg-white
+            p-3.5
+            shadow-sm
+            transition
+            duration-300
+            active:scale-[0.98]
+
+            sm:w-auto
+            sm:min-w-0
+            sm:shrink
+            sm:rounded-[28px]
+            sm:p-5
+            sm:active:scale-100
+
+            sm:hover:-translate-y-1
+            sm:hover:shadow-xl
+          "
+        >
+
+          {/* DISCOUNT BADGE */}
+
+          <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
+            {deal.discount}
+          </div>
+
+          {/* IMAGE */}
+
+          <div className="flex h-[190px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
+
+            <Image
+              src={deal.image}
+              alt={deal.title}
+              width={300}
+              height={240}
+              className="
+                h-[160px]
+                w-full
+                object-contain
+                transition
+                duration-500
+                sm:h-[190px]
+                sm:group-hover:scale-105
+              "
+            />
+
+          </div>
+
+          {/* CONTENT */}
+
+          <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
+
+            <div className="min-w-0">
+
+              <p className="truncate text-lg font-black sm:text-xl">
+                {deal.title}
+              </p>
+
+              <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
+                {deal.subtitle}
+              </p>
+
+            </div>
+
+            <div
+              className="
+                flex
+                h-9
+                w-9
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-[#e8e1d4]
+                transition
+
+                sm:h-10
+                sm:w-10
+                sm:group-hover:border-[#D4AF37]
+                sm:group-hover:bg-[#D4AF37]
+                sm:group-hover:text-white
+              "
+            >
+              <ArrowUpRight size={17} />
+            </div>
+
+          </div>
+        </Link>
+      ))}
+    </div>
+
+    {/* MOBILE SWIPE INDICATOR */}
+
+    <div className="mt-3 flex items-center justify-center gap-1.5 sm:hidden">
+      <span className="h-1.5 w-5 rounded-full bg-[#D4AF37]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
+    </div>
+
+  </div>
+</section>
 
       {/* =========================================================
           CATEGORIES
