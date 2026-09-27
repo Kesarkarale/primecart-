@@ -126,7 +126,7 @@ const HERO_LINKS = [
   "/dashboard/prime-match",
   "/dashboard/categories/electronics",
   "/dashboard/budget-builder",
-  "/dashboard/prime-points",
+  "/dashboard/categories",
 ];
 
 const CATEGORY_ORDER = [
