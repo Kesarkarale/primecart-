@@ -5512,8 +5512,22 @@ export default function DashboardPage() {
           -webkit-user-drag: none;
         }
 
+        /* Final banner fit: remove the visible source-image gutter while
+           keeping every slide inside the same premium frame. */
+        .hero-banner {
+          object-fit: cover !important;
+          object-position: center center;
+          transform: scale(1.055);
+          transform-origin: center center;
+        }
+
+        .hero-banner.active {
+          transform: scale(1.055);
+        }
+
         .hero-banner.active:hover {
           filter: saturate(1.02) brightness(1.01);
+          transform: scale(1.07);
         }
 
         .hero-banner:focus-visible {
@@ -5542,6 +5556,20 @@ export default function DashboardPage() {
             aspect-ratio: 16 / 9;
             height: auto;
             min-height: 0;
+          }
+        }
+
+        /* Keep the desktop hero visually balanced with the navigation above. */
+        @media (min-width: 981px) {
+          .hero-image-frame {
+            height: clamp(300px, 25.5vw, 410px);
+          }
+        }
+
+        @media (max-width: 980px) {
+          .hero-banner,
+          .hero-banner.active {
+            transform: none;
           }
         }
 
