@@ -697,9 +697,9 @@ export default function HomePage() {
       className="
         grid
         grid-cols-2
-        min-h-[365px]
-        sm:min-h-[470px]
-        lg:min-h-[560px]
+        min-h-[320px]
+sm:min-h-[430px]
+lg:min-h-[540px]
       "
     >
       {/* =====================================================
@@ -1001,14 +1001,13 @@ export default function HomePage() {
     className="
       object-contain
       object-center
-      scale-[1.04]
+      scale-[1.02]
       transition-transform
       duration-700
       ease-out
-      sm:scale-[1.06]
+      sm:scale-[1.04]
       lg:object-cover
       lg:scale-100
-      lg:object-center
       lg:hover:scale-[1.015]
     "
   />
