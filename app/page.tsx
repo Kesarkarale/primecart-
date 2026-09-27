@@ -1016,6 +1016,47 @@ lg:min-h-[540px]
   </div>
 </section>
 
+      {/* =========================================================
+          BENEFITS
+      ========================================================= */}
+
+      <section className="px-3 py-3 sm:px-6 sm:py-5">
+        <div className="mx-auto max-w-7xl">
+
+          <div className="grid overflow-hidden rounded-3xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+
+            {benefits.map((benefit, index) => {
+              const Icon = benefit.icon;
+
+              return (
+                <div
+                  key={benefit.title}
+                  className={`flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-6 ${
+                    index !== benefits.length - 1
+                      ? "border-b border-[#eee8dc] sm:border-r lg:border-b-0"
+                      : ""
+                  }`}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12 sm:rounded-2xl">
+                    <Icon size={19} className="sm:h-[22px] sm:w-[22px]" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-bold sm:text-base">
+                      {benefit.title}
+                    </h3>
+
+                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500 sm:text-xs">
+                      {benefit.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
 {/* =========================================================
     FLASH DEALS
 ========================================================= */}
