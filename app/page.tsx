@@ -1007,7 +1007,8 @@ lg:min-h-[540px]
       ease-out
       sm:scale-[1.04]
       lg:object-cover
-      lg:scale-100
+      lg:scale-[0.88]
+      xl:scale-[0.90]
       lg:hover:scale-[1.015]
     "
   />
