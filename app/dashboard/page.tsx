@@ -150,6 +150,72 @@ function getImageUrl(value?: string | null) {
   return `/${v}`;
 }
 
+function getImageCandidates(value?: string | null) {
+  if (!value?.trim()) return [];
+  const v = value.trim();
+
+  if (/^https?:\/\//i.test(v)) return [v];
+  if (v.startsWith("/")) return [v];
+
+  const clean = v.replace(/^\/+/, "");
+  const encoded = clean
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+
+  return [
+    `/${clean}`,
+    `/products/${encoded}`,
+    `/product/${encoded}`,
+    `/product-images/${encoded}`,
+    `/images/products/${encoded}`,
+    `/images/${encoded}`,
+  ];
+}
+
+function SafeProductImage({
+  src,
+  alt,
+  className,
+  iconSize = 36,
+}: {
+  src?: string | null;
+  alt: string;
+  className?: string;
+  iconSize?: number;
+}) {
+  const candidates = useMemo(() => getImageCandidates(src), [src]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [src]);
+
+  const current = candidates[index];
+
+  if (!current) {
+    return (
+      <span className={`${className || ""} image-fallback`} aria-hidden="true">
+        <ShoppingBag size={iconSize} strokeWidth={1.25} />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={current}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => {
+        setIndex((value) =>
+          value + 1 < candidates.length ? value + 1 : candidates.length
+        );
+      }}
+    />
+  );
+}
+
 function formatPrice(value: number | null | undefined) {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
@@ -253,23 +319,12 @@ function ProductCard({
         onClick={onOpen}
         aria-label={`Open ${product.name}`}
       >
-        {product.image_url ? (
-          <img
-            src={getImageUrl(product.image_url)}
-            alt={product.name}
-            className="product-image"
-            onError={(event) => {
-              const target = event.currentTarget;
-
-              if (!target.dataset.fallback) {
-                target.dataset.fallback = "1";
-                target.src = "/product-placeholder.png";
-              }
-            }}
-          />
-        ) : (
-          <ShoppingBag size={48} strokeWidth={1.2} />
-        )}
+        <SafeProductImage
+          src={product.image_url}
+          alt={product.name}
+          className="product-image"
+          iconSize={48}
+        />
 
         <span className="image-view">
           <Eye size={13} />
@@ -965,16 +1020,11 @@ export default function DashboardPage() {
                       }}
                     >
                       <span className="suggestion-image">
-                        {product.image_url ? (
-                          <img
-                            src={getImageUrl(
-                              product.image_url
-                            )}
-                            alt=""
-                          />
-                        ) : (
-                          <ShoppingBag size={18} />
-                        )}
+                        <SafeProductImage
+                          src={product.image_url}
+                          alt=""
+                          iconSize={18}
+                        />
                       </span>
 
                       <span className="suggestion-copy">
@@ -1434,6 +1484,9 @@ export default function DashboardPage() {
                         ? "active"
                         : ""
                     }`}
+                    onError={(event) => {
+                      event.currentTarget.style.opacity = "0";
+                    }}
                   />
                 )
               )}
@@ -1730,16 +1783,11 @@ export default function DashboardPage() {
                     }
                   >
                     <div className="flash-product-image">
-                      {product.image_url ? (
-                        <img
-                          src={getImageUrl(
-                            product.image_url
-                          )}
-                          alt={product.name}
-                        />
-                      ) : (
-                        <ShoppingBag size={30} />
-                      )}
+                      <SafeProductImage
+                        src={product.image_url}
+                        alt={product.name}
+                        iconSize={30}
+                      />
                     </div>
 
                     <div>
@@ -2813,8 +2861,12 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .hero-layout {
-          display: block;
-          width: 100%;
+          display: grid;
+          grid-template-columns:
+            minmax(0, 1fr)
+            300px;
+          gap: 21px;
+          align-items: stretch;
         }
 
         .hero-carousel {
@@ -2842,6 +2894,7 @@ export default function DashboardPage() {
           width: 100%;
           height: 100%;
           object-fit: contain;
+          background: #f5eee0;
           opacity: 0;
           transform: scale(1.015);
           transition:
@@ -3581,63 +3634,82 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .flash-section {
-          margin: 28px 0 31px;
-          border-radius: 13px;
+          margin: 30px 0 34px;
+          border: 1px solid #e5c77f;
+          border-radius: 18px;
           overflow: hidden;
           background:
-            linear-gradient(
-              135deg,
-              #a9700e,
-              #d0a040
-            );
+            radial-gradient(circle at 8% 0%, rgba(255,255,255,.25), transparent 30%),
+            linear-gradient(135deg, #8f620f 0%, #b98220 48%, #d4a94c 100%);
           color: #fff;
-          box-shadow: 0 10px 30px
-            rgba(163, 115, 19, 0.13);
+          box-shadow: 0 18px 42px rgba(126, 88, 15, .18);
+          position: relative;
+        }
+
+        .flash-section::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,.10) 50%, transparent 65%);
+          transform: translateX(-110%);
+          animation: flashSweep 8s ease-in-out infinite;
         }
 
         .flash-header {
-          padding: 15px 18px;
+          position: relative;
+          z-index: 2;
+          padding: 18px 20px;
           display: flex;
           align-items: center;
-          gap: 20px;
-          border-bottom: 1px solid
-            rgba(255, 255, 255, 0.16);
+          gap: 18px;
+          border-bottom: 1px solid rgba(255, 255, 255, .18);
         }
 
         .flash-title {
           display: flex;
           align-items: center;
-          gap: 7px;
-          font-size: 17px;
-          font-weight: 800;
+          gap: 8px;
+          font-size: 20px;
+          letter-spacing: -.3px;
+          font-weight: 900;
         }
 
         .flash-header p {
-          margin: 3px 0 0;
-          font-size: 8px;
-          opacity: 0.82;
+          margin: 5px 0 0;
+          font-size: 10px;
+          line-height: 1.4;
+          opacity: .84;
         }
 
         .flash-timer {
           margin-left: auto;
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
+          padding: 6px 9px;
+          border: 1px solid rgba(255,255,255,.22);
+          border-radius: 10px;
+          background: rgba(57, 36, 5, .18);
+          backdrop-filter: blur(8px);
         }
 
         .flash-timer span {
-          font-size: 7px;
-          opacity: 0.75;
-          margin-right: 4px;
+          font-size: 8px;
+          font-weight: 800;
+          opacity: .78;
+          margin-right: 3px;
+          letter-spacing: .6px;
         }
 
         .flash-timer b {
-          min-width: 27px;
-          padding: 5px 4px;
-          border-radius: 5px;
+          min-width: 31px;
+          padding: 6px 5px;
+          border-radius: 7px;
           text-align: center;
-          background: rgba(255, 255, 255, 0.15);
-          font-size: 10px;
+          background: rgba(255,255,255,.16);
+          font-size: 11px;
+          font-variant-numeric: tabular-nums;
         }
 
         .flash-timer i {
@@ -3646,61 +3718,61 @@ export default function DashboardPage() {
         }
 
         .flash-header > a {
+          position: relative;
+          z-index: 2;
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 6px;
           background: #fff;
-          color: #976d16;
-          border-radius: 6px;
-          padding: 7px 10px;
-          font-size: 8px;
-          font-weight: 800;
+          color: #8a6113;
+          border-radius: 9px;
+          padding: 9px 12px;
+          font-size: 9px;
+          font-weight: 900;
+          white-space: nowrap;
+          box-shadow: 0 7px 18px rgba(75, 49, 8, .12);
+          transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .flash-header > a:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 22px rgba(75, 49, 8, .18);
         }
 
         .flash-products {
+          position: relative;
+          z-index: 2;
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
-          padding: 12px;
-          gap: 9px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          padding: 14px;
+          gap: 12px;
         }
 
         .flash-product {
-          border: 1px solid
-            rgba(255, 255, 255, 0.18);
-          border-radius: 8px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.1
-          );
+          min-width: 0;
+          border: 1px solid rgba(255,255,255,.20);
+          border-radius: 12px;
+          background: rgba(255,255,255,.12);
           color: #fff;
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 7px;
+          gap: 11px;
+          padding: 9px;
           text-align: left;
-          transition:
-            background 0.2s ease,
-            transform 0.2s ease;
+          cursor: pointer;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+          transition: background .2s ease, transform .2s ease, border-color .2s ease;
         }
 
         .flash-product:hover {
-          background: rgba(
-            255,
-            255,
-            255,
-            0.17
-          );
-          transform: translateY(-2px);
+          background: rgba(255,255,255,.19);
+          border-color: rgba(255,255,255,.35);
+          transform: translateY(-3px);
         }
 
         .flash-product-image {
-          width: 60px;
-          height: 60px;
+          width: 74px;
+          height: 74px;
           background: rgba(
             255,
             255,
@@ -3714,10 +3786,18 @@ export default function DashboardPage() {
           overflow: hidden;
         }
 
-        .flash-product-image img {
+        .flash-product-image img,
+        .flash-product-image .image-fallback {
           width: 100%;
           height: 100%;
           object-fit: contain;
+        }
+
+        .image-fallback {
+          display: grid;
+          place-items: center;
+          color: #b68a31;
+          background: linear-gradient(145deg, #fff, #f8f1df);
         }
 
         .flash-product > div:last-child {
@@ -3726,7 +3806,7 @@ export default function DashboardPage() {
 
         .flash-product strong {
           display: block;
-          font-size: 9px;
+          font-size: 11px;
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
@@ -3734,7 +3814,7 @@ export default function DashboardPage() {
 
         .flash-product span {
           display: block;
-          font-size: 11px;
+          font-size: 14px;
           font-weight: 800;
           margin-top: 5px;
         }
@@ -4450,6 +4530,7 @@ export default function DashboardPage() {
 
           .prime-logo {
             width: 118px;
+            height: 36px;
           }
 
           .header-actions {
@@ -4458,12 +4539,6 @@ export default function DashboardPage() {
 
           .nav-inner {
             gap: 21px;
-          }
-
-          .hero-layout {
-            grid-template-columns:
-              minmax(0, 1fr)
-              270px;
           }
 
           .five-columns {
@@ -4513,6 +4588,7 @@ export default function DashboardPage() {
 
           .prime-logo {
             width: 112px;
+            height: 35px;
           }
 
           .header-actions {
@@ -4531,6 +4607,13 @@ export default function DashboardPage() {
             display: none;
           }
 
+          .hero-layout {
+            display: block;
+          }
+
+          .right-rail {
+            display: none;
+          }
 
           .five-columns {
             grid-template-columns: repeat(
@@ -4627,7 +4710,7 @@ export default function DashboardPage() {
           .hero-image-frame {
             aspect-ratio: 16 / 9;
             min-height: 0;
-            border-radius: 9px;
+            border-radius: 10px;
           }
 
           .hero-arrow {
@@ -4644,6 +4727,10 @@ export default function DashboardPage() {
           }
 
           .hero-counter {
+            display: none;
+          }
+
+          .right-rail {
             display: none;
           }
 
@@ -4753,7 +4840,26 @@ export default function DashboardPage() {
           }
 
           .flash-products {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: 10px;
+          }
+
+          .flash-product {
+            align-items: flex-start;
+            padding: 8px;
+          }
+
+          .flash-product-image {
+            width: 62px;
+            height: 62px;
+          }
+
+          .flash-product strong {
+            font-size: 9px;
+          }
+
+          .flash-product span {
+            font-size: 12px;
           }
 
           .promo-grid {
@@ -4813,6 +4919,7 @@ export default function DashboardPage() {
         @media (max-width: 430px) {
           .hero-image-frame {
             aspect-ratio: 16 / 9;
+            min-height: 0;
           }
 
           .product-image-wrap {
@@ -4840,7 +4947,30 @@ export default function DashboardPage() {
           }
 
           .flash-title {
-            font-size: 15px;
+            font-size: 16px;
+          }
+
+          .flash-header {
+            padding: 14px;
+          }
+
+          .flash-header p {
+            display: none;
+          }
+
+          .flash-timer {
+            margin-left: 0;
+            order: 3;
+            width: 100%;
+            justify-content: center;
+          }
+
+          .flash-header > a {
+            margin-left: auto;
+          }
+
+          .flash-products {
+            gap: 8px;
           }
 
           .flash-header > a {
@@ -4875,6 +5005,11 @@ export default function DashboardPage() {
           .trust-item small {
             font-size: 7px;
           }
+        }
+
+        @keyframes flashSweep {
+          0%, 55% { transform: translateX(-110%); }
+          75%, 100% { transform: translateX(110%); }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -5050,9 +5185,11 @@ function PromoCard({
       </div>
 
       {product?.image_url && (
-        <img
-          src={getImageUrl(product.image_url)}
+        <SafeProductImage
+          src={product.image_url}
           alt=""
+          className="promo-product-image"
+          iconSize={32}
         />
       )}
     </div>
