@@ -1504,7 +1504,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          </section>
+        </section>
 
         {/* CATEGORIES */}
         <section className="category-section">
@@ -2813,12 +2813,8 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .hero-layout {
-          display: grid;
-          grid-template-columns:
-            minmax(0, 1fr)
-            300px;
-          gap: 21px;
-          align-items: stretch;
+          display: block;
+          width: 100%;
         }
 
         .hero-carousel {
@@ -2845,7 +2841,7 @@ export default function DashboardPage() {
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
           opacity: 0;
           transform: scale(1.015);
           transition:
@@ -4453,7 +4449,7 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 155px;
+            width: 118px;
           }
 
           .header-actions {
@@ -4516,7 +4512,7 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 145px;
+            width: 112px;
           }
 
           .header-actions {
@@ -4535,26 +4531,6 @@ export default function DashboardPage() {
             display: none;
           }
 
-          .hero-layout {
-            grid-template-columns: 1fr;
-          }
-
-          .right-rail {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .welcome-card {
-            grid-row: span 2;
-          }
-
-          .top-deals-card {
-            grid-column: 2;
-          }
-
-          .smart-deal-card {
-            grid-column: 2;
-          }
 
           .five-columns {
             grid-template-columns: repeat(
@@ -4625,7 +4601,8 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 132px;
+            width: 105px;
+            height: 34px;
           }
 
           .header-actions {
@@ -4648,9 +4625,9 @@ export default function DashboardPage() {
           }
 
           .hero-image-frame {
-            aspect-ratio: 1.35 / 1;
-            min-height: 235px;
-            border-radius: 8px;
+            aspect-ratio: 16 / 9;
+            min-height: 0;
+            border-radius: 9px;
           }
 
           .hero-arrow {
@@ -4668,17 +4645,6 @@ export default function DashboardPage() {
 
           .hero-counter {
             display: none;
-          }
-
-          .right-rail {
-            grid-template-columns: 1fr;
-          }
-
-          .welcome-card,
-          .smart-deal-card,
-          .top-deals-card {
-            grid-column: auto;
-            grid-row: auto;
           }
 
           .category-section {
@@ -4846,7 +4812,7 @@ export default function DashboardPage() {
 
         @media (max-width: 430px) {
           .hero-image-frame {
-            aspect-ratio: 1.05 / 1;
+            aspect-ratio: 16 / 9;
           }
 
           .product-image-wrap {
