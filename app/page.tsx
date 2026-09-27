@@ -1017,45 +1017,128 @@ lg:min-h-[540px]
 </section>
 
       {/* =========================================================
-          BENEFITS
-      ========================================================= */}
+    BENEFITS
+========================================================= */}
 
-      <section className="px-3 py-3 sm:px-6 sm:py-5">
-        <div className="mx-auto max-w-7xl">
+<section className="px-3 py-2 sm:px-6 sm:py-4">
+  <div className="mx-auto max-w-7xl">
+    <div
+      className="
+        grid
+        grid-cols-2
+        overflow-hidden
+        rounded-2xl
+        border
+        border-[#e9e2d5]
+        bg-white
+        shadow-sm
+        sm:grid-cols-2
+        lg:grid-cols-4
+        lg:rounded-3xl
+      "
+    >
+      {benefits.map((benefit, index) => {
+        const Icon = benefit.icon;
 
-          <div className="grid overflow-hidden rounded-3xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+        return (
+          <div
+            key={benefit.title}
+            className={`
+              flex
+              min-w-0
+              items-center
+              gap-2.5
+              px-3
+              py-3
+              sm:gap-4
+              sm:px-5
+              sm:py-6
 
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
+              ${index % 2 === 0
+                ? "border-r border-[#eee8dc] lg:border-r"
+                : ""}
 
-              return (
-                <div
-                  key={benefit.title}
-                  className={`flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-6 ${
-                    index !== benefits.length - 1
-                      ? "border-b border-[#eee8dc] sm:border-r lg:border-b-0"
-                      : ""
-                  }`}
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12 sm:rounded-2xl">
-                    <Icon size={19} className="sm:h-[22px] sm:w-[22px]" />
-                  </div>
+              ${index < 2
+                ? "border-b border-[#eee8dc] lg:border-b-0"
+                : ""}
 
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-bold sm:text-base">
-                      {benefit.title}
-                    </h3>
+              lg:border-b-0
+              lg:px-5
+            `}
+          >
+            {/* Icon */}
+            <div
+              className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-lg
+                bg-[#fff7e5]
+                text-[#b58c24]
 
-                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500 sm:text-xs">
-                      {benefit.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                sm:h-11
+                sm:w-11
+                sm:rounded-xl
+
+                lg:h-12
+                lg:w-12
+                lg:rounded-2xl
+              "
+            >
+              <Icon
+                size={16}
+                className="
+                  sm:h-[20px]
+                  sm:w-[20px]
+                  lg:h-[22px]
+                  lg:w-[22px]
+                "
+              />
+            </div>
+
+            {/* Text */}
+            <div className="min-w-0">
+              <h3
+                className="
+                  truncate
+                  text-[11px]
+                  font-bold
+                  leading-tight
+                  text-[#171717]
+
+                  sm:text-sm
+                  lg:text-base
+                "
+              >
+                {benefit.title}
+              </h3>
+
+              <p
+                className="
+                  mt-0.5
+                  line-clamp-1
+                  text-[8px]
+                  leading-3
+                  text-gray-500
+
+                  sm:text-[11px]
+                  sm:leading-4
+
+                  lg:text-xs
+                "
+              >
+                {benefit.description}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
 {/* =========================================================
     FLASH DEALS
