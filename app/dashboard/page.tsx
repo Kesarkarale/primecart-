@@ -118,8 +118,7 @@ const HERO_BANNERS = [
   "/banner/hero-banner8.png",
 ];
 
-// Each hero banner opens the corresponding PrimeCart destination.
-const HERO_TARGETS = [
+const HERO_LINKS = [
   "/dashboard/products",
   "/dashboard/categories/beauty",
   "/dashboard/categories/home-and-kitchen",
@@ -160,82 +159,6 @@ function getImageUrl(value?: string | null) {
   }
 
   return `/${v}`;
-}
-
-function getImageCandidates(value?: string | null) {
-  if (!value?.trim()) return [];
-
-  const raw = value.trim();
-
-  if (/^https?:\/\//i.test(raw)) return [raw];
-
-  const clean = raw
-    .replace(/^https?:\/\/[^/]+\//i, "")
-    .replace(/^public\//i, "")
-    .replace(/^\/+/, "");
-
-  const encoded = clean
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-
-  const candidates = raw.startsWith("/")
-    ? [raw]
-    : [
-        `/${encoded}`,
-        `/products/${encoded}`,
-        `/product/${encoded}`,
-        `/product-images/${encoded}`,
-        `/images/products/${encoded}`,
-        `/images/${encoded}`,
-        `/assets/products/${encoded}`,
-        `/assets/images/${encoded}`,
-      ];
-
-  return [...new Set(candidates)];
-}
-
-function SafeProductImage({
-  src,
-  alt,
-  className,
-  iconSize = 36,
-}: {
-  src?: string | null;
-  alt: string;
-  className?: string;
-  iconSize?: number;
-}) {
-  const candidates = useMemo(() => getImageCandidates(src), [src]);
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [src]);
-
-  const current = candidates[index];
-
-  if (!current) {
-    return (
-      <span className={`${className || ""} image-fallback`} aria-hidden="true">
-        <ShoppingBag size={iconSize} strokeWidth={1.25} />
-      </span>
-    );
-  }
-
-  return (
-    <img
-      src={current}
-      alt={alt}
-      className={className}
-      loading="lazy"
-      onError={() => {
-        setIndex((value) =>
-          value + 1 < candidates.length ? value + 1 : candidates.length
-        );
-      }}
-    />
-  );
 }
 
 function formatPrice(value: number | null | undefined) {
@@ -280,6 +203,54 @@ function getCategoryIcon(name: string) {
   if (n.includes("bag")) return ShoppingBag;
 
   return Package;
+}
+
+function getImageCandidates(value?: string | null) {
+  if (!value?.trim()) return [];
+  const raw = value.trim();
+  if (/^https?:\/\//i.test(raw)) return [raw];
+
+  const clean = raw.replace(/^public[\\/]/i, "").replace(/^\//, "");
+  const encoded = clean.split("/").map(encodeURIComponent).join("/");
+  return Array.from(new Set([
+    `/${clean}`,
+    `/${encoded}`,
+    `/products/${clean}`,
+    `/product/${clean}`,
+    `/product-images/${clean}`,
+    `/images/products/${clean}`,
+    `/images/${clean}`,
+    `/assets/products/${clean}`,
+    `/assets/images/${clean}`,
+    "/product-placeholder.png",
+  ]));
+}
+
+function SafeProductImage({
+  src,
+  alt,
+  className,
+}: {
+  src?: string | null;
+  alt: string;
+  className: string;
+}) {
+  const candidates = getImageCandidates(src);
+  const [index, setIndex] = useState(0);
+
+  if (!candidates.length || index >= candidates.length) {
+    return <ShoppingBag size={42} strokeWidth={1.2} />;
+  }
+
+  return (
+    <img
+      src={candidates[index]}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => setIndex((current) => current + 1)}
+    />
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -341,12 +312,15 @@ function ProductCard({
         onClick={onOpen}
         aria-label={`Open ${product.name}`}
       >
-        <SafeProductImage
-          src={product.image_url}
-          alt={product.name}
-          className="product-image"
-          iconSize={48}
-        />
+        {product.image_url ? (
+          <SafeProductImage
+            src={product.image_url}
+            alt={product.name}
+            className="product-image"
+          />
+        ) : (
+          <ShoppingBag size={48} strokeWidth={1.2} />
+        )}
 
         <span className="image-view">
           <Eye size={13} />
@@ -576,14 +550,6 @@ export default function DashboardPage() {
 
     return () => window.clearInterval(timer);
   }, []);
-
-  function handleHeroClick(index: number) {
-    const target = HERO_TARGETS[index];
-
-    if (target) {
-      router.push(target);
-    }
-  }
 
   /* ------------------------------------------------------------------------ */
   /* FLASH COUNTDOWN                                                          */
@@ -1050,11 +1016,15 @@ export default function DashboardPage() {
                       }}
                     >
                       <span className="suggestion-image">
-                        <SafeProductImage
-                          src={product.image_url}
-                          alt=""
-                          iconSize={18}
-                        />
+                        {product.image_url ? (
+                          <SafeProductImage
+                            src={product.image_url}
+                            alt=""
+                            className="suggestion-product-image"
+                          />
+                        ) : (
+                          <ShoppingBag size={18} />
+                        )}
                       </span>
 
                       <span className="suggestion-copy">
@@ -1497,7 +1467,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* HERO + RIGHT RAIL */}
+        {/* HERO — FULL WIDTH CLICKABLE BANNER */}
         <section className="hero-layout">
           <div className="hero-carousel">
             <div className="hero-image-frame">
@@ -1514,18 +1484,14 @@ export default function DashboardPage() {
                         ? "active"
                         : ""
                     }`}
-                    role="link"
+                    role="button"
                     tabIndex={index === heroIndex ? 0 : -1}
-                    aria-label={`Open promotion ${index + 1}`}
-                    onClick={() => handleHeroClick(index)}
+                    onClick={() => router.push(HERO_LINKS[index])}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        handleHeroClick(index);
+                        router.push(HERO_LINKS[index]);
                       }
-                    }}
-                    onError={(event) => {
-                      event.currentTarget.style.opacity = "0";
                     }}
                   />
                 )
@@ -1534,6 +1500,7 @@ export default function DashboardPage() {
               <div className="hero-shine" />
 
               <button
+                type="button"
                 className="hero-arrow hero-left"
                 onClick={() =>
                   setHeroIndex(
@@ -1549,6 +1516,7 @@ export default function DashboardPage() {
               </button>
 
               <button
+                type="button"
                 className="hero-arrow hero-right"
                 onClick={() =>
                   setHeroIndex(
@@ -1580,6 +1548,7 @@ export default function DashboardPage() {
                   (_, index) => (
                     <button
                       key={index}
+                      type="button"
                       className={
                         index === heroIndex
                           ? "active"
@@ -1615,6 +1584,7 @@ export default function DashboardPage() {
 
           <div className="category-rail-wrap">
             <button
+              type="button"
               className="rail-control"
               onClick={() =>
                 scrollCategories("left")
@@ -1635,6 +1605,7 @@ export default function DashboardPage() {
 
                 return (
                   <button
+                    type="button"
                     className="category-item"
                     key={String(category.id)}
                     onClick={() =>
@@ -1659,6 +1630,7 @@ export default function DashboardPage() {
             </div>
 
             <button
+              type="button"
               className="rail-control"
               onClick={() =>
                 scrollCategories("right")
@@ -1812,74 +1784,55 @@ export default function DashboardPage() {
             </div>
 
             <div className="flash-products">
-              {flashProducts.slice(0, 4).map((product) => {
-                const discount = getDiscount(
-                  product.price,
-                  product.original_price
-                );
-                const stock = Number(product.stock || 0);
-                const category =
-                  categoryMap.get(String(product.category_id)) ||
-                  "Limited Deal";
-
-                return (
+              {flashProducts
+                .slice(0, 4)
+                .map((product) => (
                   <button
                     key={String(product.id)}
                     type="button"
                     className="flash-product"
-                    onClick={() => openProduct(product)}
-                    aria-label={`Open ${product.name}`}
+                    onClick={() =>
+                      openProduct(product)
+                    }
                   >
                     <div className="flash-product-image">
-                      <SafeProductImage
-                        src={product.image_url}
-                        alt={product.name}
-                        iconSize={34}
-                      />
-                      <span className="flash-image-badge">
-                        <Zap size={9} fill="currentColor" />
-                        FLASH
+                      {product.image_url ? (
+                        <SafeProductImage
+                          src={product.image_url}
+                          alt={product.name}
+                          className="flash-product-img"
+                        />
+                      ) : (
+                        <ShoppingBag size={30} />
+                      )}
+                    </div>
+
+                    <div>
+                      <strong>
+                        {product.name}
+                      </strong>
+
+                      <span>
+                        {formatPrice(
+                          product.price
+                        )}
                       </span>
-                    </div>
 
-                    <div className="flash-product-info">
-                      <small>{category}</small>
-                      <strong>{product.name}</strong>
-
-                      <div className="flash-price-row">
-                        <span>{formatPrice(product.price)}</span>
-                        {product.original_price &&
-                          product.original_price > Number(product.price || 0) && (
-                            <del>{formatPrice(product.original_price)}</del>
+                      {getDiscount(
+                        product.price,
+                        product.original_price
+                      ) > 0 && (
+                        <em>
+                          {getDiscount(
+                            product.price,
+                            product.original_price
                           )}
-                      </div>
-
-                      <div className="flash-meta-row">
-                        {discount > 0 && <em>{discount}% OFF</em>}
-                        <span>
-                          <Star size={10} fill="currentColor" />
-                          {Number(product.rating || 0).toFixed(1)}
-                        </span>
-                      </div>
-
-                      <div className="flash-stock">
-                        <div className="flash-stock-track">
-                          <span
-                            style={{
-                              width: `${Math.min(92, Math.max(22, 100 - Math.min(stock, 80)))}%`,
-                            }}
-                          />
-                        </div>
-                        <small>{stock > 0 && stock <= 12 ? `Only ${stock} left` : "Selling fast"}</small>
-                      </div>
+                          % OFF
+                        </em>
+                      )}
                     </div>
-
-                    <span className="flash-open">
-                      <ArrowUpRight size={15} />
-                    </span>
                   </button>
-                );
-              })}
+                ))}
             </div>
           </section>
         )}
@@ -2927,7 +2880,7 @@ export default function DashboardPage() {
         .hero-layout {
           display: block;
           width: 100%;
-          min-width: 0;
+          margin-bottom: 18px;
         }
 
         .hero-carousel {
@@ -2937,8 +2890,9 @@ export default function DashboardPage() {
         .hero-image-frame {
           position: relative;
           width: 100%;
-          aspect-ratio: 2.55 / 1;
-          min-height: 300px;
+          aspect-ratio: 2.72 / 1;
+          min-height: 245px;
+          max-height: 430px;
           border-radius: 12px;
           overflow: hidden;
           background: #f5eee0;
@@ -2955,7 +2909,6 @@ export default function DashboardPage() {
           width: 100%;
           height: 100%;
           object-fit: contain;
-          background: #f5eee0;
           opacity: 0;
           transform: scale(1.015);
           transition:
@@ -3695,82 +3648,63 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .flash-section {
-          margin: 30px 0 34px;
-          border: 1px solid #e5c77f;
-          border-radius: 18px;
+          margin: 28px 0 31px;
+          border-radius: 13px;
           overflow: hidden;
           background:
-            radial-gradient(circle at 8% 0%, rgba(255,255,255,.25), transparent 30%),
-            linear-gradient(135deg, #8f620f 0%, #b98220 48%, #d4a94c 100%);
+            linear-gradient(
+              135deg,
+              #a9700e,
+              #d0a040
+            );
           color: #fff;
-          box-shadow: 0 18px 42px rgba(126, 88, 15, .18);
-          position: relative;
-        }
-
-        .flash-section::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,.10) 50%, transparent 65%);
-          transform: translateX(-110%);
-          animation: flashSweep 8s ease-in-out infinite;
+          box-shadow: 0 10px 30px
+            rgba(163, 115, 19, 0.13);
         }
 
         .flash-header {
-          position: relative;
-          z-index: 2;
-          padding: 18px 20px;
+          padding: 15px 18px;
           display: flex;
           align-items: center;
-          gap: 18px;
-          border-bottom: 1px solid rgba(255, 255, 255, .18);
+          gap: 20px;
+          border-bottom: 1px solid
+            rgba(255, 255, 255, 0.16);
         }
 
         .flash-title {
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-size: 20px;
-          letter-spacing: -.3px;
-          font-weight: 900;
+          gap: 7px;
+          font-size: 17px;
+          font-weight: 800;
         }
 
         .flash-header p {
-          margin: 5px 0 0;
-          font-size: 10px;
-          line-height: 1.4;
-          opacity: .84;
+          margin: 3px 0 0;
+          font-size: 8px;
+          opacity: 0.82;
         }
 
         .flash-timer {
           margin-left: auto;
           display: flex;
           align-items: center;
-          gap: 5px;
-          padding: 6px 9px;
-          border: 1px solid rgba(255,255,255,.22);
-          border-radius: 10px;
-          background: rgba(57, 36, 5, .18);
-          backdrop-filter: blur(8px);
+          gap: 4px;
         }
 
         .flash-timer span {
-          font-size: 8px;
-          font-weight: 800;
-          opacity: .78;
-          margin-right: 3px;
-          letter-spacing: .6px;
+          font-size: 7px;
+          opacity: 0.75;
+          margin-right: 4px;
         }
 
         .flash-timer b {
-          min-width: 31px;
-          padding: 6px 5px;
-          border-radius: 7px;
+          min-width: 27px;
+          padding: 5px 4px;
+          border-radius: 5px;
           text-align: center;
-          background: rgba(255,255,255,.16);
-          font-size: 11px;
-          font-variant-numeric: tabular-nums;
+          background: rgba(255, 255, 255, 0.15);
+          font-size: 10px;
         }
 
         .flash-timer i {
@@ -3779,61 +3713,61 @@ export default function DashboardPage() {
         }
 
         .flash-header > a {
-          position: relative;
-          z-index: 2;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           background: #fff;
-          color: #8a6113;
-          border-radius: 9px;
-          padding: 9px 12px;
-          font-size: 9px;
-          font-weight: 900;
-          white-space: nowrap;
-          box-shadow: 0 7px 18px rgba(75, 49, 8, .12);
-          transition: transform .2s ease, box-shadow .2s ease;
-        }
-
-        .flash-header > a:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(75, 49, 8, .18);
+          color: #976d16;
+          border-radius: 6px;
+          padding: 7px 10px;
+          font-size: 8px;
+          font-weight: 800;
         }
 
         .flash-products {
-          position: relative;
-          z-index: 2;
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          padding: 14px;
-          gap: 12px;
+          grid-template-columns: repeat(
+            4,
+            1fr
+          );
+          padding: 12px;
+          gap: 9px;
         }
 
         .flash-product {
-          min-width: 0;
-          border: 1px solid rgba(255,255,255,.20);
-          border-radius: 12px;
-          background: rgba(255,255,255,.12);
+          border: 1px solid
+            rgba(255, 255, 255, 0.18);
+          border-radius: 8px;
+          background: rgba(
+            255,
+            255,
+            255,
+            0.1
+          );
           color: #fff;
           display: flex;
           align-items: center;
-          gap: 11px;
-          padding: 9px;
+          gap: 8px;
+          padding: 7px;
           text-align: left;
-          cursor: pointer;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
-          transition: background .2s ease, transform .2s ease, border-color .2s ease;
+          transition:
+            background 0.2s ease,
+            transform 0.2s ease;
         }
 
         .flash-product:hover {
-          background: rgba(255,255,255,.19);
-          border-color: rgba(255,255,255,.35);
-          transform: translateY(-3px);
+          background: rgba(
+            255,
+            255,
+            255,
+            0.17
+          );
+          transform: translateY(-2px);
         }
 
         .flash-product-image {
-          width: 74px;
-          height: 74px;
+          width: 60px;
+          height: 60px;
           background: rgba(
             255,
             255,
@@ -3847,18 +3781,10 @@ export default function DashboardPage() {
           overflow: hidden;
         }
 
-        .flash-product-image img,
-        .flash-product-image .image-fallback {
+        .flash-product-image img {
           width: 100%;
           height: 100%;
           object-fit: contain;
-        }
-
-        .image-fallback {
-          display: grid;
-          place-items: center;
-          color: #b68a31;
-          background: linear-gradient(145deg, #fff, #f8f1df);
         }
 
         .flash-product > div:last-child {
@@ -3867,7 +3793,7 @@ export default function DashboardPage() {
 
         .flash-product strong {
           display: block;
-          font-size: 11px;
+          font-size: 9px;
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
@@ -3875,7 +3801,7 @@ export default function DashboardPage() {
 
         .flash-product span {
           display: block;
-          font-size: 14px;
+          font-size: 11px;
           font-weight: 800;
           margin-top: 5px;
         }
@@ -4590,8 +4516,7 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 118px;
-            height: 36px;
+            width: 155px;
           }
 
           .header-actions {
@@ -4600,6 +4525,12 @@ export default function DashboardPage() {
 
           .nav-inner {
             gap: 21px;
+          }
+
+          .hero-layout {
+            grid-template-columns:
+              minmax(0, 1fr)
+              270px;
           }
 
           .five-columns {
@@ -4648,8 +4579,7 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 112px;
-            height: 35px;
+            width: 145px;
           }
 
           .header-actions {
@@ -4670,10 +4600,6 @@ export default function DashboardPage() {
 
           .hero-layout {
             display: block;
-          }
-
-          .right-rail {
-            display: none;
           }
 
           .five-columns {
@@ -4745,8 +4671,7 @@ export default function DashboardPage() {
           }
 
           .prime-logo {
-            width: 105px;
-            height: 34px;
+            width: 132px;
           }
 
           .header-actions {
@@ -4769,9 +4694,9 @@ export default function DashboardPage() {
           }
 
           .hero-image-frame {
-            aspect-ratio: 16 / 9;
-            min-height: 0;
-            border-radius: 10px;
+            aspect-ratio: 1.35 / 1;
+            min-height: 235px;
+            border-radius: 8px;
           }
 
           .hero-arrow {
@@ -4792,7 +4717,14 @@ export default function DashboardPage() {
           }
 
           .right-rail {
-            display: none;
+            grid-template-columns: 1fr;
+          }
+
+          .welcome-card,
+          .smart-deal-card,
+          .top-deals-card {
+            grid-column: auto;
+            grid-row: auto;
           }
 
           .category-section {
@@ -4901,26 +4833,7 @@ export default function DashboardPage() {
           }
 
           .flash-products {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 10px;
-          }
-
-          .flash-product {
-            align-items: flex-start;
-            padding: 8px;
-          }
-
-          .flash-product-image {
-            width: 62px;
-            height: 62px;
-          }
-
-          .flash-product strong {
-            font-size: 9px;
-          }
-
-          .flash-product span {
-            font-size: 12px;
+            grid-template-columns: 1fr;
           }
 
           .promo-grid {
@@ -4979,8 +4892,7 @@ export default function DashboardPage() {
 
         @media (max-width: 430px) {
           .hero-image-frame {
-            aspect-ratio: 16 / 9;
-            min-height: 0;
+            aspect-ratio: 1.05 / 1;
           }
 
           .product-image-wrap {
@@ -5008,30 +4920,7 @@ export default function DashboardPage() {
           }
 
           .flash-title {
-            font-size: 16px;
-          }
-
-          .flash-header {
-            padding: 14px;
-          }
-
-          .flash-header p {
-            display: none;
-          }
-
-          .flash-timer {
-            margin-left: 0;
-            order: 3;
-            width: 100%;
-            justify-content: center;
-          }
-
-          .flash-header > a {
-            margin-left: auto;
-          }
-
-          .flash-products {
-            gap: 8px;
+            font-size: 15px;
           }
 
           .flash-header > a {
@@ -5068,9 +4957,132 @@ export default function DashboardPage() {
           }
         }
 
-        @keyframes flashSweep {
-          0%, 55% { transform: translateX(-110%); }
-          75%, 100% { transform: translateX(110%); }
+
+        /* -------------------------------------------------------------- */
+        /* PRIME UPGRADE — POLISH + RESPONSIVE                            */
+        /* -------------------------------------------------------------- */
+
+        .page-content {
+          padding-top: 14px;
+          padding-bottom: 34px;
+        }
+
+        .hero-image-frame {
+          border-radius: 16px;
+          min-height: 0;
+          max-height: none;
+          aspect-ratio: 2.85 / 1;
+          box-shadow: 0 12px 34px rgba(69, 49, 10, 0.10), 0 0 0 1px rgba(184, 137, 36, 0.10);
+        }
+
+        .hero-banner {
+          object-fit: contain !important;
+          background: #f8f3e9;
+          cursor: pointer;
+        }
+
+        .hero-banner.active:focus-visible {
+          outline: 3px solid rgba(199, 154, 59, 0.8);
+          outline-offset: -3px;
+        }
+
+        .category-section, .smart-section, .promo-grid, .trust-section {
+          margin-top: 22px;
+        }
+
+        .category-section, .smart-section, .trust-section {
+          border: 1px solid var(--line);
+          background: var(--card);
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(45, 36, 20, 0.035);
+        }
+
+        .category-section { padding: 15px 16px 14px; }
+        .smart-section { padding: 18px; }
+        .trust-section { padding: 18px; }
+
+        .category-item {
+          border: 1px solid #eee5d2;
+          background: linear-gradient(180deg, #fff, #fcfaf5);
+          border-radius: 13px;
+          min-height: 102px;
+          transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+
+        .category-item:hover {
+          transform: translateY(-3px);
+          border-color: #d9bc79;
+          box-shadow: 0 10px 22px rgba(95, 69, 20, .08);
+        }
+
+        .smart-grid { gap: 12px; }
+        .smart-card {
+          border-radius: 15px;
+          min-height: 190px;
+          transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+        .smart-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(91, 66, 18, .10); border-color: #d7b86d; }
+
+        .product-card {
+          border-radius: 14px;
+          box-shadow: 0 6px 18px rgba(25, 22, 16, .045);
+        }
+        .product-image-wrap { height: 190px; background: linear-gradient(180deg, #fff, #fdfaf4); }
+        .product-image { object-fit: contain; }
+        .suggestion-product-image { width: 100%; height: 100%; object-fit: contain; }
+
+        .flash-section {
+          margin: 28px 0;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #8f620d 0%, #c7922f 48%, #e1bc68 100%);
+          box-shadow: 0 15px 34px rgba(139, 96, 13, .16);
+        }
+        .flash-header { padding: 17px 19px; }
+        .flash-products { padding: 14px; gap: 12px; }
+        .flash-product {
+          min-height: 178px;
+          border-radius: 13px;
+          background: rgba(255,255,255,.97);
+          color: #28231a;
+          border: 1px solid rgba(255,255,255,.55);
+          padding: 12px;
+          transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .flash-product:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(52, 37, 8, .15); }
+        .flash-product-image { background: #fffaf0; border-radius: 10px; }
+        .flash-product-img { width: 100%; height: 100%; object-fit: contain; }
+
+        .promo-card {
+          min-height: 205px;
+          border-radius: 16px;
+          box-shadow: 0 9px 24px rgba(43, 35, 21, .055);
+          overflow: hidden;
+        }
+        .promo-product-image { max-width: 45%; max-height: 88%; object-fit: contain; }
+
+        .section-head { margin-top: 27px; }
+
+        .trust-strip { border-radius: 13px; }
+
+        @media (max-width: 980px) {
+          .hero-image-frame { aspect-ratio: 2.25 / 1; }
+        }
+
+        @media (max-width: 680px) {
+          .container { width: calc(100% - 20px); }
+          .page-content { padding-top: 10px; }
+          .hero-image-frame { aspect-ratio: 1.72 / 1; border-radius: 11px; }
+          .hero-arrow { width: 32px; height: 32px; }
+          .hero-left { left: 8px; }
+          .hero-right { right: 8px; }
+          .category-section, .smart-section, .trust-section { border-radius: 12px; padding: 12px; }
+          .product-image-wrap { height: 155px; padding: 12px; }
+          .flash-header { flex-wrap: wrap; gap: 10px; }
+          .flash-timer { margin-left: 0; }
+          .flash-header > a { margin-left: auto; }
+          .flash-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .flash-product { min-height: 160px; }
+          .promo-card { min-height: 175px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -5083,468 +5095,6 @@ export default function DashboardPage() {
             transition-duration: 0.01ms !important;
           }
         }
-        /* ============================================================ */
-        /* PRIME CART PREMIUM POLISH - FINAL OVERRIDES                  */
-        /* ============================================================ */
-
-        .page-content {
-          padding-top: 18px;
-          padding-bottom: 52px;
-        }
-
-        .hero-image-frame {
-          border: 1px solid rgba(194, 151, 58, 0.16);
-          box-shadow: 0 16px 42px rgba(72, 51, 18, 0.10);
-        }
-
-        .hero-banner {
-          object-fit: contain !important;
-          background: #fffaf0;
-        }
-
-        .product-card {
-          border-radius: 15px;
-          box-shadow: 0 8px 24px rgba(45, 34, 14, 0.055);
-        }
-
-        .product-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 18px 38px rgba(45, 34, 14, 0.12);
-        }
-
-        .product-image-wrap {
-          background: linear-gradient(145deg, #fffdf9, #f8f3e8);
-        }
-
-        .product-image {
-          object-fit: contain !important;
-          padding: 8px;
-          transition: transform .35s cubic-bezier(.2,.8,.2,1);
-        }
-
-        .product-card:hover .product-image {
-          transform: scale(1.045);
-        }
-
-        /* FLASH DEALS — premium storefront block */
-        .flash-section {
-          margin: 34px 0 38px;
-          border: 1px solid rgba(232, 197, 117, .55);
-          border-radius: 22px;
-          background: radial-gradient(circle at 10% 0%, rgba(255,255,255,.18), transparent 28%), linear-gradient(135deg, #6e4907 0%, #9a6914 42%, #d0a33e 100%);
-          box-shadow: 0 22px 55px rgba(107, 73, 10, .18);
-        }
-
-        .flash-header {
-          min-height: 88px;
-          padding: 18px 20px;
-          gap: 18px;
-        }
-
-        .flash-title {
-          font-size: 22px;
-          letter-spacing: -.55px;
-        }
-
-        .flash-title svg {
-          filter: drop-shadow(0 3px 8px rgba(255, 220, 130, .45));
-        }
-
-        .flash-header p {
-          font-size: 10px;
-          max-width: 280px;
-          opacity: .9;
-        }
-
-        .flash-timer {
-          padding: 7px 9px;
-          border-radius: 12px;
-          background: rgba(31, 19, 2, .24);
-        }
-
-        .flash-timer b {
-          min-width: 36px;
-          padding: 7px 5px;
-          border-radius: 8px;
-          background: rgba(255,255,255,.17);
-          font-size: 13px;
-        }
-
-        .flash-products {
-          padding: 16px;
-          gap: 13px;
-        }
-
-        .flash-product {
-          min-height: 148px;
-          position: relative;
-          padding: 11px;
-          border-radius: 16px;
-          background: rgba(255,255,255,.115);
-          border: 1px solid rgba(255,255,255,.20);
-          backdrop-filter: blur(10px);
-          overflow: hidden;
-        }
-
-        .flash-product::after {
-          content: "";
-          position: absolute;
-          inset: auto -30px -45px auto;
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          background: rgba(255,255,255,.08);
-          pointer-events: none;
-        }
-
-        .flash-product-image {
-          width: 86px;
-          height: 116px;
-          border-radius: 12px;
-          background: linear-gradient(145deg, #fff, #f8f0dd);
-          box-shadow: 0 8px 20px rgba(53, 32, 2, .13);
-          position: relative;
-        }
-
-        .flash-product-image img,
-        .flash-product-image .image-fallback {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          padding: 7px;
-        }
-
-        .flash-image-badge {
-          position: absolute;
-          left: 5px;
-          bottom: 5px;
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          padding: 3px 5px;
-          border-radius: 5px;
-          background: #8c5b08;
-          color: #fff;
-          font-size: 6px;
-          font-weight: 900;
-          letter-spacing: .5px;
-        }
-
-        .flash-product-info {
-          min-width: 0;
-          flex: 1;
-          padding-right: 13px;
-        }
-
-        .flash-product-info > small {
-          display: block;
-          margin-bottom: 5px;
-          color: rgba(255,255,255,.68);
-          font-size: 7px;
-          font-weight: 800;
-          letter-spacing: .65px;
-          text-transform: uppercase;
-        }
-
-        .flash-product strong {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          white-space: normal;
-          line-height: 1.3;
-          font-size: 10px;
-          min-height: 26px;
-        }
-
-        .flash-price-row {
-          display: flex;
-          align-items: baseline;
-          gap: 6px;
-          margin-top: 7px;
-        }
-
-        .flash-price-row span {
-          font-size: 16px;
-          font-weight: 950;
-        }
-
-        .flash-price-row del {
-          color: rgba(255,255,255,.58);
-          font-size: 8px;
-        }
-
-        .flash-meta-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 5px;
-          margin-top: 6px;
-        }
-
-        .flash-meta-row em {
-          padding: 3px 5px;
-          border-radius: 5px;
-          background: rgba(255,255,255,.16);
-          color: #fff7df;
-          font-size: 6px;
-          font-style: normal;
-          font-weight: 900;
-        }
-
-        .flash-meta-row > span {
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          color: #fff0bd;
-          font-size: 8px;
-          font-weight: 800;
-        }
-
-        .flash-stock {
-          margin-top: 9px;
-        }
-
-        .flash-stock-track {
-          height: 4px;
-          width: 100%;
-          overflow: hidden;
-          border-radius: 99px;
-          background: rgba(255,255,255,.17);
-        }
-
-        .flash-stock-track span {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: #fff1bd;
-        }
-
-        .flash-stock small {
-          display: block;
-          margin-top: 4px;
-          color: rgba(255,255,255,.65);
-          font-size: 6px;
-        }
-
-        .flash-open {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          width: 25px;
-          height: 25px;
-          display: grid;
-          place-items: center;
-          border-radius: 50%;
-          color: #fff;
-          background: rgba(255,255,255,.12);
-          transition: transform .2s ease, background .2s ease;
-        }
-
-        .flash-product:hover .flash-open {
-          transform: translate(2px,-2px);
-          background: rgba(255,255,255,.23);
-        }
-
-        /* premium section spacing */
-        .section-head {
-          margin-top: 30px;
-          margin-bottom: 15px;
-        }
-
-        .category-section {
-          margin-top: 22px;
-          margin-bottom: 28px;
-        }
-
-        .promo-card {
-          border-radius: 17px;
-          min-height: 176px;
-          box-shadow: 0 9px 28px rgba(50, 38, 15, .07);
-        }
-
-        .trust-strip {
-          border-radius: 17px;
-          box-shadow: 0 9px 28px rgba(50, 38, 15, .055);
-        }
-
-        @media (max-width: 980px) {
-          .flash-products {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .flash-product-image {
-            width: 78px;
-            height: 105px;
-          }
-        }
-
-        @media (max-width: 680px) {
-          .page-content {
-            padding-top: 10px;
-          }
-
-          .flash-section {
-            margin: 24px 0 28px;
-            border-radius: 17px;
-          }
-
-          .flash-header {
-            padding: 15px;
-            min-height: auto;
-          }
-
-          .flash-title {
-            font-size: 18px;
-          }
-
-          .flash-header p {
-            max-width: 220px;
-          }
-
-          .flash-timer {
-            margin-left: 0;
-          }
-
-          .flash-header > a {
-            margin-left: auto;
-          }
-
-          .flash-products {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 9px;
-            gap: 8px;
-          }
-
-          .flash-product {
-            min-height: 135px;
-            display: block;
-            padding: 8px;
-          }
-
-          .flash-product-image {
-            width: 100%;
-            height: 105px;
-            margin-bottom: 8px;
-          }
-
-          .flash-product-info {
-            padding-right: 0;
-          }
-
-          .flash-product-info > small {
-            font-size: 6px;
-          }
-
-          .flash-product strong {
-            font-size: 8px;
-            min-height: 22px;
-          }
-
-          .flash-price-row span {
-            font-size: 13px;
-          }
-
-          .flash-price-row del {
-            display: none;
-          }
-
-          .flash-open {
-            width: 22px;
-            height: 22px;
-          }
-        }
-
-        @media (max-width: 430px) {
-          .flash-timer b {
-            min-width: 30px;
-            font-size: 10px;
-          }
-
-          .flash-timer span {
-            display: none;
-          }
-
-          .flash-header > a {
-            font-size: 8px;
-            padding: 8px 9px;
-          }
-
-          .flash-product-image {
-            height: 92px;
-          }
-        }
-
-        /* FINAL HERO POLISH — compact, edge-to-edge and clickable */
-        .hero-layout {
-          display: block;
-          width: 100%;
-          min-width: 0;
-        }
-
-        .hero-carousel {
-          width: 100%;
-          min-width: 0;
-        }
-
-        .hero-image-frame {
-          position: relative;
-          width: 100%;
-          height: clamp(300px, 27vw, 430px);
-          min-height: 300px;
-          max-height: 430px;
-          border-radius: 16px;
-          overflow: hidden;
-          background: #fffaf0;
-          border: 1px solid rgba(194, 151, 58, 0.18);
-          box-shadow: 0 16px 42px rgba(72, 51, 18, 0.10);
-        }
-
-        .hero-banner {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover !important;
-          object-position: center center;
-          background: #fffaf0;
-          cursor: pointer;
-          user-select: none;
-          -webkit-user-drag: none;
-        }
-
-        .hero-banner.active:hover {
-          filter: saturate(1.02) brightness(1.01);
-        }
-
-        .hero-banner:focus-visible {
-          outline: 3px solid rgba(199, 154, 59, 0.7);
-          outline-offset: -3px;
-        }
-
-        @media (min-width: 1400px) {
-          .hero-image-frame {
-            height: 420px;
-          }
-        }
-
-        @media (max-width: 980px) {
-          .hero-image-frame {
-            height: auto;
-            aspect-ratio: 16 / 9;
-            min-height: 0;
-            max-height: none;
-            border-radius: 12px;
-          }
-        }
-
-        @media (max-width: 430px) {
-          .hero-image-frame {
-            aspect-ratio: 16 / 9;
-            height: auto;
-            min-height: 0;
-          }
-        }
-
       `}</style>
     </main>
   );
@@ -5712,7 +5262,6 @@ function PromoCard({
           src={product.image_url}
           alt=""
           className="promo-product-image"
-          iconSize={32}
         />
       )}
     </div>
