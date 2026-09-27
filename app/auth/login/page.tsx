@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
-  ArrowRight,
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -13,7 +13,6 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
-  ShoppingBag,
   Sparkles,
   Truck,
   Zap,
@@ -32,9 +31,9 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  /* ---------------------------------------------
+  /* =========================================================
      REMEMBERED EMAIL
-  --------------------------------------------- */
+  ========================================================= */
 
   useEffect(() => {
     try {
@@ -51,9 +50,9 @@ export default function LoginPage() {
     }
   }, []);
 
-  /* ---------------------------------------------
+  /* =========================================================
      LOGIN
-  --------------------------------------------- */
+  ========================================================= */
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -135,7 +134,9 @@ export default function LoginPage() {
         return;
       }
 
-      setSuccess("Login successful! Taking you to PrimeCart...");
+      setSuccess(
+        "Login successful! Taking you to PrimeCart..."
+      );
 
       setTimeout(() => {
         window.location.href = "/dashboard";
@@ -153,18 +154,19 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      {/* BACKGROUND DECORATION */}
+      {/* =====================================================
+          BACKGROUND
+      ===================================================== */}
 
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
       <div className="ambient ambient-three" />
-
       <div className="grid-pattern" />
 
       <div className="login-wrapper">
         {/* =====================================================
             LEFT SHOWCASE
-        ====================================================== */}
+        ===================================================== */}
 
         <section className="login-showcase">
           {/* BRAND */}
@@ -185,7 +187,7 @@ export default function LoginPage() {
             </div>
           </Link>
 
-          {/* MAIN SHOWCASE */}
+          {/* MAIN CONTENT */}
 
           <div className="showcase-main">
             <div className="eyebrow">
@@ -199,7 +201,6 @@ export default function LoginPage() {
             <h1>
               Everything you need.
               <br />
-
               <span>All in one place.</span>
             </h1>
 
@@ -209,7 +210,7 @@ export default function LoginPage() {
               for a simpler shopping experience.
             </p>
 
-            {/* FEATURE CARDS */}
+            {/* FEATURE LIST */}
 
             <div className="feature-list">
               <div className="feature-item">
@@ -220,7 +221,8 @@ export default function LoginPage() {
                 <div>
                   <strong>Smart deals</strong>
                   <span>
-                    Discover great value without endless searching.
+                    Discover great value without endless
+                    searching.
                   </span>
                 </div>
               </div>
@@ -233,7 +235,8 @@ export default function LoginPage() {
                 <div>
                   <strong>Easy shopping</strong>
                   <span>
-                    Browse products and manage everything effortlessly.
+                    Browse products and manage everything
+                    effortlessly.
                   </span>
                 </div>
               </div>
@@ -246,13 +249,14 @@ export default function LoginPage() {
                 <div>
                   <strong>Secure experience</strong>
                   <span>
-                    Your account and shopping journey stay protected.
+                    Your account and shopping journey stay
+                    protected.
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* MINI STATS */}
+            {/* STATS */}
 
             <div className="mini-stats">
               <div className="stat">
@@ -292,8 +296,8 @@ export default function LoginPage() {
         </section>
 
         {/* =====================================================
-            RIGHT LOGIN
-        ====================================================== */}
+            LOGIN
+        ===================================================== */}
 
         <section className="login-section">
           <div className="login-card">
@@ -315,8 +319,6 @@ export default function LoginPage() {
                 </div>
               </Link>
             </div>
-
-            {/* CARD TOP DECORATION */}
 
             <div className="card-top-glow" />
 
@@ -433,9 +435,7 @@ export default function LoginPage() {
                   <input
                     id="password"
                     type={
-                      showPassword
-                        ? "text"
-                        : "password"
+                      showPassword ? "text" : "password"
                     }
                     placeholder="Enter your password"
                     value={password}
@@ -519,13 +519,11 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* DIVIDER */}
+            {/* REGISTER */}
 
             <div className="divider">
               <span>New to PrimeCart?</span>
             </div>
-
-            {/* REGISTER */}
 
             <Link
               href="/auth/register"
@@ -538,7 +536,7 @@ export default function LoginPage() {
               </span>
             </Link>
 
-            {/* TRUST */}
+            {/* SECURITY */}
 
             <div className="security-note">
               <div className="security-icon">
@@ -554,7 +552,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* SMALL BENEFITS */}
+            {/* BENEFITS */}
 
             <div className="login-benefits">
               <div>
@@ -575,6 +573,10 @@ export default function LoginPage() {
           </div>
         </section>
       </div>
+
+      {/* =====================================================
+          STYLES
+      ===================================================== */}
 
       <style jsx global>{`
         * {
@@ -599,22 +601,22 @@ export default function LoginPage() {
 
         /* =====================================================
            PAGE
-        ====================================================== */
+        ===================================================== */
 
         .login-page {
-          min-height: 100vh;
           position: relative;
-          overflow: hidden;
+          min-height: 100vh;
+          overflow-x: hidden;
           background:
             radial-gradient(
-              circle at 80% 15%,
-              rgba(215, 170, 63, 0.1),
-              transparent 28%
+              circle at 84% 10%,
+              rgba(215, 170, 63, 0.12),
+              transparent 25%
             ),
             radial-gradient(
-              circle at 10% 85%,
-              rgba(215, 170, 63, 0.07),
-              transparent 28%
+              circle at 8% 90%,
+              rgba(215, 170, 63, 0.08),
+              transparent 25%
             ),
             #faf8f3;
           color: #211f1a;
@@ -629,13 +631,13 @@ export default function LoginPage() {
         }
 
         /* =====================================================
-           AMBIENT EFFECTS
-        ====================================================== */
+           AMBIENT
+        ===================================================== */
 
         .ambient {
           position: fixed;
-          width: 380px;
-          height: 380px;
+          width: 340px;
+          height: 340px;
           border-radius: 50%;
           filter: blur(100px);
           pointer-events: none;
@@ -643,26 +645,26 @@ export default function LoginPage() {
         }
 
         .ambient-one {
-          top: -190px;
+          top: -180px;
           right: -100px;
-          background: rgba(207, 161, 48, 0.2);
-          animation: ambientFloat 9s ease-in-out infinite;
+          background: rgba(207, 161, 48, 0.18);
+          animation: ambientFloat 10s ease-in-out infinite;
         }
 
         .ambient-two {
-          bottom: -220px;
+          bottom: -200px;
           left: -130px;
-          background: rgba(218, 178, 82, 0.13);
-          animation: ambientFloat 11s ease-in-out infinite reverse;
+          background: rgba(218, 178, 82, 0.11);
+          animation: ambientFloat 12s ease-in-out infinite reverse;
         }
 
         .ambient-three {
-          top: 40%;
-          left: 42%;
-          width: 240px;
-          height: 240px;
-          background: rgba(255, 225, 153, 0.08);
-          animation: ambientFloat 13s ease-in-out infinite;
+          top: 45%;
+          left: 43%;
+          width: 220px;
+          height: 220px;
+          background: rgba(255, 225, 153, 0.07);
+          animation: ambientFloat 14s ease-in-out infinite;
         }
 
         @keyframes ambientFloat {
@@ -672,7 +674,7 @@ export default function LoginPage() {
           }
 
           50% {
-            transform: translate3d(20px, -20px, 0);
+            transform: translate3d(18px, -18px, 0);
           }
         }
 
@@ -680,7 +682,7 @@ export default function LoginPage() {
           position: fixed;
           inset: 0;
           pointer-events: none;
-          opacity: 0.25;
+          opacity: 0.2;
           background-image:
             linear-gradient(
               rgba(198, 150, 36, 0.025) 1px,
@@ -701,46 +703,48 @@ export default function LoginPage() {
 
         /* =====================================================
            WRAPPER
-        ====================================================== */
+        ===================================================== */
 
         .login-wrapper {
           position: relative;
           z-index: 1;
-          width: min(1240px, calc(100% - 56px));
+          width: min(1220px, calc(100% - 52px));
           min-height: 100vh;
           margin: 0 auto;
-          padding: 38px 0;
+          padding: 32px 0;
           display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
-          gap: 70px;
+          grid-template-columns:
+            minmax(0, 1.05fr)
+            minmax(400px, 0.95fr);
+          gap: 62px;
           align-items: center;
         }
 
         /* =====================================================
            BRAND
-        ====================================================== */
+        ===================================================== */
 
         .brand {
           width: fit-content;
           display: inline-flex;
           align-items: center;
-          gap: 12px;
+          gap: 11px;
           color: #211f1a;
           text-decoration: none;
           animation: fadeDown 0.7s ease both;
         }
 
         .brand-logo {
-          width: 46px;
-          height: 46px;
+          width: 45px;
+          height: 45px;
           display: grid;
           place-items: center;
-          border-radius: 14px;
+          overflow: hidden;
+          border-radius: 13px;
           background: #fff;
           border: 1px solid #eadfca;
           box-shadow:
-            0 12px 30px rgba(83, 60, 20, 0.1);
-          overflow: hidden;
+            0 10px 28px rgba(83, 60, 20, 0.09);
         }
 
         .brand-logo img {
@@ -750,7 +754,7 @@ export default function LoginPage() {
         }
 
         .brand-name {
-          font-size: 25px;
+          font-size: 24px;
           line-height: 1;
           font-weight: 850;
           letter-spacing: -1px;
@@ -762,18 +766,18 @@ export default function LoginPage() {
 
         /* =====================================================
            LEFT SHOWCASE
-        ====================================================== */
+        ===================================================== */
 
         .login-showcase {
-          min-height: 690px;
-          padding: 26px 5px;
+          min-height: 650px;
+          padding: 22px 5px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
         }
 
         .showcase-main {
-          max-width: 650px;
+          max-width: 620px;
           animation: fadeUp 0.8s 0.1s ease both;
         }
 
@@ -782,20 +786,21 @@ export default function LoginPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 13px;
-          margin-bottom: 25px;
+          padding: 7px 12px;
+          margin-bottom: 22px;
           border: 1px solid rgba(198, 150, 36, 0.2);
           background: rgba(255, 255, 255, 0.7);
           border-radius: 999px;
           color: #85651b;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 750;
-          box-shadow: 0 8px 25px rgba(80, 60, 20, 0.04);
+          box-shadow:
+            0 8px 25px rgba(80, 60, 20, 0.035);
         }
 
         .eyebrow-icon {
-          width: 23px;
-          height: 23px;
+          width: 22px;
+          height: 22px;
           display: grid;
           place-items: center;
           border-radius: 50%;
@@ -805,9 +810,9 @@ export default function LoginPage() {
 
         .showcase-main h1 {
           margin: 0;
-          font-size: clamp(48px, 5.2vw, 76px);
+          font-size: clamp(46px, 5vw, 72px);
           line-height: 0.98;
-          letter-spacing: -4.5px;
+          letter-spacing: -4px;
           font-weight: 900;
           color: #211f1a;
         }
@@ -835,30 +840,30 @@ export default function LoginPage() {
         }
 
         .showcase-description {
-          max-width: 570px;
-          margin: 27px 0 34px;
+          max-width: 540px;
+          margin: 24px 0 30px;
           color: #777166;
-          font-size: 16px;
-          line-height: 1.8;
+          font-size: 15px;
+          line-height: 1.75;
         }
 
         /* =====================================================
            FEATURES
-        ====================================================== */
+        ===================================================== */
 
         .feature-list {
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 10px;
         }
 
         .feature-item {
           display: flex;
           align-items: center;
-          gap: 14px;
-          width: min(550px, 100%);
-          padding: 12px 14px;
-          border-radius: 16px;
+          gap: 13px;
+          width: min(530px, 100%);
+          padding: 10px 12px;
+          border-radius: 15px;
           transition:
             transform 0.25s ease,
             background 0.25s ease;
@@ -866,45 +871,45 @@ export default function LoginPage() {
 
         .feature-item:hover {
           transform: translateX(5px);
-          background: rgba(255, 255, 255, 0.55);
+          background: rgba(255, 255, 255, 0.6);
         }
 
         .feature-icon {
-          width: 40px;
-          height: 40px;
-          flex: 0 0 40px;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
           display: grid;
           place-items: center;
-          border-radius: 12px;
+          border-radius: 11px;
           background: #f5e6bd;
           color: #946d17;
         }
 
         .feature-item strong {
           display: block;
-          margin-bottom: 3px;
+          margin-bottom: 2px;
           color: #29261f;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 800;
         }
 
         .feature-item span {
           display: block;
           color: #8b8479;
-          font-size: 12px;
-          line-height: 1.5;
+          font-size: 11px;
+          line-height: 1.45;
         }
 
         /* =====================================================
            STATS
-        ====================================================== */
+        ===================================================== */
 
         .mini-stats {
           display: flex;
           align-items: center;
-          gap: 22px;
-          margin-top: 34px;
-          padding-top: 25px;
+          gap: 20px;
+          margin-top: 28px;
+          padding-top: 21px;
           border-top: 1px solid rgba(195, 181, 153, 0.35);
         }
 
@@ -916,39 +921,39 @@ export default function LoginPage() {
 
         .stat strong {
           color: #29261f;
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 850;
         }
 
         .stat span {
           color: #999185;
-          font-size: 11px;
+          font-size: 10px;
         }
 
         .stat-line {
           width: 1px;
-          height: 28px;
+          height: 25px;
           background: #dfd8ca;
         }
 
         /* =====================================================
-           FOOTER
-        ====================================================== */
+           SHOWCASE FOOTER
+        ===================================================== */
 
         .showcase-footer {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          max-width: 650px;
+          max-width: 620px;
           color: #aaa398;
-          font-size: 11px;
+          font-size: 10px;
           animation: fadeUp 0.8s 0.25s ease both;
         }
 
         .footer-links {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 7px;
         }
 
         .footer-dot {
@@ -957,7 +962,7 @@ export default function LoginPage() {
 
         /* =====================================================
            LOGIN SECTION
-        ====================================================== */
+        ===================================================== */
 
         .login-section {
           display: flex;
@@ -967,15 +972,15 @@ export default function LoginPage() {
 
         .login-card {
           position: relative;
-          width: min(475px, 100%);
-          padding: 42px;
+          width: min(460px, 100%);
+          padding: 38px;
           overflow: hidden;
-          background: rgba(255, 255, 255, 0.93);
+          background: rgba(255, 255, 255, 0.96);
           border: 1px solid rgba(225, 216, 198, 0.9);
-          border-radius: 30px;
+          border-radius: 28px;
           box-shadow:
-            0 35px 90px rgba(57, 45, 22, 0.1),
-            0 8px 25px rgba(57, 45, 22, 0.045);
+            0 30px 75px rgba(57, 45, 22, 0.09),
+            0 7px 22px rgba(57, 45, 22, 0.035);
           backdrop-filter: blur(18px);
         }
 
@@ -989,7 +994,7 @@ export default function LoginPage() {
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(198, 150, 36, 0.7),
+            rgba(198, 150, 36, 0.72),
             transparent
           );
         }
@@ -998,10 +1003,10 @@ export default function LoginPage() {
           position: absolute;
           top: -120px;
           right: -100px;
-          width: 230px;
-          height: 230px;
+          width: 220px;
+          height: 220px;
           border-radius: 50%;
-          background: rgba(215, 170, 63, 0.09);
+          background: rgba(215, 170, 63, 0.08);
           filter: blur(40px);
           pointer-events: none;
         }
@@ -1012,22 +1017,22 @@ export default function LoginPage() {
 
         /* =====================================================
            HEADER
-        ====================================================== */
+        ===================================================== */
 
         .card-header {
           position: relative;
           display: flex;
-          gap: 15px;
-          margin-bottom: 27px;
+          gap: 14px;
+          margin-bottom: 25px;
         }
 
         .welcome-icon {
-          width: 48px;
-          height: 48px;
-          flex: 0 0 48px;
+          width: 47px;
+          height: 47px;
+          flex: 0 0 47px;
           display: grid;
           place-items: center;
-          border-radius: 15px;
+          border-radius: 14px;
           background: linear-gradient(
             145deg,
             #f9efd6,
@@ -1040,9 +1045,9 @@ export default function LoginPage() {
 
         .small-heading {
           display: block;
-          margin-bottom: 5px;
+          margin-bottom: 4px;
           color: #aa8a4a;
-          font-size: 9px;
+          font-size: 8px;
           letter-spacing: 1.5px;
           font-weight: 850;
         }
@@ -1050,32 +1055,32 @@ export default function LoginPage() {
         .card-header h2 {
           margin: 0;
           color: #211f1a;
-          font-size: 30px;
+          font-size: 29px;
           line-height: 1.1;
           letter-spacing: -1.2px;
           font-weight: 850;
         }
 
         .card-header p {
-          margin: 7px 0 0;
+          margin: 6px 0 0;
           color: #888176;
-          font-size: 12px;
-          line-height: 1.6;
+          font-size: 11px;
+          line-height: 1.55;
         }
 
         /* =====================================================
            MESSAGES
-        ====================================================== */
+        ===================================================== */
 
         .message {
           position: relative;
           display: flex;
           align-items: flex-start;
-          gap: 10px;
-          padding: 12px 13px;
-          margin-bottom: 18px;
-          border-radius: 13px;
-          font-size: 12px;
+          gap: 9px;
+          padding: 11px 12px;
+          margin-bottom: 16px;
+          border-radius: 12px;
+          font-size: 11px;
           line-height: 1.5;
           animation: messageIn 0.35s ease both;
         }
@@ -1113,24 +1118,24 @@ export default function LoginPage() {
 
         /* =====================================================
            FORM
-        ====================================================== */
+        ===================================================== */
 
         .login-form {
           display: flex;
           flex-direction: column;
-          gap: 19px;
+          gap: 17px;
         }
 
         .field {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 7px;
         }
 
         .field label,
         .password-header label {
           color: #363229;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 800;
         }
 
@@ -1142,7 +1147,7 @@ export default function LoginPage() {
 
         .password-header a {
           color: #a2771d;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 800;
           text-decoration: none;
           transition: color 0.2s ease;
@@ -1153,8 +1158,8 @@ export default function LoginPage() {
         }
 
         /* =====================================================
-           INPUTS
-        ====================================================== */
+           INPUT
+        ===================================================== */
 
         .input-wrapper {
           position: relative;
@@ -1165,8 +1170,8 @@ export default function LoginPage() {
         .input-wrapper::after {
           content: "";
           position: absolute;
-          left: 14px;
-          right: 14px;
+          left: 13px;
+          right: 13px;
           bottom: 0;
           height: 2px;
           border-radius: 999px;
@@ -1187,7 +1192,7 @@ export default function LoginPage() {
 
         .input-icon-box {
           position: absolute;
-          left: 15px;
+          left: 14px;
           z-index: 2;
           display: grid;
           place-items: center;
@@ -1205,14 +1210,14 @@ export default function LoginPage() {
 
         .input-wrapper input {
           width: 100%;
-          height: 53px;
-          padding: 0 45px;
+          height: 51px;
+          padding: 0 44px;
           border: 1px solid #e4ded3;
-          border-radius: 14px;
+          border-radius: 13px;
           outline: none;
           background: #fff;
           color: #29261f;
-          font-size: 13px;
+          font-size: 12px;
           transition:
             border-color 0.2s ease,
             box-shadow 0.2s ease,
@@ -1227,8 +1232,8 @@ export default function LoginPage() {
           border-color: #d0a039;
           background: #fffefa;
           box-shadow:
-            0 0 0 4px rgba(208, 160, 57, 0.09),
-            0 8px 20px rgba(74, 57, 24, 0.04);
+            0 0 0 4px rgba(208, 160, 57, 0.08),
+            0 8px 20px rgba(74, 57, 24, 0.035);
         }
 
         .input-wrapper input::placeholder {
@@ -1242,14 +1247,14 @@ export default function LoginPage() {
 
         .password-toggle {
           position: absolute;
-          right: 12px;
+          right: 10px;
           z-index: 3;
-          width: 32px;
-          height: 32px;
+          width: 31px;
+          height: 31px;
           display: grid;
           place-items: center;
           border: 0;
-          border-radius: 9px;
+          border-radius: 8px;
           background: transparent;
           color: #9b9489;
           cursor: pointer;
@@ -1267,15 +1272,15 @@ export default function LoginPage() {
 
         /* =====================================================
            REMEMBER
-        ====================================================== */
+        ===================================================== */
 
         .remember {
           width: fit-content;
           display: inline-flex;
           align-items: center;
-          gap: 9px;
+          gap: 8px;
           color: #797268;
-          font-size: 12px;
+          font-size: 11px;
           cursor: pointer;
           user-select: none;
         }
@@ -1287,8 +1292,8 @@ export default function LoginPage() {
         }
 
         .custom-checkbox {
-          width: 18px;
-          height: 18px;
+          width: 17px;
+          height: 17px;
           display: grid;
           place-items: center;
           border: 1px solid #d7d0c3;
@@ -1301,7 +1306,7 @@ export default function LoginPage() {
           opacity: 0;
           transform: scale(0.5);
           color: #fff;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 900;
           transition: all 0.2s ease;
         }
@@ -1323,15 +1328,15 @@ export default function LoginPage() {
 
         /* =====================================================
            PRIMARY BUTTON
-        ====================================================== */
+        ===================================================== */
 
         .primary-button {
           position: relative;
           width: 100%;
-          height: 55px;
+          height: 53px;
           overflow: hidden;
           border: 0;
-          border-radius: 14px;
+          border-radius: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1342,11 +1347,11 @@ export default function LoginPage() {
             #b68318
           );
           color: #fff;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 850;
           cursor: pointer;
           box-shadow:
-            0 14px 28px rgba(198, 150, 36, 0.2);
+            0 13px 27px rgba(198, 150, 36, 0.2);
           transition:
             transform 0.2s ease,
             box-shadow 0.2s ease,
@@ -1357,7 +1362,7 @@ export default function LoginPage() {
           transform: translateY(-2px);
           filter: brightness(1.03);
           box-shadow:
-            0 18px 34px rgba(198, 150, 36, 0.27);
+            0 17px 32px rgba(198, 150, 36, 0.27);
         }
 
         .primary-button:active:not(:disabled) {
@@ -1398,8 +1403,8 @@ export default function LoginPage() {
         }
 
         .button-arrow {
-          width: 28px;
-          height: 28px;
+          width: 27px;
+          height: 27px;
           display: grid;
           place-items: center;
           border-radius: 8px;
@@ -1422,16 +1427,16 @@ export default function LoginPage() {
         }
 
         /* =====================================================
-           BOTTOM
-        ====================================================== */
+           REGISTER
+        ===================================================== */
 
         .divider {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin: 24px 0 14px;
+          gap: 11px;
+          margin: 21px 0 12px;
           color: #aaa399;
-          font-size: 10px;
+          font-size: 9px;
         }
 
         .divider::before,
@@ -1444,16 +1449,16 @@ export default function LoginPage() {
 
         .create-account {
           width: 100%;
-          height: 47px;
+          height: 45px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 14px 0 17px;
+          padding: 0 13px 0 16px;
           border: 1px solid #e9e2d5;
-          border-radius: 12px;
+          border-radius: 11px;
           background: #fff;
           color: #4c463c;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 750;
           text-decoration: none;
           transition:
@@ -1469,8 +1474,8 @@ export default function LoginPage() {
         }
 
         .create-arrow {
-          width: 27px;
-          height: 27px;
+          width: 26px;
+          height: 26px;
           display: grid;
           place-items: center;
           border-radius: 8px;
@@ -1485,24 +1490,24 @@ export default function LoginPage() {
 
         /* =====================================================
            SECURITY
-        ====================================================== */
+        ===================================================== */
 
         .security-note {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-top: 22px;
-          padding-top: 20px;
+          gap: 9px;
+          margin-top: 19px;
+          padding-top: 17px;
           border-top: 1px solid #eee9e0;
         }
 
         .security-icon {
-          width: 30px;
-          height: 30px;
-          flex: 0 0 30px;
+          width: 29px;
+          height: 29px;
+          flex: 0 0 29px;
           display: grid;
           place-items: center;
-          border-radius: 9px;
+          border-radius: 8px;
           background: #f2f7ef;
           color: #62805e;
         }
@@ -1511,22 +1516,26 @@ export default function LoginPage() {
           display: block;
           margin-bottom: 2px;
           color: #5f594f;
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 800;
         }
 
         .security-note span {
           display: block;
           color: #a09a90;
-          font-size: 10px;
+          font-size: 9px;
         }
+
+        /* =====================================================
+           SMALL BENEFITS
+        ===================================================== */
 
         .login-benefits {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 8px;
-          margin-top: 17px;
+          gap: 7px;
+          margin-top: 14px;
         }
 
         .login-benefits div {
@@ -1534,7 +1543,7 @@ export default function LoginPage() {
           align-items: center;
           gap: 4px;
           color: #9a9388;
-          font-size: 9px;
+          font-size: 8px;
         }
 
         .login-benefits svg {
@@ -1543,7 +1552,7 @@ export default function LoginPage() {
 
         /* =====================================================
            ANIMATIONS
-        ====================================================== */
+        ===================================================== */
 
         @keyframes fadeDown {
           from {
@@ -1583,14 +1592,14 @@ export default function LoginPage() {
 
         /* =====================================================
            TABLET
-        ====================================================== */
+        ===================================================== */
 
         @media (max-width: 1020px) {
           .login-wrapper {
             width: min(680px, calc(100% - 34px));
             grid-template-columns: 1fr;
             gap: 0;
-            padding: 28px 0;
+            padding: 26px 0;
           }
 
           .login-showcase {
@@ -1598,7 +1607,7 @@ export default function LoginPage() {
           }
 
           .login-section {
-            min-height: calc(100vh - 56px);
+            min-height: calc(100vh - 52px);
             align-items: center;
           }
 
@@ -1609,7 +1618,7 @@ export default function LoginPage() {
           .mobile-brand {
             display: flex;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 26px;
           }
 
           .mobile-brand .brand {
@@ -1619,104 +1628,142 @@ export default function LoginPage() {
 
         /* =====================================================
            MOBILE
-        ====================================================== */
+        ===================================================== */
 
         @media (max-width: 560px) {
+          .login-page {
+            min-height: 100dvh;
+          }
+
           .login-wrapper {
-            width: calc(100% - 20px);
-            padding: 10px 0;
+            width: calc(100% - 18px);
+            min-height: 100dvh;
+            padding: 9px 0;
           }
 
           .login-section {
-            min-height: calc(100vh - 20px);
+            min-height: calc(100dvh - 18px);
+            align-items: center;
           }
 
           .login-card {
-            padding: 28px 20px 23px;
-            border-radius: 23px;
+            width: 100%;
+            padding: 25px 18px 20px;
+            border-radius: 22px;
           }
 
           .mobile-brand {
-            margin-bottom: 24px;
+            margin-bottom: 21px;
           }
 
           .brand-logo {
-            width: 41px;
-            height: 41px;
-            border-radius: 12px;
+            width: 39px;
+            height: 39px;
+            border-radius: 11px;
           }
 
           .brand-name {
-            font-size: 22px;
+            font-size: 21px;
           }
 
           .card-header {
-            gap: 12px;
-            margin-bottom: 24px;
+            gap: 11px;
+            margin-bottom: 21px;
           }
 
           .welcome-icon {
-            width: 44px;
-            height: 44px;
-            flex-basis: 44px;
-            border-radius: 13px;
-          }
-
-          .card-header h2 {
-            font-size: 27px;
-          }
-
-          .card-header p {
-            font-size: 11px;
-          }
-
-          .small-heading {
-            font-size: 8px;
-          }
-
-          .input-wrapper input {
-            height: 51px;
-          }
-
-          .primary-button {
-            height: 53px;
-          }
-
-          .login-benefits {
-            gap: 5px;
-          }
-
-          .login-benefits div {
-            font-size: 8px;
-          }
-        }
-
-        /* =====================================================
-           SMALL MOBILE
-        ====================================================== */
-
-        @media (max-width: 380px) {
-          .login-card {
-            padding: 24px 16px 20px;
+            width: 42px;
+            height: 42px;
+            flex-basis: 42px;
+            border-radius: 12px;
           }
 
           .card-header h2 {
             font-size: 25px;
           }
 
-          .login-benefits {
-            flex-direction: column;
-            align-items: flex-start;
+          .card-header p {
+            font-size: 10px;
+          }
+
+          .small-heading {
+            font-size: 7px;
           }
 
           .login-form {
-            gap: 17px;
+            gap: 15px;
+          }
+
+          .field {
+            gap: 6px;
+          }
+
+          .input-wrapper input {
+            height: 49px;
+            font-size: 12px;
+          }
+
+          .primary-button {
+            height: 51px;
+          }
+
+          .divider {
+            margin-top: 19px;
+          }
+
+          .security-note {
+            margin-top: 17px;
+            padding-top: 15px;
+          }
+
+          .login-benefits {
+            margin-top: 12px;
+          }
+        }
+
+        /* =====================================================
+           SMALL MOBILE
+        ===================================================== */
+
+        @media (max-width: 380px) {
+          .login-wrapper {
+            width: calc(100% - 14px);
+          }
+
+          .login-card {
+            padding: 22px 15px 18px;
+          }
+
+          .mobile-brand {
+            margin-bottom: 18px;
+          }
+
+          .card-header h2 {
+            font-size: 23px;
+          }
+
+          .card-header p {
+            font-size: 9px;
+          }
+
+          .input-wrapper input {
+            height: 47px;
+          }
+
+          .primary-button {
+            height: 49px;
+          }
+
+          .login-benefits {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
           }
         }
 
         /* =====================================================
            REDUCED MOTION
-        ====================================================== */
+        ===================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           *,
