@@ -657,37 +657,37 @@ gap-5
 {
 name:"Electronics",
 products:"2500+ Products",
-image:"/products/electronics.png"
+image:"/electronics.png"
 },
 
 {
 name:"Fashion",
 products:"1800+ Products",
-image:"/products/fashion.png"
+image:"/fashion.png"
 },
 
 {
 name:"Watches",
 products:"1200+ Products",
-image:"/products/watch.png"
+image:"/watch.png"
 },
 
 {
 name:"Beauty",
 products:"800+ Products",
-image:"/products/perfume23.png"
+image:"/beauty.png"
 },
 
 {
 name:"Home & Living",
 products:"1500+ Products",
-image:"/products/home.png"
+image:"home.png"
 },
 
 {
 name:"Gaming",
 products:"950+ Products",
-image:"/products/gaming.png"
+image:"gaming.png"
 }
 
 ].map((category)=>(
