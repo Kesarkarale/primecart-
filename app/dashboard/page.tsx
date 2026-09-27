@@ -5444,6 +5444,44 @@ export default function DashboardPage() {
           }
         }
 
+        /* FINAL HERO POLISH — desktop: shorter, clean and never cropped */
+        .hero-layout {
+          display: block;
+          width: 100%;
+          min-width: 0;
+        }
+
+        .hero-image-frame {
+          width: 100%;
+          aspect-ratio: 2.72 / 1;
+          min-height: 0;
+          max-height: 430px;
+          overflow: hidden;
+          background: #fffaf0;
+        }
+
+        .hero-banner {
+          width: 100%;
+          height: 100%;
+          object-fit: contain !important;
+          object-position: center;
+          background: #fffaf0;
+        }
+
+        @media (min-width: 1400px) {
+          .hero-image-frame {
+            aspect-ratio: 2.82 / 1;
+            max-height: 420px;
+          }
+        }
+
+        @media (max-width: 980px) {
+          .hero-image-frame {
+            aspect-ratio: 16 / 9;
+            max-height: none;
+          }
+        }
+
       `}</style>
     </main>
   );
