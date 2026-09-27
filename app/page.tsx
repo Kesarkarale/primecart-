@@ -674,70 +674,90 @@ export default function HomePage() {
         )}
       </nav>
 
-      {/* =========================================================
-          HERO
-      ========================================================= */}
+{/* =========================================================
+    HERO
+========================================================= */}
 
-      <section className="px-4 sm:px-6 lg:px-8">
+<section className="px-3 pt-5 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
   <div
     className="
       relative
       mx-auto
       max-w-[1380px]
       overflow-hidden
-      rounded-[28px]
+      rounded-[22px]
       border
       border-[#eadfc9]
       bg-[#fffdfa]
       shadow-[0_18px_50px_rgba(80,60,20,0.10)]
+      sm:rounded-[28px]
     "
   >
     <div
       className="
         grid
-        min-h-[560px]
-        grid-cols-1
-        lg:grid-cols-2
+        grid-cols-2
+        min-h-[365px]
+        sm:min-h-[470px]
+        lg:min-h-[560px]
       "
     >
-      {/* ================= LEFT CONTENT ================= */}
+      {/* =====================================================
+          LEFT CONTENT
+      ===================================================== */}
       <div
         className="
           relative
           z-10
           flex
+          min-w-0
           flex-col
           justify-center
-          px-6
-          py-12
-          sm:px-10
-          sm:py-14
+          px-3
+          py-6
+          sm:px-7
+          sm:py-10
           lg:px-14
-          xl:px-16
           lg:py-16
+          xl:px-16
         "
       >
         {/* Sale Badge */}
         <div
           className="
-            mb-7
+            mb-3
             inline-flex
             w-fit
+            max-w-full
             items-center
-            gap-2
+            gap-1
             rounded-full
             border
             border-[#ead9b7]
             bg-[#fffaf0]
-            px-4
-            py-2
-            text-sm
+            px-2
+            py-1
+            text-[8px]
             font-medium
             text-[#c28f20]
+            sm:mb-5
+            sm:gap-2
+            sm:px-3
+            sm:py-1.5
+            sm:text-xs
+            lg:mb-7
+            lg:px-4
+            lg:py-2
+            lg:text-sm
           "
         >
-          <span className="text-base">🔥</span>
-          <span>Super Sale is Live!</span>
+          <span className="text-[10px] sm:text-sm lg:text-base">
+            🔥
+          </span>
+
+          <span className="truncate">
+            Super Sale is Live!
+          </span>
         </div>
 
         {/* Heading */}
@@ -745,18 +765,21 @@ export default function HomePage() {
           className="
             max-w-[620px]
             font-serif
-            text-[48px]
+            text-[25px]
             font-bold
-            leading-[0.96]
-            tracking-[-2px]
+            leading-[0.98]
+            tracking-[-1.2px]
             text-[#111111]
-            sm:text-[60px]
+            sm:text-[45px]
+            sm:tracking-[-1.8px]
             lg:text-[68px]
+            lg:tracking-[-2px]
             xl:text-[76px]
           "
         >
           Shop More.
           <br />
+
           <span className="text-[#d5ad32]">
             Pay Less.
           </span>
@@ -765,13 +788,17 @@ export default function HomePage() {
         {/* Description */}
         <p
           className="
-            mt-7
+            mt-3
             max-w-[560px]
-            text-[15px]
-            leading-7
+            text-[9px]
+            leading-[1.55]
             text-[#4f4a42]
-            sm:text-[17px]
+            sm:mt-5
+            sm:text-[13px]
+            sm:leading-6
+            lg:mt-7
             lg:text-[18px]
+            lg:leading-7
           "
         >
           Discover the best products at unbeatable prices.
@@ -781,52 +808,74 @@ export default function HomePage() {
         {/* Buttons */}
         <div
           className="
-            mt-8
+            mt-4
             flex
             flex-col
-            gap-3
+            gap-2
+            sm:mt-6
             sm:flex-row
+            sm:gap-3
+            lg:mt-8
           "
         >
           <Link
             href="/dashboard/products"
             className="
               inline-flex
-              h-14
+              h-9
               items-center
               justify-center
-              gap-2
-              rounded-xl
+              gap-1
+              rounded-lg
               bg-[#d8af32]
-              px-8
-              text-[15px]
+              px-3
+              text-[9px]
               font-semibold
               text-white
-              shadow-[0_10px_24px_rgba(207,166,45,0.22)]
+              shadow-[0_7px_18px_rgba(207,166,45,0.20)]
               transition-all
               duration-300
               hover:-translate-y-1
               hover:bg-[#c99f25]
-              hover:shadow-[0_14px_30px_rgba(207,166,45,0.28)]
+              hover:shadow-[0_12px_25px_rgba(207,166,45,0.28)]
+              sm:h-11
+              sm:gap-1.5
+              sm:rounded-xl
+              sm:px-5
+              sm:text-xs
+              lg:h-14
+              lg:gap-2
+              lg:px-8
+              lg:text-[15px]
             "
           >
             Shop Now
-            <ArrowRight className="h-4 w-4" />
+
+            <ArrowRight
+              className="
+                h-3
+                w-3
+                sm:h-3.5
+                sm:w-3.5
+                lg:h-4
+                lg:w-4
+              "
+            />
           </Link>
 
           <Link
             href="/dashboard/products"
             className="
               inline-flex
-              h-14
+              h-9
               items-center
               justify-center
-              rounded-xl
+              rounded-lg
               border
               border-[#d9dce2]
               bg-white
-              px-8
-              text-[15px]
+              px-3
+              text-[9px]
               font-semibold
               text-[#171717]
               transition-all
@@ -835,6 +884,13 @@ export default function HomePage() {
               hover:border-[#d5ad32]
               hover:text-[#b88b20]
               hover:shadow-[0_10px_25px_rgba(0,0,0,0.06)]
+              sm:h-11
+              sm:rounded-xl
+              sm:px-5
+              sm:text-xs
+              lg:h-14
+              lg:px-8
+              lg:text-[15px]
             "
           >
             Explore Deals
@@ -844,35 +900,96 @@ export default function HomePage() {
         {/* Customers */}
         <div
           className="
-            mt-10
+            mt-5
             flex
+            min-w-0
             items-center
-            gap-4
+            gap-2
+            sm:mt-7
+            sm:gap-3
+            lg:mt-10
+            lg:gap-4
           "
         >
-          <div className="flex -space-x-3">
-            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#d9dde5]" />
-            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#aeb7c8]" />
-            <div className="h-10 w-10 rounded-full border-2 border-white bg-[#737e92]" />
+          {/* Avatar Stack */}
+          <div className="flex shrink-0 -space-x-2 sm:-space-x-3">
+            <div
+              className="
+                h-6
+                w-6
+                rounded-full
+                border
+                border-white
+                bg-[#d9dde5]
+                sm:h-8
+                sm:w-8
+                lg:h-10
+                lg:w-10
+                lg:border-2
+              "
+            />
+
+            <div
+              className="
+                h-6
+                w-6
+                rounded-full
+                border
+                border-white
+                bg-[#aeb7c8]
+                sm:h-8
+                sm:w-8
+                lg:h-10
+                lg:w-10
+                lg:border-2
+              "
+            />
+
+            <div
+              className="
+                h-6
+                w-6
+                rounded-full
+                border
+                border-white
+                bg-[#737e92]
+                sm:h-8
+                sm:w-8
+                lg:h-10
+                lg:w-10
+                lg:border-2
+              "
+            />
           </div>
 
-          <p className="text-sm text-[#444]">
-            Join
+          <p
+            className="
+              min-w-0
+              text-[8px]
+              leading-3
+              text-[#444]
+              sm:text-xs
+              lg:text-sm
+            "
+          >
+            Join{" "}
             <span className="font-semibold text-[#d0a52e]">
               10,000+
-            </span>
+            </span>{" "}
             Happy Customers
           </p>
         </div>
       </div>
 
-      {/* ================= RIGHT IMAGE ================= */}
+      {/* =====================================================
+          RIGHT IMAGE
+          Desktop + Mobile = SAME SIDE-BY-SIDE LAYOUT
+      ===================================================== */}
       <div
         className="
           relative
-          min-h-[340px]
+          min-h-full
           overflow-hidden
-          lg:min-h-full
         "
       >
         <Image
@@ -880,7 +997,7 @@ export default function HomePage() {
           alt="PrimeCart premium collection"
           fill
           priority
-          sizes="(max-width: 1024px) 100vw, 50vw"
+          sizes="50vw"
           className="
             object-cover
             object-center
@@ -894,47 +1011,6 @@ export default function HomePage() {
     </div>
   </div>
 </section>
-
-      {/* =========================================================
-          BENEFITS
-      ========================================================= */}
-
-      <section className="px-3 py-3 sm:px-6 sm:py-5">
-        <div className="mx-auto max-w-7xl">
-
-          <div className="grid overflow-hidden rounded-3xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-
-            {benefits.map((benefit, index) => {
-              const Icon = benefit.icon;
-
-              return (
-                <div
-                  key={benefit.title}
-                  className={`flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-6 ${
-                    index !== benefits.length - 1
-                      ? "border-b border-[#eee8dc] sm:border-r lg:border-b-0"
-                      : ""
-                  }`}
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff7e5] text-[#b58c24] sm:h-12 sm:w-12 sm:rounded-2xl">
-                    <Icon size={19} className="sm:h-[22px] sm:w-[22px]" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-bold sm:text-base">
-                      {benefit.title}
-                    </h3>
-
-                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500 sm:text-xs">
-                      {benefit.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
 {/* =========================================================
     FLASH DEALS
