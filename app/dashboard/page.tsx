@@ -1,5318 +1,1719 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock3,
-  Eye,
+  Headphones,
   Heart,
-  Home,
-  Laptop,
   Menu,
-  Moon,
+  PackageCheck,
   Search,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
-  Smartphone,
   Sparkles,
   Star,
-  Sun,
-  Tag,
   Truck,
   UserRound,
-  Watch,
-  ShieldCheck,
-  RotateCcw,
-  Headphones,
-  Package,
-  Shirt,
-  Footprints,
-  Baby,
-  Dumbbell,
-  Car,
-  BookOpen,
-  Palette,
-  Gamepad2,
-  Monitor,
   X,
-  LogOut,
-  Settings,
-  User,
   Zap,
-  TrendingUp,
-  Gift,
-  Target,
-  Wallet,
-  Layers3,
-  ArrowUpRight,
-  CheckCircle2,
-  Percent,
-  Crown,
-  ChevronUp,
 } from "lucide-react";
 
-type Product = {
-  id: string | number;
-  category_id: string | number | null;
-  name: string;
-  slug?: string | null;
-  short_description?: string | null;
-  description?: string | null;
-  price: number | null;
-  original_price: number | null;
-  stock: number | null;
-  image_url: string | null;
-  brand?: string | null;
-  rating?: number | null;
-  reviews_count?: number | null;
-  is_featured?: boolean | null;
-  is_flash_sale?: boolean | null;
-  is_active?: boolean | null;
-  created_at?: string | null;
-};
+/* =========================================================
+   TYPES
+========================================================= */
 
 type Category = {
-  id: string | number;
   name: string;
+  products: string;
+  image: string;
+  slug: string;
 };
 
-type CartItem = {
-  id: string | number;
-  name: string;
-  price: number;
-  image_url?: string | null;
-  quantity: number;
+type HeroSlide = {
+  eyebrow: string;
+  title: string;
+  highlight: string;
+  description: string;
+  button: string;
+  secondary: string;
+  badge: string;
 };
 
-type UserInfo = {
-  name: string;
-  email: string;
-};
+/* =========================================================
+   DATA
+========================================================= */
 
-const CART_KEY = "primecart-cart";
-const WISHLIST_KEY = "primecart-wishlist";
-const THEME_KEY = "primecart-theme";
-
-const HERO_BANNERS = [
-  "/banner/hero-banner.png",
-  "/banner/hero-banner2.png",
-  "/banner/hero-banner3.png",
-  "/banner/hero-banner4.png",
-  "/banner/hero-banner5.png",
-  "/banner/hero-banner6.png",
-  "/banner/hero-banner7.png",
-  "/banner/hero-banner8.png",
+const categories: Category[] = [
+  {
+    name: "Electronics",
+    products: "2500+ Products",
+    image: "/electronics.png",
+    slug: "electronics",
+  },
+  {
+    name: "Fashion",
+    products: "1800+ Products",
+    image: "/fashion.png",
+    slug: "fashion",
+  },
+  {
+    name: "Watches",
+    products: "1200+ Products",
+    image: "/watch.png",
+    slug: "watches",
+  },
+  {
+    name: "Beauty",
+    products: "800+ Products",
+    image: "/beauty.png",
+    slug: "beauty",
+  },
+  {
+    name: "Home & Living",
+    products: "1500+ Products",
+    image: "/home.png",
+    slug: "home-and-living",
+  },
+  {
+    name: "Gaming",
+    products: "950+ Products",
+    image: "/gaming.png",
+    slug: "gaming",
+  },
 ];
 
-const HERO_LINKS = [
-  "/dashboard/products",
-  "/dashboard/categories/beauty",
-  "/dashboard/categories/home-and-kitchen",
-  "/dashboard/categories/fashion",
-  "/dashboard/prime-match",
-  "/dashboard/categories/electronics",
-  "/dashboard/budget-builder",
-  "/dashboard/categories",
+const heroSlides: HeroSlide[] = [
+  {
+    eyebrow: "SUPER SALE IS LIVE",
+    title: "Shop More.",
+    highlight: "Pay Less.",
+    description:
+      "Discover premium products, everyday essentials and exciting deals — all in one beautiful shopping experience.",
+    button: "Shop Now",
+    secondary: "Explore Deals",
+    badge: "Up to 70% OFF",
+  },
+  {
+    eyebrow: "PRIMECART PICKS",
+    title: "Curated.",
+    highlight: "Just For You.",
+    description:
+      "Explore hand-picked products across electronics, fashion, beauty, home and gaming.",
+    button: "Explore Picks",
+    secondary: "View Categories",
+    badge: "Premium Selection",
+  },
+  {
+    eyebrow: "FLASH DEALS",
+    title: "Big Deals.",
+    highlight: "Limited Time.",
+    description:
+      "Don't miss today's exclusive offers. Grab your favourites before the timer runs out.",
+    button: "Grab Deals",
+    secondary: "Shop Everything",
+    badge: "Limited Time",
+  },
 ];
 
-const CATEGORY_ORDER = [
-  "Mobile",
-  "Electronics",
-  "Home & Kitchen",
-  "Fashion",
-  "Footwear",
-  "Beauty",
-  "Beauty & Personal Care",
-  "Toy & Baby",
-  "Toys & Baby",
-  "Sports & Fitness",
-  "Appliance",
-  "Appliances",
-  "Automotive",
-  "Eyewear",
-  "Books",
-  "Gaming",
-  "Watch",
-  "Bag",
+const benefits = [
+  {
+    icon: Truck,
+    title: "Free Delivery",
+    description: "On orders above ₹499",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Secure Payment",
+    description: "Safe & encrypted checkout",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Genuine Products",
+    description: "Quality you can trust",
+  },
+  {
+    icon: Headphones,
+    title: "24/7 Support",
+    description: "We're here to help",
+  },
 ];
 
-function getImageUrl(value?: string | null) {
-  if (!value?.trim()) return "";
-  const v = value.trim();
+const primeFeatures = [
+  {
+    icon: Sparkles,
+    title: "PrimeMatch",
+    description:
+      "Tell us what you need, your budget and priorities. Find products that fit your requirements.",
+    href: "/dashboard/prime-match",
+    label: "Find My Match",
+  },
+  {
+    icon: Zap,
+    title: "Budget Builder",
+    description:
+      "Plan your shopping intelligently and discover the best combination within your budget.",
+    href: "/dashboard/budget-builder",
+    label: "Build Budget",
+  },
+  {
+    icon: PackageCheck,
+    title: "Build My Setup",
+    description:
+      "Create complete gaming, college, work, fitness or home setups with ease.",
+    href: "/dashboard/setup-builder",
+    label: "Build Setup",
+  },
+  {
+    icon: Star,
+    title: "PrimePoints",
+    description:
+      "Shop, complete challenges and collect rewards while becoming a PrimeCart member.",
+    href: "/dashboard/prime-points",
+    label: "Earn Rewards",
+  },
+];
 
-  if (/^https?:\/\//i.test(v) || v.startsWith("/")) {
-    return v;
-  }
+const dealItems = [
+  {
+    title: "Electronics",
+    subtitle: "Smart tech for everyday life",
+    discount: "UP TO 60% OFF",
+    image: "/electronics.png",
+    href: "/dashboard/categories/electronics",
+  },
+  {
+    title: "Fashion",
+    subtitle: "Refresh your everyday style",
+    discount: "UP TO 50% OFF",
+    image: "/fashion.png",
+    href: "/dashboard/categories/fashion",
+  },
+  {
+    title: "Home & Living",
+    subtitle: "Make your space feel better",
+    discount: "UP TO 45% OFF",
+    image: "/home.png",
+    href: "/dashboard/categories/home-and-living",
+  },
+];
 
-  return `/${v}`;
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function formatTime(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    hours: String(hours).padStart(2, "0"),
+    minutes: String(minutes).padStart(2, "0"),
+    seconds: String(seconds).padStart(2, "0"),
+  };
 }
 
-function formatPrice(value: number | null | undefined) {
-  return `₹${Number(value || 0).toLocaleString("en-IN")}`;
-}
+/* =========================================================
+   PAGE
+========================================================= */
 
-function getDiscount(
-  price: number | null | undefined,
-  original: number | null | undefined
-) {
-  if (!price || !original || original <= price) return 0;
-
-  return Math.round(((original - price) / original) * 100);
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function getCategoryIcon(name: string) {
-  const n = name.toLowerCase();
-
-  if (n.includes("mobile")) return Smartphone;
-  if (n.includes("electronic")) return Laptop;
-  if (n.includes("home") || n.includes("kitchen")) return Home;
-  if (n.includes("fashion")) return Shirt;
-  if (n.includes("foot")) return Footprints;
-  if (n.includes("beauty")) return Sparkles;
-  if (n.includes("toy") || n.includes("baby")) return Baby;
-  if (n.includes("sport")) return Dumbbell;
-  if (n.includes("appliance")) return Monitor;
-  if (n.includes("auto")) return Car;
-  if (n.includes("eye")) return Eye;
-  if (n.includes("book")) return BookOpen;
-  if (n.includes("gaming")) return Gamepad2;
-  if (n.includes("watch")) return Watch;
-  if (n.includes("bag")) return ShoppingBag;
-
-  return Package;
-}
-
-function getImageCandidates(value?: string | null) {
-  if (!value?.trim()) return [];
-  const raw = value.trim();
-  if (/^https?:\/\//i.test(raw)) return [raw];
-
-  const clean = raw.replace(/^public[\\/]/i, "").replace(/^\//, "");
-  const encoded = clean.split("/").map(encodeURIComponent).join("/");
-  return Array.from(new Set([
-    `/${clean}`,
-    `/${encoded}`,
-    `/products/${clean}`,
-    `/product/${clean}`,
-    `/product-images/${clean}`,
-    `/images/products/${clean}`,
-    `/images/${clean}`,
-    `/assets/products/${clean}`,
-    `/assets/images/${clean}`,
-    "/product-placeholder.png",
-  ]));
-}
-
-function SafeProductImage({
-  src,
-  alt,
-  className,
-}: {
-  src?: string | null;
-  alt: string;
-  className: string;
-}) {
-  const candidates = getImageCandidates(src);
-  const [index, setIndex] = useState(0);
-
-  if (!candidates.length || index >= candidates.length) {
-    return <ShoppingBag size={42} strokeWidth={1.2} />;
-  }
-
-  return (
-    <img
-      src={candidates[index]}
-      alt={alt}
-      className={className}
-      loading="lazy"
-      onError={() => setIndex((current) => current + 1)}
-    />
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* PRODUCT CARD                                                               */
-/* -------------------------------------------------------------------------- */
-
-function ProductCard({
-  product,
-  category,
-  wished,
-  onWishlist,
-  onCart,
-  onOpen,
-}: {
-  product: Product;
-  category: string;
-  wished: boolean;
-  onWishlist: () => void;
-  onCart: () => void;
-  onOpen: () => void;
-}) {
-  const discount = getDiscount(product.price, product.original_price);
-  const stock = Number(product.stock ?? 0);
-
-  return (
-    <article className="product-card premium-reveal">
-      <div className="product-card-glow" />
-
-      <button
-        className={`wish-btn ${wished ? "wished" : ""}`}
-        aria-label="Wishlist"
-        onClick={onWishlist}
-      >
-        <Heart
-          size={18}
-          fill={wished ? "currentColor" : "none"}
-          strokeWidth={1.8}
-        />
-      </button>
-
-      <div className="product-badges">
-        {discount > 0 && (
-          <span className="discount-badge">
-            <Percent size={9} />
-            {discount}% OFF
-          </span>
-        )}
-
-        {product.is_featured && (
-          <span className="mini-badge">
-            <Crown size={9} />
-            Bestseller
-          </span>
-        )}
-      </div>
-
-      <button
-        className="product-image-wrap"
-        onClick={onOpen}
-        aria-label={`Open ${product.name}`}
-      >
-        {product.image_url ? (
-          <SafeProductImage
-            src={product.image_url}
-            alt={product.name}
-            className="product-image"
-          />
-        ) : (
-          <ShoppingBag size={48} strokeWidth={1.2} />
-        )}
-
-        <span className="image-view">
-          <Eye size={13} />
-          Quick View
-        </span>
-      </button>
-
-      <div className="product-copy">
-        <div className="product-category">{category}</div>
-
-        <button className="product-name" onClick={onOpen}>
-          {product.name}
-        </button>
-
-        <div className="rating-row">
-          <span className="rating-pill">
-            {Number(product.rating || 0).toFixed(1)}
-            <Star size={10} fill="currentColor" />
-          </span>
-
-          <span className="review-count">
-            ({Number(product.reviews_count || 0).toLocaleString("en-IN")})
-          </span>
-        </div>
-
-        <div className="price-row">
-          <strong>{formatPrice(product.price)}</strong>
-
-          {product.original_price &&
-            product.original_price > Number(product.price || 0) && (
-              <del>{formatPrice(product.original_price)}</del>
-            )}
-        </div>
-
-        {stock > 0 && stock <= 10 && (
-          <div className="stock-warning">
-            <span />
-            Only {stock} left
-          </div>
-        )}
-
-        <button className="add-cart-btn" onClick={onCart}>
-          <ShoppingCart size={13} />
-          Add to Cart
-        </button>
-      </div>
-    </article>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* MAIN DASHBOARD                                                             */
-/* -------------------------------------------------------------------------- */
-
-export default function DashboardPage() {
-  const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-
-  const categoryRailRef = useRef<HTMLDivElement>(null);
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  const [userInfo, setUserInfo] = useState<UserInfo>({
-    name: "",
-    email: "",
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [search, setSearch] = useState("");
+export default function HomePage() {
+  const [openMenu, setOpenMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeSlide, setActiveSlide] = useState(0);
 
-  const [wishlist, setWishlist] = useState<Array<string | number>>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [timeLeft, setTimeLeft] = useState(
+    2 * 60 * 60 + 18 * 60 + 45
+  );
 
-  const [heroIndex, setHeroIndex] = useState(0);
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
 
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const currentSlide = heroSlides[activeSlide];
 
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  /* =========================================================
+     SEARCH
+  ========================================================= */
 
-  const [toast, setToast] = useState("");
-  const [userLoggedIn, setUserLoggedIn] = useState(false);
+  const filteredCategories = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-  const [countdown, setCountdown] = useState({
-    hours: 8,
-    minutes: 42,
-    seconds: 18,
-  });
+    if (!query) return categories;
 
-  /* ------------------------------------------------------------------------ */
-  /* LOAD DASHBOARD                                                           */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadDashboard() {
-      try {
-        setLoading(true);
-        setErrorMessage("");
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!mounted) return;
-
-        if (user) {
-          setUserLoggedIn(true);
-
-          const meta = user.user_metadata || {};
-
-          setUserInfo({
-            name:
-              meta.full_name ||
-              meta.name ||
-              user.email?.split("@")[0] ||
-              "PrimeCart User",
-            email: user.email || "",
-          });
-        }
-
-        const [
-          { data: productData, error: productError },
-          { data: categoryData, error: categoryError },
-        ] = await Promise.all([
-          supabase
-            .from("products")
-            .select(
-              "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
-            )
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(100),
-
-          supabase
-            .from("categories")
-            .select("id,name")
-            .order("name", { ascending: true }),
-        ]);
-
-        if (productError) throw productError;
-
-        if (categoryError) {
-          console.warn(categoryError.message);
-        }
-
-        if (!mounted) return;
-
-        setProducts(productData || []);
-        setCategories(categoryData || []);
-      } catch (error) {
-        console.error(error);
-
-        if (mounted) {
-          setErrorMessage(
-            "Unable to load products right now. Please try again."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadDashboard();
-
-    try {
-      const savedCart = JSON.parse(
-        localStorage.getItem(CART_KEY) || "[]"
-      );
-
-      const savedWishlist = JSON.parse(
-        localStorage.getItem(WISHLIST_KEY) || "[]"
-      );
-
-      const savedTheme = localStorage.getItem(THEME_KEY);
-
-      if (Array.isArray(savedCart)) {
-        setCart(savedCart);
-      }
-
-      if (Array.isArray(savedWishlist)) {
-        setWishlist(savedWishlist);
-      }
-
-      if (savedTheme === "dark") {
-        setTheme("dark");
-      }
-    } catch {
-      // Ignore invalid local storage.
-    }
-
-    return () => {
-      mounted = false;
-    };
-  }, [supabase]);
-
-  /* ------------------------------------------------------------------------ */
-  /* THEME                                                                    */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    document.documentElement.classList.toggle(
-      "dark",
-      theme === "dark"
+    return categories.filter((category) =>
+      category.name.toLowerCase().includes(query)
     );
+  }, [search]);
 
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
-
-  /* ------------------------------------------------------------------------ */
-  /* HERO                                                                     */
-  /* ------------------------------------------------------------------------ */
+  /* =========================================================
+     FLASH DEAL TIMER
+  ========================================================= */
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setHeroIndex(
-        (current) => (current + 1) % HERO_BANNERS.length
-      );
-    }, 5200);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  /* ------------------------------------------------------------------------ */
-  /* FLASH COUNTDOWN                                                          */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setCountdown((current) => {
-        let { hours, minutes, seconds } = current;
-
-        if (seconds > 0) {
-          seconds -= 1;
-        } else {
-          seconds = 59;
-
-          if (minutes > 0) {
-            minutes -= 1;
-          } else {
-            minutes = 59;
-
-            if (hours > 0) {
-              hours -= 1;
-            } else {
-              hours = 8;
-            }
-          }
+      setTimeLeft((value) => {
+        if (value <= 0) {
+          return 2 * 60 * 60 + 18 * 60 + 45;
         }
 
-        return { hours, minutes, seconds };
+        return value - 1;
       });
     }, 1000);
 
     return () => window.clearInterval(timer);
   }, []);
 
-  /* ------------------------------------------------------------------------ */
-  /* TOAST                                                                    */
-  /* ------------------------------------------------------------------------ */
+  /* =========================================================
+     HERO AUTO SLIDER
+  ========================================================= */
 
   useEffect(() => {
-    if (!toast) return;
+    const slider = window.setInterval(() => {
+      setActiveSlide((value) => (value + 1) % heroSlides.length);
+    }, 6500);
 
-    const timer = window.setTimeout(() => {
-      setToast("");
-    }, 2200);
+    return () => window.clearInterval(slider);
+  }, []);
 
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+  const formattedTime = formatTime(timeLeft);
 
-  /* ------------------------------------------------------------------------ */
-  /* CATEGORY MAP                                                             */
-  /* ------------------------------------------------------------------------ */
+  /* =========================================================
+     NEWSLETTER
+  ========================================================= */
 
-  const categoryMap = useMemo(() => {
-    const map = new Map<string, string>();
-
-    categories.forEach((category) => {
-      map.set(String(category.id), category.name);
-    });
-
-    return map;
-  }, [categories]);
-
-  /* ------------------------------------------------------------------------ */
-  /* CATEGORY ORDER                                                           */
-  /* ------------------------------------------------------------------------ */
-
-  const visibleCategories = useMemo(() => {
-    return [...categories].sort((a, b) => {
-      const ai = CATEGORY_ORDER.findIndex(
-        (x) => x.toLowerCase() === a.name.toLowerCase()
-      );
-
-      const bi = CATEGORY_ORDER.findIndex(
-        (x) => x.toLowerCase() === b.name.toLowerCase()
-      );
-
-      if (ai === -1 && bi === -1) {
-        return a.name.localeCompare(b.name);
-      }
-
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-
-      return ai - bi;
-    });
-  }, [categories]);
-
-  const categoryCards = visibleCategories.slice(0, 12);
-
-  /* ------------------------------------------------------------------------ */
-  /* SEARCH                                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const searchResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
-    if (!q) return [];
-
-    return products
-      .filter((product) => {
-        const category =
-          categoryMap.get(String(product.category_id)) || "";
-
-        return `${product.name} ${product.brand || ""} ${category}`
-          .toLowerCase()
-          .includes(q);
-      })
-      .slice(0, 7);
-  }, [search, products, categoryMap]);
-
-  /* ------------------------------------------------------------------------ */
-  /* PRODUCT GROUPS                                                           */
-  /* ------------------------------------------------------------------------ */
-
-  const featuredProducts = useMemo(() => {
-    const featured = products.filter(
-      (product) => product.is_featured
-    );
-
-    return (featured.length ? featured : products).slice(0, 5);
-  }, [products]);
-
-  const flashProducts = useMemo(() => {
-    const flash = products.filter(
-      (product) => product.is_flash_sale
-    );
-
-    const discounted = products.filter(
-      (product) =>
-        getDiscount(product.price, product.original_price) >= 10
-    );
-
-    return (
-      flash.length
-        ? flash
-        : discounted.length
-          ? discounted
-          : products
-    ).slice(0, 5);
-  }, [products]);
-
-  const topDeals = useMemo(() => {
-    return [...products]
-      .sort(
-        (a, b) =>
-          getDiscount(b.price, b.original_price) -
-          getDiscount(a.price, a.original_price)
-      )
-      .slice(0, 3);
-  }, [products]);
-
-  const trendingProducts = useMemo(() => {
-    return [...products]
-      .sort(
-        (a, b) =>
-          Number(b.rating || 0) - Number(a.rating || 0)
-      )
-      .slice(0, 5);
-  }, [products]);
-
-  const newArrivals = useMemo(() => {
-    return [...products]
-      .sort((a, b) => {
-        const first = new Date(
-          a.created_at || 0
-        ).getTime();
-
-        const second = new Date(
-          b.created_at || 0
-        ).getTime();
-
-        return second - first;
-      })
-      .slice(0, 5);
-  }, [products]);
-
-  /* ------------------------------------------------------------------------ */
-  /* CART                                                                     */
-  /* ------------------------------------------------------------------------ */
-
-  const cartCount = cart.reduce(
-    (sum, item) => sum + Number(item.quantity || 0),
-    0
-  );
-
-  /* ------------------------------------------------------------------------ */
-  /* HELPERS                                                                  */
-  /* ------------------------------------------------------------------------ */
-
-  function showToast(message: string) {
-    setToast(message);
-  }
-
-  function toggleWishlist(id: string | number) {
-    setWishlist((current) => {
-      const exists = current.some(
-        (value) => String(value) === String(id)
-      );
-
-      const next = exists
-        ? current.filter(
-            (value) => String(value) !== String(id)
-          )
-        : [...current, id];
-
-      localStorage.setItem(
-        WISHLIST_KEY,
-        JSON.stringify(next)
-      );
-
-      showToast(
-        exists
-          ? "Removed from Wishlist"
-          : "Added to Wishlist"
-      );
-
-      return next;
-    });
-  }
-
-  function addToCart(product: Product) {
-    setCart((current) => {
-      const exists = current.find(
-        (item) =>
-          String(item.id) === String(product.id)
-      );
-
-      const maxStock = Number(product.stock || 999);
-
-      const next = exists
-        ? current.map((item) =>
-            String(item.id) === String(product.id)
-              ? {
-                  ...item,
-                  quantity: Math.min(
-                    item.quantity + 1,
-                    maxStock
-                  ),
-                }
-              : item
-          )
-        : [
-            ...current,
-            {
-              id: product.id,
-              name: product.name,
-              price: Number(product.price || 0),
-              image_url: product.image_url,
-              quantity: 1,
-            },
-          ];
-
-      localStorage.setItem(
-        CART_KEY,
-        JSON.stringify(next)
-      );
-
-      return next;
-    });
-
-    showToast("Added to Cart");
-  }
-
-  function openProduct(product: Product) {
-    router.push(
-      `/dashboard/products/${product.id}`
-    );
-  }
-
-  function openCategory(category: Category) {
-    router.push(
-      `/dashboard/categories/${slugify(category.name)}`
-    );
-  }
-
-  function submitSearch(event: FormEvent) {
+  const handleSubscribe = (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
-    if (!search.trim()) return;
+    if (!email.trim()) return;
 
-    setSearchOpen(false);
+    setSubscribed(true);
+    setEmail("");
+  };
 
-    router.push(
-      `/dashboard/products?search=${encodeURIComponent(
-        search.trim()
-      )}`
+  /* =========================================================
+     SLIDER CONTROLS
+  ========================================================= */
+
+  const nextSlide = () => {
+    setActiveSlide(
+      (value) => (value + 1) % heroSlides.length
     );
-  }
+  };
 
-  function scrollCategories(
-    direction: "left" | "right"
-  ) {
-    categoryRailRef.current?.scrollBy({
-      left:
-        direction === "left" ? -450 : 450,
-      behavior: "smooth",
-    });
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    router.replace("/auth/login");
-  }
-
-  function formatCountdown(value: number) {
-    return String(value).padStart(2, "0");
-  }
-
-  /* ------------------------------------------------------------------------ */
-  /* LOADING                                                                  */
-  /* ------------------------------------------------------------------------ */
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  /* ------------------------------------------------------------------------ */
-  /* UI                                                                       */
-  /* ------------------------------------------------------------------------ */
+  const previousSlide = () => {
+    setActiveSlide(
+      (value) =>
+        (value - 1 + heroSlides.length) %
+        heroSlides.length
+    );
+  };
 
   return (
-    <main className="store-shell">
-      {/* TOP OFFER BAR */}
-      <div className="top-strip">
-        <div className="container strip-inner">
-          <div className="strip-left">
-            <span>
-              <Truck size={14} />
-              Free Shipping above ₹499
-            </span>
+    <main className="min-h-screen overflow-x-hidden bg-[#faf8f3] text-[#171512]">
 
-            <i />
+      {/* =====================================================
+          ANNOUNCEMENT BAR
+      ===================================================== */}
 
-            <span>
-              <RotateCcw size={14} />
-              Easy Returns
-            </span>
+      <div className="hidden bg-[#171512] text-white sm:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-2.5 text-xs sm:px-6">
+          <p className="font-medium tracking-wide">
+            ✨ Premium shopping. Better prices. Smarter choices.
+          </p>
 
-            <i />
-
-            <span>
-              <ShieldCheck size={14} />
-              Secure Shopping
-            </span>
-          </div>
-
-          <div className="strip-center">
-            <Sparkles size={12} />
-            PrimeCart Premium Shopping Experience
-          </div>
-
-          <div className="strip-right">
-            <span>
-              Get 10% OFF on your first order
-            </span>
-
-            <i />
-
-            <span>
-              Use code: <b>WELCOME10</b>
-            </span>
+          <div className="flex items-center gap-6 text-white/75">
+            <span>Free delivery above ₹499</span>
+            <span>Easy returns</span>
+            <span>Secure checkout</span>
           </div>
         </div>
       </div>
 
-      {/* HEADER */}
-      <header className="main-header">
-        <div className="container header-main">
+      {/* =====================================================
+          NAVBAR
+      ===================================================== */}
+
+      <nav className="sticky top-0 z-50 border-b border-[#ece7db] bg-white/95 shadow-[0_4px_20px_rgba(40,30,10,0.04)] backdrop-blur-xl">
+        <div className="mx-auto flex h-[70px] max-w-7xl items-center gap-3 px-3 sm:h-[74px] sm:px-6">
+
+          {/* LOGO */}
+
           <Link
-            href="/dashboard"
-            className="logo-wrap"
-            aria-label="PrimeCart home"
+            href="/"
+            className="flex shrink-0 items-center gap-2.5"
           >
-            <img
+            <Image
               src="/logo.png"
-              alt="PrimeCart"
-              className="prime-logo"
-              onError={(event) => {
-                event.currentTarget.style.display =
-                  "none";
-              }}
+              alt="PrimeCart Logo"
+              width={48}
+              height={48}
+              priority
+              className="h-10 w-10 object-contain sm:h-12 sm:w-12"
             />
 
-            <div className="logo-fallback">
-              <div className="logo-mark">
-                <ShoppingBag size={25} />
-              </div>
+            <div className="hidden min-[400px]:block">
+              <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
+                Prime<span className="text-[#D4AF37]">Cart</span>
+              </h1>
 
-              <div>
-                <div className="logo-text">
-                  PrimeCart
-                </div>
-
-                <div className="logo-tagline">
-                  Shop Smart · Live Better
-                </div>
-              </div>
+              <p className="hidden text-[9px] font-medium uppercase tracking-[0.18em] text-gray-500 sm:block">
+                Premium Shopping
+              </p>
             </div>
           </Link>
 
-          {/* SEARCH */}
-          <form
-            className={`search-box ${
-              searchOpen ? "search-active" : ""
-            }`}
-            onSubmit={submitSearch}
-          >
-            <Search size={19} />
+          {/* DESKTOP NAV */}
 
-            <input
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              onFocus={() =>
-                setSearchOpen(true)
-              }
-              placeholder="Search products, brands and more..."
-              aria-label="Search products"
-            />
-
-            {search && (
-              <button
-                type="button"
-                className="clear-search"
-                onClick={() => {
-                  setSearch("");
-                  setSearchOpen(false);
-                }}
-              >
-                <X size={14} />
-              </button>
-            )}
-
-            <button
-              type="submit"
-              className="search-submit"
-            >
-              Search
-            </button>
-
-            {searchOpen && search.trim() && (
-              <div className="search-dropdown">
-                <div className="search-dropdown-title">
-                  <span>
-                    <Search size={13} />
-                    Suggestions
-                  </span>
-
-                  <small>
-                    {searchResults.length} results
-                  </small>
-                </div>
-
-                {searchResults.length ? (
-                  searchResults.map((product) => (
-                    <button
-                      key={String(product.id)}
-                      type="button"
-                      onClick={() => {
-                        setSearchOpen(false);
-                        openProduct(product);
-                      }}
-                    >
-                      <span className="suggestion-image">
-                        {product.image_url ? (
-                          <SafeProductImage
-                            src={product.image_url}
-                            alt=""
-                            className="suggestion-product-image"
-                          />
-                        ) : (
-                          <ShoppingBag size={18} />
-                        )}
-                      </span>
-
-                      <span className="suggestion-copy">
-                        <strong>
-                          {product.name}
-                        </strong>
-
-                        <small>
-                          {product.brand ||
-                            categoryMap.get(
-                              String(
-                                product.category_id
-                              )
-                            ) ||
-                            "PrimeCart"}
-                        </small>
-                      </span>
-
-                      <b>
-                        {formatPrice(
-                          product.price
-                        )}
-                      </b>
-                    </button>
-                  ))
-                ) : (
-                  <div className="no-suggestions">
-                    <Search size={20} />
-                    <span>
-                      No products found for "
-                      {search}"
-                    </span>
-                  </div>
-                )}
-
-                {searchResults.length > 0 && (
-                  <button
-                    type="button"
-                    className="view-search-results"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      router.push(
-                        `/dashboard/products?search=${encodeURIComponent(
-                          search.trim()
-                        )}`
-                      );
-                    }}
-                  >
-                    View all results
-                    <ArrowRight size={14} />
-                  </button>
-                )}
-              </div>
-            )}
-          </form>
-
-          {/* HEADER ACTIONS */}
-          <div className="header-actions">
-            {userLoggedIn ? (
-              <div className="account-area">
-                <button
-                  className="header-action account-action"
-                  onClick={() =>
-                    setProfileOpen(
-                      (value) => !value
-                    )
-                  }
-                >
-                  <span className="account-icon">
-                    <UserRound size={21} />
-                  </span>
-
-                  <span>
-                    <small>Hello</small>
-                    <strong>
-                      {userInfo.name
-                        .split(" ")[0]
-                        .slice(0, 12)}
-                    </strong>
-                  </span>
-
-                  <ChevronDown size={13} />
-                </button>
-
-                {profileOpen && (
-                  <div className="profile-dropdown">
-                    <div className="profile-top">
-                      <div className="profile-avatar">
-                        <UserRound size={20} />
-                      </div>
-
-                      <div>
-                        <strong>
-                          {userInfo.name}
-                        </strong>
-
-                        <small>
-                          {userInfo.email}
-                        </small>
-                      </div>
-                    </div>
-
-                    <Link href="/dashboard/profile">
-                      <User size={16} />
-                      My Profile
-                    </Link>
-
-                    <Link href="/dashboard/orders">
-                      <Package size={16} />
-                      My Orders
-                    </Link>
-
-                    <Link href="/dashboard/settings">
-                      <Settings size={16} />
-                      Settings
-                    </Link>
-
-                    <div className="dropdown-divider" />
-
-                    <button onClick={logout}>
-                      <LogOut size={16} />
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                href="/auth/login"
-                className="header-action login-action"
-              >
-                <UserRound size={21} />
-                <span>
-                  <small>Welcome</small>
-                  <strong>Login / Register</strong>
-                </span>
-              </Link>
-            )}
+          <div className="ml-4 hidden items-center gap-6 lg:flex xl:gap-8">
 
             <Link
-              href="/dashboard/wishlist"
-              className="header-action icon-action"
+              href="/"
+              className="font-semibold text-[#D4AF37]"
             >
-              <span className="icon-with-badge">
-                <Heart size={23} />
-                {wishlist.length > 0 && (
-                  <b>{wishlist.length}</b>
-                )}
-              </span>
-
-              <span>Wishlist</span>
-            </Link>
-
-            <Link
-              href="/dashboard/cart"
-              className="header-action icon-action"
-            >
-              <span className="icon-with-badge">
-                <ShoppingCart size={24} />
-
-                {cartCount > 0 && (
-                  <b>
-                    {cartCount > 99
-                      ? "99+"
-                      : cartCount}
-                  </b>
-                )}
-              </span>
-
-              <span>Cart</span>
-            </Link>
-          </div>
-
-          <button
-            className="mobile-menu-button"
-            onClick={() =>
-              setMobileMenuOpen(true)
-            }
-            aria-label="Open menu"
-          >
-            <Menu size={25} />
-          </button>
-        </div>
-      </header>
-
-      {/* DESKTOP NAV */}
-      <nav className="nav-bar">
-        <div className="container nav-inner">
-          <button
-            className="all-category-btn"
-            onClick={() =>
-              router.push(
-                "/dashboard/categories"
-              )
-            }
-          >
-            <Menu size={18} />
-            All Categories
-          </button>
-
-          <Link href="/dashboard">
-            Home
-          </Link>
-
-          <Link href="/dashboard/products?deal=flash">
-            Deals
-          </Link>
-
-          <Link href="/dashboard/products?sort=bestseller">
-            Best Sellers
-          </Link>
-
-          <Link href="/dashboard/products?sort=newest">
-            New Arrivals
-          </Link>
-
-          <Link href="/dashboard/prime-points">
-            PrimePoints
-          </Link>
-
-          <Link
-            href="/dashboard/prime-match"
-            className="nav-new"
-          >
-            PrimeMatch
-            <em>New</em>
-          </Link>
-
-          <Link
-            href="/dashboard/setup-builder"
-            className="nav-new"
-          >
-            Build My Setup
-            <em>New</em>
-          </Link>
-
-          <button
-            className="more-nav"
-            onClick={() =>
-              router.push(
-                "/dashboard/categories"
-              )
-            }
-          >
-            More
-            <ChevronDown size={14} />
-          </button>
-
-          <div className="nav-spacer" />
-
-          <button
-            className="theme-switch"
-            onClick={() =>
-              setTheme(
-                theme === "light"
-                  ? "dark"
-                  : "light"
-              )
-            }
-            aria-label="Toggle theme"
-          >
-            {theme === "light" ? (
-              <Moon size={14} />
-            ) : (
-              <Sun size={14} />
-            )}
-
-            <span>
-              {theme === "light" ? "Light" : "Dark"}
-            </span>
-          </button>
-        </div>
-      </nav>
-
-      {/* MOBILE MENU */}
-      {mobileMenuOpen && (
-        <div
-          className="mobile-menu-overlay"
-          onClick={() =>
-            setMobileMenuOpen(false)
-          }
-        >
-          <div
-            className="mobile-menu-card"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            <div className="mobile-menu-head">
-              <div>
-                <strong>PrimeCart</strong>
-                <small>
-                  Shop Smart · Live Better
-                </small>
-              </div>
-
-              <button
-                onClick={() =>
-                  setMobileMenuOpen(false)
-                }
-              >
-                <X />
-              </button>
-            </div>
-
-            <Link
-              href="/dashboard"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Home size={17} />
               Home
             </Link>
 
             <Link
-              href="/dashboard/categories"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
+              href="/auth/login"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
-              <Layers3 size={17} />
-              All Categories
+              Shop
             </Link>
 
+            {/* CATEGORY DROPDOWN */}
+
+            <div className="group relative">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 font-medium text-gray-600 transition hover:text-[#D4AF37]"
+              >
+                Categories
+                <ChevronDown size={15} />
+              </button>
+
+              <div className="invisible absolute left-1/2 top-full mt-4 w-[550px] -translate-x-1/2 translate-y-2 rounded-3xl border border-[#ece7db] bg-white p-5 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-bold">
+                      Shop Categories
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Explore everything in one place
+                    </p>
+                  </div>
+
+                  <Sparkles
+                    className="text-[#D4AF37]"
+                    size={20}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.name}
+                      href={`/dashboard/categories/${category.slug}`}
+                      className="group/item flex items-center gap-3 rounded-2xl border border-[#f0ece3] p-3 transition hover:border-[#D4AF37]/50 hover:bg-[#fffaf0]"
+                    >
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#faf8f3]">
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          width={44}
+                          height={44}
+                          className="h-10 w-10 object-contain"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="font-semibold">
+                          {category.name}
+                        </p>
+
+                        <p className="text-xs text-gray-500">
+                          {category.products}
+                        </p>
+                      </div>
+
+                      <ArrowUpRight
+                        size={15}
+                        className="ml-auto text-gray-300 transition group-hover/item:text-[#D4AF37]"
+                      />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <Link
-              href="/dashboard/products?deal=flash"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
+              href="/auth/login"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
-              <Zap size={17} />
               Deals
             </Link>
 
             <Link
-              href="/dashboard/products?sort=bestseller"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
+              href="/auth/login"
+              className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
-              <Crown size={17} />
-              Best Sellers
+              Contact
             </Link>
+          </div>
 
-            <Link
-              href="/dashboard/products?sort=newest"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Sparkles size={17} />
-              New Arrivals
-            </Link>
+          {/* DESKTOP SEARCH */}
 
-            <Link
-              href="/dashboard/prime-points"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Gift size={17} />
-              PrimePoints
-            </Link>
+          <div className="ml-auto hidden max-w-[330px] flex-1 md:flex">
+            <div className="relative w-full">
 
-            <Link
-              href="/dashboard/prime-match"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Target size={17} />
-              PrimeMatch
-            </Link>
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
 
-            <Link
-              href="/dashboard/setup-builder"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Monitor size={17} />
-              Build My Setup
-            </Link>
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search products, categories..."
+                className="h-11 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-4 focus:ring-[#D4AF37]/10"
+              />
 
-            <div className="mobile-menu-divider" />
+              {searchOpen && search.trim() && (
+                <div className="absolute left-0 right-0 top-[52px] z-50 overflow-hidden rounded-2xl border border-[#ece7db] bg-white p-2 shadow-2xl">
+
+                  {filteredCategories.length > 0 ? (
+                    filteredCategories.map((category) => (
+                      <Link
+                        key={category.name}
+                        href={`/dashboard/categories/${category.slug}`}
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setSearch("");
+                        }}
+                        className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-[#faf8f3]"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#faf8f3]">
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            width={35}
+                            height={35}
+                            className="h-8 w-8 object-contain"
+                          />
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {category.name}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            {category.products}
+                          </p>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      No matching category found.
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ACTIONS */}
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
 
             <button
-              className="mobile-theme"
+              type="button"
               onClick={() =>
-                setTheme(
-                  theme === "light"
-                    ? "dark"
-                    : "light"
-                )
+                setSearchOpen((value) => !value)
               }
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] md:hidden"
+              aria-label="Search"
             >
-              {theme === "light" ? (
-                <Moon size={17} />
-              ) : (
-                <Sun size={17} />
-              )}
+              <Search size={19} />
+            </button>
 
-              {theme === "light"
-                ? "Switch to Dark Mode"
-                : "Switch to Light Mode"}
+            <Link
+              href="/auth/login"
+              className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:flex"
+              aria-label="Wishlist"
+            >
+              <Heart size={19} />
+            </Link>
+
+            <Link
+              href="/auth/login"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1]"
+              aria-label="Shopping cart"
+            >
+              <ShoppingCart size={19} />
+
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[9px] font-bold text-white">
+                0
+              </span>
+            </Link>
+
+            <Link
+              href="/auth/login"
+              className="hidden rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold transition hover:border-[#D4AF37] hover:text-[#D4AF37] md:block"
+            >
+              Login
+            </Link>
+
+            <Link
+              href="/auth/register"
+              className="hidden rounded-xl bg-[#D4AF37] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#c69f2f] hover:shadow-lg md:block"
+            >
+              Register
+            </Link>
+
+            <button
+              type="button"
+              onClick={() =>
+                setOpenMenu((value) => !value)
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#ece7db] lg:hidden"
+              aria-label="Open menu"
+            >
+              {openMenu ? (
+                <X size={21} />
+              ) : (
+                <Menu size={21} />
+              )}
             </button>
           </div>
         </div>
-      )}
 
-      {/* MAIN */}
-      <div
-        className="container page-content"
-        onClick={() => {
-          if (searchOpen) {
-            setSearchOpen(false);
-          }
+        {/* MOBILE SEARCH */}
 
-          if (profileOpen) {
-            setProfileOpen(false);
-          }
-        }}
-      >
-        {/* ERROR */}
-        {errorMessage && (
-          <div className="error-box">
-            <div>
-              <ShieldCheck size={18} />
-              <span>{errorMessage}</span>
-            </div>
+        {searchOpen && (
+          <div className="border-t border-[#ece7db] bg-white px-3 py-3 md:hidden">
+            <div className="relative">
 
-            <button
-              onClick={() =>
-                window.location.reload()
-              }
-            >
-              Retry
-            </button>
-          </div>
-        )}
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
 
-        {/* HERO — FULL WIDTH CLICKABLE BANNER */}
-        <section className="hero-layout">
-          <div className="hero-carousel">
-            <div className="hero-image-frame">
-              {HERO_BANNERS.map(
-                (banner, index) => (
-                  <img
-                    key={banner}
-                    src={banner}
-                    alt={`PrimeCart promotional banner ${
-                      index + 1
-                    }`}
-                    className={`hero-banner ${
-                      index === heroIndex
-                        ? "active"
-                        : ""
-                    }`}
-                    role="button"
-                    tabIndex={index === heroIndex ? 0 : -1}
-                    onClick={() => router.push(HERO_LINKS[index])}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        router.push(HERO_LINKS[index]);
-                      }
-                    }}
-                  />
-                )
-              )}
-
-              <div className="hero-shine" />
-
-              <button
-                type="button"
-                className="hero-arrow hero-left"
-                onClick={() =>
-                  setHeroIndex(
-                    (heroIndex -
-                      1 +
-                      HERO_BANNERS.length) %
-                      HERO_BANNERS.length
-                  )
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
                 }
-                aria-label="Previous banner"
-              >
-                <ChevronLeft size={23} />
-              </button>
+                placeholder="Search products or categories..."
+                className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 outline-none focus:border-[#D4AF37]"
+              />
+            </div>
 
-              <button
-                type="button"
-                className="hero-arrow hero-right"
-                onClick={() =>
-                  setHeroIndex(
-                    (heroIndex + 1) %
-                      HERO_BANNERS.length
-                  )
-                }
-                aria-label="Next banner"
-              >
-                <ChevronRight size={23} />
-              </button>
+            {search.trim() && (
+              <div className="mt-2 rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
 
-              <div className="hero-counter">
-                <span>
-                  {String(heroIndex + 1).padStart(
-                    2,
-                    "0"
-                  )}
-                </span>
-                /
-                {String(HERO_BANNERS.length).padStart(
-                  2,
-                  "0"
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
+                    <Link
+                      key={category.name}
+                      href={`/dashboard/categories/${category.slug}`}
+                      onClick={() => {
+                        setSearchOpen(false);
+                        setSearch("");
+                      }}
+                      className="flex items-center gap-3 rounded-xl p-3 hover:bg-[#faf8f3]"
+                    >
+                      <Image
+                        src={category.image}
+                        alt={category.name}
+                        width={40}
+                        height={40}
+                        className="h-9 w-9 object-contain"
+                      />
+
+                      <div>
+                        <p className="font-semibold">
+                          {category.name}
+                        </p>
+
+                        <p className="text-xs text-gray-500">
+                          {category.products}
+                        </p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="p-3 text-center text-sm text-gray-500">
+                    No category found.
+                  </p>
                 )}
+
               </div>
-
-              <div className="hero-dots">
-                {HERO_BANNERS.map(
-                  (_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={
-                        index === heroIndex
-                          ? "active"
-                          : ""
-                      }
-                      onClick={() =>
-                        setHeroIndex(index)
-                      }
-                      aria-label={`Show banner ${
-                        index + 1
-                      }`}
-                    />
-                  )
-                )}
-              </div>
-            </div>
+            )}
           </div>
-        </section>
-
-        {/* CATEGORIES */}
-        <section className="category-section">
-          <div className="section-mini-head">
-            <div>
-              <span>Explore</span>
-              <strong>Shop by Category</strong>
-            </div>
-
-            <Link href="/dashboard/categories">
-              View All
-              <ArrowRight size={13} />
-            </Link>
-          </div>
-
-          <div className="category-rail-wrap">
-            <button
-              type="button"
-              className="rail-control"
-              onClick={() =>
-                scrollCategories("left")
-              }
-              aria-label="Previous categories"
-            >
-              <ChevronLeft />
-            </button>
-
-            <div
-              className="category-rail"
-              ref={categoryRailRef}
-            >
-              {categoryCards.map((category) => {
-                const Icon = getCategoryIcon(
-                  category.name
-                );
-
-                return (
-                  <button
-                    type="button"
-                    className="category-item"
-                    key={String(category.id)}
-                    onClick={() =>
-                      openCategory(category)
-                    }
-                  >
-                    <span className="category-icon">
-                      <Icon size={24} />
-                    </span>
-
-                    <span>
-                      {category.name}
-                    </span>
-
-                    <small>
-                      Explore
-                      <ArrowRight size={9} />
-                    </small>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              className="rail-control"
-              onClick={() =>
-                scrollCategories("right")
-              }
-              aria-label="Next categories"
-            >
-              <ChevronRight />
-            </button>
-          </div>
-        </section>
-
-        {/* SMART SHOPPING */}
-        <section className="smart-section">
-          <div className="section-head">
-            <div className="section-title">
-              <span>
-                <Sparkles size={20} />
-              </span>
-              Smart Shopping
-            </div>
-
-            <span className="section-caption">
-              Tools made for your shopping journey
-            </span>
-          </div>
-
-          <div className="smart-grid">
-            <SmartCard
-              icon={<Target />}
-              eyebrow="PERSONALIZED"
-              title="PrimeMatch"
-              text="Tell us what you need and we'll help you discover the right products."
-              href="/dashboard/prime-match"
-              badge="New"
-            />
-
-            <SmartCard
-              icon={<Wallet />}
-              eyebrow="PLAN YOUR SPEND"
-              title="Budget Builder"
-              text="Set your budget and build a smart shopping list without overspending."
-              href="/dashboard/budget-builder"
-              badge="Smart"
-            />
-
-            <SmartCard
-              icon={<Monitor />}
-              eyebrow="BUILD YOUR SPACE"
-              title="Build My Setup"
-              text="Create gaming, college, work, fitness or home setups with ease."
-              href="/dashboard/setup-builder"
-              badge="New"
-            />
-
-            <SmartCard
-              icon={<Gift />}
-              eyebrow="REWARDS"
-              title="PrimePoints"
-              text="Earn points while you shop and unlock exciting rewards."
-              href="/dashboard/prime-points"
-              badge="Rewards"
-            />
-          </div>
-        </section>
-
-        {/* BEST DEALS */}
-        <SectionHeader
-          icon={<Sparkles size={20} />}
-          title="Best Deals for You"
-          subtitle="Handpicked offers based on what's trending"
-          href="/dashboard/products?deal=best"
-        />
-
-        <section className="products-grid five-columns">
-          {featuredProducts.map((product) => (
-            <ProductCard
-              key={String(product.id)}
-              product={product}
-              category={
-                categoryMap.get(
-                  String(product.category_id)
-                ) || "Featured"
-              }
-              wished={wishlist.some(
-                (value) =>
-                  String(value) ===
-                  String(product.id)
-              )}
-              onWishlist={() =>
-                toggleWishlist(product.id)
-              }
-              onCart={() =>
-                addToCart(product)
-              }
-              onOpen={() =>
-                openProduct(product)
-              }
-            />
-          ))}
-        </section>
-
-        {/* FLASH DEAL STRIP */}
-        {flashProducts.length > 0 && (
-          <section className="flash-section">
-            <div className="flash-header">
-              <div>
-                <div className="flash-title">
-                  <Zap
-                    size={21}
-                    fill="currentColor"
-                  />
-                  Flash Deals
-                </div>
-
-                <p>
-                  Limited-time prices. Once they're
-                  gone, they're gone.
-                </p>
-              </div>
-
-              <div className="flash-timer">
-                <span>ENDS IN</span>
-
-                <b>
-                  {formatCountdown(
-                    countdown.hours
-                  )}
-                </b>
-
-                <i>:</i>
-
-                <b>
-                  {formatCountdown(
-                    countdown.minutes
-                  )}
-                </b>
-
-                <i>:</i>
-
-                <b>
-                  {formatCountdown(
-                    countdown.seconds
-                  )}
-                </b>
-              </div>
-
-              <Link href="/dashboard/products?deal=flash">
-                View All Deals
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <div className="flash-products">
-              {flashProducts
-                .slice(0, 4)
-                .map((product) => (
-                  <button
-                    key={String(product.id)}
-                    type="button"
-                    className="flash-product"
-                    onClick={() =>
-                      openProduct(product)
-                    }
-                  >
-                    <div className="flash-product-image">
-                      {product.image_url ? (
-                        <SafeProductImage
-                          src={product.image_url}
-                          alt={product.name}
-                          className="flash-product-img"
-                        />
-                      ) : (
-                        <ShoppingBag size={30} />
-                      )}
-                    </div>
-
-                    <div>
-                      <strong>
-                        {product.name}
-                      </strong>
-
-                      <span>
-                        {formatPrice(
-                          product.price
-                        )}
-                      </span>
-
-                      {getDiscount(
-                        product.price,
-                        product.original_price
-                      ) > 0 && (
-                        <em>
-                          {getDiscount(
-                            product.price,
-                            product.original_price
-                          )}
-                          % OFF
-                        </em>
-                      )}
-                    </div>
-                  </button>
-                ))}
-            </div>
-          </section>
         )}
 
-        {/* PROMO CARDS */}
-        <section className="promo-grid">
-          <PromoCard
-            className="promo-gold"
-            icon={<Zap size={21} />}
-            eyebrow="LIMITED TIME"
-            title="Up to 70% OFF"
-            text="Discover today's most exciting deals."
-            href="/dashboard/products?deal=flash"
-            button="Shop Deals"
-            product={flashProducts[0]}
-          />
+        {/* MOBILE MENU */}
 
-          <PromoCard
-            className="promo-cream"
-            icon={<Home size={21} />}
-            eyebrow="HOME ESSENTIALS"
-            title="Make Home Better"
-            text="Beautiful essentials for your everyday life."
-            href="/dashboard/categories/home-and-kitchen"
-            button="Explore Home"
-            product={flashProducts[1]}
-          />
+        {openMenu && (
+          <div className="border-t border-[#ece7db] bg-white px-3 py-4 shadow-xl lg:hidden">
 
-          <PromoCard
-            className="promo-fashion"
-            icon={<Shirt size={21} />}
-            eyebrow="NEW COLLECTION"
-            title="Style Your Way"
-            text="Fresh looks, everyday comfort and more."
-            href="/dashboard/categories/fashion"
-            button="Shop Fashion"
-            product={flashProducts[2]}
-          />
-        </section>
+            <div className="grid gap-1.5">
 
-        {/* TRENDING */}
-        <SectionHeader
-          icon={<TrendingUp size={20} />}
-          title="Trending Now"
-          subtitle="Products shoppers are loving right now"
-          href="/dashboard/products?sort=trending"
-        />
-
-        <section className="products-grid five-columns trending-grid">
-          {trendingProducts.map((product) => (
-            <ProductCard
-              key={String(product.id)}
-              product={product}
-              category={
-                categoryMap.get(
-                  String(product.category_id)
-                ) || "Trending"
-              }
-              wished={wishlist.some(
-                (value) =>
-                  String(value) ===
-                  String(product.id)
-              )}
-              onWishlist={() =>
-                toggleWishlist(product.id)
-              }
-              onCart={() =>
-                addToCart(product)
-              }
-              onOpen={() =>
-                openProduct(product)
-              }
-            />
-          ))}
-        </section>
-
-        {/* NEW ARRIVALS */}
-        {newArrivals.length > 0 && (
-          <>
-            <SectionHeader
-              icon={<Sparkles size={20} />}
-              title="Fresh Arrivals"
-              subtitle="Recently added to PrimeCart"
-              href="/dashboard/products?sort=newest"
-            />
-
-            <section className="products-grid five-columns">
-              {newArrivals.map((product) => (
-                <ProductCard
-                  key={String(product.id)}
-                  product={product}
-                  category={
-                    categoryMap.get(
-                      String(product.category_id)
-                    ) || "New Arrival"
-                  }
-                  wished={wishlist.some(
-                    (value) =>
-                      String(value) ===
-                      String(product.id)
-                  )}
-                  onWishlist={() =>
-                    toggleWishlist(product.id)
-                  }
-                  onCart={() =>
-                    addToCart(product)
-                  }
-                  onOpen={() =>
-                    openProduct(product)
-                  }
-                />
-              ))}
-            </section>
-          </>
-        )}
-
-        {/* TRUST */}
-        <section className="trust-section">
-          <div className="trust-heading">
-            <span>WHY PRIME CART?</span>
-            <strong>
-              Shopping designed around you
-            </strong>
-          </div>
-
-          <div className="trust-strip">
-            <TrustItem
-              icon={<Truck />}
-              title="Free Shipping"
-              text="On orders above ₹499"
-            />
-
-            <TrustItem
-              icon={<RotateCcw />}
-              title="Easy Returns"
-              text="7-day hassle-free returns"
-            />
-
-            <TrustItem
-              icon={<ShieldCheck />}
-              title="Secure Payments"
-              text="100% secure checkout"
-            />
-
-            <TrustItem
-              icon={<Headphones />}
-              title="Customer Support"
-              text="We're here to help"
-            />
-          </div>
-        </section>
-
-        {/* BOTTOM CTA */}
-        <section className="bottom-cta">
-          <div className="bottom-cta-glow" />
-
-          <div className="bottom-cta-content">
-            <span>
-              <Crown size={14} />
-              PRIME CART
-            </span>
-
-            <h2>
-              Your smarter way to shop.
-            </h2>
-
-            <p>
-              Discover products, compare deals and
-              build your perfect shopping experience.
-            </p>
-
-            <div className="bottom-cta-actions">
-              <Link href="/dashboard/products">
-                Explore Products
-                <ArrowRight size={15} />
+              <Link
+                href="/"
+                onClick={() => setOpenMenu(false)}
+                className="rounded-xl px-4 py-3.5 font-medium text-gray-700 hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+              >
+                Home
               </Link>
 
               <Link
-                href="/dashboard/prime-match"
-                className="secondary"
+                href="/auth/login"
+                onClick={() => setOpenMenu(false)}
+                className="rounded-xl px-4 py-3.5 font-medium text-gray-700 hover:bg-[#faf8f3] hover:text-[#D4AF37]"
               >
-                Try PrimeMatch
-                <Target size={15} />
+                Shop
               </Link>
+
+              <Link
+                href="/dashboard/categories/electronics"
+                onClick={() => setOpenMenu(false)}
+                className="rounded-xl px-4 py-3.5 font-medium text-gray-700 hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+              >
+                Categories
+              </Link>
+
+              <Link
+                href="/auth/login"
+                onClick={() => setOpenMenu(false)}
+                className="rounded-xl px-4 py-3.5 font-medium text-gray-700 hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+              >
+                Deals
+              </Link>
+
+              <Link
+                href="/auth/login"
+                onClick={() => setOpenMenu(false)}
+                className="rounded-xl px-4 py-3.5 font-medium text-gray-700 hover:bg-[#faf8f3] hover:text-[#D4AF37]"
+              >
+                Contact
+              </Link>
+
+              <div className="mt-2 grid grid-cols-2 gap-3">
+
+                <Link
+                  href="/auth/login"
+                  onClick={() => setOpenMenu(false)}
+                  className="rounded-xl border border-gray-300 px-4 py-3 text-center font-semibold"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/auth/register"
+                  onClick={() => setOpenMenu(false)}
+                  className="rounded-xl bg-[#D4AF37] px-4 py-3 text-center font-semibold text-white"
+                >
+                  Register
+                </Link>
+
+              </div>
             </div>
           </div>
-        </section>
-      </div>
-
-      {/* TOAST */}
-      {toast && (
-        <div className="toast">
-          <span>
-            <CheckCircle2 size={17} />
-          </span>
-
-          {toast}
-        </div>
-      )}
-
-      {/* BACK TO TOP */}
-      <button
-        className="back-top"
-        onClick={() =>
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-          })
-        }
-        aria-label="Back to top"
-      >
-        <ChevronUp size={18} />
-      </button>
-
-      {/* GLOBAL CSS */}
-      <style jsx global>{`
-        :root {
-          --gold: #b88924;
-          --gold-dark: #956d16;
-          --gold-2: #d7ad57;
-          --gold-light: #fbf3df;
-          --gold-pale: #fffaf0;
-
-          --ink: #181715;
-          --muted: #77736b;
-
-          --line: #ece8df;
-          --paper: #ffffff;
-          --page: #fcfcfa;
-
-          --green: #438a52;
-          --green-soft: #eef8ef;
-
-          --shadow: 0 8px 28px rgba(56, 43, 17, 0.055);
-          --shadow-hover: 0 18px 42px
-            rgba(56, 43, 17, 0.11);
-
-          --radius: 12px;
-        }
-
-        * {
-          box-sizing: border-box;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body {
-          margin: 0;
-          background: var(--page);
-          color: var(--ink);
-          font-family:
-            Arial,
-            Helvetica,
-            sans-serif;
-        }
-
-        button,
-        input {
-          font: inherit;
-        }
-
-        button,
-        a {
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        button {
-          cursor: pointer;
-        }
-
-        a {
-          color: inherit;
-          text-decoration: none;
-        }
-
-        ::selection {
-          background: #ead09a;
-          color: #241d0d;
-        }
-
-        html.dark body {
-          background: #15130f;
-          color: #f8f1df;
-        }
-
-        html.dark .main-header,
-        html.dark .nav-bar,
-        html.dark .product-card,
-        html.dark .welcome-card,
-        html.dark .top-deals-card,
-        html.dark .trust-strip,
-        html.dark .smart-section,
-        html.dark .flash-section,
-        html.dark .section-mini-head {
-          background: #201c15;
-          border-color: #3b3326;
-        }
-
-        html.dark .search-box,
-        html.dark .profile-dropdown,
-        html.dark .search-dropdown,
-        html.dark .mobile-menu-card {
-          background: #211d16;
-          border-color: #493d29;
-          color: #fff;
-        }
-
-        html.dark .search-box input {
-          color: #fff;
-        }
-
-        html.dark .product-name,
-        html.dark .rail-heading strong,
-        html.dark .category-item,
-        html.dark .section-title,
-        html.dark .section-mini-head strong,
-        html.dark .smart-card h3,
-        html.dark .product-copy,
-        html.dark .trust-heading strong {
-          color: #fff;
-        }
-
-        html.dark .product-category,
-        html.dark .review-count,
-        html.dark .mini-deal-copy span,
-        html.dark .service-row small,
-        html.dark .section-caption,
-        html.dark .category-item small {
-          color: #c9c1b2;
-        }
-
-        html.dark .product-image-wrap,
-        html.dark .mini-deal-image,
-        html.dark .suggestion-image {
-          background: #29231a;
-        }
-
-        html.dark .category-icon,
-        html.dark .service-icon,
-        html.dark .welcome-avatar {
-          background: #332a1b;
-        }
-
-        html.dark .section-head > a {
-          color: #dfba6b;
-        }
-
-        html.dark .deal-banner a {
-          background: #29231b;
-          color: #fff;
-        }
-
-        html.dark .bottom-cta {
-          border-color: #4c3c20;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* BASE                                                            */
-        /* -------------------------------------------------------------- */
-
-        .store-shell {
-          min-height: 100vh;
-          overflow-x: hidden;
-        }
-
-        .container {
-          width: min(
-            1410px,
-            calc(100% - 48px)
-          );
-          margin: 0 auto;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* TOP STRIP                                                       */
-        /* -------------------------------------------------------------- */
-
-        .top-strip {
-          background:
-            linear-gradient(
-              90deg,
-              #a97617,
-              #c59635,
-              #ad7c1e
-            );
-          color: #fff;
-          font-size: 11px;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .top-strip::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            110deg,
-            transparent 20%,
-            rgba(255, 255, 255, 0.14) 50%,
-            transparent 80%
-          );
-          transform: translateX(-100%);
-          animation: stripShine 8s linear infinite;
-        }
-
-        .strip-inner {
-          min-height: 34px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-          position: relative;
-          z-index: 2;
-        }
-
-        .strip-left,
-        .strip-right,
-        .strip-center {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          white-space: nowrap;
-        }
-
-        .strip-left span,
-        .strip-center,
-        .strip-right span {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .strip-center {
-          opacity: 0.9;
-          font-size: 10px;
-          letter-spacing: 0.2px;
-        }
-
-        .strip-inner i {
-          width: 1px;
-          height: 13px;
-          background: rgba(255, 255, 255, 0.42);
-        }
-
-        .strip-right b {
-          font-weight: 800;
-          letter-spacing: 0.4px;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* HEADER                                                          */
-        /* -------------------------------------------------------------- */
-
-        .main-header {
-          background: #fff;
-          border-bottom: 1px solid #efede8;
-          position: relative;
-          z-index: 50;
-        }
-
-        .header-main {
-          min-height: 82px;
-          display: flex;
-          align-items: center;
-          gap: 30px;
-        }
-
-        .logo-wrap {
-          display: flex;
-          align-items: center;
-          min-width: 225px;
-        }
-
-        .prime-logo {
-          width: 110px;
-          max-width: 100%;
-          height: 38px;
-          object-fit: contain;
-          display: block;
-        }
-
-        .logo-fallback {
-          display: none;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .logo-mark {
-          width: 43px;
-          height: 43px;
-          border: 2px solid var(--gold);
-          border-radius: 10px 10px 13px 13px;
-          color: var(--gold);
-          display: grid;
-          place-items: center;
-          position: relative;
-        }
-
-        .logo-mark:before {
-          content: "";
-          position: absolute;
-          width: 17px;
-          height: 9px;
-          border: 2px solid var(--gold);
-          border-bottom: 0;
-          border-radius: 12px 12px 0 0;
-          top: -8px;
-          left: 11px;
-        }
-
-        .logo-text {
-          color: var(--gold);
-          font-size: 28px;
-          line-height: 1;
-          font-weight: 800;
-          letter-spacing: -0.8px;
-        }
-
-        .logo-tagline {
-          color: #8c8c8c;
-          font-size: 10px;
-          margin-top: 4px;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* SEARCH                                                          */
-        /* -------------------------------------------------------------- */
-
-        .search-box {
-          height: 45px;
-          border: 1px solid #e3e0d8;
-          border-radius: 9px;
-          display: flex;
-          align-items: center;
-          flex: 1;
-          max-width: 750px;
-          position: relative;
-          background: #fff;
-          box-shadow: 0 3px 12px
-            rgba(0, 0, 0, 0.025);
-          transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .search-box.search-active {
-          border-color: #d1aa5a;
-          box-shadow:
-            0 0 0 3px rgba(184, 137, 36, 0.08),
-            0 8px 25px rgba(46, 35, 13, 0.08);
-        }
-
-        .search-box > svg {
-          margin-left: 15px;
-          color: #999;
-          flex: none;
-        }
-
-        .search-box input {
-          flex: 1;
-          height: 100%;
-          border: 0;
-          outline: 0;
-          padding: 0 10px;
-          background: transparent;
-          min-width: 0;
-          color: var(--ink);
-          font-size: 13px;
-        }
-
-        .search-submit {
-          height: 37px;
-          margin-right: 4px;
-          padding: 0 24px;
-          border: 0;
-          border-radius: 7px;
-          background: linear-gradient(
-            135deg,
-            #c99a37,
-            #ad7c19
-          );
-          color: #fff;
-          font-size: 12px;
-          font-weight: 700;
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .search-submit:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px
-            rgba(165, 117, 27, 0.2);
-        }
-
-        .clear-search {
-          border: 0;
-          background: transparent;
-          color: #999;
-          display: grid;
-          place-items: center;
-          padding: 5px;
-        }
-
-        .search-dropdown {
-          position: absolute;
-          top: 52px;
-          left: 0;
-          right: 0;
-          z-index: 80;
-          background: #fff;
-          border: 1px solid #ebe7dd;
-          border-radius: 12px;
-          box-shadow: 0 18px 45px
-            rgba(0, 0, 0, 0.13);
-          overflow: hidden;
-          animation: dropdownIn 0.18s ease both;
-        }
-
-        .search-dropdown-title {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 11px 14px;
-          border-bottom: 1px solid #f0ece4;
-          font-size: 10px;
-          color: #777;
-        }
-
-        .search-dropdown-title span {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #5f574a;
-          font-weight: 700;
-        }
-
-        .search-dropdown-title small {
-          color: #a1844b;
-        }
-
-        .search-dropdown > button:not(
-            .view-search-results
-          ) {
-          width: 100%;
-          margin: 0;
-          padding: 10px 13px;
-          border: 0;
-          background: transparent;
-          color: #222;
-          display: flex;
-          gap: 12px;
-          text-align: left;
-          align-items: center;
-          transition: background 0.15s ease;
-        }
-
-        .search-dropdown
-          > button:not(
-            .view-search-results
-          ):hover {
-          background: #fff9ee;
-        }
-
-        .suggestion-image {
-          width: 46px;
-          height: 46px;
-          border-radius: 8px;
-          background: #faf8f3;
-          display: grid;
-          place-items: center;
-          flex: none;
-          overflow: hidden;
-        }
-
-        .suggestion-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .suggestion-copy {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .suggestion-copy strong,
-        .suggestion-copy small {
-          display: block;
-        }
-
-        .suggestion-copy strong {
-          font-size: 12px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .suggestion-copy small {
-          color: #999;
-          font-size: 9px;
-          margin-top: 4px;
-        }
-
-        .search-dropdown
-          > button:not(
-            .view-search-results
-          )
-          > b {
-          color: var(--gold-dark);
-          font-size: 11px;
-        }
-
-        .no-suggestions {
-          padding: 22px;
-          color: #888;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .view-search-results {
-          width: 100%;
-          border: 0;
-          border-top: 1px solid #f0ece4;
-          background: #fffaf0;
-          color: #8e6719;
-          padding: 11px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 5px;
-          font-size: 10px;
-          font-weight: 700;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* HEADER ACTIONS                                                  */
-        /* -------------------------------------------------------------- */
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 21px;
-          margin-left: auto;
-          white-space: nowrap;
-        }
-
-        .header-action {
-          border: 0;
-          background: transparent;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          color: #222;
-          font-size: 11px;
-          padding: 6px 0;
-        }
-
-        .header-action svg {
-          stroke-width: 1.65;
-        }
-
-        .account-action {
-          gap: 8px;
-        }
-
-        .account-action > span:not(
-            .account-icon
-          ) {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 2px;
-        }
-
-        .account-action small {
-          font-size: 8px;
-          color: #999;
-        }
-
-        .account-action strong {
-          font-size: 10px;
-          font-weight: 700;
-        }
-
-        .account-icon {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          display: grid;
-          place-items: center;
-          color: var(--gold);
-          background: var(--gold-pale);
-          border: 1px solid #f2e5c7;
-        }
-
-        .icon-action {
-          flex-direction: column;
-          gap: 3px;
-          font-size: 9px;
-        }
-
-        .icon-with-badge {
-          position: relative;
-          display: inline-flex;
-        }
-
-        .icon-with-badge b {
-          position: absolute;
-          top: -8px;
-          right: -9px;
-          min-width: 17px;
-          height: 17px;
-          padding: 0 4px;
-          border-radius: 20px;
-          background: #d2a446;
-          color: #fff;
-          border: 2px solid #fff;
-          font-size: 8px;
-          display: grid;
-          place-items: center;
-        }
-
-        .account-area {
-          position: relative;
-        }
-
-        .profile-dropdown {
-          position: absolute;
-          z-index: 100;
-          right: -8px;
-          top: 48px;
-          width: 245px;
-          background: #fff;
-          border: 1px solid #ece7db;
-          border-radius: 12px;
-          box-shadow: 0 18px 45px
-            rgba(0, 0, 0, 0.13);
-          padding: 8px;
-          animation: dropdownIn 0.18s ease both;
-        }
-
-        .profile-top {
-          display: flex;
-          gap: 10px;
-          padding: 11px;
-          border-bottom: 1px solid #eeeae1;
-          margin-bottom: 5px;
-        }
-
-        .profile-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: var(--gold-soft);
-          color: var(--gold);
-          display: grid;
-          place-items: center;
-          flex: none;
-        }
-
-        .profile-top strong,
-        .profile-top small {
-          display: block;
-        }
-
-        .profile-top strong {
-          font-size: 12px;
-        }
-
-        .profile-top small {
-          font-size: 9px;
-          color: #8b8b8b;
-          margin-top: 4px;
-          max-width: 160px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .profile-dropdown a,
-        .profile-dropdown button {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px;
-          border: 0;
-          background: transparent;
-          border-radius: 7px;
-          font-size: 11px;
-          text-align: left;
-        }
-
-        .profile-dropdown a:hover,
-        .profile-dropdown button:hover {
-          background: #fff8e8;
-          color: var(--gold);
-        }
-
-        .dropdown-divider {
-          height: 1px;
-          background: #eeeae2;
-          margin: 5px 0;
-        }
-
-        .mobile-menu-button {
-          display: none;
-          border: 0;
-          background: transparent;
-          color: #222;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* NAV                                                             */
-        /* -------------------------------------------------------------- */
-
-        .nav-bar {
-          background: #fff;
-          border-bottom: 1px solid #eceae5;
-          position: sticky;
-          top: 0;
-          z-index: 40;
-        }
-
-        .nav-inner {
-          height: 51px;
-          display: flex;
-          align-items: center;
-          gap: 29px;
-        }
-
-        .nav-inner > a,
-        .more-nav {
-          font-size: 11px;
-          border: 0;
-          background: transparent;
-          color: #252525;
-          white-space: nowrap;
-          transition: color 0.2s ease;
-        }
-
-        .nav-inner > a:hover,
-        .more-nav:hover {
-          color: var(--gold);
-        }
-
-        .all-category-btn {
-          border: 0;
-          background: transparent;
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          font-weight: 700;
-          font-size: 11px;
-          margin-right: 10px;
-        }
-
-        .nav-new {
-          position: relative;
-        }
-
-        .nav-new em {
-          position: absolute;
-          top: -17px;
-          right: -15px;
-          background: var(--gold);
-          color: #fff;
-          font-style: normal;
-          border-radius: 5px;
-          font-size: 7px;
-          padding: 3px 5px;
-          box-shadow: 0 3px 8px
-            rgba(184, 137, 36, 0.18);
-        }
-
-        .more-nav {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .nav-spacer {
-          flex: 1;
-        }
-
-        .theme-switch {
-          min-width: 75px;
-          height: 27px;
-          border: 1px solid #ded7c9;
-          background: #fff;
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          color: var(--gold);
-          font-size: 9px;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* PAGE                                                            */
-        /* -------------------------------------------------------------- */
-
-        .page-content {
-          padding: 14px 0 60px;
-        }
-
-        .error-box {
-          margin-bottom: 14px;
-          padding: 11px 14px;
-          background: #fff4e8;
-          border: 1px solid #efd8bd;
-          border-radius: 9px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 12px;
-        }
-
-        .error-box > div {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .error-box button {
-          border: 0;
-          background: var(--gold);
-          color: #fff;
-          border-radius: 6px;
-          padding: 7px 13px;
-          font-size: 10px;
-          font-weight: 700;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* HERO                                                            */
-        /* -------------------------------------------------------------- */
-
-        .hero-layout {
-          display: block;
-          width: 100%;
-          margin-bottom: 18px;
-        }
-
-        .hero-carousel {
-          min-width: 0;
-        }
-
-        .hero-image-frame {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 2.72 / 1;
-          min-height: 245px;
-          max-height: 430px;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #f5eee0;
-          box-shadow:
-            0 8px 25px
-              rgba(56, 43, 17, 0.08),
-            0 0 0 1px
-              rgba(184, 137, 36, 0.08);
-        }
-
-        .hero-banner {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          opacity: 0;
-          transform: scale(1.015);
-          transition:
-            opacity 0.7s ease,
-            transform 5.4s ease;
-          pointer-events: none;
-        }
-
-        .hero-banner.active {
-          opacity: 1;
-          transform: scale(1);
-          pointer-events: auto;
-        }
-
-        .hero-shine {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background: linear-gradient(
-            115deg,
-            transparent 30%,
-            rgba(255, 255, 255, 0.13) 48%,
-            transparent 65%
-          );
-          transform: translateX(-110%);
-          animation: heroShine 7s ease-in-out
-            infinite;
-          z-index: 3;
-        }
-
-        .hero-arrow {
-          position: absolute;
-          z-index: 5;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 39px;
-          height: 39px;
-          border: 1px solid
-            rgba(255, 255, 255, 0.7);
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.88);
-          color: #9b711b;
-          display: grid;
-          place-items: center;
-          box-shadow: 0 5px 15px
-            rgba(0, 0, 0, 0.1);
-          transition:
-            transform 0.2s ease,
-            background 0.2s ease;
-        }
-
-        .hero-arrow:hover {
-          transform: translateY(-50%) scale(1.08);
-          background: #fff;
-        }
-
-        .hero-left {
-          left: 16px;
-        }
-
-        .hero-right {
-          right: 16px;
-        }
-
-        .hero-counter {
-          position: absolute;
-          right: 17px;
-          bottom: 15px;
-          z-index: 5;
-          color: #fff;
-          background: rgba(25, 20, 12, 0.4);
-          backdrop-filter: blur(8px);
-          border-radius: 20px;
-          padding: 6px 9px;
-          font-size: 9px;
-          letter-spacing: 1px;
-        }
-
-        .hero-counter span {
-          font-weight: 800;
-        }
-
-        .hero-dots {
-          position: absolute;
-          bottom: 17px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 6px;
-          z-index: 5;
-        }
-
-        .hero-dots button {
-          width: 7px;
-          height: 7px;
-          padding: 0;
-          border: 1px solid #d1a54e;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.75);
-          transition: all 0.25s ease;
-        }
-
-        .hero-dots button.active {
-          width: 22px;
-          border-radius: 10px;
-          background: var(--gold);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* CATEGORY                                                         */
-        /* -------------------------------------------------------------- */
-
-        .category-section {
-          margin: 23px 0 29px;
-        }
-
-        .section-mini-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 13px;
-        }
-
-        .section-mini-head > div > span {
-          display: block;
-          color: var(--gold);
-          text-transform: uppercase;
-          letter-spacing: 1.3px;
-          font-size: 7px;
-          font-weight: 800;
-          margin-bottom: 3px;
-        }
-
-        .section-mini-head strong {
-          font-size: 17px;
-        }
-
-        .section-mini-head > a {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          color: #8c681e;
-          font-size: 9px;
-          font-weight: 700;
-        }
-
-        .category-rail-wrap {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-        }
-
-        .category-rail {
-          display: flex;
-          align-items: flex-start;
-          gap: 8px;
-          overflow-x: auto;
-          scrollbar-width: none;
-          flex: 1;
-          padding: 4px 2px 7px;
-        }
-
-        .category-rail::-webkit-scrollbar {
-          display: none;
-        }
-
-        .category-item {
-          min-width: 100px;
-          flex: 1;
-          border: 0;
-          background: transparent;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 7px;
-          color: #222;
-          font-size: 9px;
-          text-align: center;
-          transition:
-            transform 0.22s ease;
-        }
-
-        .category-icon {
-          width: 61px;
-          height: 61px;
-          border-radius: 50%;
-          background:
-            linear-gradient(
-              145deg,
-              #fffdf8,
-              #fff5dd
-            );
-          color: var(--gold);
-          display: grid;
-          place-items: center;
-          box-shadow:
-            0 5px 15px
-              rgba(100, 74, 23, 0.07),
-            inset 0 0 0 1px
-              rgba(193, 150, 67, 0.1);
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease,
-            background 0.25s ease;
-        }
-
-        .category-item small {
-          color: #a18b61;
-          font-size: 7px;
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          opacity: 0;
-          transform: translateY(-3px);
-          transition:
-            opacity 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .category-item:hover {
-          transform: translateY(-3px);
-        }
-
-        .category-item:hover .category-icon {
-          background: #f9edcf;
-          transform: scale(1.04);
-          box-shadow:
-            0 9px 20px
-              rgba(150, 106, 24, 0.13),
-            inset 0 0 0 1px
-              rgba(193, 150, 67, 0.16);
-        }
-
-        .category-item:hover small {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .rail-control {
-          width: 30px;
-          height: 30px;
-          border: 1px solid #e7dfcf;
-          background: #fff;
-          color: #8d671e;
-          border-radius: 50%;
-          display: grid;
-          place-items: center;
-          flex: none;
-          box-shadow: 0 3px 10px
-            rgba(50, 40, 20, 0.04);
-        }
-
-        .rail-control:hover {
-          background: #fff9ed;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* SECTION HEADER                                                   */
-        /* -------------------------------------------------------------- */
-
-        .section-head {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          margin: 8px 0 13px;
-        }
-
-        .section-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 18px;
-          font-weight: 800;
-        }
-
-        .section-title > span {
-          width: 31px;
-          height: 31px;
-          display: grid;
-          place-items: center;
-          border-radius: 8px;
-          background: var(--gold-light);
-          color: var(--gold);
-        }
-
-        .section-caption {
-          color: #999;
-          font-size: 9px;
-          margin-left: 9px;
-          padding-bottom: 2px;
-        }
-
-        .section-head > div {
-          display: flex;
-          align-items: center;
-        }
-
-        .section-head > a {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 10px;
-          color: #7f601d;
-          font-weight: 700;
-        }
-
-        .section-head > a:hover {
-          color: var(--gold);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* SMART SHOPPING                                                  */
-        /* -------------------------------------------------------------- */
-
-        .smart-section {
-          margin: 4px 0 30px;
-          padding: 16px;
-          background: #fff;
-          border: 1px solid #eeeae2;
-          border-radius: 12px;
-          box-shadow: var(--shadow);
-        }
-
-        .smart-grid {
-          display: grid;
-          grid-template-columns: repeat(
-            4,
-            minmax(0, 1fr)
-          );
-          gap: 11px;
-        }
-
-        .smart-card {
-          position: relative;
-          min-height: 137px;
-          border: 1px solid #eee6d6;
-          border-radius: 10px;
-          padding: 14px;
-          background:
-            linear-gradient(
-              145deg,
-              #fffdf9,
-              #fff8e9
-            );
-          overflow: hidden;
-          text-align: left;
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease,
-            border-color 0.25s ease;
-        }
-
-        .smart-card::after {
-          content: "";
-          position: absolute;
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          right: -45px;
-          bottom: -48px;
-          background: rgba(
-            214,
-            169,
-            71,
-            0.08
-          );
-        }
-
-        .smart-card:hover {
-          transform: translateY(-4px);
-          border-color: #e2c88e;
-          box-shadow: 0 13px 28px
-            rgba(71, 53, 20, 0.09);
-        }
-
-        .smart-card-icon {
-          width: 35px;
-          height: 35px;
-          border-radius: 9px;
-          background: #fff;
-          color: var(--gold);
-          display: grid;
-          place-items: center;
-          box-shadow: 0 4px 12px
-            rgba(70, 50, 15, 0.06);
-          margin-bottom: 9px;
-        }
-
-        .smart-card-icon svg {
-          width: 17px;
-          height: 17px;
-        }
-
-        .smart-card-eyebrow {
-          color: #a07828;
-          font-size: 7px;
-          font-weight: 800;
-          letter-spacing: 0.9px;
-        }
-
-        .smart-card h3 {
-          margin: 3px 0 5px;
-          font-size: 14px;
-        }
-
-        .smart-card p {
-          margin: 0;
-          color: #777;
-          font-size: 8px;
-          line-height: 1.55;
-          max-width: 220px;
-        }
-
-        .smart-card-link {
-          position: absolute;
-          right: 12px;
-          bottom: 11px;
-          color: var(--gold);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 8px;
-          font-weight: 800;
-          z-index: 2;
-        }
-
-        .smart-badge {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          color: #92702b;
-          background: #f7ebcd;
-          padding: 4px 6px;
-          border-radius: 5px;
-          font-size: 7px;
-          font-weight: 800;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* PRODUCTS                                                         */
-        /* -------------------------------------------------------------- */
-
-        .products-grid {
-          display: grid;
-          gap: 15px;
-        }
-
-        .five-columns {
-          grid-template-columns: repeat(
-            5,
-            minmax(0, 1fr)
-          );
-        }
-
-        .product-card {
-          position: relative;
-          background: #fff;
-          border: 1px solid #eceae5;
-          border-radius: 10px;
-          overflow: hidden;
-          box-shadow: 0 3px 10px
-            rgba(0, 0, 0, 0.025);
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease,
-            border-color 0.25s ease;
-        }
-
-        .product-card:hover {
-          transform: translateY(-5px);
-          box-shadow: var(--shadow-hover);
-          border-color: #e8d6ab;
-        }
-
-        .product-card-glow {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          opacity: 0;
-          background: radial-gradient(
-            circle at 50% 15%,
-            rgba(224, 188, 111, 0.08),
-            transparent 35%
-          );
-          transition: opacity 0.25s ease;
-        }
-
-        .product-card:hover
-          .product-card-glow {
-          opacity: 1;
-        }
-
-        .wish-btn {
-          position: absolute;
-          z-index: 5;
-          right: 9px;
-          top: 9px;
-          border: 0;
-          background: rgba(255, 255, 255, 0.88);
-          color: #888;
-          width: 29px;
-          height: 29px;
-          border-radius: 50%;
-          display: grid;
-          place-items: center;
-          padding: 0;
-          box-shadow: 0 4px 10px
-            rgba(0, 0, 0, 0.06);
-          transition:
-            color 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .wish-btn:hover {
-          color: #c58e22;
-          transform: scale(1.08);
-        }
-
-        .wish-btn.wished {
-          color: #b98724;
-          background: #fff8e8;
-        }
-
-        .product-badges {
-          position: absolute;
-          z-index: 4;
-          top: 9px;
-          left: 9px;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 4px;
-        }
-
-        .discount-badge,
-        .mini-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          border-radius: 5px;
-          font-size: 7px;
-          padding: 4px 6px;
-          font-weight: 800;
-        }
-
-        .discount-badge {
-          color: #42864e;
-          background: #eef8ef;
-        }
-
-        .mini-badge {
-          color: #735400;
-          background: #ffe58b;
-        }
-
-        .product-image-wrap {
-          width: 100%;
-          height: 178px;
-          border: 0;
-          background: #fff;
-          padding: 16px 20px 6px;
-          display: grid;
-          place-items: center;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .product-image {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          transition:
-            transform 0.3s
-              cubic-bezier(
-                0.2,
-                0.8,
-                0.2,
-                1
-              );
-        }
-
-        .product-card:hover
-          .product-image {
-          transform: scale(1.045);
-        }
-
-        .image-view {
-          position: absolute;
-          left: 50%;
-          bottom: 9px;
-          transform: translate(
-            -50%,
-            8px
-          );
-          opacity: 0;
-          background: rgba(25, 22, 16, 0.78);
-          color: #fff;
-          padding: 5px 8px;
-          border-radius: 20px;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 7px;
-          transition:
-            opacity 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .product-card:hover
-          .image-view {
-          opacity: 1;
-          transform: translate(
-            -50%,
-            0
-          );
-        }
-
-        .product-copy {
-          padding: 4px 11px 12px;
-          position: relative;
-          z-index: 2;
-        }
-
-        .product-category {
-          color: #777;
-          font-size: 8px;
-          min-height: 11px;
-        }
-
-        .product-name {
-          display: -webkit-box;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 2;
-          overflow: hidden;
-          border: 0;
-          background: transparent;
-          color: #252525;
-          font-size: 10px;
-          font-weight: 600;
-          line-height: 1.4;
-          padding: 0;
-          text-align: left;
-          width: 100%;
-          min-height: 29px;
-          margin-top: 2px;
-        }
-
-        .product-name:hover {
-          color: var(--gold);
-        }
-
-        .rating-row {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin: 6px 0;
-        }
-
-        .rating-pill {
-          background: #f1f8f1;
-          color: #3c7c48;
-          border-radius: 4px;
-          padding: 3px 5px;
-          font-size: 8px;
-          display: inline-flex;
-          align-items: center;
-          gap: 2px;
-        }
-
-        .review-count {
-          color: #8a8a8a;
-          font-size: 7px;
-        }
-
-        .price-row {
-          display: flex;
-          align-items: baseline;
-          gap: 7px;
-          margin-bottom: 4px;
-        }
-
-        .price-row strong {
-          font-size: 14px;
-        }
-
-        .price-row del {
-          font-size: 8px;
-          color: #999;
-        }
-
-        .stock-warning {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: #b2761f;
-          font-size: 7px;
-          margin-bottom: 5px;
-        }
-
-        .stock-warning span {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #d49c39;
-        }
-
-        .add-cart-btn {
-          width: 100%;
-          height: 29px;
-          border: 0;
-          border-radius: 6px;
-          background: linear-gradient(
-            180deg,
-            #d1a442,
-            #b78720
-          );
-          color: #fff;
-          font-size: 9px;
-          font-weight: 800;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          transition:
-            transform 0.18s ease,
-            box-shadow 0.18s ease;
-        }
-
-        .add-cart-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 15px
-            rgba(171, 123, 29, 0.19);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* FLASH SECTION                                                    */
-        /* -------------------------------------------------------------- */
-
-        .flash-section {
-          margin: 28px 0 31px;
-          border-radius: 13px;
-          overflow: hidden;
-          background:
-            linear-gradient(
-              135deg,
-              #a9700e,
-              #d0a040
-            );
-          color: #fff;
-          box-shadow: 0 10px 30px
-            rgba(163, 115, 19, 0.13);
-        }
-
-        .flash-header {
-          padding: 15px 18px;
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          border-bottom: 1px solid
-            rgba(255, 255, 255, 0.16);
-        }
-
-        .flash-title {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          font-size: 17px;
-          font-weight: 800;
-        }
-
-        .flash-header p {
-          margin: 3px 0 0;
-          font-size: 8px;
-          opacity: 0.82;
-        }
-
-        .flash-timer {
-          margin-left: auto;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .flash-timer span {
-          font-size: 7px;
-          opacity: 0.75;
-          margin-right: 4px;
-        }
-
-        .flash-timer b {
-          min-width: 27px;
-          padding: 5px 4px;
-          border-radius: 5px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.15);
-          font-size: 10px;
-        }
-
-        .flash-timer i {
-          font-style: normal;
-          font-weight: 800;
-        }
-
-        .flash-header > a {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: #fff;
-          color: #976d16;
-          border-radius: 6px;
-          padding: 7px 10px;
-          font-size: 8px;
-          font-weight: 800;
-        }
-
-        .flash-products {
-          display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
-          padding: 12px;
-          gap: 9px;
-        }
-
-        .flash-product {
-          border: 1px solid
-            rgba(255, 255, 255, 0.18);
-          border-radius: 8px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.1
-          );
-          color: #fff;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 7px;
-          text-align: left;
-          transition:
-            background 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .flash-product:hover {
-          background: rgba(
-            255,
-            255,
-            255,
-            0.17
-          );
-          transform: translateY(-2px);
-        }
-
-        .flash-product-image {
-          width: 60px;
-          height: 60px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.94
-          );
-          border-radius: 6px;
-          display: grid;
-          place-items: center;
-          flex: none;
-          overflow: hidden;
-        }
-
-        .flash-product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .flash-product > div:last-child {
-          min-width: 0;
-        }
-
-        .flash-product strong {
-          display: block;
-          font-size: 9px;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-
-        .flash-product span {
-          display: block;
-          font-size: 11px;
-          font-weight: 800;
-          margin-top: 5px;
-        }
-
-        .flash-product em {
-          display: inline-block;
-          margin-top: 4px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.17
-          );
-          padding: 3px 5px;
-          border-radius: 4px;
-          font-style: normal;
-          font-size: 6px;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* PROMO                                                            */
-        /* -------------------------------------------------------------- */
-
-        .promo-grid {
-          display: grid;
-          grid-template-columns:
-            1.05fr 1fr 1fr;
-          gap: 15px;
-          margin: 28px 0 34px;
-        }
-
-        .promo-card {
-          min-height: 135px;
-          border-radius: 11px;
-          overflow: hidden;
-          position: relative;
-          display: flex;
-          align-items: center;
-          padding: 18px 21px;
-          border: 1px solid transparent;
-        }
-
-        .promo-card > div {
-          position: relative;
-          z-index: 3;
-          max-width: 63%;
-        }
-
-        .promo-icon {
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          border-radius: 8px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.65
-          );
-          margin-bottom: 7px;
-        }
-
-        .promo-eyebrow {
-          display: block;
-          font-size: 7px;
-          font-weight: 800;
-          letter-spacing: 1px;
-          margin-bottom: 3px;
-        }
-
-        .promo-card h3 {
-          margin: 0;
-          font-size: 18px;
-        }
-
-        .promo-card p {
-          margin: 4px 0 9px;
-          font-size: 8px;
-          color: #756a57;
-          line-height: 1.4;
-        }
-
-        .promo-card a {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          background: #fff;
-          color: #3c3427;
-          padding: 6px 9px;
-          border-radius: 15px;
-          font-size: 8px;
-          font-weight: 800;
-        }
-
-        .promo-card > img {
-          position: absolute;
-          right: 7px;
-          bottom: 0;
-          width: 42%;
-          height: 96%;
-          object-fit: contain;
-          z-index: 2;
-          transition: transform 0.3s ease;
-        }
-
-        .promo-card:hover > img {
-          transform: scale(1.05)
-            translateX(-3px);
-        }
-
-        .promo-gold {
-          background:
-            linear-gradient(
-              120deg,
-              #b57b0b,
-              #d3a23f
-            );
-          color: #fff;
-        }
-
-        .promo-gold p {
-          color: rgba(
-            255,
-            255,
-            255,
-            0.78
-          );
-        }
-
-        .promo-cream {
-          background: linear-gradient(
-            120deg,
-            #fbf2df,
-            #f0e1c2
-          );
-          border-color: #ead9b8;
-        }
-
-        .promo-fashion {
-          background: linear-gradient(
-            120deg,
-            #f4ecdf,
-            #ead7b7
-          );
-          border-color: #e5d5ba;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* TRUST                                                            */
-        /* -------------------------------------------------------------- */
-
-        .trust-section {
-          margin-top: 38px;
-        }
-
-        .trust-heading {
-          text-align: center;
-          margin-bottom: 15px;
-        }
-
-        .trust-heading span {
-          display: block;
-          color: var(--gold);
-          letter-spacing: 1.7px;
-          font-size: 7px;
-          font-weight: 800;
-          margin-bottom: 5px;
-        }
-
-        .trust-heading strong {
-          font-size: 18px;
-        }
-
-        .trust-strip {
-          background: #fff;
-          border: 1px solid #eeeae2;
-          border-radius: 11px;
-          display: grid;
-          grid-template-columns: repeat(
-            4,
-            1fr
-          );
-          padding: 9px 5px;
-          box-shadow: var(--shadow);
-        }
-
-        .trust-item {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 9px;
-          padding: 11px;
-          border-right: 1px solid
-            #eeeae2;
-        }
-
-        .trust-item:last-child {
-          border-right: 0;
-        }
-
-        .trust-item > span {
-          width: 37px;
-          height: 37px;
-          display: grid;
-          place-items: center;
-          color: var(--gold);
-          background: #fff8e8;
-          border-radius: 50%;
-          flex: none;
-        }
-
-        .trust-item > span svg {
-          width: 16px;
-        }
-
-        .trust-item strong,
-        .trust-item small {
-          display: block;
-        }
-
-        .trust-item strong {
-          font-size: 10px;
-        }
-
-        .trust-item small {
-          color: #777;
-          font-size: 8px;
-          margin-top: 3px;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* BOTTOM CTA                                                       */
-        /* -------------------------------------------------------------- */
-
-        .bottom-cta {
-          position: relative;
-          margin-top: 30px;
-          border-radius: 14px;
-          min-height: 205px;
-          overflow: hidden;
-          background:
-            radial-gradient(
-              circle at 85% 25%,
-              rgba(255, 255, 255, 0.16),
-              transparent 22%
-            ),
-            linear-gradient(
-              115deg,
-              #a87518,
-              #d0a148,
-              #b27c18
-            );
-          color: #fff;
-          display: flex;
-          align-items: center;
-          padding: 28px 38px;
-          box-shadow: 0 13px 35px
-            rgba(164, 116, 18, 0.16);
-        }
-
-        .bottom-cta::before,
-        .bottom-cta::after {
-          content: "";
-          position: absolute;
-          border: 1px solid
-            rgba(255, 255, 255, 0.12);
-          border-radius: 50%;
-        }
-
-        .bottom-cta::before {
-          width: 270px;
-          height: 270px;
-          right: -90px;
-          top: -125px;
-        }
-
-        .bottom-cta::after {
-          width: 180px;
-          height: 180px;
-          right: 40px;
-          bottom: -115px;
-        }
-
-        .bottom-cta-glow {
-          position: absolute;
-          width: 350px;
-          height: 350px;
-          border-radius: 50%;
-          right: 180px;
-          top: -210px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.06
-          );
-          filter: blur(4px);
-        }
-
-        .bottom-cta-content {
-          position: relative;
-          z-index: 2;
-          max-width: 620px;
-        }
-
-        .bottom-cta-content > span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 7px;
-          letter-spacing: 1.5px;
-          font-weight: 800;
-          opacity: 0.85;
-        }
-
-        .bottom-cta h2 {
-          margin: 7px 0 5px;
-          font-size: 27px;
-          letter-spacing: -0.5px;
-        }
-
-        .bottom-cta p {
-          margin: 0;
-          max-width: 450px;
-          font-size: 10px;
-          line-height: 1.6;
-          opacity: 0.82;
-        }
-
-        .bottom-cta-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 17px;
-        }
-
-        .bottom-cta-actions a {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #fff;
-          color: #916817;
-          border-radius: 7px;
-          padding: 9px 13px;
-          font-size: 9px;
-          font-weight: 800;
-        }
-
-        .bottom-cta-actions a.secondary {
-          background: rgba(
-            255,
-            255,
-            255,
-            0.12
-          );
-          color: #fff;
-          border: 1px solid
-            rgba(255, 255, 255, 0.25);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* TOAST                                                            */
-        /* -------------------------------------------------------------- */
-
-        .toast {
-          position: fixed;
-          z-index: 200;
-          right: 24px;
-          bottom: 24px;
-          background: #211d16;
-          color: #fff;
-          border-radius: 9px;
-          padding: 11px 15px;
-          box-shadow: 0 12px 35px
-            rgba(0, 0, 0, 0.23);
-          font-size: 11px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          animation: toastIn 0.3s
-            cubic-bezier(
-              0.2,
-              0.8,
-              0.2,
-              1
-            );
-        }
-
-        .toast > span {
-          color: #d7ae51;
-          display: flex;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* MOBILE MENU                                                      */
-        /* -------------------------------------------------------------- */
-
-        .mobile-menu-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 150;
-          background: rgba(
-            0,
-            0,
-            0,
-            0.34
-          );
-          backdrop-filter: blur(2px);
-        }
-
-        .mobile-menu-card {
-          width: min(
-            320px,
-            88vw
-          );
-          height: 100%;
-          background: #fff;
-          padding: 20px;
-          box-shadow: 10px 0 35px
-            rgba(0, 0, 0, 0.16);
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          animation: menuIn 0.25s
-            cubic-bezier(
-              0.2,
-              0.8,
-              0.2,
-              1
-            );
-        }
-
-        .mobile-menu-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          color: var(--gold);
-          padding-bottom: 17px;
-          border-bottom: 1px solid #eee;
-          margin-bottom: 7px;
-        }
-
-        .mobile-menu-head strong,
-        .mobile-menu-head small {
-          display: block;
-        }
-
-        .mobile-menu-head strong {
-          font-size: 20px;
-        }
-
-        .mobile-menu-head small {
-          color: #999;
-          font-size: 8px;
-          margin-top: 3px;
-        }
-
-        .mobile-menu-head button {
-          border: 0;
-          background: transparent;
-        }
-
-        .mobile-menu-card a,
-        .mobile-theme {
-          padding: 12px 5px;
-          border: 0;
-          border-bottom: 1px solid #f0ede6;
-          background: transparent;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-align: left;
-        }
-
-        .mobile-menu-card a:hover,
-        .mobile-theme:hover {
-          color: var(--gold);
-        }
-
-        .mobile-menu-divider {
-          height: 1px;
-          background: #eee8dd;
-          margin: 9px 0;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* BACK TOP                                                         */
-        /* -------------------------------------------------------------- */
-
-        .back-top {
-          position: fixed;
-          right: 20px;
-          bottom: 20px;
-          width: 35px;
-          height: 35px;
-          border: 1px solid #e4d6b7;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.92);
-          color: var(--gold);
-          display: grid;
-          place-items: center;
-          z-index: 70;
-          box-shadow: 0 7px 20px
-            rgba(50, 38, 13, 0.08);
-          backdrop-filter: blur(8px);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* LOADING                                                          */
-        /* -------------------------------------------------------------- */
-
-        .loading-screen {
-          min-height: 100vh;
-          background:
-            radial-gradient(
-              circle at 50% 35%,
-              #fffaf0,
-              #fffdf9 42%,
-              #f8f6f1
-            );
-          display: grid;
-          place-items: center;
-        }
-
-        .loading-inner {
-          text-align: center;
-        }
-
-        .loading-logo {
-          width: 61px;
-          height: 61px;
-          border: 2px solid var(--gold);
-          color: var(--gold);
-          border-radius: 15px;
-          display: grid;
-          place-items: center;
-          margin: 0 auto 14px;
-          animation: pulse 1.4s
-            ease-in-out infinite;
-          box-shadow: 0 8px 30px
-            rgba(184, 137, 36, 0.12);
-        }
-
-        .loading-inner strong {
-          color: var(--gold);
-          font-size: 22px;
-        }
-
-        .loading-inner span {
-          display: block;
-          color: #999;
-          font-size: 10px;
-          margin-top: 5px;
-        }
-
-        .loading-bar {
-          width: 190px;
-          height: 3px;
-          background: #f0e7d5;
-          margin: 18px auto 0;
-          overflow: hidden;
-          border-radius: 5px;
-        }
-
-        .loading-bar:after {
-          content: "";
-          display: block;
-          width: 45%;
-          height: 100%;
-          background: var(--gold);
-          animation: loading 1.1s
-            ease-in-out infinite;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* ANIMATIONS                                                       */
-        /* -------------------------------------------------------------- */
-
-        .premium-reveal {
-          animation: cardReveal 0.55s
-            cubic-bezier(
-              0.2,
-              0.8,
-              0.2,
-              1
-            )
-            both;
-        }
-
-        .premium-reveal:nth-child(2) {
-          animation-delay: 0.04s;
-        }
-
-        .premium-reveal:nth-child(3) {
-          animation-delay: 0.08s;
-        }
-
-        .premium-reveal:nth-child(4) {
-          animation-delay: 0.12s;
-        }
-
-        .premium-reveal:nth-child(5) {
-          animation-delay: 0.16s;
-        }
-
-        @keyframes cardReveal {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes dropdownIn {
-          from {
-            opacity: 0;
-            transform: translateY(-5px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes toastIn {
-          from {
-            opacity: 0;
-            transform: translateY(12px)
-              scale(0.96);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0)
-              scale(1);
-          }
-        }
-
-        @keyframes menuIn {
-          from {
-            transform: translateX(-100%);
-          }
-
-          to {
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes pulse {
-          50% {
-            transform: scale(1.05);
-          }
-        }
-
-        @keyframes loading {
-          0% {
-            transform: translateX(-100%);
-          }
-
-          100% {
-            transform: translateX(320%);
-          }
-        }
-
-        @keyframes stripShine {
-          0% {
-            transform: translateX(-120%);
-          }
-
-          25%,
-          100% {
-            transform: translateX(120%);
-          }
-        }
-
-        @keyframes heroShine {
-          0%,
-          55% {
-            transform: translateX(-110%);
-          }
-
-          75%,
-          100% {
-            transform: translateX(110%);
-          }
-        }
-
-        /* -------------------------------------------------------------- */
-        /* 1200                                                            */
-        /* -------------------------------------------------------------- */
-
-        @media (max-width: 1200px) {
-          .container {
-            width: min(
-              1160px,
-              calc(100% - 32px)
-            );
-          }
-
-          .header-main {
-            gap: 20px;
-          }
-
-          .logo-wrap {
-            min-width: 185px;
-          }
-
-          .prime-logo {
-            width: 155px;
-          }
-
-          .header-actions {
-            gap: 14px;
-          }
-
-          .nav-inner {
-            gap: 21px;
-          }
-
-          .hero-layout {
-            grid-template-columns:
-              minmax(0, 1fr)
-              270px;
-          }
-
-          .five-columns {
-            grid-template-columns: repeat(
-              4,
-              minmax(0, 1fr)
-            );
-          }
-
-          .five-columns
-            .product-card:nth-child(5) {
-            display: none;
-          }
-
-          .smart-grid {
-            grid-template-columns: repeat(
-              2,
-              minmax(0, 1fr)
-            );
-          }
-
-          .category-item {
-            min-width: 86px;
-          }
-        }
-
-        /* -------------------------------------------------------------- */
-        /* 980                                                             */
-        /* -------------------------------------------------------------- */
-
-        @media (max-width: 980px) {
-          .strip-center {
-            display: none;
-          }
-
-          .strip-right {
-            display: none;
-          }
-
-          .header-main {
-            min-height: 72px;
-          }
-
-          .logo-wrap {
-            min-width: auto;
-          }
-
-          .prime-logo {
-            width: 145px;
-          }
-
-          .header-actions {
-            gap: 10px;
-          }
-
-          .header-action.icon-action {
-            display: none;
-          }
-
-          .mobile-menu-button {
-            display: block;
-          }
-
-          .nav-bar {
-            display: none;
-          }
-
-          .hero-layout {
-            display: block;
-          }
-
-          .five-columns {
-            grid-template-columns: repeat(
-              3,
-              minmax(0, 1fr)
-            );
-          }
-
-          .five-columns
-            .product-card:nth-child(4),
-          .five-columns
-            .product-card:nth-child(5) {
-            display: none;
-          }
-
-          .promo-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .promo-card:last-child {
-            display: none;
-          }
-
-          .flash-products {
-            grid-template-columns: repeat(
-              2,
-              1fr
-            );
-          }
-        }
-
-        /* -------------------------------------------------------------- */
-        /* 680                                                             */
-        /* -------------------------------------------------------------- */
-
-        @media (max-width: 680px) {
-          .container {
-            width: calc(100% - 20px);
-          }
-
-          .top-strip {
-            font-size: 9px;
-          }
-
-          .strip-inner {
-            min-height: 30px;
-          }
-
-          .strip-left {
-            gap: 8px;
-            overflow: hidden;
-            white-space: nowrap;
-          }
-
-          .strip-left span:nth-of-type(3),
-          .strip-left i:nth-of-type(2) {
-            display: none;
-          }
-
-          .header-main {
-            flex-wrap: wrap;
-            gap: 8px;
-            padding: 9px 0;
-          }
-
-          .logo-wrap {
-            flex: 1;
-          }
-
-          .prime-logo {
-            width: 132px;
-          }
-
-          .header-actions {
-            display: none;
-          }
-
-          .search-box {
-            order: 3;
-            flex-basis: 100%;
-            max-width: none;
-            height: 40px;
-          }
-
-          .search-submit {
-            padding: 0 16px;
-          }
-
-          .page-content {
-            padding-top: 10px;
-          }
-
-          .hero-image-frame {
-            aspect-ratio: 1.35 / 1;
-            min-height: 235px;
-            border-radius: 8px;
-          }
-
-          .hero-arrow {
-            width: 32px;
-            height: 32px;
-          }
-
-          .hero-left {
-            left: 8px;
-          }
-
-          .hero-right {
-            right: 8px;
-          }
-
-          .hero-counter {
-            display: none;
-          }
-
-          .right-rail {
-            grid-template-columns: 1fr;
-          }
-
-          .welcome-card,
-          .smart-deal-card,
-          .top-deals-card {
-            grid-column: auto;
-            grid-row: auto;
-          }
-
-          .category-section {
-            margin: 18px 0 23px;
-          }
-
-          .section-mini-head strong {
-            font-size: 15px;
-          }
-
-          .category-item {
-            min-width: 79px;
-            font-size: 8px;
-          }
-
-          .category-icon {
-            width: 51px;
-            height: 51px;
-          }
-
-          .category-item small {
-            display: none;
-          }
-
-          .rail-control {
-            display: none;
-          }
-
-          .section-head {
-            align-items: flex-end;
-          }
-
-          .section-title {
-            font-size: 15px;
-          }
-
-          .section-title > span {
-            width: 28px;
-            height: 28px;
-          }
-
-          .section-caption {
-            display: none;
-          }
-
-          .five-columns {
-            grid-template-columns: repeat(
-              2,
-              minmax(0, 1fr)
-            );
-            gap: 10px;
-          }
-
-          .five-columns
-            .product-card:nth-child(n) {
-            display: block;
-          }
-
-          .product-image-wrap {
-            height: 155px;
-            padding: 14px;
-          }
-
-          .product-copy {
-            padding-left: 9px;
-            padding-right: 9px;
-          }
-
-          .product-name {
-            font-size: 9px;
-          }
-
-          .price-row strong {
-            font-size: 13px;
-          }
-
-          .smart-section {
-            padding: 12px;
-          }
-
-          .smart-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-          }
-
-          .smart-card {
-            min-height: 145px;
-            padding: 11px;
-          }
-
-          .smart-card p {
-            font-size: 7px;
-          }
-
-          .flash-header {
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-
-          .flash-timer {
-            margin-left: 0;
-          }
-
-          .flash-header > a {
-            margin-left: auto;
-          }
-
-          .flash-products {
-            grid-template-columns: 1fr;
-          }
-
-          .promo-grid {
-            grid-template-columns: 1fr;
-            gap: 10px;
-          }
-
-          .promo-card {
-            min-height: 120px;
-          }
-
-          .promo-card:last-child {
-            display: flex;
-          }
-
-          .trust-strip {
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .trust-item:nth-child(2) {
-            border-right: 0;
-          }
-
-          .trust-item:nth-child(-n + 2) {
-            border-bottom: 1px solid #eeeae2;
-          }
-
-          .bottom-cta {
-            padding: 24px;
-            min-height: 190px;
-          }
-
-          .bottom-cta h2 {
-            font-size: 22px;
-          }
-
-          .bottom-cta-actions {
-            flex-wrap: wrap;
-          }
-
-          .toast {
-            left: 15px;
-            right: 15px;
-            bottom: 15px;
-            justify-content: center;
-          }
-
-          .back-top {
-            display: none;
-          }
-        }
-
-        /* -------------------------------------------------------------- */
-        /* 430                                                             */
-        /* -------------------------------------------------------------- */
-
-        @media (max-width: 430px) {
-          .hero-image-frame {
-            aspect-ratio: 1.05 / 1;
-          }
-
-          .product-image-wrap {
-            height: 142px;
-          }
-
-          .product-category {
-            font-size: 7px;
-          }
-
-          .product-name {
-            min-height: 28px;
-          }
-
-          .section-head > a {
-            font-size: 8px;
-          }
-
-          .smart-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .smart-card {
-            min-height: 125px;
-          }
-
-          .flash-title {
-            font-size: 15px;
-          }
-
-          .flash-header > a {
-            padding: 6px 8px;
-          }
-
-          .promo-card > div {
-            max-width: 67%;
-          }
-
-          .promo-card h3 {
-            font-size: 16px;
-          }
-
-          .promo-card > img {
-            width: 38%;
-          }
-
-          .trust-item {
-            padding: 9px 6px;
-          }
-
-          .trust-item > span {
-            width: 32px;
-            height: 32px;
-          }
-
-          .trust-item strong {
-            font-size: 8px;
-          }
-
-          .trust-item small {
-            font-size: 7px;
-          }
-        }
-
-
-        /* -------------------------------------------------------------- */
-        /* PRIME UPGRADE — POLISH + RESPONSIVE                            */
-        /* -------------------------------------------------------------- */
-
-        .page-content {
-          padding-top: 14px;
-          padding-bottom: 34px;
-        }
-
-        .hero-image-frame {
-          border-radius: 16px;
-          min-height: 0;
-          max-height: none;
-          aspect-ratio: 2.85 / 1;
-          box-shadow: 0 12px 34px rgba(69, 49, 10, 0.10), 0 0 0 1px rgba(184, 137, 36, 0.10);
-        }
-
-        .hero-banner {
-          object-fit: contain !important;
-          background: #f8f3e9;
-          cursor: pointer;
-        }
-
-        .hero-banner.active:focus-visible {
-          outline: 3px solid rgba(199, 154, 59, 0.8);
-          outline-offset: -3px;
-        }
-
-        .category-section, .smart-section, .promo-grid, .trust-section {
-          margin-top: 22px;
-        }
-
-        .category-section, .smart-section, .trust-section {
-          border: 1px solid var(--line);
-          background: var(--card);
-          border-radius: 16px;
-          box-shadow: 0 8px 24px rgba(45, 36, 20, 0.035);
-        }
-
-        .category-section { padding: 15px 16px 14px; }
-        .smart-section { padding: 18px; }
-        .trust-section { padding: 18px; }
-
-        .category-item {
-          border: 1px solid #eee5d2;
-          background: linear-gradient(180deg, #fff, #fcfaf5);
-          border-radius: 13px;
-          min-height: 102px;
-          transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-        }
-
-        .category-item:hover {
-          transform: translateY(-3px);
-          border-color: #d9bc79;
-          box-shadow: 0 10px 22px rgba(95, 69, 20, .08);
-        }
-
-        .smart-grid { gap: 12px; }
-        .smart-card {
-          border-radius: 15px;
-          min-height: 190px;
-          transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-        }
-        .smart-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px rgba(91, 66, 18, .10); border-color: #d7b86d; }
-
-        .product-card {
-          border-radius: 14px;
-          box-shadow: 0 6px 18px rgba(25, 22, 16, .045);
-        }
-        .product-image-wrap { height: 190px; background: linear-gradient(180deg, #fff, #fdfaf4); }
-        .product-image { object-fit: contain; }
-        .suggestion-product-image { width: 100%; height: 100%; object-fit: contain; }
-
-        .flash-section {
-          margin: 28px 0;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #8f620d 0%, #c7922f 48%, #e1bc68 100%);
-          box-shadow: 0 15px 34px rgba(139, 96, 13, .16);
-        }
-        .flash-header { padding: 17px 19px; }
-        .flash-products { padding: 14px; gap: 12px; }
-        .flash-product {
-          min-height: 178px;
-          border-radius: 13px;
-          background: rgba(255,255,255,.97);
-          color: #28231a;
-          border: 1px solid rgba(255,255,255,.55);
-          padding: 12px;
-          transition: transform .2s ease, box-shadow .2s ease;
-        }
-        .flash-product:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(52, 37, 8, .15); }
-        .flash-product-image { background: #fffaf0; border-radius: 10px; }
-        .flash-product-img { width: 100%; height: 100%; object-fit: contain; }
-
-        .promo-card {
-          min-height: 205px;
-          border-radius: 16px;
-          box-shadow: 0 9px 24px rgba(43, 35, 21, .055);
-          overflow: hidden;
-        }
-        .promo-product-image { max-width: 45%; max-height: 88%; object-fit: contain; }
-
-        .section-head { margin-top: 27px; }
-
-        .trust-strip { border-radius: 13px; }
-
-        @media (max-width: 980px) {
-          .hero-image-frame { aspect-ratio: 2.25 / 1; }
-        }
-
-        @media (max-width: 680px) {
-          .container { width: calc(100% - 20px); }
-          .page-content { padding-top: 10px; }
-          .hero-image-frame { aspect-ratio: 1.72 / 1; border-radius: 11px; }
-          .hero-arrow { width: 32px; height: 32px; }
-          .hero-left { left: 8px; }
-          .hero-right { right: 8px; }
-          .category-section, .smart-section, .trust-section { border-radius: 12px; padding: 12px; }
-          .product-image-wrap { height: 155px; padding: 12px; }
-          .flash-header { flex-wrap: wrap; gap: 10px; }
-          .flash-timer { margin-left: 0; }
-          .flash-header > a { margin-left: auto; }
-          .flash-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .flash-product { min-height: 160px; }
-          .promo-card { min-height: 175px; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            scroll-behavior: auto !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
-    </main>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* SERVICE                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function Service({
-  icon,
-  title,
-  text,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="service-row">
-      <span className="service-icon">
-        {icon}
-      </span>
-
-      <span>
-        <strong>{title}</strong>
-        <small>{text}</small>
-      </span>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* SECTION HEADER                                                             */
-/* -------------------------------------------------------------------------- */
-
-function SectionHeader({
-  icon,
-  title,
-  subtitle,
-  href,
-}: {
-  icon: ReactNode;
-  title: string;
-  subtitle?: string;
-  href: string;
-}) {
-  return (
-    <div className="section-head">
-      <div>
-        <div className="section-title">
-          <span>{icon}</span>
-          {title}
-        </div>
-
-        {subtitle && (
-          <span className="section-caption">
-            {subtitle}
-          </span>
         )}
-      </div>
+      </nav>
 
-      <Link href={href}>
-        View All
-        <ArrowRight size={13} />
-      </Link>
-    </div>
-  );
-}
+      {/* =====================================================
+          HERO
+      ===================================================== */}
 
-/* -------------------------------------------------------------------------- */
-/* SMART CARD                                                                 */
-/* -------------------------------------------------------------------------- */
+      <section className="px-3 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
 
-function SmartCard({
-  icon,
-  eyebrow,
-  title,
-  text,
-  href,
-  badge,
-}: {
-  icon: ReactNode;
-  eyebrow: string;
-  title: string;
-  text: string;
-  href: string;
-  badge: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="smart-card"
-    >
-      <span className="smart-badge">
-        {badge}
-      </span>
+        <div className="mx-auto max-w-7xl">
 
-      <div className="smart-card-icon">
-        {icon}
-      </div>
+          <div className="relative overflow-hidden rounded-[26px] border border-[#e9e1d2] bg-white shadow-[0_18px_60px_rgba(74,57,20,0.07)] sm:rounded-[34px] lg:rounded-[40px]">
 
-      <span className="smart-card-eyebrow">
-        {eyebrow}
-      </span>
+            {/* subtle background */}
 
-      <h3>{title}</h3>
+            <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/10 blur-3xl" />
 
-      <p>{text}</p>
+            <div className="pointer-events-none absolute -bottom-32 left-1/3 h-80 w-80 rounded-full bg-[#f5ead0] blur-3xl" />
 
-      <span className="smart-card-link">
-        Explore
-        <ArrowRight size={11} />
-      </span>
-    </Link>
-  );
-}
+            <div className="relative grid min-h-[350px] grid-cols-2 items-stretch sm:min-h-[430px] lg:min-h-[515px]">
 
-/* -------------------------------------------------------------------------- */
-/* PROMO CARD                                                                 */
-/* -------------------------------------------------------------------------- */
+              {/* =================================================
+                  HERO LEFT
+              ================================================= */}
 
-function PromoCard({
-  className,
-  icon,
-  eyebrow,
-  title,
-  text,
-  href,
-  button,
-  product,
-}: {
-  className: string;
-  icon: ReactNode;
-  eyebrow: string;
-  title: string;
-  text: string;
-  href: string;
-  button: string;
-  product?: Product;
-}) {
-  return (
-    <div className={`promo-card ${className}`}>
-      <div>
-        <div className="promo-icon">
-          {icon}
+              <div className="relative z-10 flex flex-col justify-center px-5 py-8 sm:px-8 sm:py-12 lg:px-14 lg:py-14">
+
+                <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#D4AF37]/30 bg-[#fffaf0] px-3 py-1.5 text-[8px] font-bold uppercase tracking-wide text-[#b58c24] sm:px-4 sm:py-2 sm:text-xs">
+                  <Sparkles size={12} />
+                  {currentSlide.eyebrow}
+                </div>
+
+                <div className="mt-3 inline-flex w-fit rounded-full bg-[#171512] px-2.5 py-1 text-[8px] font-bold text-white sm:mt-4 sm:px-3 sm:py-1.5 sm:text-xs">
+                  {currentSlide.badge}
+                </div>
+
+                <h2 className="mt-4 max-w-xl text-[30px] font-black leading-[0.95] tracking-[-0.04em] text-[#171512] sm:mt-5 sm:text-[48px] lg:text-[66px] xl:text-[72px]">
+                  {currentSlide.title}
+                  <br />
+                  <span className="text-[#D4AF37]">
+                    {currentSlide.highlight}
+                  </span>
+                </h2>
+
+                <p className="mt-3 max-w-lg text-[10px] leading-4 text-gray-600 sm:mt-5 sm:text-sm sm:leading-6 lg:text-base lg:leading-7">
+                  {currentSlide.description}
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2 sm:mt-7 sm:gap-3">
+
+                  <Link
+                    href="/auth/login"
+                    className="group inline-flex items-center gap-1.5 rounded-xl bg-[#D4AF37] px-3.5 py-2.5 text-[10px] font-bold text-white shadow-lg shadow-[#D4AF37]/20 transition hover:-translate-y-0.5 hover:bg-[#c69f2f] sm:gap-2 sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-sm"
+                  >
+                    {currentSlide.button}
+
+                    <ArrowRight
+                      size={14}
+                      className="transition group-hover:translate-x-1 sm:h-[18px] sm:w-[18px]"
+                    />
+                  </Link>
+
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#ded8ca] bg-white px-3.5 py-2.5 text-[10px] font-semibold text-gray-800 transition hover:border-[#D4AF37] hover:text-[#b58c24] sm:gap-2 sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-sm"
+                  >
+                    {currentSlide.secondary}
+                  </Link>
+
+                </div>
+
+                {/* TRUST STATS */}
+
+                <div className="mt-5 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-6 lg:gap-7">
+
+                  <div>
+                    <p className="text-sm font-black sm:text-xl">
+                      10K+
+                    </p>
+
+                    <p className="text-[8px] text-gray-500 sm:text-xs">
+                      Happy Customers
+                    </p>
+                  </div>
+
+                  <div className="hidden h-8 w-px bg-[#e7e0d2] sm:block" />
+
+                  <div>
+                    <p className="flex items-center gap-1 text-sm font-black sm:text-xl">
+                      4.8
+                      <Star
+                        size={11}
+                        fill="currentColor"
+                        className="text-[#D4AF37] sm:h-4 sm:w-4"
+                      />
+                    </p>
+
+                    <p className="text-[8px] text-gray-500 sm:text-xs">
+                      Customer Rating
+                    </p>
+                  </div>
+
+                  <div className="hidden h-8 w-px bg-[#e7e0d2] sm:block" />
+
+                  <div>
+                    <p className="text-sm font-black sm:text-xl">
+                      2500+
+                    </p>
+
+                    <p className="text-[8px] text-gray-500 sm:text-xs">
+                      Products
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* SLIDER */}
+
+                <div className="mt-5 flex items-center gap-2 sm:mt-8 sm:gap-3">
+
+                  <button
+                    type="button"
+                    onClick={previousSlide}
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] sm:h-10 sm:w-10"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft size={14} className="sm:h-[18px] sm:w-[18px]" />
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+
+                    {heroSlides.map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() =>
+                          setActiveSlide(index)
+                        }
+                        aria-label={`Go to slide ${index + 1}`}
+                        className={`h-1.5 rounded-full transition-all sm:h-2 ${
+                          activeSlide === index
+                            ? "w-5 bg-[#D4AF37] sm:w-7"
+                            : "w-1.5 bg-[#d9d2c5] sm:w-2"
+                        }`}
+                      />
+                    ))}
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={nextSlide}
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-[#ded8ca] bg-white transition hover:border-[#D4AF37] hover:text-[#D4AF37] sm:h-10 sm:w-10"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight size={14} className="sm:h-[18px] sm:w-[18px]" />
+                  </button>
+
+                </div>
+              </div>
+
+              {/* =================================================
+                  HERO IMAGE
+              ================================================= */}
+
+              <div className="relative flex min-h-full items-center justify-center overflow-hidden bg-[#fffdfa]">
+
+                {/* soft image backdrop */}
+
+                <div className="absolute left-1/2 top-1/2 h-[190px] w-[190px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5ead0] sm:h-[310px] sm:w-[310px] lg:h-[440px] lg:w-[440px]" />
+
+                {/* image */}
+
+                <Image
+                  src="/hero-product.png"
+                  alt="PrimeCart premium collection"
+                  width={900}
+                  height={900}
+                  priority
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 48vw, 50vw"
+                  className="relative z-10 h-auto w-[108%] max-w-none object-contain sm:w-[96%] lg:w-[88%] xl:w-[84%]"
+                />
+
+                {/* small badge */}
+
+                <div className="absolute right-2 top-4 z-20 rounded-xl border border-[#e9dfc9] bg-white/95 px-2.5 py-2 shadow-lg backdrop-blur-sm sm:right-6 sm:top-8 sm:rounded-2xl sm:px-4 sm:py-3 lg:right-10">
+
+                  <p className="text-[7px] font-bold uppercase tracking-wider text-gray-400 sm:text-[10px]">
+                    Today's highlight
+                  </p>
+
+                  <p className="mt-0.5 text-[9px] font-bold sm:mt-1 sm:text-sm">
+                    Premium Deals
+                  </p>
+
+                </div>
+
+                <div className="absolute bottom-5 left-2 z-20 hidden rounded-2xl border border-[#e9dfc9] bg-white/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:block lg:bottom-10 lg:left-7">
+
+                  <div className="flex items-center gap-2">
+
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d8] text-[#b58c24]">
+                      <ShieldCheck size={15} />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold">
+                        Safe Shopping
+                      </p>
+
+                      <p className="text-[10px] text-gray-500">
+                        Secure checkout
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <span className="promo-eyebrow">
-          {eyebrow}
-        </span>
+      {/* =====================================================
+          BENEFITS
+      ===================================================== */}
 
-        <h3>{title}</h3>
+      <section className="px-3 py-3 sm:px-6 sm:py-5">
 
-        <p>{text}</p>
+        <div className="mx-auto max-w-7xl">
 
-        <Link href={href}>
-          {button}
-          <ArrowRight size={11} />
-        </Link>
-      </div>
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4 lg:rounded-3xl">
 
-      {product?.image_url && (
-        <SafeProductImage
-          src={product.image_url}
-          alt=""
-          className="promo-product-image"
-        />
-      )}
-    </div>
-  );
-}
+            {benefits.map((benefit, index) => {
+              const Icon = benefit.icon;
 
-/* -------------------------------------------------------------------------- */
-/* TRUST ITEM                                                                 */
-/* -------------------------------------------------------------------------- */
+              return (
+                <div
+                  key={benefit.title}
+                  className={`
+                    flex min-w-0 items-center gap-2.5
+                    px-3 py-3
+                    sm:gap-4 sm:px-5 sm:py-6
+                    ${
+                      index % 2 === 0
+                        ? "border-r border-[#eee8dc]"
+                        : ""
+                    }
+                    ${
+                      index < 2
+                        ? "border-b border-[#eee8dc] lg:border-b-0"
+                        : ""
+                    }
+                    lg:border-r
+                    lg:last:border-r-0
+                  `}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fff7e5] text-[#b58c24] sm:h-11 sm:w-11 sm:rounded-xl lg:h-12 lg:w-12 lg:rounded-2xl">
+                    <Icon
+                      size={16}
+                      className="sm:h-5 sm:w-5 lg:h-[22px] lg:w-[22px]"
+                    />
+                  </div>
 
-function TrustItem({
-  icon,
-  title,
-  text,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="trust-item">
-      <span>{icon}</span>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-[10px] font-bold leading-tight sm:text-sm lg:text-base">
+                      {benefit.title}
+                    </h3>
 
-      <div>
-        <strong>{title}</strong>
-        <small>{text}</small>
-      </div>
-    </div>
-  );
-}
+                    <p className="mt-0.5 line-clamp-1 text-[7px] leading-3 text-gray-500 sm:text-[11px] sm:leading-4 lg:text-xs">
+                      {benefit.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
 
-/* -------------------------------------------------------------------------- */
-/* LOADING                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function LoadingScreen() {
-  return (
-    <div className="loading-screen">
-      <div className="loading-inner">
-        <div className="loading-logo">
-          <ShoppingBag size={28} />
+          </div>
         </div>
+      </section>
 
-        <strong>PrimeCart</strong>
+      {/* =====================================================
+          FLASH DEALS
+      ===================================================== */}
 
-        <span>
-          Preparing your shopping experience...
-        </span>
+      <section className="px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
 
-        <div className="loading-bar" />
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-7 flex flex-col justify-between gap-5 sm:mb-8 sm:flex-row sm:items-end">
+
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
+                <Zap size={15} />
+                Limited Time
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Flash Deals
+              </h2>
+
+              <p className="mt-2 text-sm text-gray-500 sm:text-base">
+                Grab the deal before the clock runs out.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+
+              {[
+                ["hours", formattedTime.hours, "Hrs"],
+                ["minutes", formattedTime.minutes, "Min"],
+                ["seconds", formattedTime.seconds, "Sec"],
+              ].map(([key, value, label], index) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-1.5"
+                >
+                  {index > 0 && (
+                    <span className="font-bold text-[#b58c24]">
+                      :
+                    </span>
+                  )}
+
+                  <div className="min-w-[47px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white">
+                    <p className="text-lg font-black leading-none">
+                      {value}
+                    </p>
+
+                    <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+                      {label}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+            </div>
+          </div>
+
+          {/* MOBILE HORIZONTAL / DESKTOP GRID */}
+
+          <div
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0 sm:snap-none md:grid-cols-3"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {dealItems.map((deal) => (
+              <Link
+                key={deal.title}
+                href={deal.href}
+                className="group relative w-[84vw] min-w-[84vw] shrink-0 snap-start overflow-hidden rounded-[26px] border border-[#e9e2d5] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:w-auto sm:min-w-0 sm:shrink sm:rounded-[28px] sm:p-5"
+              >
+
+                <div className="absolute right-4 top-4 z-10 rounded-full bg-[#171512] px-3 py-1.5 text-[9px] font-bold tracking-wider text-white">
+                  {deal.discount}
+                </div>
+
+                <div className="flex h-[200px] items-center justify-center overflow-hidden rounded-[22px] bg-[#faf8f3] sm:h-[220px]">
+
+                  <Image
+                    src={deal.image}
+                    alt={deal.title}
+                    width={300}
+                    height={240}
+                    className="h-[175px] w-full object-contain transition duration-500 group-hover:scale-105 sm:h-[190px]"
+                  />
+
+                </div>
+
+                <div className="flex items-end justify-between gap-3 px-1 pt-5">
+
+                  <div>
+                    <p className="text-xl font-black">
+                      {deal.title}
+                    </p>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      {deal.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e8e1d4] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white">
+                    <ArrowUpRight size={18} />
+                  </div>
+
+                </div>
+              </Link>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* =====================================================
+          CATEGORIES
+      ===================================================== */}
+
+      <section className="bg-white px-3 py-14 sm:px-6 sm:py-16 lg:py-20">
+
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-9 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
+                Explore Store
+              </p>
+
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Shop By Category
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm text-gray-500 sm:text-base">
+                Find exactly what you need from our growing collection.
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/categories/electronics"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3"
+            >
+              View all categories
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+
+            {categories.map((category) => (
+              <Link
+                key={category.name}
+                href={`/dashboard/categories/${category.slug}`}
+                className="group overflow-hidden rounded-2xl border border-[#ece7db] bg-[#faf8f3] transition duration-300 hover:-translate-y-1 hover:border-[#D4AF37]/40 hover:bg-white hover:shadow-xl sm:rounded-3xl"
+              >
+
+                <div className="flex h-32 items-center justify-center overflow-hidden px-3 pt-3 sm:h-40 sm:px-4 sm:pt-4">
+
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    width={180}
+                    height={160}
+                    className="h-full w-full object-contain transition duration-500 group-hover:scale-110"
+                  />
+
+                </div>
+
+                <div className="bg-white p-3 sm:p-4">
+
+                  <div className="flex items-center justify-between gap-2">
+
+                    <h3 className="text-sm font-bold sm:text-base">
+                      {category.name}
+                    </h3>
+
+                    <ArrowUpRight
+                      size={15}
+                      className="shrink-0 text-gray-300 transition group-hover:text-[#D4AF37]"
+                    />
+
+                  </div>
+
+                  <p className="mt-1 text-[10px] text-gray-500 sm:text-xs">
+                    {category.products}
+                  </p>
+
+                </div>
+              </Link>
+            ))}
+
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          PRIME CART ADVANTAGE
+      ===================================================== */}
+
+      <section className="px-3 py-14 sm:px-6 sm:py-16 lg:py-20">
+
+        <div className="mx-auto max-w-7xl">
+
+          <div className="mb-9">
+
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
+              More than shopping
+            </p>
+
+            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+              The PrimeCart Advantage
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm text-gray-500 sm:text-base">
+              Smart shopping tools designed to make buying easier,
+              faster and more rewarding.
+            </p>
+
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:gap-5">
+
+            {primeFeatures.map((feature) => {
+              const Icon = feature.icon;
+
+              return (
+                <Link
+                  key={feature.title}
+                  href={feature.href}
+                  className="group relative overflow-hidden rounded-[26px] border border-[#e8e1d4] bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-[30px] sm:p-8"
+                >
+
+                  <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/10 transition group-hover:scale-150" />
+
+                  <div className="relative">
+
+                    <div className="flex items-start justify-between">
+
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b58c24] sm:h-14 sm:w-14">
+                        <Icon size={24} />
+                      </div>
+
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ece7db] transition group-hover:border-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-white sm:h-10 sm:w-10">
+                        <ArrowUpRight size={17} />
+                      </div>
+
+                    </div>
+
+                    <h3 className="mt-5 text-xl font-black sm:mt-6 sm:text-2xl">
+                      {feature.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-gray-500 sm:mt-3">
+                      {feature.description}
+                    </p>
+
+                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#b58c24] sm:mt-6">
+                      {feature.label}
+
+                      <ArrowRight
+                        size={16}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </div>
+
+                  </div>
+                </Link>
+              );
+            })}
+
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          PRIMEPOINTS
+      ===================================================== */}
+
+      <section className="px-3 pb-14 sm:px-6 sm:pb-16 lg:pb-20">
+
+        <div className="mx-auto max-w-7xl">
+
+          <div className="relative overflow-hidden rounded-[28px] bg-[#171512] px-5 py-9 text-white sm:rounded-[32px] sm:px-10 sm:py-12 lg:px-14">
+
+            <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/20 blur-3xl" />
+
+            <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-3xl" />
+
+            <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-10">
+
+              <div>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e4c46a] sm:px-4 sm:py-2 sm:text-xs">
+                  <Star size={13} fill="currentColor" />
+                  PrimePoints
+                </div>
+
+                <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight sm:mt-5 sm:text-4xl lg:text-5xl">
+                  Shop. Earn.
+                  <span className="text-[#D4AF37]">
+                    {" "}Get Rewarded.
+                  </span>
+                </h2>
+
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:mt-4 sm:text-base sm:leading-7">
+                  Turn your shopping activity into rewards with
+                  PrimePoints. Complete challenges, collect points
+                  and unlock exclusive benefits.
+                </p>
+
+                <Link
+                  href="/dashboard/prime-points"
+                  className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
+                >
+                  Explore PrimePoints
+                  <ArrowRight size={17} />
+                </Link>
+
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+
+                {[
+                  ["01", "Shop"],
+                  ["02", "Earn"],
+                  ["03", "Redeem"],
+                ].map(([number, label]) => (
+                  <div
+                    key={number}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm sm:p-6"
+                  >
+                    <p className="text-xl font-black text-[#D4AF37] sm:text-2xl">
+                      {number}
+                    </p>
+
+                    <p className="mt-1 text-[10px] font-semibold text-white/70 sm:text-sm">
+                      {label}
+                    </p>
+                  </div>
+                ))}
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          NEWSLETTER
+      ===================================================== */}
+
+      <section className="border-y border-[#ece7db] bg-white px-3 py-14 sm:px-6 sm:py-16">
+
+        <div className="mx-auto max-w-3xl text-center">
+
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58c24] sm:h-14 sm:w-14">
+            <ShoppingBag size={23} />
+          </div>
+
+          <h2 className="mt-4 text-3xl font-black sm:mt-5 sm:text-4xl">
+            Stay in the PrimeCart loop
+          </h2>
+
+          <p className="mx-auto mt-3 max-w-xl text-sm text-gray-500 sm:text-base">
+            Get notified about new arrivals, exclusive offers and
+            limited-time deals.
+          </p>
+
+          {subscribed ? (
+            <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#d9e9d9] bg-[#f4fbf4] px-5 py-4 text-sm font-semibold text-green-700">
+              ✓ You're subscribed. Welcome to PrimeCart!
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSubscribe}
+              className="mx-auto mt-6 flex max-w-xl flex-col gap-2 rounded-2xl border border-[#e8e1d4] bg-[#faf8f3] p-2 sm:flex-row"
+            >
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                placeholder="Enter your email address"
+                className="h-12 min-w-0 flex-1 rounded-xl bg-transparent px-4 text-sm outline-none"
+              />
+
+              <button
+                type="submit"
+                className="h-12 rounded-xl bg-[#D4AF37] px-6 font-bold text-white transition hover:bg-[#c69f2f]"
+              >
+                Subscribe
+              </button>
+            </form>
+          )}
+
+        </div>
+      </section>
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <footer className="bg-[#faf8f3] px-4 pb-24 pt-12 sm:px-6 md:pb-8 md:pt-14">
+
+        <div className="mx-auto max-w-7xl">
+
+          <div className="grid gap-9 border-b border-[#e7e0d4] pb-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.4fr] lg:gap-10 lg:pb-12">
+
+            {/* BRAND */}
+
+            <div>
+
+              <Link
+                href="/"
+                className="flex items-center gap-3"
+              >
+                <Image
+                  src="/logo.png"
+                  alt="PrimeCart Logo"
+                  width={50}
+                  height={50}
+                  className="h-11 w-11 object-contain sm:h-12 sm:w-12"
+                />
+
+                <div>
+                  <h2 className="text-2xl font-black">
+                    Prime<span className="text-[#D4AF37]">
+                      Cart
+                    </span>
+                  </h2>
+
+                  <p className="text-xs text-gray-500">
+                    Premium Shopping Store
+                  </p>
+                </div>
+              </Link>
+
+              <p className="mt-5 max-w-sm text-sm leading-6 text-gray-500">
+                Your one-stop destination for premium products,
+                smart shopping tools and better deals.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+
+                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-xs font-semibold text-gray-600">
+                  Secure Shopping
+                </span>
+
+                <span className="rounded-full border border-[#e5ddcf] bg-white px-3 py-1.5 text-xs font-semibold text-gray-600">
+                  Easy Returns
+                </span>
+
+              </div>
+            </div>
+
+            {/* QUICK LINKS */}
+
+            <div>
+
+              <h3 className="font-bold">
+                Quick Links
+              </h3>
+
+              <div className="mt-5 flex flex-col gap-3 text-sm text-gray-500">
+
+                <Link
+                  href="/"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Home
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Shop
+                </Link>
+
+                <Link
+                  href="/dashboard/categories/electronics"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Categories
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Deals
+                </Link>
+
+              </div>
+            </div>
+
+            {/* CUSTOMER SERVICE */}
+
+            <div>
+
+              <h3 className="font-bold">
+                Customer Service
+              </h3>
+
+              <div className="mt-5 flex flex-col gap-3 text-sm text-gray-500">
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Contact Us
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Shipping Policy
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Returns
+                </Link>
+
+                <Link
+                  href="/auth/login"
+                  className="transition hover:text-[#D4AF37]"
+                >
+                  Privacy Policy
+                </Link>
+
+              </div>
+            </div>
+
+            {/* WHY PRIMECART */}
+
+            <div>
+
+              <h3 className="font-bold">
+                Why PrimeCart?
+              </h3>
+
+              <div className="mt-5 space-y-4">
+
+                <div className="flex gap-3">
+
+                  <ShieldCheck
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
+                    size={19}
+                  />
+
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Secure shopping
+                    </p>
+
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Safe and protected checkout experience.
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="flex gap-3">
+
+                  <Truck
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
+                    size={19}
+                  />
+
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Reliable delivery
+                    </p>
+
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Easy and convenient order delivery.
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="flex gap-3">
+
+                  <Headphones
+                    className="mt-0.5 shrink-0 text-[#D4AF37]"
+                    size={19}
+                  />
+
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Customer support
+                    </p>
+
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Help whenever you need it.
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex flex-col gap-3 py-6 text-center text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
+
+            <p>
+              © 2026 PrimeCart. All Rights Reserved.
+            </p>
+
+            <p>
+              Made for a smarter shopping experience.
+            </p>
+
+          </div>
+
+        </div>
+      </footer>
+
+      {/* =====================================================
+          MOBILE BOTTOM NAV
+      ===================================================== */}
+
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e7e0d4] bg-white/95 px-2 py-2 shadow-[0_-5px_25px_rgba(50,35,10,0.08)] backdrop-blur-xl md:hidden">
+
+        <div className="mx-auto flex max-w-md items-center justify-around">
+
+          <Link
+            href="/"
+            className="flex flex-col items-center gap-1 px-3 py-1 text-[#D4AF37]"
+          >
+            <ShoppingBag size={19} />
+            <span className="text-[10px] font-semibold">
+              Home
+            </span>
+          </Link>
+
+          <Link
+            href="/dashboard/categories/electronics"
+            className="flex flex-col items-center gap-1 px-3 py-1 text-gray-500"
+          >
+            <Search size={19} />
+            <span className="text-[10px] font-semibold">
+              Shop
+            </span>
+          </Link>
+
+          <Link
+            href="/auth/login"
+            className="flex flex-col items-center gap-1 px-3 py-1 text-gray-500"
+          >
+            <Heart size={19} />
+            <span className="text-[10px] font-semibold">
+              Wishlist
+            </span>
+          </Link>
+
+          <Link
+            href="/auth/login"
+            className="relative flex flex-col items-center gap-1 px-3 py-1 text-gray-500"
+          >
+            <ShoppingCart size={19} />
+
+            <span className="absolute right-1 top-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[8px] font-bold text-white">
+              0
+            </span>
+
+            <span className="text-[10px] font-semibold">
+              Cart
+            </span>
+          </Link>
+
+          <Link
+            href="/auth/login"
+            className="flex flex-col items-center gap-1 px-3 py-1 text-gray-500"
+          >
+            <UserRound size={19} />
+            <span className="text-[10px] font-semibold">
+              Account
+            </span>
+          </Link>
+
+        </div>
       </div>
-    </div>
+
+    </main>
   );
 }
