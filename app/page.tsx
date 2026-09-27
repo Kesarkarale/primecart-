@@ -981,33 +981,38 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* =====================================================
-          RIGHT IMAGE
-          Desktop + Mobile = SAME SIDE-BY-SIDE LAYOUT
-      ===================================================== */}
-      <div
-        className="
-          relative
-          min-h-full
-          overflow-hidden
-        "
-      >
-        <Image
-          src="/hero-product.png"
-          alt="PrimeCart premium collection"
-          fill
-          priority
-          sizes="50vw"
-          className="
-            object-cover
-            object-center
-            transition-transform
-            duration-700
-            ease-out
-            hover:scale-[1.015]
-          "
-        />
-      </div>
+     {/* =====================================================
+    RIGHT IMAGE
+===================================================== */}
+<div
+  className="
+    relative
+    min-h-full
+    overflow-hidden
+    bg-[#fffdfa]
+  "
+>
+  <Image
+    src="/hero-product.png"
+    alt="PrimeCart premium collection"
+    fill
+    priority
+    sizes="50vw"
+    className="
+      object-contain
+      object-center
+      scale-[1.04]
+      transition-transform
+      duration-700
+      ease-out
+      sm:scale-[1.06]
+      lg:object-cover
+      lg:scale-100
+      lg:object-center
+      lg:hover:scale-[1.015]
+    "
+  />
+</div>
     </div>
   </div>
 </section>
