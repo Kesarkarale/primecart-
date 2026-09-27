@@ -118,6 +118,18 @@ const HERO_BANNERS = [
   "/banner/hero-banner8.png",
 ];
 
+// Each hero banner opens the corresponding PrimeCart destination.
+const HERO_TARGETS = [
+  "/dashboard/products",
+  "/dashboard/categories/beauty",
+  "/dashboard/categories/home-and-kitchen",
+  "/dashboard/categories/fashion",
+  "/dashboard/prime-match",
+  "/dashboard/categories/electronics",
+  "/dashboard/budget-builder",
+  "/dashboard/prime-points",
+];
+
 const CATEGORY_ORDER = [
   "Mobile",
   "Electronics",
@@ -564,6 +576,14 @@ export default function DashboardPage() {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  function handleHeroClick(index: number) {
+    const target = HERO_TARGETS[index];
+
+    if (target) {
+      router.push(target);
+    }
+  }
 
   /* ------------------------------------------------------------------------ */
   /* FLASH COUNTDOWN                                                          */
@@ -1494,6 +1514,16 @@ export default function DashboardPage() {
                         ? "active"
                         : ""
                     }`}
+                    role="link"
+                    tabIndex={index === heroIndex ? 0 : -1}
+                    aria-label={`Open promotion ${index + 1}`}
+                    onClick={() => handleHeroClick(index)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleHeroClick(index);
+                      }
+                    }}
                     onError={(event) => {
                       event.currentTarget.style.opacity = "0";
                     }}
@@ -5444,41 +5474,74 @@ export default function DashboardPage() {
           }
         }
 
-        /* FINAL HERO POLISH — desktop: shorter, clean and never cropped */
+        /* FINAL HERO POLISH — compact, edge-to-edge and clickable */
         .hero-layout {
           display: block;
           width: 100%;
           min-width: 0;
         }
 
-        .hero-image-frame {
+        .hero-carousel {
           width: 100%;
-          aspect-ratio: 2.72 / 1;
-          min-height: 0;
+          min-width: 0;
+        }
+
+        .hero-image-frame {
+          position: relative;
+          width: 100%;
+          height: clamp(300px, 27vw, 430px);
+          min-height: 300px;
           max-height: 430px;
+          border-radius: 16px;
           overflow: hidden;
           background: #fffaf0;
+          border: 1px solid rgba(194, 151, 58, 0.18);
+          box-shadow: 0 16px 42px rgba(72, 51, 18, 0.10);
         }
 
         .hero-banner {
+          position: absolute;
+          inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain !important;
-          object-position: center;
+          object-fit: cover !important;
+          object-position: center center;
           background: #fffaf0;
+          cursor: pointer;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
+
+        .hero-banner.active:hover {
+          filter: saturate(1.02) brightness(1.01);
+        }
+
+        .hero-banner:focus-visible {
+          outline: 3px solid rgba(199, 154, 59, 0.7);
+          outline-offset: -3px;
         }
 
         @media (min-width: 1400px) {
           .hero-image-frame {
-            aspect-ratio: 2.82 / 1;
-            max-height: 420px;
+            height: 420px;
           }
         }
 
         @media (max-width: 980px) {
           .hero-image-frame {
+            height: auto;
             aspect-ratio: 16 / 9;
+            min-height: 0;
             max-height: none;
+            border-radius: 12px;
+          }
+        }
+
+        @media (max-width: 430px) {
+          .hero-image-frame {
+            aspect-ratio: 16 / 9;
+            height: auto;
+            min-height: 0;
           }
         }
 
