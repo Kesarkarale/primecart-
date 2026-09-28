@@ -924,30 +924,25 @@ export default function DashboardPage() {
             className="logo-wrap"
             aria-label="PrimeCart home"
           >
-            <img
-              src="/logo.png"
-              alt="PrimeCart"
-              className="prime-logo"
-              onError={(event) => {
-                event.currentTarget.style.display =
-                  "none";
-              }}
-            />
-
-            <div className="logo-fallback">
-              <div className="logo-mark">
-                <ShoppingBag size={25} />
+            <div className="brand-lockup">
+              <div className="brand-logo-box">
+                <img
+                  src="/logo.png"
+                  alt="PrimeCart logo"
+                  className="prime-logo"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    event.currentTarget.parentElement?.classList.add(
+                      "logo-image-failed"
+                    );
+                  }}
+                />
+                <span className="brand-logo-fallback" aria-hidden="true">
+                  <ShoppingBag size={23} strokeWidth={2.1} />
+                </span>
               </div>
 
-              <div>
-                <div className="logo-text">
-                  PrimeCart
-                </div>
-
-                <div className="logo-tagline">
-                  Shop Smart · Live Better
-                </div>
-              </div>
+              <span className="brand-name">PrimeCart</span>
             </div>
           </Link>
 
@@ -6072,6 +6067,78 @@ export default function DashboardPage() {
         --pc-cream:#fffdf8;
         --pc-border:#e9e1d3;
         --pc-text:#211f1b;
+      }
+
+
+      /* PRIME CART BRAND LOCKUP — LOGO + NAME */
+      .logo-wrap{
+        display:flex!important;
+        align-items:center!important;
+        flex:0 0 auto!important;
+        min-width:198px!important;
+        text-decoration:none!important;
+      }
+      .brand-lockup{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        min-width:0;
+      }
+      .brand-logo-box{
+        width:48px;
+        height:48px;
+        flex:0 0 48px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow:hidden;
+        border-radius:14px;
+        background:linear-gradient(145deg,#fffdf8,#f7edda);
+        border:1px solid rgba(184,135,45,.22);
+        box-shadow:0 6px 16px rgba(184,135,45,.12);
+      }
+      .brand-logo-box .prime-logo{
+        display:block!important;
+        width:100%!important;
+        height:100%!important;
+        max-width:none!important;
+        object-fit:contain!important;
+        object-position:center!important;
+        padding:6px;
+        filter:none!important;
+      }
+      .brand-logo-fallback{
+        display:none;
+        align-items:center;
+        justify-content:center;
+        color:#a87518;
+      }
+      .brand-logo-box.logo-image-failed .brand-logo-fallback{display:flex}
+      .brand-logo-box.logo-image-failed{
+        background:linear-gradient(145deg,#fff8e8,#f4e3bd);
+      }
+      .brand-name{
+        display:block;
+        color:#9a701e;
+        font-size:24px;
+        line-height:1;
+        font-weight:850;
+        letter-spacing:-.045em;
+        white-space:nowrap;
+        font-family:Arial,Helvetica,sans-serif;
+      }
+      .brand-name::first-letter{color:#b8872d}
+      @media(max-width:1100px){
+        .logo-wrap{min-width:176px!important}
+        .brand-logo-box{width:44px;height:44px;flex-basis:44px;border-radius:12px}
+        .brand-name{font-size:21px}
+      }
+      @media(max-width:680px){
+        .logo-wrap{min-width:auto!important}
+        .brand-lockup{gap:7px}
+        .brand-logo-box{width:39px;height:39px;flex-basis:39px;border-radius:11px}
+        .brand-logo-box .prime-logo{padding:5px}
+        .brand-name{font-size:18px;letter-spacing:-.035em}
       }
 
       /* ---------- LIGHT THEME / GLOBAL ---------- */
