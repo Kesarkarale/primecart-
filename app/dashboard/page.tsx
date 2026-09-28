@@ -4363,66 +4363,289 @@ export default function DashboardPage() {
         /* -------------------------------------------------------------- */
 
         .loading-screen {
-          min-height: 100vh;
-          background:
-            radial-gradient(
-              circle at 50% 35%,
-              #fffaf0,
-              #fffdf9 42%,
-              #f8f6f1
-            );
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          min-height: 100dvh;
           display: grid;
           place-items: center;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 50% 36%, rgba(255, 247, 226, 0.96) 0%, rgba(255, 253, 249, 0.98) 38%, #f6f3ed 100%);
+        }
+
+        .loading-screen::before,
+        .loading-screen::after {
+          content: "";
+          position: absolute;
+          width: 420px;
+          height: 420px;
+          border-radius: 50%;
+          pointer-events: none;
+          border: 1px solid rgba(199, 154, 59, 0.11);
+        }
+
+        .loading-screen::before {
+          transform: translate(-42%, -34%);
+          box-shadow: 0 0 0 70px rgba(199, 154, 59, 0.025), 0 0 0 140px rgba(199, 154, 59, 0.018);
+        }
+
+        .loading-screen::after {
+          transform: translate(48%, 38%);
+          width: 300px;
+          height: 300px;
         }
 
         .loading-inner {
+          position: relative;
+          z-index: 2;
+          width: min(380px, calc(100vw - 42px));
+          padding: 34px 28px 30px;
           text-align: center;
+          border: 1px solid rgba(199, 154, 59, 0.18);
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.74);
+          box-shadow: 0 24px 70px rgba(78, 59, 23, 0.11), inset 0 1px 0 rgba(255,255,255,.9);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          animation: loadingCardIn .65s cubic-bezier(.2,.8,.2,1) both;
+        }
+
+        .loading-logo-wrap {
+          position: relative;
+          width: 88px;
+          height: 88px;
+          margin: 0 auto 18px;
+          display: grid;
+          place-items: center;
+        }
+
+        .loading-logo-wrap::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(199, 154, 59, 0.25);
+          animation: loadingOrbit 2.8s linear infinite;
+        }
+
+        .loading-logo-wrap::after {
+          content: "";
+          position: absolute;
+          inset: 7px;
+          border-radius: 50%;
+          background: linear-gradient(145deg, #fffdf8, #f8efdc);
+          border: 1px solid rgba(199, 154, 59, 0.28);
+          box-shadow: 0 12px 32px rgba(184, 137, 36, 0.15);
         }
 
         .loading-logo {
-          width: 61px;
-          height: 61px;
-          border: 2px solid var(--gold);
-          color: var(--gold);
-          border-radius: 15px;
+          position: relative;
+          z-index: 2;
+          width: 55px;
+          height: 55px;
           display: grid;
           place-items: center;
-          margin: 0 auto 14px;
-          animation: pulse 1.4s
-            ease-in-out infinite;
-          box-shadow: 0 8px 30px
-            rgba(184, 137, 36, 0.12);
+          overflow: hidden;
+          border-radius: 16px;
+          background: #fff;
+          border: 1px solid rgba(199, 154, 59, 0.22);
+          box-shadow: 0 8px 22px rgba(79, 57, 20, 0.1);
+          animation: loadingLogoFloat 1.8s ease-in-out infinite;
         }
 
-        .loading-inner strong {
-          color: var(--gold);
-          font-size: 22px;
-        }
-
-        .loading-inner span {
+        .loading-logo img {
+          width: 100%;
+          height: 100%;
+          padding: 7px;
+          object-fit: contain;
           display: block;
-          color: #999;
-          font-size: 10px;
-          margin-top: 5px;
         }
+
+        .loading-brand {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 2px;
+        }
+
+        .loading-brand strong {
+          color: #252015;
+          font-size: clamp(24px, 5vw, 29px);
+          line-height: 1;
+          letter-spacing: -0.8px;
+          font-weight: 800;
+        }
+
+        .loading-brand-mark {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--gold);
+          box-shadow: 0 0 0 5px rgba(199,154,59,.1);
+        }
+
+        .loading-kicker {
+          margin-top: 10px;
+          color: #a27b32;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 2.2px;
+          text-transform: uppercase;
+        }
+
+        .loading-message {
+          display: block;
+          color: #777066;
+          font-size: 12px;
+          line-height: 1.55;
+          margin-top: 8px;
+        }
+
+        .loading-progress {
+          width: min(230px, 100%);
+          margin: 22px auto 0;
+        }
+
+        .loading-progress-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+          color: #9a907f;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: .8px;
+          text-transform: uppercase;
+        }
+
+        .loading-dots {
+          display: inline-flex;
+          gap: 4px;
+          align-items: center;
+        }
+
+        .loading-dots i {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: var(--gold);
+          animation: loadingDot 1.2s ease-in-out infinite;
+        }
+
+        .loading-dots i:nth-child(2) { animation-delay: .16s; }
+        .loading-dots i:nth-child(3) { animation-delay: .32s; }
 
         .loading-bar {
-          width: 190px;
-          height: 3px;
-          background: #f0e7d5;
-          margin: 18px auto 0;
+          position: relative;
+          width: 100%;
+          height: 5px;
           overflow: hidden;
-          border-radius: 5px;
+          border-radius: 999px;
+          background: #eee6d7;
+          box-shadow: inset 0 1px 2px rgba(70,50,15,.05);
         }
 
         .loading-bar:after {
           content: "";
-          display: block;
-          width: 45%;
-          height: 100%;
-          background: var(--gold);
-          animation: loading 1.1s
-            ease-in-out infinite;
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 38%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #a97820, #d5ad58, #f0d795);
+          box-shadow: 0 0 14px rgba(199,154,59,.34);
+          animation: loading 1.25s cubic-bezier(.45,0,.25,1) infinite;
+        }
+
+        .loading-footer {
+          margin-top: 18px;
+          color: #b0a99d;
+          font-size: 9px;
+          letter-spacing: .3px;
+        }
+
+        @media (max-width: 480px) {
+          .loading-inner {
+            width: min(360px, calc(100vw - 28px));
+            padding: 30px 20px 25px;
+            border-radius: 24px;
+          }
+
+          .loading-logo-wrap {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+          }
+
+          .loading-logo {
+            width: 50px;
+            height: 50px;
+          }
+
+          .loading-message {
+            font-size: 11px;
+          }
+        }
+
+        html.dark .loading-screen {
+          background: radial-gradient(circle at 50% 35%, #29251d 0%, #171512 46%, #100f0d 100%);
+        }
+
+        html.dark .loading-inner {
+          background: rgba(31, 29, 25, 0.84);
+          border-color: rgba(199,154,59,.24);
+          box-shadow: 0 28px 80px rgba(0,0,0,.36);
+        }
+
+        html.dark .loading-logo-wrap::after {
+          background: linear-gradient(145deg, #29251e, #211f1a);
+        }
+
+        html.dark .loading-logo {
+          background: #fdfbf6;
+        }
+
+        html.dark .loading-brand strong {
+          color: #fffaf0;
+        }
+
+        html.dark .loading-message {
+          color: #aaa296;
+        }
+
+        html.dark .loading-progress-head,
+        html.dark .loading-footer {
+          color: #8e877b;
+        }
+
+        html.dark .loading-bar {
+          background: #403a2e;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .loading-inner, .loading-logo, .loading-logo-wrap::before, .loading-bar:after, .loading-dots i {
+            animation: none !important;
+          }
+        }
+
+        @keyframes loadingCardIn {
+          from { opacity: 0; transform: translateY(14px) scale(.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes loadingLogoFloat {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-3px) scale(1.015); }
+        }
+
+        @keyframes loadingOrbit {
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes loadingDot {
+          0%, 60%, 100% { opacity: .25; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-2px); }
         }
 
         /* -------------------------------------------------------------- */
@@ -6827,6 +7050,119 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           .smart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
+
+
+        /* PRIME CART V7 — MOBILE HERO + PROMO REFINEMENT */
+        .hero-image-frame {
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          overflow: hidden !important;
+          background: #fff !important;
+        }
+
+        .hero-banner {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: contain !important;
+          object-position: center center !important;
+          background: #fff !important;
+        }
+
+        /* Keep the banner completely visible on phones. The inline
+           aspect-ratio supplied by the loaded image controls the frame. */
+        @media (max-width: 680px) {
+          .hero-layout {
+            width: 100% !important;
+            margin: 8px 0 18px !important;
+          }
+
+          .hero-carousel {
+            width: 100% !important;
+            border-radius: 13px !important;
+            background: #fff !important;
+          }
+
+          .hero-image-frame {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            aspect-ratio: auto !important;
+            border-radius: 13px !important;
+            background: #fff !important;
+          }
+
+          .hero-banner {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            background: #fff !important;
+          }
+
+          .hero-arrow {
+            width: 31px !important;
+            height: 31px !important;
+          }
+
+          .hero-left { left: 7px !important; }
+          .hero-right { right: 7px !important; }
+
+          .hero-dots {
+            bottom: 7px !important;
+            padding: 4px 7px !important;
+          }
+
+          .hero-counter {
+            bottom: 7px !important;
+            right: 7px !important;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .hero-layout { margin-top: 5px !important; }
+          .hero-carousel,
+          .hero-image-frame { border-radius: 10px !important; }
+          .hero-arrow { width: 28px !important; height: 28px !important; }
+          .hero-left { left: 5px !important; }
+          .hero-right { right: 5px !important; }
+        }
+
+        /* Soft premium promo palette — remove the overly-bright gold card. */
+        .promo-grid .promo-gold {
+          background: linear-gradient(120deg, #fbf2df, #f0e1c2) !important;
+          color: #3f3526 !important;
+          border-color: #ead9b8 !important;
+        }
+
+        .promo-grid .promo-gold p {
+          color: #756a57 !important;
+        }
+
+        .promo-grid .promo-gold .promo-icon {
+          background: rgba(255,255,255,.66) !important;
+          color: #8f681f !important;
+        }
+
+        .promo-grid .promo-cream,
+        .promo-grid .promo-fashion {
+          box-shadow: 0 8px 24px rgba(60,45,17,.055) !important;
+        }
+
+        @media (max-width: 680px) {
+          .promo-grid {
+            grid-template-columns: repeat(3, minmax(250px, 1fr)) !important;
+            overflow-x: auto !important;
+            padding: 2px 2px 8px !important;
+            scrollbar-width: none !important;
+          }
+          .promo-grid::-webkit-scrollbar { display: none; }
+          .promo-card {
+            min-height: 145px !important;
+          }
+        }
+
       `}</style>
     </main>
   );
@@ -7031,19 +7367,39 @@ function TrustItem({
 
 function LoadingScreen() {
   return (
-    <div className="loading-screen">
+    <div className="loading-screen" aria-label="Loading PrimeCart">
       <div className="loading-inner">
-        <div className="loading-logo">
-          <ShoppingBag size={28} />
+        <div className="loading-logo-wrap">
+          <div className="loading-logo">
+            <img src="/logo.png" alt="PrimeCart" />
+          </div>
         </div>
 
-        <strong>PrimeCart</strong>
+        <div className="loading-brand">
+          <span className="loading-brand-mark" aria-hidden="true" />
+          <strong>PrimeCart</strong>
+          <span className="loading-brand-mark" aria-hidden="true" />
+        </div>
 
-        <span>
-          Preparing your shopping experience...
+        <div className="loading-kicker">Premium Shopping Experience</div>
+
+        <span className="loading-message">
+          Preparing your personalized shopping experience...
         </span>
 
-        <div className="loading-bar" />
+        <div className="loading-progress">
+          <div className="loading-progress-head">
+            <span>Loading store</span>
+            <span className="loading-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
+          <div className="loading-bar" />
+        </div>
+
+        <div className="loading-footer">Curated for you • Secure • Simple • Prime</div>
       </div>
     </div>
   );
