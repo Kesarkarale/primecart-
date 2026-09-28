@@ -399,6 +399,7 @@ export default function DashboardPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const [heroIndex, setHeroIndex] = useState(0);
+  const [heroAspectRatio, setHeroAspectRatio] = useState(3.2);
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1464,7 +1465,10 @@ export default function DashboardPage() {
         {/* HERO — FULL WIDTH CLICKABLE BANNER */}
         <section className="hero-layout">
           <div className="hero-carousel">
-            <div className="hero-image-frame">
+            <div
+              className="hero-image-frame"
+              style={{ aspectRatio: heroAspectRatio }}
+            >
               {HERO_BANNERS.map(
                 (banner, index) => (
                   <img
@@ -1480,6 +1484,14 @@ export default function DashboardPage() {
                     }`}
                     role="button"
                     tabIndex={index === heroIndex ? 0 : -1}
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      if (image.naturalWidth && image.naturalHeight) {
+                        setHeroAspectRatio(
+                          image.naturalWidth / image.naturalHeight
+                        );
+                      }
+                    }}
                     onClick={() => router.push(HERO_LINKS[index])}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
@@ -2925,10 +2937,10 @@ export default function DashboardPage() {
         .hero-image-frame {
           position: relative;
           width: 100%;
-          aspect-ratio: 2.72 / 1;
-          min-height: 245px;
-          max-height: 430px;
-          border-radius: 12px;
+          aspect-ratio: auto;
+          min-height: 0;
+          max-height: none;
+          border-radius: 16px;
           overflow: hidden;
           background: #f5eee0;
           box-shadow:
@@ -2943,7 +2955,8 @@ export default function DashboardPage() {
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
+          object-position: center;
           opacity: 0;
           transform: scale(1.015);
           transition:
@@ -6598,6 +6611,221 @@ html.dark .search-dropdown button:hover{background:#292319!important}
 html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!important}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important;animation-iteration-count:1!important}}
+
+
+        /* PRIME CART V6 — PREMIUM STOREFRONT POLISH */
+        .hero-layout {
+          margin: 4px 0 26px;
+        }
+
+        .hero-carousel {
+          width: 100%;
+        }
+
+        .hero-image-frame {
+          width: 100%;
+          min-height: 0 !important;
+          max-height: none !important;
+          height: auto;
+          border-radius: 18px;
+          background: #fffaf0;
+          border: 1px solid rgba(188, 145, 52, 0.14);
+          box-shadow:
+            0 14px 38px rgba(75, 55, 18, 0.09),
+            0 2px 8px rgba(75, 55, 18, 0.04);
+        }
+
+        .hero-banner {
+          width: 100%;
+          height: 100%;
+          object-fit: cover !important;
+          object-position: center center !important;
+          transform: scale(1.001);
+        }
+
+        .hero-banner.active {
+          transform: scale(1);
+        }
+
+        .hero-arrow {
+          width: 42px;
+          height: 42px;
+          border-color: rgba(184, 137, 45, 0.2);
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 8px 22px rgba(48, 37, 16, 0.12);
+        }
+
+        .hero-arrow:hover {
+          background: #fffdf8;
+          box-shadow: 0 10px 26px rgba(48, 37, 16, 0.16);
+        }
+
+        .hero-left { left: 18px; }
+        .hero-right { right: 18px; }
+
+        .hero-dots {
+          bottom: 15px;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: rgba(255,255,255,.74);
+          backdrop-filter: blur(10px);
+          box-shadow: 0 5px 18px rgba(30,24,13,.08);
+        }
+
+        .hero-counter {
+          bottom: 14px;
+          right: 15px;
+          border: 1px solid rgba(255,255,255,.28);
+          box-shadow: 0 5px 18px rgba(20,16,8,.10);
+        }
+
+        .category-section {
+          margin: 26px 0 34px;
+        }
+
+        .category-rail {
+          gap: 10px;
+          padding: 6px 3px 10px;
+        }
+
+        .category-item {
+          min-width: 104px;
+          padding: 7px 3px 3px;
+          border-radius: 14px;
+        }
+
+        .category-item:hover {
+          background: linear-gradient(180deg, #fffdf8, #fff9ee);
+        }
+
+        .category-icon {
+          width: 68px;
+          height: 68px;
+          border: 1px solid rgba(193,150,67,.10);
+        }
+
+        .smart-section,
+        .flash-section,
+        .promo-section,
+        .trust-section,
+        .cta-section {
+          border-color: rgba(196,155,76,.14) !important;
+          box-shadow: 0 12px 34px rgba(62,47,19,.055) !important;
+        }
+
+        .smart-section {
+          padding: 20px;
+          border-radius: 16px;
+        }
+
+        .smart-grid {
+          gap: 14px;
+        }
+
+        .smart-card {
+          min-height: 148px;
+          border-radius: 14px;
+          padding: 16px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+        }
+
+        .smart-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 16px 30px rgba(71,53,20,.10);
+        }
+
+        .section-head {
+          margin-top: 12px;
+          margin-bottom: 16px;
+        }
+
+        .section-title {
+          font-size: 19px;
+          letter-spacing: -.2px;
+        }
+
+        .section-title > span {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+        }
+
+        .product-grid {
+          gap: 14px;
+        }
+
+        .product-card {
+          border-radius: 15px !important;
+          border-color: #eee7da !important;
+          box-shadow: 0 6px 20px rgba(48,38,19,.045) !important;
+        }
+
+        .product-card:hover {
+          transform: translateY(-4px);
+          border-color: #e2c88e !important;
+          box-shadow: 0 16px 34px rgba(73,55,20,.10) !important;
+        }
+
+        .product-image-wrap {
+          background: linear-gradient(145deg,#fffdf9,#faf6ec) !important;
+        }
+
+        .flash-section {
+          border-radius: 16px !important;
+          padding: 20px !important;
+        }
+
+        .promo-card {
+          border-radius: 15px !important;
+          box-shadow: 0 8px 24px rgba(60,45,17,.07) !important;
+        }
+
+        .trust-grid {
+          gap: 12px !important;
+        }
+
+        .trust-item {
+          border-radius: 14px !important;
+          border-color: #eee6d7 !important;
+          background: linear-gradient(145deg,#fff,#fffaf1) !important;
+        }
+
+        @media (max-width: 900px) {
+          .hero-layout { margin-top: 2px; margin-bottom: 21px; }
+          .hero-image-frame { border-radius: 14px; }
+          .hero-arrow { width: 36px; height: 36px; }
+          .hero-left { left: 10px; }
+          .hero-right { right: 10px; }
+          .category-section { margin-top: 20px; }
+        }
+
+        @media (max-width: 680px) {
+          .hero-layout { margin-bottom: 18px; }
+          .hero-image-frame { border-radius: 11px; }
+          .hero-arrow { width: 32px; height: 32px; }
+          .hero-arrow svg { width: 17px; height: 17px; }
+          .hero-left { left: 7px; }
+          .hero-right { right: 7px; }
+          .hero-counter { right: 8px; bottom: 9px; padding: 5px 7px; font-size: 8px; }
+          .hero-dots { bottom: 9px; padding: 4px 7px; gap: 4px; }
+          .hero-dots button { width: 5px; height: 5px; }
+          .hero-dots button.active { width: 16px; }
+          .smart-section { padding: 13px; border-radius: 13px; }
+          .smart-grid { gap: 8px; }
+          .smart-card { min-height: 122px; padding: 11px; border-radius: 11px; }
+          .smart-card h3 { font-size: 12px; }
+          .smart-card p { font-size: 7px; }
+          .category-icon { width: 58px; height: 58px; }
+          .category-item { min-width: 82px; }
+        }
+
+        @media (max-width: 390px) {
+          .hero-image-frame { border-radius: 9px; }
+          .hero-arrow { width: 29px; height: 29px; }
+          .hero-left { left: 5px; }
+          .hero-right { right: 5px; }
+          .smart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
 
       `}</style>
     </main>
