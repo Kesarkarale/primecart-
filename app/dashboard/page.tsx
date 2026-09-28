@@ -6059,8 +6059,7 @@ export default function DashboardPage() {
         @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
         html.dark .store-shell{background:radial-gradient(circle at 8% 0%,rgba(215,173,87,.08),transparent 26%),#15130f}html.dark .search-box,html.dark .section-head>a,html.dark .product-card,html.dark .promo-card,html.dark .category-section,html.dark .smart-section,html.dark .trust-section{box-shadow:0 10px 28px rgba(0,0,0,.18)!important}html.dark .product-image-wrap{border-color:#3b3327}html.dark .section-head>a{background:#211d17;border-color:#4b402d}html.dark .wish-btn{background:rgba(33,29,23,.94)!important;border-color:#51442f!important}
 
-      `}
-
+        
 /* -------------------------------------------------------------------------- */
 /* PRIME CART — PROFESSIONAL LOADING SCREEN                                  */
 /* -------------------------------------------------------------------------- */
@@ -6352,6 +6351,9 @@ html.dark .loading-secure { color: #8f8678; }
     animation: none !important;
   }
 }
+
+      `}
+
 </style>
     </main>
   );
