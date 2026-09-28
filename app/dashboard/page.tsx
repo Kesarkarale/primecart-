@@ -924,26 +924,25 @@ export default function DashboardPage() {
             className="logo-wrap"
             aria-label="PrimeCart home"
           >
-            <div className="brand-lockup">
-              <div className="brand-logo-box">
-                <img
-                  src="/logo.png"
-                  alt="PrimeCart logo"
-                  className="prime-logo"
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                    event.currentTarget.parentElement?.classList.add(
-                      "logo-image-failed"
-                    );
-                  }}
-                />
-                <span className="brand-logo-fallback" aria-hidden="true">
-                  <ShoppingBag size={23} strokeWidth={2.1} />
-                </span>
-              </div>
+            <span className="brand-logo-box">
+              <img
+                src="/logo.png"
+                alt="PrimeCart logo"
+                className="prime-logo"
+                onError={(event) => {
+                  event.currentTarget.style.display =
+                    "none";
+                }}
+              />
+              <span className="brand-logo-fallback">
+                <ShoppingBag size={25} />
+              </span>
+            </span>
 
+            <span className="brand-copy">
               <span className="brand-name">PrimeCart</span>
-            </div>
+              <span className="brand-tagline">Shop Smart · Live Better</span>
+            </span>
           </Link>
 
           {/* SEARCH */}
@@ -6055,669 +6054,223 @@ export default function DashboardPage() {
         html.dark .store-shell{background:radial-gradient(circle at 8% 0%,rgba(215,173,87,.08),transparent 26%),#15130f}html.dark .search-box,html.dark .section-head>a,html.dark .product-card,html.dark .promo-card,html.dark .category-section,html.dark .smart-section,html.dark .trust-section{box-shadow:0 10px 28px rgba(0,0,0,.18)!important}html.dark .product-image-wrap{border-color:#3b3327}html.dark .section-head>a{background:#211d17;border-color:#4b402d}html.dark .wish-btn{background:rgba(33,29,23,.94)!important;border-color:#51442f!important}
 
 
-      /* ================================================================
-         PRIME CART V4 — PROFESSIONAL E-COMMERCE UI OVERRIDES
-         Existing Supabase/auth/cart/wishlist/navigation logic preserved.
-         ================================================================ */
-
-      :root{
-        --pc-gold:#b8872d;
-        --pc-gold-2:#d5aa55;
-        --pc-gold-soft:#fff8e9;
-        --pc-cream:#fffdf8;
-        --pc-border:#e9e1d3;
-        --pc-text:#211f1b;
-      }
-
-
-      /* PRIME CART BRAND LOCKUP — LOGO + NAME */
-      .logo-wrap{
-        display:flex!important;
-        align-items:center!important;
-        flex:0 0 auto!important;
-        min-width:198px!important;
-        text-decoration:none!important;
-      }
-      .brand-lockup{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        min-width:0;
-      }
-      .brand-logo-box{
-        width:48px;
-        height:48px;
-        flex:0 0 48px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        overflow:hidden;
-        border-radius:14px;
-        background:linear-gradient(145deg,#fffdf8,#f7edda);
-        border:1px solid rgba(184,135,45,.22);
-        box-shadow:0 6px 16px rgba(184,135,45,.12);
-      }
-      .brand-logo-box .prime-logo{
-        display:block!important;
-        width:100%!important;
-        height:100%!important;
-        max-width:none!important;
-        object-fit:contain!important;
-        object-position:center!important;
-        padding:6px;
-        filter:none!important;
-      }
-      .brand-logo-fallback{
-        display:none;
-        align-items:center;
-        justify-content:center;
-        color:#a87518;
-      }
-      .brand-logo-box.logo-image-failed .brand-logo-fallback{display:flex}
-      .brand-logo-box.logo-image-failed{
-        background:linear-gradient(145deg,#fff8e8,#f4e3bd);
-      }
-      .brand-name{
-        display:block;
-        color:#9a701e;
-        font-size:24px;
-        line-height:1;
-        font-weight:850;
-        letter-spacing:-.045em;
-        white-space:nowrap;
-        font-family:Arial,Helvetica,sans-serif;
-      }
-      .brand-name::first-letter{color:#b8872d}
-      @media(max-width:1100px){
-        .logo-wrap{min-width:176px!important}
-        .brand-logo-box{width:44px;height:44px;flex-basis:44px;border-radius:12px}
-        .brand-name{font-size:21px}
-      }
-      @media(max-width:680px){
-        .logo-wrap{min-width:auto!important}
-        .brand-lockup{gap:7px}
-        .brand-logo-box{width:39px;height:39px;flex-basis:39px;border-radius:11px}
-        .brand-logo-box .prime-logo{padding:5px}
-        .brand-name{font-size:18px;letter-spacing:-.035em}
-      }
-
-      /* ---------- LIGHT THEME / GLOBAL ---------- */
-      .store-shell{
-        min-height:100vh;
-        background:
-          radial-gradient(circle at 0% 0%,rgba(215,173,87,.10),transparent 24%),
-          radial-gradient(circle at 100% 12%,rgba(184,135,45,.065),transparent 20%),
-          #faf9f6!important;
-        color:var(--pc-text);
-      }
-      .container{width:min(1440px,calc(100% - 44px))!important}
-      .top-strip{
-        background:linear-gradient(90deg,#fffaf0,#fffdf8,#fffaf0)!important;
-        color:#73541a!important;
-        border-bottom:1px solid #eadfc9!important;
-      }
-      .strip-left span,.strip-right span{color:#76581d!important}
-      .strip-center{color:#9a701e!important}
-
-      .main-header{
-        background:rgba(255,255,255,.94)!important;
-        border-bottom:1px solid rgba(184,135,45,.16)!important;
-        box-shadow:0 8px 30px rgba(50,39,20,.055)!important;
-        backdrop-filter:blur(18px);
-        -webkit-backdrop-filter:blur(18px);
-      }
-      .header-main{min-height:80px!important}
-      .search-box{
-        min-height:47px!important;
-        border:1px solid #ded6c7!important;
-        background:#fff!important;
-        box-shadow:0 5px 18px rgba(42,34,20,.045)!important;
-      }
-      .search-box:focus-within{
-        border-color:rgba(184,135,45,.72)!important;
-        box-shadow:0 0 0 4px rgba(184,135,45,.09),0 10px 25px rgba(42,34,20,.07)!important;
-      }
-      .search-submit{
-        background:linear-gradient(135deg,#c99b3e,#a9781e)!important;
-        color:#fff!important;
-      }
-
-      .nav-bar{
-        background:rgba(255,255,255,.96)!important;
-        border-top:1px solid rgba(184,137,45,.07)!important;
-        border-bottom:1px solid #ebe5da!important;
-        box-shadow:0 5px 18px rgba(35,28,16,.035)!important;
-      }
-      .nav-inner{height:54px!important}
-      .nav-inner>a,.more-nav,.all-category-btn{color:#302d27!important}
-      .nav-inner>a:hover,.more-nav:hover,.all-category-btn:hover{color:var(--pc-gold)!important}
-      .theme-switch{
-        background:#fff!important;
-        border-color:#dfd5c2!important;
-      }
-
-      /* ---------- HERO ---------- */
-      .page-content{padding-top:18px!important}
-      .hero-layout{margin:0 0 24px!important}
-      .hero-carousel{
-        border:1px solid rgba(184,137,45,.18)!important;
-        border-radius:22px!important;
-        overflow:hidden!important;
-        background:#fff!important;
-        box-shadow:0 18px 45px rgba(43,33,16,.10)!important;
-      }
-      .hero-image-frame{
-        border-radius:22px!important;
-        background:#fff!important;
-        box-shadow:none!important;
-      }
-      .hero-banner{
-        object-fit:contain!important;
-        object-position:center!important;
-      }
-      .hero-arrow{
-        width:42px!important;
-        height:42px!important;
-        background:rgba(255,255,255,.92)!important;
-        border-color:rgba(184,137,45,.22)!important;
-        color:#946a1b!important;
-      }
-      .hero-dots button{border-color:#c79a3b!important}
-      .hero-dots button.active{background:#b8872d!important}
-
-      /* ---------- CATEGORY RAIL ---------- */
-      .category-section{
-        margin:0 0 30px!important;
-        padding:18px 18px 15px!important;
-        background:rgba(255,255,255,.92)!important;
-        border:1px solid #e9e2d7!important;
-        border-radius:20px!important;
-        box-shadow:0 10px 30px rgba(38,30,17,.045)!important;
-      }
-      .category-rail{gap:10px!important}
-      .category-item{
-        min-width:112px!important;
-        flex:0 0 112px!important;
-        padding:8px 6px!important;
-        border:1px solid transparent!important;
-        border-radius:15px!important;
-      }
-      .category-item:hover{
-        background:#fffdf8!important;
-        border-color:#ead9b7!important;
-        box-shadow:0 10px 22px rgba(44,34,17,.07)!important;
-      }
-      .category-icon{
-        width:64px!important;
-        height:64px!important;
-      }
-
-      /* ---------- SECTION HEADERS ---------- */
-      .section-head{margin:0 0 15px!important}
-      .section-title{
-        font-size:clamp(19px,2vw,24px)!important;
-        letter-spacing:-.025em!important;
-      }
-      .section-head>a{
-        background:#fff!important;
-        border:1px solid #e5dac7!important;
-        border-radius:999px!important;
-        padding:8px 12px!important;
-        color:#805d19!important;
-      }
-
-      /* ---------- SMART SHOPPING ---------- */
-      .smart-section{
-        margin:0 0 30px!important;
-        padding:18px!important;
-        border:1px solid #e8e0d3!important;
-        border-radius:20px!important;
-        background:linear-gradient(180deg,#fff,#fffdf8)!important;
-        box-shadow:0 10px 30px rgba(38,30,17,.045)!important;
-      }
-      .smart-grid{gap:13px!important}
-      .smart-card{
-        min-height:145px!important;
-        padding:16px!important;
-        border:1px solid #ebe2d1!important;
-        border-radius:15px!important;
-        background:linear-gradient(145deg,#fffdf9,#fff8e9)!important;
-        box-shadow:0 8px 22px rgba(43,33,18,.045)!important;
-      }
-      .smart-card:hover{
-        transform:translateY(-5px)!important;
-        border-color:rgba(184,137,45,.38)!important;
-        box-shadow:0 17px 30px rgba(43,33,18,.10)!important;
-      }
-
-      /* ---------- PRODUCT GRID / CARDS ---------- */
-      .products-grid{gap:15px!important}
-      .five-columns{
-        grid-template-columns:repeat(5,minmax(0,1fr))!important;
-      }
-      .product-card{
-        border:1px solid #ebe4d8!important;
-        border-radius:18px!important;
-        background:#fff!important;
-        box-shadow:0 7px 22px rgba(41,32,17,.045)!important;
-        overflow:hidden!important;
-      }
-      .product-card:hover{
-        transform:translateY(-6px)!important;
-        border-color:rgba(184,137,45,.35)!important;
-        box-shadow:0 19px 34px rgba(41,32,17,.10)!important;
-      }
-      .product-image-wrap{
-        height:205px!important;
-        padding:16px!important;
-        background:linear-gradient(180deg,#fffdf9,#f8f5ee)!important;
-      }
-      .product-image{
-        object-fit:contain!important;
-        transition:transform .35s cubic-bezier(.2,.7,.2,1)!important;
-      }
-      .product-copy{padding:14px!important}
-      .product-category{
-        color:#a47b2c!important;
-        font-weight:750!important;
-        letter-spacing:.07em!important;
-      }
-      .product-name{
-        font-size:12px!important;
-        line-height:1.38!important;
-        min-height:34px!important;
-      }
-      .price-row strong{
-        font-size:18px!important;
-        color:#25221d!important;
-      }
-      .add-cart-btn{
-        min-height:39px!important;
-        border-radius:11px!important;
-        background:linear-gradient(135deg,#bd8c2e,#a87419)!important;
-        box-shadow:0 7px 16px rgba(184,137,45,.16)!important;
-      }
-
-      /* ---------- FLASH DEALS ---------- */
-      .flash-section{
-        margin:30px 0!important;
-        border:1px solid rgba(184,137,45,.22)!important;
-        border-radius:20px!important;
-        overflow:hidden!important;
-        box-shadow:0 14px 35px rgba(43,33,17,.08)!important;
-      }
-      .flash-header{
-        background:linear-gradient(135deg,#b8872d,#9d701b)!important;
-      }
-      .flash-products{gap:12px!important}
-      .flash-product{
-        border:1px solid #e8dfcf!important;
-        border-radius:15px!important;
-        box-shadow:0 8px 20px rgba(38,28,13,.045)!important;
-      }
-
-      /* ---------- PROMO / TRUST ---------- */
-      .promo-grid{gap:15px!important;margin:28px 0 34px!important}
-      .promo-card{
-        min-height:150px!important;
-        border-radius:20px!important;
-        border:1px solid #e5dac6!important;
-        box-shadow:0 10px 28px rgba(38,29,15,.055)!important;
-      }
-      .trust-section{
-        border:1px solid #e8e1d6!important;
-        border-radius:20px!important;
-        background:#fff!important;
-        box-shadow:0 10px 30px rgba(38,30,17,.045)!important;
-      }
-
-      /* ---------- CTA ---------- */
-      .bottom-cta{
-        margin-top:30px!important;
-        border-radius:22px!important;
-        background:linear-gradient(115deg,#a87518,#d0a148,#b27c18)!important;
-        box-shadow:0 20px 45px rgba(41,31,15,.10)!important;
-      }
-
-      /* ---------- MOBILE ---------- */
-      @media (max-width:1100px){
-        .container{width:min(calc(100% - 30px),1100px)!important}
-        .five-columns{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-      }
-
-      @media (max-width:680px){
-        .store-shell{padding-bottom:84px!important}
-        .container{width:calc(100% - 18px)!important}
-
-        .main-header{
-          position:sticky!important;
-          top:0!important;
-          z-index:180!important;
+        /* ================================================================ */
+        /* PRIME CART — FINAL PROFESSIONAL BRAND + HEADER + UI POLISH      */
+        /* ================================================================ */
+        .logo-wrap{
+          min-width:248px!important;
+          height:58px!important;
+          display:flex!important;
+          align-items:center!important;
+          gap:12px!important;
+          flex-shrink:0!important;
+          padding:4px 2px!important;
+          border-radius:16px!important;
+          transition:transform .2s ease,opacity .2s ease!important;
         }
-        .header-main{
-          min-height:61px!important;
-          padding:8px 0 9px!important;
-          gap:7px!important;
-        }
-        .prime-logo{width:126px!important}
-        .mobile-menu-button{
-          width:38px!important;
-          height:38px!important;
-          display:grid!important;
-          place-items:center!important;
-          border:1px solid #e4dac8!important;
-          border-radius:10px!important;
-          background:#fff!important;
-          color:#6e5118!important;
-        }
-        .search-box{
-          order:3!important;
-          width:100%!important;
-          min-height:42px!important;
-          border-radius:12px!important;
-        }
-        .search-submit{padding:0 13px!important}
-        .page-content{padding-top:10px!important}
-
-        /* Keep the original banner fully visible; never crop it. */
-        .hero-layout{margin:0 0 16px!important}
-        .hero-carousel{border-radius:15px!important}
-        .hero-image-frame{
-          width:100%!important;
-          height:clamp(175px,48vw,260px)!important;
-          min-height:0!important;
-          max-height:none!important;
-          aspect-ratio:auto!important;
-          border-radius:15px!important;
-        }
-        .hero-banner{
-          object-fit:contain!important;
-          object-position:center!important;
-        }
-        .hero-arrow{
-          width:31px!important;
-          height:31px!important;
-        }
-        .hero-left{left:7px!important}
-        .hero-right{right:7px!important}
-        .hero-dots{bottom:10px!important}
-        .hero-dots button{width:6px!important;height:6px!important}
-        .hero-dots button.active{width:19px!important}
-
-        /* Compact, horizontally scrollable categories. */
-        .category-section{
-          padding:13px 10px 11px!important;
-          margin-bottom:18px!important;
-          border-radius:15px!important;
-        }
-        .section-mini-head{margin-bottom:9px!important;padding:0 3px}
-        .section-mini-head strong{font-size:15px!important}
-        .category-rail{
-          gap:7px!important;
-          padding:2px 1px 5px!important;
-          overflow-x:auto!important;
-          scroll-snap-type:x proximity;
-        }
-        .category-item{
-          min-width:76px!important;
-          flex:0 0 76px!important;
-          gap:5px!important;
-          padding:5px 3px!important;
-          scroll-snap-align:start;
-        }
-        .category-icon{
-          width:50px!important;
-          height:50px!important;
-        }
-        .category-item>span:last-of-type{
-          max-width:72px;
+        .logo-wrap:hover{transform:translateY(-1px);opacity:.96}
+        .brand-logo-box{
+          width:52px;height:52px;min-width:52px;
+          display:grid;place-items:center;
+          border:1px solid rgba(199,154,59,.34);
+          border-radius:15px;
+          background:linear-gradient(145deg,#fff,#fbf3df);
+          box-shadow:0 7px 20px rgba(92,68,24,.12),inset 0 0 0 4px rgba(255,255,255,.7);
           overflow:hidden;
-          text-overflow:ellipsis;
+        }
+        .brand-logo-box .prime-logo{
+          width:43px!important;height:43px!important;
+          max-width:43px!important;
+          object-fit:contain!important;
+        }
+        .brand-logo-fallback{
+          width:100%;height:100%;display:grid;place-items:center;
+          color:#b8872d;
+        }
+        .brand-copy{
+          min-width:0;display:flex;flex-direction:column;
+          justify-content:center;line-height:1;
+        }
+        .brand-name{
+          display:block;color:#b8872d;
+          font-size:25px;font-weight:900;
+          letter-spacing:-1px;
+          line-height:1.05;
           white-space:nowrap;
         }
-        .category-item small,.rail-control{display:none!important}
-
-        .smart-section{
-          padding:12px!important;
-          margin-bottom:20px!important;
+        .brand-tagline{
+          display:block;margin-top:6px;
+          color:#8b8478;font-size:8px;
+          font-weight:700;letter-spacing:1.35px;
+          text-transform:uppercase;
+          white-space:nowrap;
+        }
+        .main-header{
+          background:rgba(255,255,255,.96)!important;
+          backdrop-filter:blur(18px)!important;
+          -webkit-backdrop-filter:blur(18px)!important;
+          border-bottom:1px solid rgba(184,135,45,.16)!important;
+          box-shadow:0 8px 26px rgba(50,38,17,.055)!important;
+          position:relative;z-index:100!important;
+        }
+        .header-main{
+          min-height:76px!important;
+          gap:22px!important;
+          align-items:center!important;
+        }
+        .search-box{
+          height:48px!important;
+          min-height:48px!important;
+          border:1px solid #e5dfd2!important;
           border-radius:15px!important;
+          background:#fff!important;
+          box-shadow:0 5px 18px rgba(45,34,14,.055)!important;
+          transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease!important;
         }
-        .smart-grid{
-          grid-template-columns:repeat(2,minmax(0,1fr))!important;
-          gap:8px!important;
+        .search-box:focus-within,.search-box.search-active{
+          border-color:#c79a3b!important;
+          box-shadow:0 0 0 4px rgba(199,154,59,.10),0 9px 25px rgba(45,34,14,.08)!important;
         }
-        .smart-card{
-          min-height:126px!important;
-          padding:11px!important;
+        .search-submit{
+          min-width:88px!important;height:38px!important;
+          margin-right:4px!important;border-radius:11px!important;
+          background:linear-gradient(135deg,#c79a3b,#ad7920)!important;
+          box-shadow:0 6px 14px rgba(184,135,45,.22)!important;
+          font-weight:800!important;
+        }
+        .header-actions{gap:13px!important}
+        .header-action{
+          min-height:42px!important;padding:5px 9px!important;
           border-radius:12px!important;
+          transition:background .2s ease,color .2s ease,transform .2s ease!important;
         }
-        .smart-card h3{font-size:13px!important}
-        .smart-card p{
-          font-size:7.5px!important;
-          line-height:1.4!important;
-          margin-bottom:6px!important;
+        .header-action:hover{
+          background:#fbf5e8!important;color:#b8872d!important;
+          transform:translateY(-1px);
         }
-        .smart-card-icon{
-          width:29px!important;
-          height:29px!important;
+        .account-icon,.icon-with-badge{
+          display:grid!important;place-items:center!important;
+          position:relative!important;
         }
-
-        .section-head{margin-bottom:10px!important}
-        .section-title{font-size:17px!important}
-        .section-caption{display:none!important}
+        .account-icon{
+          width:37px;height:37px;border-radius:12px;
+          background:#fbf4e4;color:#b8872d;
+        }
+        .icon-action{gap:6px!important;font-weight:750!important}
+        .icon-action .icon-with-badge{width:31px;height:31px}
+        .icon-with-badge b{
+          position:absolute!important;top:-5px!important;right:-7px!important;
+          min-width:16px!important;height:16px!important;padding:0 4px!important;
+          display:grid!important;place-items:center!important;border-radius:99px!important;
+          background:#b8872d!important;color:#fff!important;font-size:8px!important;
+          border:2px solid #fff!important;
+        }
+        .nav-bar{
+          background:rgba(255,255,255,.98)!important;
+          border-bottom:1px solid #eee8dc!important;
+          box-shadow:0 3px 12px rgba(50,38,17,.035)!important;
+        }
+        .nav-inner{height:50px!important;gap:25px!important}
+        .nav-inner>a,.more-nav{font-weight:650!important}
+        .all-category-btn{
+          height:34px!important;padding:0 14px!important;border-radius:10px!important;
+          background:#191713!important;color:#fff!important;
+          box-shadow:0 5px 13px rgba(25,23,19,.14)!important;
+        }
+        .all-category-btn svg{color:#d7ad57}
+        .nav-new em{
+          background:#fbf0d8!important;color:#a56f16!important;
+          border:1px solid #ecd39d!important;border-radius:99px!important;
+        }
         .section-head>a{
-          padding:6px 9px!important;
-          font-size:9px!important;
+          border:1px solid rgba(184,135,45,.22)!important;
+          background:#fffaf0!important;color:#a56f16!important;
+          border-radius:10px!important;
         }
-
-        /* Two premium product cards per row. */
-        .products-grid.five-columns{
-          grid-template-columns:repeat(2,minmax(0,1fr))!important;
-          gap:9px!important;
+        .category-section,.smart-section,.flash-section,.trust-section,.product-card,.promo-card{
+          border-color:rgba(184,135,45,.14)!important;
         }
         .product-card{
-          border-radius:13px!important;
+          box-shadow:0 8px 24px rgba(52,39,16,.055)!important;
+          transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease!important;
         }
-        .product-image-wrap{
-          height:145px!important;
-          min-height:145px!important;
-          padding:11px!important;
+        .product-card:hover{
+          transform:translateY(-5px)!important;
+          box-shadow:0 18px 36px rgba(52,39,16,.12)!important;
+          border-color:rgba(184,135,45,.32)!important;
         }
-        .product-copy{padding:9px!important}
-        .product-category{
-          font-size:7px!important;
-          margin-bottom:3px!important;
-        }
-        .product-name{
-          font-size:10px!important;
-          min-height:29px!important;
-          line-height:1.35!important;
-        }
-        .rating-row{margin-top:6px!important}
-        .price-row{margin-top:7px!important}
-        .price-row strong{font-size:15px!important}
-        .price-row del{font-size:9px!important}
+        .product-image-wrap{background:linear-gradient(180deg,#fffdf8,#f8f4eb)!important}
         .add-cart-btn{
-          min-height:34px!important;
-          font-size:9px!important;
-          border-radius:9px!important;
-          padding:0 7px!important;
+          border-radius:10px!important;
+          background:linear-gradient(135deg,#c79a3b,#ad7920)!important;
+          box-shadow:0 6px 14px rgba(184,135,45,.18)!important;
         }
-        .wish-btn{
-          width:30px!important;
-          height:30px!important;
-          top:8px!important;
-          right:8px!important;
-        }
-        .product-badges{top:8px!important;left:8px!important}
-        .discount-badge,.mini-badge{
-          font-size:6px!important;
-          padding:4px 5px!important;
-        }
-        .image-view{display:none!important}
+        .wish-btn{border-radius:10px!important}
+        .smart-card,.promo-card,.trust-item{transition:transform .2s ease,box-shadow .2s ease!important}
+        .smart-card:hover,.promo-card:hover{transform:translateY(-3px)!important}
 
-        /* Flash Deals become a compact horizontal shopping rail. */
-        .flash-section{
-          margin:20px 0!important;
-          border-radius:15px!important;
+        @media(max-width:1200px){
+          .logo-wrap{min-width:225px!important}
+          .brand-name{font-size:23px}
+          .header-main{gap:15px!important}
         }
-        .flash-header{
-          padding:13px!important;
-          gap:8px!important;
+        @media(max-width:980px){
+          .logo-wrap{min-width:210px!important}
+          .brand-logo-box{width:46px;height:46px;min-width:46px;border-radius:13px}
+          .brand-logo-box .prime-logo{width:38px!important;height:38px!important}
+          .brand-name{font-size:21px}
+          .brand-tagline{font-size:7px;letter-spacing:1px}
+          .header-main{min-height:68px!important}
         }
-        .flash-title{font-size:17px!important}
-        .flash-header p{font-size:8px!important}
-        .flash-timer{margin-left:auto!important}
-        .flash-timer b{
-          min-width:25px!important;
-          height:25px!important;
+        @media(max-width:680px){
+          .main-header{position:sticky!important;top:0!important}
+          .header-main{
+            min-height:0!important;padding:8px 0 9px!important;
+            display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+            gap:8px 9px!important;
+          }
+          .logo-wrap{
+            min-width:0!important;height:46px!important;gap:9px!important;
+          }
+          .brand-logo-box{width:42px;height:42px;min-width:42px;border-radius:12px}
+          .brand-logo-box .prime-logo{width:35px!important;height:35px!important}
+          .brand-name{font-size:19px;letter-spacing:-.6px}
+          .brand-tagline{font-size:6.5px;margin-top:5px;letter-spacing:.9px}
+          .mobile-menu-button{
+            display:grid!important;place-items:center!important;
+            width:42px!important;height:42px!important;
+            border:1px solid #e8dfce!important;border-radius:12px!important;
+            background:#fffaf0!important;color:#a97925!important;
+          }
+          .search-box{
+            order:initial!important;grid-column:1/-1!important;
+            width:100%!important;max-width:none!important;height:43px!important;min-height:43px!important;
+            border-radius:13px!important;
+          }
+          .search-submit{min-width:68px!important;height:35px!important;font-size:10px!important}
+          .header-actions{display:none!important}
+          .nav-bar{display:none!important}
         }
-        .flash-header>a{
-          width:100%!important;
-          justify-content:center!important;
-          margin:0!important;
-          padding-top:7px!important;
-          border-top:1px solid rgba(255,255,255,.18)!important;
+        @media(max-width:390px){
+          .brand-name{font-size:18px}
+          .brand-tagline{font-size:6px}
+          .brand-logo-box{width:40px;height:40px;min-width:40px}
+          .mobile-menu-button{width:40px!important;height:40px!important}
         }
-        .flash-products{
-          display:flex!important;
-          overflow-x:auto!important;
-          grid-template-columns:none!important;
-          gap:9px!important;
-          padding:10px!important;
-          scroll-snap-type:x mandatory;
+        html.dark .main-header{
+          background:rgba(31,27,20,.97)!important;
+          border-color:#3c3325!important;
+          box-shadow:0 8px 25px rgba(0,0,0,.2)!important;
         }
-        .flash-products::-webkit-scrollbar{display:none}
-        .flash-product{
-          flex:0 0 205px!important;
-          min-height:112px!important;
-          scroll-snap-align:start;
-          padding:8px!important;
+        html.dark .brand-logo-box{
+          background:linear-gradient(145deg,#29231a,#211d16)!important;
+          border-color:#51432b!important;
         }
-        .flash-product-image{
-          width:78px!important;
-          height:90px!important;
-        }
-
-        /* Promo cards are a horizontal rail instead of a tall stack. */
-        .promo-grid{
-          display:flex!important;
-          overflow-x:auto!important;
-          gap:9px!important;
-          margin:20px 0 25px!important;
-          padding-bottom:3px!important;
-          scroll-snap-type:x mandatory;
-        }
-        .promo-grid::-webkit-scrollbar{display:none}
-        .promo-card{
-          flex:0 0 86%!important;
-          min-height:140px!important;
-          border-radius:15px!important;
-          scroll-snap-align:start;
-        }
-
-        .trust-section{
-          margin-top:25px!important;
-          border-radius:15px!important;
-        }
-        .trust-heading{padding-top:14px!important}
-        .trust-heading strong{font-size:16px!important}
-        .trust-strip{
-          grid-template-columns:repeat(2,minmax(0,1fr))!important;
-          padding:4px!important;
-        }
-        .trust-item{
-          min-width:0!important;
-          padding:9px 6px!important;
-          gap:6px!important;
-        }
-        .trust-item>span{
-          width:31px!important;
-          height:31px!important;
-        }
-        .trust-item strong{font-size:8px!important}
-        .trust-item small{font-size:6.5px!important}
-
-        .bottom-cta{
-          margin-top:20px!important;
-          min-height:185px!important;
-          padding:21px!important;
-          border-radius:16px!important;
-        }
-        .bottom-cta h2{font-size:21px!important}
-        .bottom-cta p{font-size:8px!important}
-        .bottom-cta-actions a{
-          min-height:35px!important;
-          padding:8px!important;
-        }
-
-        .toast{
-          left:12px!important;
-          right:12px!important;
-          bottom:78px!important;
-          justify-content:center!important;
-        }
-      }
-
-      @media (max-width:390px){
-        .container{width:calc(100% - 14px)!important}
-        .prime-logo{width:112px!important}
-        .hero-image-frame{height:178px!important}
-        .category-item{min-width:72px!important;flex-basis:72px!important}
-        .category-icon{width:47px!important;height:47px!important}
-        .smart-card{min-height:120px!important}
-        .product-image-wrap{height:132px!important;min-height:132px!important}
-        .product-name{font-size:9.5px!important}
-        .flash-product{flex-basis:190px!important}
-      }
-
-      /* ---------- DARK THEME: only active when user switches it on ---------- */
-      html.dark .store-shell{
-        background:
-          radial-gradient(circle at 8% 0%,rgba(215,173,87,.08),transparent 25%),
-          #15130f!important;
-      }
-      html.dark .top-strip{
-        background:#211c15!important;
-        color:#ead39d!important;
-        border-color:#3c3325!important;
-      }
-      html.dark .strip-left span,html.dark .strip-right span,html.dark .strip-center{
-        color:#d9bd7a!important;
-      }
-      html.dark .main-header,html.dark .nav-bar{
-        background:rgba(31,27,20,.97)!important;
-        border-color:#3c3325!important;
-      }
-      html.dark .search-box{
-        background:#211d16!important;
-        border-color:#4b402d!important;
-      }
-      html.dark .search-box input{color:#fff!important}
-      html.dark .category-section,html.dark .smart-section,
-      html.dark .product-card,html.dark .trust-section{
-        background:#201c15!important;
-        border-color:#3b3326!important;
-      }
-      html.dark .section-head>a{
-        background:#211d17!important;
-        border-color:#4b402d!important;
-        color:#d7ad57!important;
-      }
-      html.dark .product-image-wrap{
-        background:linear-gradient(180deg,#272117,#211d16)!important;
-        border-color:#3b3327!important;
-      }
-      html.dark .product-name,html.dark .price-row strong{color:#f7f1e6!important}
-      html.dark .mobile-menu-button{
-        background:#211d17!important;
-        border-color:#4b402d!important;
-        color:#d7ad57!important;
-      }
-      html.dark .mobile-bottom-nav{
-        background:rgba(31,27,20,.97)!important;
-        border-color:#4b402d!important;
-      }
+        html.dark .brand-name{color:#d7ad57!important}
+        html.dark .brand-tagline{color:#aaa08e!important}
+        html.dark .header-action:hover{background:#2b251c!important;color:#d7ad57!important}
+        html.dark .mobile-menu-button{background:#29231b!important;border-color:#4b402d!important;color:#d7ad57!important}
+        html.dark .nav-bar{background:#1f1b14!important;border-color:#3c3325!important}
 
       `}</style>
     </main>
