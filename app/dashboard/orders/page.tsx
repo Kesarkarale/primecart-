@@ -44,8 +44,9 @@ type OrderItem = {
   id: string;
   product_id: string;
   product_name: string;
+  product_price: number;
   quantity: number;
-  price: number;
+  subtotal: number;
   image_url?: string | null;
 };
 
@@ -63,14 +64,18 @@ type OrderAddress = {
 type Order = {
   id: string;
   user_id: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
 
+  subtotal: number;
+  total_amount: number;
+  delivery_charge: number;
+  discount: number;
+
+  status: string;
+  payment_status?: string | null;
   payment_method?: string | null;
-  delivery_charge?: number | null;
-  discount?: number | null;
-  subtotal?: number | null;
+
+  created_at: string;
+  updated_at?: string | null;
 
   shipping_address?:
     | OrderAddress
@@ -163,9 +168,7 @@ function getImageCandidates(
     candidates.push(`/${clean}`);
   }
 
-  candidates.push(
-    "/products/placeholder.png"
-  );
+  candidates.push("/products/placeholder.png");
   candidates.push("/placeholder.png");
 
   return [...new Set(candidates)];
@@ -393,9 +396,11 @@ function getLocalOrderAsOrder(
     payment_method:
       order.paymentMethod,
     delivery_charge:
-      order.delivery,
-    discount: order.discount,
-    subtotal: order.subtotal,
+      Number(order.delivery || 0),
+    discount:
+      Number(order.discount || 0),
+    subtotal:
+      Number(order.subtotal || 0),
     shipping_address:
       order.address,
     order_items:
@@ -456,8 +461,6 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] =
     useState<string | null>(null);
 
-  /* CANCEL MODAL STATE */
-
   const [orderToCancel, setOrderToCancel] =
     useState<Order | null>(null);
 
@@ -488,7 +491,9 @@ export default function OrdersPage() {
 
         setErrorMessage("");
 
-        /* LOCAL ORDERS */
+        /* -----------------------------------------------
+           LOCAL ORDERS
+        ------------------------------------------------ */
 
         let localOrders: Order[] = [];
 
@@ -520,7 +525,9 @@ export default function OrdersPage() {
           );
         }
 
-        /* AUTH */
+        /* -----------------------------------------------
+           AUTH
+        ------------------------------------------------ */
 
         const {
           data: { user },
@@ -533,28 +540,36 @@ export default function OrdersPage() {
           return;
         }
 
-        /* DATABASE ORDERS */
+        /* -----------------------------------------------
+           DATABASE ORDERS
+        ------------------------------------------------ */
 
         const { data, error } =
           await supabase
             .from("orders")
-            .select(
-              `
+            .select(`
+              id,
+              user_id,
+              subtotal,
+              total_amount,
+              delivery_charge,
+              discount,
+              status,
+              payment_status,
+              payment_method,
+              shipping_address,
+              created_at,
+              updated_at,
+              order_items (
                 id,
-                user_id,
-                status,
-                total_amount,
-                created_at,
-                order_items (
-                  id,
-                  product_id,
-                  product_name,
-                  quantity,
-                  price,
-                  image_url
-                )
-              `
-            )
+                product_id,
+                product_name,
+                product_price,
+                quantity,
+                subtotal,
+                image_url
+              )
+            `)
             .eq("user_id", user.id)
             .order("created_at", {
               ascending: false,
@@ -578,19 +593,89 @@ export default function OrdersPage() {
           return;
         }
 
+        /* -----------------------------------------------
+           NORMALIZE DATABASE DATA
+        ------------------------------------------------ */
+
         const databaseOrders: Order[] =
           (data || []).map(
             (order: any) => ({
-              ...order,
+              id: String(order.id),
+              user_id: String(
+                order.user_id
+              ),
+
+              subtotal: Number(
+                order.subtotal || 0
+              ),
+
               total_amount: Number(
                 order.total_amount || 0
               ),
-              order_items:
-                order.order_items || [],
+
+              delivery_charge: Number(
+                order.delivery_charge || 0
+              ),
+
+              discount: Number(
+                order.discount || 0
+              ),
+
+              status:
+                order.status ||
+                "placed",
+
+              payment_status:
+                order.payment_status ||
+                null,
+
+              payment_method:
+                order.payment_method ||
+                null,
+
+              shipping_address:
+                order.shipping_address ||
+                null,
+
+              created_at:
+                order.created_at ||
+                new Date().toISOString(),
+
+              updated_at:
+                order.updated_at ||
+                null,
+
+              order_items: (
+                order.order_items || []
+              ).map(
+                (item: any) => ({
+                  id: String(item.id),
+                  product_id: String(
+                    item.product_id
+                  ),
+                  product_name:
+                    item.product_name ||
+                    "Product",
+                  product_price: Number(
+                    item.product_price || 0
+                  ),
+                  quantity: Number(
+                    item.quantity || 0
+                  ),
+                  subtotal: Number(
+                    item.subtotal || 0
+                  ),
+                  image_url:
+                    item.image_url ||
+                    null,
+                })
+              ),
             })
           );
 
-        /* MERGE */
+        /* -----------------------------------------------
+           MERGE LOCAL + DATABASE
+        ------------------------------------------------ */
 
         const merged = [
           ...databaseOrders,
@@ -690,21 +775,22 @@ export default function OrdersPage() {
       setErrorMessage("");
       setSuccessMessage("");
 
-      const normalized =
-        normalizeStatus(
-          orderToCancel.status
-        );
-
       if (
         !canCancelOrder(
           orderToCancel.status
         )
       ) {
+        setErrorMessage(
+          "This order can no longer be cancelled."
+        );
+
         setOrderToCancel(null);
         return;
       }
 
-      /* LOCAL ORDER */
+      /* -----------------------------------------------
+         LOCAL ORDER
+      ------------------------------------------------ */
 
       if (
         orderToCancel.user_id ===
@@ -758,7 +844,9 @@ export default function OrdersPage() {
         }
       }
 
-      /* SUPABASE ORDER */
+      /* -----------------------------------------------
+         SUPABASE ORDER
+      ------------------------------------------------ */
 
       if (
         orderToCancel.user_id !==
@@ -780,6 +868,8 @@ export default function OrdersPage() {
             .from("orders")
             .update({
               status: "cancelled",
+              updated_at:
+                new Date().toISOString(),
             })
             .eq(
               "id",
@@ -800,7 +890,9 @@ export default function OrdersPage() {
         }
       }
 
-      /* INSTANT UI UPDATE */
+      /* -----------------------------------------------
+         UPDATE LOCAL STATE
+      ------------------------------------------------ */
 
       setOrders(
         (currentOrders) =>
@@ -812,6 +904,8 @@ export default function OrdersPage() {
                     ...order,
                     status:
                       "cancelled",
+                    updated_at:
+                      new Date().toISOString(),
                   }
                 : order
           )
@@ -819,17 +913,23 @@ export default function OrdersPage() {
 
       setExpandedOrder(null);
 
+      const cancelledId =
+        orderToCancel.id;
+
       setOrderToCancel(null);
 
       setSuccessMessage(
-        `Order #${orderToCancel.id
+        `Order #${cancelledId
           .slice(0, 12)
           .toUpperCase()} has been cancelled successfully.`
       );
 
-      window.dispatchEvent(
-        new Event("storage")
-      );
+      /*
+       * Reload from Supabase after cancellation.
+       * This confirms that the database actually
+       * contains status = cancelled.
+       */
+      await loadOrders(true);
     } catch (error) {
       console.error(
         "Cancel order failed:",
@@ -837,7 +937,9 @@ export default function OrdersPage() {
       );
 
       setErrorMessage(
-        "We couldn't cancel this order. Please try again."
+        error instanceof Error
+          ? error.message
+          : "We couldn't cancel this order. Please try again."
       );
     } finally {
       setCancelling(false);
@@ -1111,7 +1213,7 @@ export default function OrdersPage() {
             product_name:
               item.product_name,
             price: Number(
-              item.price || 0
+              item.product_price || 0
             ),
             quantity: Number(
               item.quantity || 1
@@ -1162,9 +1264,7 @@ export default function OrdersPage() {
 
   return (
     <main className="min-h-screen bg-[#faf8f3] text-[#211b13]">
-      {/* =================================================
-          TOP BAR
-      ================================================= */}
+      {/* TOP BAR */}
 
       <div className="border-b border-[#eadfc9] bg-white/95 backdrop-blur">
         <div className="mx-auto flex min-h-[64px] max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -1223,9 +1323,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* =================================================
-          CONTENT
-      ================================================= */}
+      {/* CONTENT */}
 
       <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         {/* HERO */}
@@ -1520,9 +1618,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* =================================================
-            ORDERS
-        ================================================= */}
+        {/* ORDERS */}
 
         {loading ? (
           <div className="mt-5 space-y-4">
@@ -1777,8 +1873,6 @@ export default function OrdersPage() {
                                 }
                                 className="group flex gap-3 rounded-2xl border border-[#f0e8da] bg-[#fffdf9] p-3 transition hover:border-[#e5d4b3] hover:bg-[#fffaf1] sm:p-4"
                               >
-                                {/* IMAGE */}
-
                                 <Link
                                   href={`/dashboard/products/${item.product_id}`}
                                   className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-white sm:h-[110px] sm:w-[110px]"
@@ -1799,8 +1893,6 @@ export default function OrdersPage() {
                                     }
                                   />
                                 </Link>
-
-                                {/* INFO */}
 
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-col justify-between gap-2 sm:flex-row">
@@ -1839,13 +1931,16 @@ export default function OrdersPage() {
                                     <p className="shrink-0 text-sm font-bold text-[#2e2519]">
                                       {formatPrice(
                                         Number(
-                                          item.price ||
-                                            0
-                                        ) *
-                                          Number(
-                                            item.quantity ||
-                                              1
-                                          )
+                                          item.subtotal ||
+                                            Number(
+                                              item.product_price ||
+                                                0
+                                            ) *
+                                              Number(
+                                                item.quantity ||
+                                                  1
+                                              )
+                                        )
                                       )}
                                     </p>
                                   </div>
@@ -1860,7 +1955,7 @@ export default function OrdersPage() {
 
                                     <span className="text-xs text-[#8e7e67]">
                                       {formatPrice(
-                                        item.price
+                                        item.product_price
                                       )}{" "}
                                       each
                                     </span>
@@ -2038,8 +2133,6 @@ export default function OrdersPage() {
 
                     {isExpanded && (
                       <div className="grid gap-4 border-t border-[#f0e8da] bg-white px-4 py-5 sm:px-6 lg:grid-cols-2">
-                        {/* PAYMENT */}
-
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4">
                           <div className="flex items-center gap-2">
                             <CreditCard
@@ -2061,6 +2154,22 @@ export default function OrdersPage() {
                               <span className="text-right font-semibold text-[#4a3b28]">
                                 {order.payment_method ||
                                   "Online / Checkout"}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between gap-4">
+                              <span className="text-[#8b7b65]">
+                                Payment Status
+                              </span>
+
+                              <span className="font-semibold capitalize text-[#4a3b28]">
+                                {String(
+                                  order.payment_status ||
+                                    "pending"
+                                ).replace(
+                                  /_/g,
+                                  " "
+                                )}
                               </span>
                             </div>
 
@@ -2089,8 +2198,6 @@ export default function OrdersPage() {
                             </div>
                           </div>
                         </div>
-
-                        {/* ADDRESS */}
 
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4">
                           <div className="flex items-center gap-2">
@@ -2147,8 +2254,6 @@ export default function OrdersPage() {
                           </div>
                         </div>
 
-                        {/* PRICE */}
-
                         <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4 lg:col-span-2">
                           <div className="flex items-center gap-2">
                             <Sparkles
@@ -2169,11 +2274,7 @@ export default function OrdersPage() {
 
                               <span className="font-semibold text-[#4a3b28]">
                                 {formatPrice(
-                                  order.subtotal ??
-                                    Number(
-                                      order.total_amount ||
-                                        0
-                                    )
+                                  order.subtotal
                                 )}
                               </span>
                             </div>
@@ -2246,8 +2347,6 @@ export default function OrdersPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* VIEW DETAILS */}
-
                         <button
                           type="button"
                           onClick={() =>
@@ -2276,8 +2375,6 @@ export default function OrdersPage() {
                           )}
                         </button>
 
-                        {/* TRACK */}
-
                         {progress >= 0 &&
                           progress < 4 && (
                             <button
@@ -2295,8 +2392,6 @@ export default function OrdersPage() {
                               Track Order
                             </button>
                           )}
-
-                        {/* CANCEL ORDER */}
 
                         {cancellable && (
                           <button
@@ -2330,8 +2425,6 @@ export default function OrdersPage() {
                           </button>
                         )}
 
-                        {/* BUY AGAIN */}
-
                         {items.length >
                           0 && (
                           <button
@@ -2358,9 +2451,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* =================================================
-            TRUST CARDS
-        ================================================= */}
+        {/* TRUST CARDS */}
 
         <section className="mt-8 grid gap-3 sm:grid-cols-3">
           <TrustCard
@@ -2385,9 +2476,7 @@ export default function OrdersPage() {
         <div className="h-6" />
       </div>
 
-      {/* =================================================
-          CANCEL CONFIRMATION MODAL
-      ================================================= */}
+      {/* CANCEL MODAL */}
 
       {orderToCancel && (
         <div
@@ -2407,8 +2496,6 @@ export default function OrdersPage() {
               event.stopPropagation()
             }
           >
-            {/* MODAL HEADER */}
-
             <div className="border-b border-[#f0e8da] px-5 py-5 sm:px-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -2447,11 +2534,7 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* MODAL CONTENT */}
-
             <div className="px-5 py-5 sm:px-6">
-              {/* PRODUCT PREVIEW */}
-
               <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-3">
                 {(
                   orderToCancel.order_items ||
@@ -2536,8 +2619,6 @@ export default function OrdersPage() {
                 )}
               </div>
 
-              {/* WARNING */}
-
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <p className="text-sm font-semibold text-amber-800">
                   Are you sure you want
@@ -2550,8 +2631,6 @@ export default function OrdersPage() {
                   continue for delivery.
                 </p>
               </div>
-
-              {/* ORDER INFO */}
 
               <div className="mt-4 space-y-2 rounded-2xl bg-[#faf7f0] p-4">
                 <div className="flex items-center justify-between gap-4 text-sm">
@@ -2583,8 +2662,6 @@ export default function OrdersPage() {
                 </div>
               </div>
             </div>
-
-            {/* MODAL ACTIONS */}
 
             <div className="flex flex-col-reverse gap-2 border-t border-[#f0e8da] bg-[#fffdfb] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
               <button
@@ -2628,9 +2705,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* =================================================
-          ANIMATION
-      ================================================= */}
+      {/* ANIMATION */}
 
       <style jsx global>{`
         @keyframes orderFadeUp {
