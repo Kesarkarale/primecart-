@@ -292,7 +292,23 @@ export default function CartPage() {
         )
         .in("id", productIds);
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error("Cart products query error:", productsError);
+        throw productsError;
+      }
+
+      // Never delete cart rows just because the product query returned no row.
+      // The cart DB record is valuable and should remain until we know the
+      // product is genuinely inactive/out of stock.
+      const loadedProductIds = new Set((products ?? []).map((p) => p.id));
+      const missingProductIds = productIds.filter((id) => !loadedProductIds.has(id));
+
+      if (missingProductIds.length) {
+        console.warn(
+          "Cart products missing from products query:",
+          missingProductIds,
+        );
+      }
 
       const productMap = new Map<string, Product>(
         (products ?? []).map((product) => [
@@ -323,7 +339,14 @@ export default function CartPage() {
       for (const row of cartRows) {
         const product = productMap.get(row.product_id);
 
-        if (!product || !product.is_active || product.stock <= 0) {
+        // If the product could not be loaded, keep the cart row instead of
+        // silently deleting it. This protects the user's DB cart from data/RLS
+        // loading issues.
+        if (!product) {
+          continue;
+        }
+
+        if (!product.is_active || product.stock <= 0) {
           rowsToDelete.push(row.id);
           continue;
         }
@@ -492,7 +515,8 @@ export default function CartPage() {
   function persistCart(nextCart: CartItem[]) {
     setCart(nextCart);
     writeStorage(CART_KEY, nextCart);
-    window.dispatchEvent(new CustomEvent("cart-updated"));
+    // DB is already updated by the caller. Do not emit cart-updated here,
+    // otherwise this page would immediately trigger another DB reload.
   }
 
   async function updateQuantity(
