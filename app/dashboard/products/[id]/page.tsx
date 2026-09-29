@@ -104,7 +104,7 @@ type ImageFallbackProps = {
    CONSTANTS
 ========================================================= */
 
-const CART_KEY = "primecart-cart";
+
 const RECENT_KEY = "primecart-recently-viewed";
 
 const gold = "#b9975b";
@@ -166,36 +166,7 @@ function getImageCandidates(value: string | null | undefined) {
   return [...new Set(candidates)];
 }
 
-function readCart(): CartItem[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const value = localStorage.getItem(CART_KEY);
-    if (!value) return [];
-
-    const parsed = JSON.parse(value);
-
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCart(items: CartItem[]) {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
-
-  window.dispatchEvent(
-    new CustomEvent("cart-updated", {
-      detail: {
-        items,
-        count: items.reduce((sum, item) => sum + item.quantity, 0),
-      },
-    })
-  );
-}
-
+ 
 function readRecentlyViewed(): RecentlyViewedItem[] {
   if (typeof window === "undefined") return [];
 
@@ -504,46 +475,56 @@ export default function ProductDetailPage() {
      LOAD CART COUNT
   ===================================================== */
 
-  const loadCartCount = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+  /* =====================================================
+   LOAD CART COUNT FROM SUPABASE
+===================================================== */
 
-      if (!user) {
-        setCartCount(0);
-        return;
-      }
+const loadCartCount = useCallback(async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
-        .from("cart_items")
-        .select("quantity")
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      setCartCount(
-        (data || []).reduce(
-          (sum, item) => sum + Number(item.quantity || 0),
-          0
-        )
-      );
-    } catch (error) {
-      console.error("Cart count error:", error);
+    if (!user) {
+      setCartCount(0);
+      return;
     }
-  }, [supabase]);
 
-  useEffect(() => {
+    const { data, error } = await supabase
+      .from("cart_items")
+      .select("quantity")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Cart count error:", error);
+      return;
+    }
+
+    const count = (data || []).reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
+
+    setCartCount(count);
+  } catch (error) {
+    console.error("Cart count error:", error);
+    setCartCount(0);
+  }
+}, [supabase]);
+
+useEffect(() => {
+  loadCartCount();
+
+  const handleCartUpdated = () => {
     loadCartCount();
+  };
 
-    const handleCartUpdated = () => {
-      loadCartCount();
-    };
+  window.addEventListener("cart-updated", handleCartUpdated);
 
-    window.addEventListener("cart-updated", handleCartUpdated);
-
-    return () => {
-      window.removeEventListener("cart-updated", handleCartUpdated);
-    };
-  }, [loadCartCount]);
+  return () => {
+    window.removeEventListener("cart-updated", handleCartUpdated);
+  };
+}, [loadCartCount]);
 
   /* =====================================================
      TOAST
@@ -746,135 +727,120 @@ export default function ProductDetailPage() {
      ADD TO CART
   ===================================================== */
 
-  const addProductToCart = useCallback(
-    async (qty = quantity) => {
-      if (!product || isOutOfStock) return false;
+const addProductToCart = useCallback(
+  async (qty = quantity) => {
+    if (!product || isOutOfStock) {
+      return false;
+    }
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (!user) {
-          router.push("/auth/login");
-          return false;
-        }
+      if (!user) {
+        router.push("/auth/login");
+        return false;
+      }
 
-        const requestedQuantity = Math.max(1, Number(qty || 1));
-        const safeQuantity = Math.min(requestedQuantity, maxQuantity);
+      const safeQuantity = Math.max(
+        1,
+        Math.min(Number(qty) || 1, maxQuantity)
+      );
 
-        const { data: existingItem, error: findError } = await supabase
+      const { data: existingItem, error: existingError } =
+        await supabase
           .from("cart_items")
           .select("id, quantity")
           .eq("user_id", user.id)
           .eq("product_id", product.id)
           .maybeSingle();
 
-        if (findError) throw findError;
+      if (existingError) {
+        throw existingError;
+      }
 
-        const currentQuantity = Number(existingItem?.quantity || 0);
-        const nextQuantity = Math.min(
-          currentQuantity + safeQuantity,
-          maxQuantity
+      if (existingItem) {
+        const newQuantity = Math.min(
+          maxQuantity,
+          Number(existingItem.quantity || 0) + safeQuantity
         );
 
-        if (existingItem) {
-          if (currentQuantity >= maxQuantity) {
-            setToast(`Maximum ${maxQuantity} quantity allowed for this product.`);
-          } else {
-            const { error } = await supabase
-              .from("cart_items")
-              .update({ quantity: nextQuantity })
-              .eq("id", existingItem.id)
-              .eq("user_id", user.id);
+        const { error: updateError } = await supabase
+          .from("cart_items")
+          .update({
+            quantity: newQuantity,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingItem.id)
+          .eq("user_id", user.id);
 
-            if (error) throw error;
-            setToast("Cart quantity updated successfully.");
-          }
-        } else {
-          const { error } = await supabase
-            .from("cart_items")
-            .insert({
-              user_id: user.id,
-              product_id: product.id,
-              quantity: safeQuantity,
-            });
-
-          if (error) throw error;
-          setToast("Product added to your cart.");
+        if (updateError) {
+          throw updateError;
         }
-
-        // Keep the old local snapshot only for compatibility with existing checkout/UI code.
-        const localCart = readCart();
-        const localIndex = localCart.findIndex((item) => item.id === product.id);
-
-        if (localIndex >= 0) {
-          localCart[localIndex] = {
-            ...localCart[localIndex],
-            quantity: existingItem ? nextQuantity : safeQuantity,
-          };
-        } else {
-          localCart.push({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image_url: product.image_url,
+      } else {
+        const { error: insertError } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
             quantity: safeQuantity,
           });
+
+        if (insertError) {
+          throw insertError;
         }
-
-        saveCart(localCart);
-        await loadCartCount();
-
-        return true;
-      } catch (error) {
-        console.error("Add to cart error:", error);
-        setToast("Unable to add product to cart. Please try again.");
-        return false;
       }
-    },
-    [
-      product,
-      quantity,
-      maxQuantity,
-      isOutOfStock,
-      supabase,
-      router,
-      loadCartCount,
-    ]
-  );
 
-  const handleAddToCart = async () => {
-    if (cartLoading) return;
+      await loadCartCount();
 
-    if (!product || isOutOfStock) return;
+      window.dispatchEvent(
+        new CustomEvent("cart-updated")
+      );
 
-    setCartLoading(true);
+      setToast(
+        existingItem
+          ? "Cart quantity updated."
+          : "Product added to your cart."
+      );
 
-    try {
-      await addProductToCart(quantity);
-    } finally {
-      setCartLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      setToast("Unable to add this product to cart.");
+      return false;
     }
-  };
+  },
+  [
+    product,
+    quantity,
+    maxQuantity,
+    isOutOfStock,
+    supabase,
+    router,
+    loadCartCount,
+  ]
+);
 
   /* =====================================================
      BUY NOW
   ===================================================== */
 
   const handleBuyNow = async () => {
-    if (!product || isOutOfStock || cartLoading) return;
+  if (!product || isOutOfStock || cartLoading) return;
 
-    setCartLoading(true);
+  setCartLoading(true);
 
-    try {
-      const added = await addProductToCart(quantity);
+  try {
+    const added = await addProductToCart(quantity);
 
-      if (added) {
-        router.push("/dashboard/checkout");
-      }
-    } finally {
-      setCartLoading(false);
+    if (added) {
+      router.push("/dashboard/checkout");
     }
-  };
+  } finally {
+    setCartLoading(false);
+  }
+};
 
   /* =====================================================
      WISHLIST
