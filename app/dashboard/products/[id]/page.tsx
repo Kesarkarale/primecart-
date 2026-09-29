@@ -504,23 +504,46 @@ export default function ProductDetailPage() {
      LOAD CART COUNT
   ===================================================== */
 
-  useEffect(() => {
-    const updateCartCount = () => {
-      const cart = readCart();
+  const loadCartCount = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
 
       setCartCount(
-        cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+        (data || []).reduce(
+          (sum, item) => sum + Number(item.quantity || 0),
+          0
+        )
       );
+    } catch (error) {
+      console.error("Cart count error:", error);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    loadCartCount();
+
+    const handleCartUpdated = () => {
+      loadCartCount();
     };
 
-    updateCartCount();
-
-    window.addEventListener("cart-updated", updateCartCount);
+    window.addEventListener("cart-updated", handleCartUpdated);
 
     return () => {
-      window.removeEventListener("cart-updated", updateCartCount);
+      window.removeEventListener("cart-updated", handleCartUpdated);
     };
-  }, []);
+  }, [loadCartCount]);
 
   /* =====================================================
      TOAST
@@ -724,68 +747,132 @@ export default function ProductDetailPage() {
   ===================================================== */
 
   const addProductToCart = useCallback(
-    (qty = quantity) => {
+    async (qty = quantity) => {
       if (!product || isOutOfStock) return false;
 
-      const cart = readCart();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      const existingIndex = cart.findIndex(
-        (item) => item.id === product.id
-      );
+        if (!user) {
+          router.push("/auth/login");
+          return false;
+        }
 
-      const safeQuantity = Math.max(
-        1,
-        Math.min(qty, maxQuantity)
-      );
+        const requestedQuantity = Math.max(1, Number(qty || 1));
+        const safeQuantity = Math.min(requestedQuantity, maxQuantity);
 
-      if (existingIndex >= 0) {
-        cart[existingIndex] = {
-          ...cart[existingIndex],
-          quantity: Math.min(
-            maxQuantity,
-            cart[existingIndex].quantity + safeQuantity
-          ),
-        };
-      } else {
-        cart.push({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image_url: product.image_url,
-          quantity: safeQuantity,
-        });
+        const { data: existingItem, error: findError } = await supabase
+          .from("cart_items")
+          .select("id, quantity")
+          .eq("user_id", user.id)
+          .eq("product_id", product.id)
+          .maybeSingle();
+
+        if (findError) throw findError;
+
+        const currentQuantity = Number(existingItem?.quantity || 0);
+        const nextQuantity = Math.min(
+          currentQuantity + safeQuantity,
+          maxQuantity
+        );
+
+        if (existingItem) {
+          if (currentQuantity >= maxQuantity) {
+            setToast(`Maximum ${maxQuantity} quantity allowed for this product.`);
+          } else {
+            const { error } = await supabase
+              .from("cart_items")
+              .update({ quantity: nextQuantity })
+              .eq("id", existingItem.id)
+              .eq("user_id", user.id);
+
+            if (error) throw error;
+            setToast("Cart quantity updated successfully.");
+          }
+        } else {
+          const { error } = await supabase
+            .from("cart_items")
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: safeQuantity,
+            });
+
+          if (error) throw error;
+          setToast("Product added to your cart.");
+        }
+
+        // Keep the old local snapshot only for compatibility with existing checkout/UI code.
+        const localCart = readCart();
+        const localIndex = localCart.findIndex((item) => item.id === product.id);
+
+        if (localIndex >= 0) {
+          localCart[localIndex] = {
+            ...localCart[localIndex],
+            quantity: existingItem ? nextQuantity : safeQuantity,
+          };
+        } else {
+          localCart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image_url: product.image_url,
+            quantity: safeQuantity,
+          });
+        }
+
+        saveCart(localCart);
+        await loadCartCount();
+
+        return true;
+      } catch (error) {
+        console.error("Add to cart error:", error);
+        setToast("Unable to add product to cart. Please try again.");
+        return false;
       }
-
-      saveCart(cart);
-
-      setToast("Product added to your cart.");
-
-      return true;
     },
-    [product, quantity, maxQuantity, isOutOfStock]
+    [
+      product,
+      quantity,
+      maxQuantity,
+      isOutOfStock,
+      supabase,
+      router,
+      loadCartCount,
+    ]
   );
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (cartLoading) return;
+
+    if (!product || isOutOfStock) return;
+
     setCartLoading(true);
 
-    addProductToCart(quantity);
-
-    window.setTimeout(() => {
+    try {
+      await addProductToCart(quantity);
+    } finally {
       setCartLoading(false);
-    }, 450);
+    }
   };
 
   /* =====================================================
      BUY NOW
   ===================================================== */
 
-  const handleBuyNow = () => {
-    if (!product || isOutOfStock) return;
+  const handleBuyNow = async () => {
+    if (!product || isOutOfStock || cartLoading) return;
 
-    const added = addProductToCart(quantity);
+    setCartLoading(true);
 
-    if (added) {
-      router.push("/dashboard/checkout");
+    try {
+      const added = await addProductToCart(quantity);
+
+      if (added) {
+        router.push("/dashboard/checkout");
+      }
+    } finally {
+      setCartLoading(false);
     }
   };
 
