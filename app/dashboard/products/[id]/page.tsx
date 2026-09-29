@@ -978,6 +978,28 @@ export default function ProductDetailPage() {
   );
 
   /* =====================================================
+   ADD TO CART BUTTON
+===================================================== */
+
+const handleAddToCart = async () => {
+  if (cartLoading || !product || isOutOfStock) return;
+
+  setCartLoading(true);
+
+  try {
+    const success = await addProductToCart(quantity);
+
+    if (!success) {
+      console.error("Failed to add product to cart.");
+    }
+  } catch (error) {
+    console.error("Handle add to cart error:", error);
+  } finally {
+    setCartLoading(false);
+  }
+};
+
+  /* =====================================================
      BUY NOW
   ===================================================== */
 
