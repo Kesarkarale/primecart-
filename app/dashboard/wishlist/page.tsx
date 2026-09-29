@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   ArrowLeft,
@@ -42,64 +47,16 @@ type WishlistItem = {
   product: Product | null;
 };
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  quantity: number;
-};
-
-function getImageUrl(imageUrl: string | null) {
-  if (!imageUrl) return null;
-
-  const value = imageUrl.trim();
-
-  if (!value) return null;
-
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://")
-  ) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
-    return value;
-  }
-
-  return `/${value}`;
-}
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-function getDiscount(
-  price: number,
-  originalPrice: number | null
-) {
-  if (!originalPrice || originalPrice <= price) {
-    return 0;
-  }
-
-  return Math.round(
-    ((originalPrice - price) / originalPrice) * 100
-  );
-}
-
 export default function WishlistPage() {
   const supabase = createClient();
 
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [removingId, setRemovingId] = useState<string | null>(
     null
   );
+
   const [addingId, setAddingId] = useState<string | null>(
     null
   );
@@ -109,11 +66,52 @@ export default function WishlistPage() {
     text: string;
   } | null>(null);
 
-  useEffect(() => {
-    loadWishlist();
+  const getImageUrl = useCallback(
+    (imageUrl: string | null) => {
+      if (!imageUrl) return null;
+
+      const value = imageUrl.trim();
+
+      if (!value) return null;
+
+      if (
+        value.startsWith("http://") ||
+        value.startsWith("https://")
+      ) {
+        return value;
+      }
+
+      if (value.startsWith("/")) {
+        return value;
+      }
+
+      return `/${value}`;
+    },
+    []
+  );
+
+  const formatPrice = useCallback((price: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(price);
   }, []);
 
-  async function loadWishlist() {
+  const getDiscount = useCallback(
+    (price: number, originalPrice: number | null) => {
+      if (!originalPrice || originalPrice <= price) {
+        return 0;
+      }
+
+      return Math.round(
+        ((originalPrice - price) / originalPrice) * 100
+      );
+    },
+    []
+  );
+
+  const loadWishlist = useCallback(async () => {
     try {
       setLoading(true);
       setMessage(null);
@@ -128,7 +126,7 @@ export default function WishlistPage() {
       }
 
       const { data, error } = await supabase
-        .from("wishlist")
+        .from("wishlist_items")
         .select(`
           id,
           user_id,
@@ -156,7 +154,7 @@ export default function WishlistPage() {
         });
 
       if (error) {
-        console.error("Wishlist error:", error);
+        console.error("Wishlist load error:", error);
 
         setMessage({
           type: "error",
@@ -167,30 +165,52 @@ export default function WishlistPage() {
         return;
       }
 
-      const formatted: WishlistItem[] = ((data || []) as any[]).map(
-        (item) => ({
-          id: item.id,
-          user_id: item.user_id,
-          product_id: item.product_id,
-          created_at: item.created_at,
-          product: Array.isArray(item.product)
-            ? item.product[0] || null
-            : item.product || null,
-        })
-      );
+      const formatted: WishlistItem[] = (
+        (data || []) as any[]
+      ).map((item) => ({
+        id: item.id,
+        user_id: item.user_id,
+        product_id: item.product_id,
+        created_at: item.created_at,
+        product: Array.isArray(item.product)
+          ? item.product[0] || null
+          : item.product || null,
+      }));
 
       setItems(formatted);
     } catch (error) {
-      console.error(error);
+      console.error("Wishlist load error:", error);
 
       setMessage({
         type: "error",
         text: "Something went wrong while loading wishlist.",
       });
+
+      setItems([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    loadWishlist();
+
+    const handleWishlistUpdated = () => {
+      loadWishlist();
+    };
+
+    window.addEventListener(
+      "wishlist-updated",
+      handleWishlistUpdated
+    );
+
+    return () => {
+      window.removeEventListener(
+        "wishlist-updated",
+        handleWishlistUpdated
+      );
+    };
+  }, [loadWishlist]);
 
   async function removeFromWishlist(
     wishlistId: string,
@@ -200,13 +220,23 @@ export default function WishlistPage() {
       setRemovingId(wishlistId);
       setMessage(null);
 
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = "/auth/login";
+        return;
+      }
+
       const { error } = await supabase
-        .from("wishlist")
+        .from("wishlist_items")
         .delete()
-        .eq("id", wishlistId);
+        .eq("id", wishlistId)
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error(error);
+        console.error("Wishlist delete error:", error);
 
         setMessage({
           type: "error",
@@ -220,12 +250,16 @@ export default function WishlistPage() {
         current.filter((item) => item.id !== wishlistId)
       );
 
+      window.dispatchEvent(
+        new CustomEvent("wishlist-updated")
+      );
+
       setMessage({
         type: "success",
         text: `${productName} removed from wishlist.`,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Remove wishlist error:", error);
 
       setMessage({
         type: "error",
@@ -236,54 +270,100 @@ export default function WishlistPage() {
     }
   }
 
-  function addProductToCart(product: Product) {
+  async function addProductToCart(product: Product) {
+    if (product.stock <= 0) {
+      setMessage({
+        type: "error",
+        text: "This product is currently out of stock.",
+      });
+
+      return;
+    }
+
     try {
       setAddingId(product.id);
       setMessage(null);
 
-      const storedCart = localStorage.getItem(
-        "primecart-cart"
-      );
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      let cart: CartItem[] = [];
-
-      if (storedCart) {
-        try {
-          cart = JSON.parse(storedCart);
-        } catch {
-          cart = [];
-        }
+      if (!user) {
+        window.location.href = "/auth/login";
+        return;
       }
 
-      const existingIndex = cart.findIndex(
-        (item) => item.id === product.id
+      const maxQuantity = Math.max(
+        1,
+        Math.min(Number(product.stock) || 1, 10)
       );
 
-      if (existingIndex >= 0) {
-        cart[existingIndex].quantity += 1;
+      const { data: existingItem, error: existingError } =
+        await supabase
+          .from("cart_items")
+          .select("id, quantity")
+          .eq("user_id", user.id)
+          .eq("product_id", product.id)
+          .maybeSingle();
+
+      if (existingError) {
+        throw existingError;
+      }
+
+      if (existingItem) {
+        const currentQuantity = Number(
+          existingItem.quantity || 0
+        );
+
+        const newQuantity = Math.min(
+          maxQuantity,
+          currentQuantity + 1
+        );
+
+        const { error: updateError } = await supabase
+          .from("cart_items")
+          .update({
+            quantity: newQuantity,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingItem.id)
+          .eq("user_id", user.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        setMessage({
+          type: "success",
+          text:
+            newQuantity === currentQuantity
+              ? `${product.name} is already at the maximum quantity.`
+              : `${product.name} quantity updated in cart.`,
+        });
       } else {
-        cart.push({
-          id: product.id,
-          name: product.name,
-          price: Number(product.price),
-          image_url: product.image_url,
-          quantity: 1,
+        const { error: insertError } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: 1,
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        setMessage({
+          type: "success",
+          text: `${product.name} added to cart.`,
         });
       }
 
-      localStorage.setItem(
-        "primecart-cart",
-        JSON.stringify(cart)
+      window.dispatchEvent(
+        new CustomEvent("cart-updated")
       );
-
-      window.dispatchEvent(new Event("cart-updated"));
-
-      setMessage({
-        type: "success",
-        text: `${product.name} added to cart.`,
-      });
     } catch (error) {
-      console.error(error);
+      console.error("Add to cart error:", error);
 
       setMessage({
         type: "error",
