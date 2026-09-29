@@ -685,89 +685,284 @@ export default function ProductDetailPage() {
       ? Math.min(100, Math.max(0, discount))
       : 0;
 
-  /* =====================================================
+   /* =====================================================
      ADD TO CART - SUPABASE DATABASE
   ===================================================== */
 
   const addProductToCart = useCallback(
     async (qty = quantity) => {
-      if (!product || isOutOfStock) {
+      if (!product) {
+        setToast("Product information is missing.");
+        return false;
+      }
+
+      if (isOutOfStock) {
+        setToast("This product is out of stock.");
         return false;
       }
 
       try {
+        /* ---------------------------------------------
+           1. VERIFY AUTHENTICATED USER
+        --------------------------------------------- */
+
         const {
           data: { user },
+          error: userError,
         } = await supabase.auth.getUser();
 
+        if (userError) {
+          console.error("Auth user error:", userError);
+          setToast("Your session could not be verified.");
+          return false;
+        }
+
         if (!user) {
+          setToast("Please login to add products to cart.");
           router.push("/auth/login");
           return false;
         }
+
+        /* ---------------------------------------------
+           2. VERIFY PRODUCT ID
+        --------------------------------------------- */
+
+        if (!product.id) {
+          console.error("Missing product ID:", product);
+          setToast("Product ID is missing.");
+          return false;
+        }
+
+        console.log("ADD TO CART DEBUG:", {
+          user_id: user.id,
+          product_id: product.id,
+          product_name: product.name,
+          requested_quantity: qty,
+          stock: product.stock,
+        });
+
+        /* ---------------------------------------------
+           3. SAFE QUANTITY
+        --------------------------------------------- */
 
         const safeQuantity = Math.max(
           1,
           Math.min(Number(qty) || 1, maxQuantity)
         );
 
-        const { data: existingItem, error: existingError } =
-          await supabase
-            .from("cart_items")
-            .select("id, quantity")
-            .eq("user_id", user.id)
-            .eq("product_id", product.id)
-            .maybeSingle();
+        /* ---------------------------------------------
+           4. CHECK EXISTING CART ITEM
+        --------------------------------------------- */
+
+        const {
+          data: existingItem,
+          error: existingError,
+        } = await supabase
+          .from("cart_items")
+          .select("id, user_id, product_id, quantity")
+          .eq("user_id", user.id)
+          .eq("product_id", product.id)
+          .maybeSingle();
 
         if (existingError) {
-          throw existingError;
-        }
-
-        if (existingItem) {
-          const newQuantity = Math.min(
-            maxQuantity,
-            Number(existingItem.quantity || 0) + safeQuantity
+          console.error(
+            "Existing cart item query error:",
+            existingError
           );
 
-          const { error: updateError } = await supabase
+          setToast(
+            existingError.message ||
+              "Unable to check your cart."
+          );
+
+          return false;
+        }
+
+        /* ---------------------------------------------
+           5. UPDATE EXISTING ITEM
+        --------------------------------------------- */
+
+        if (existingItem) {
+          const oldQuantity = Number(
+            existingItem.quantity || 0
+          );
+
+          const newQuantity = Math.min(
+            maxQuantity,
+            oldQuantity + safeQuantity
+          );
+
+          const {
+            data: updatedItem,
+            error: updateError,
+          } = await supabase
             .from("cart_items")
             .update({
               quantity: newQuantity,
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingItem.id)
-            .eq("user_id", user.id);
+            .eq("user_id", user.id)
+            .select(
+              "id, user_id, product_id, quantity, created_at, updated_at"
+            )
+            .single();
 
           if (updateError) {
-            throw updateError;
-          }
-        } else {
-          const { error: insertError } = await supabase
-            .from("cart_items")
-            .insert({
-              user_id: user.id,
-              product_id: product.id,
-              quantity: safeQuantity,
-            });
+            console.error(
+              "Cart UPDATE error:",
+              updateError
+            );
 
-          if (insertError) {
-            throw insertError;
+            setToast(
+              updateError.message ||
+                "Unable to update cart."
+            );
+
+            return false;
           }
+
+          console.log(
+            "CART UPDATED SUCCESSFULLY:",
+            updatedItem
+          );
+
+          await loadCartCount();
+
+          window.dispatchEvent(
+            new CustomEvent("cart-updated")
+          );
+
+          setToast(
+            `Cart updated. Quantity: ${newQuantity}`
+          );
+
+          return true;
         }
+
+        /* ---------------------------------------------
+           6. INSERT NEW ITEM
+        --------------------------------------------- */
+
+        const {
+          data: insertedItem,
+          error: insertError,
+        } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: safeQuantity,
+          })
+          .select(
+            "id, user_id, product_id, quantity, created_at, updated_at"
+          )
+          .single();
+
+        /* ---------------------------------------------
+           7. SHOW ACTUAL INSERT ERROR
+        --------------------------------------------- */
+
+        if (insertError) {
+          console.error(
+            "===================================="
+          );
+          console.error(
+            "CART INSERT FAILED"
+          );
+          console.error(
+            "Code:",
+            insertError.code
+          );
+          console.error(
+            "Message:",
+            insertError.message
+          );
+          console.error(
+            "Details:",
+            insertError.details
+          );
+          console.error(
+            "Hint:",
+            insertError.hint
+          );
+          console.error(
+            "===================================="
+          );
+
+          setToast(
+            insertError.message ||
+              "Unable to add product to cart."
+          );
+
+          return false;
+        }
+
+        /* ---------------------------------------------
+           8. VERIFY INSERTED ROW
+        --------------------------------------------- */
+
+        if (!insertedItem) {
+          console.error(
+            "Insert completed but no cart row was returned."
+          );
+
+          setToast(
+            "Product could not be confirmed in cart."
+          );
+
+          return false;
+        }
+
+        console.log(
+          "===================================="
+        );
+        console.log(
+          "PRODUCT ADDED TO CART SUCCESSFULLY"
+        );
+        console.log(
+          insertedItem
+        );
+        console.log(
+          "===================================="
+        );
+
+        /* ---------------------------------------------
+           9. REFRESH CART COUNT
+        --------------------------------------------- */
 
         await loadCartCount();
 
-        window.dispatchEvent(new CustomEvent("cart-updated"));
+        /* ---------------------------------------------
+           10. NOTIFY OTHER COMPONENTS
+        --------------------------------------------- */
+
+        window.dispatchEvent(
+          new CustomEvent("cart-updated")
+        );
+
+        /* ---------------------------------------------
+           11. SUCCESS MESSAGE
+        --------------------------------------------- */
 
         setToast(
-          existingItem
-            ? "Cart quantity updated."
-            : "Product added to your cart."
+          `${product.name} added to your cart.`
         );
 
         return true;
       } catch (error) {
-        console.error("Add to cart error:", error);
-        setToast("Unable to add this product to cart.");
+        console.error(
+          "Unexpected Add to Cart error:",
+          error
+        );
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while adding the product.";
+
+        setToast(message);
+
         return false;
       }
     },
@@ -781,24 +976,6 @@ export default function ProductDetailPage() {
       loadCartCount,
     ]
   );
-
-  /* =====================================================
-     ADD TO CART BUTTON
-  ===================================================== */
-
-  const handleAddToCart = async () => {
-    if (cartLoading || !product || isOutOfStock) return;
-
-    setCartLoading(true);
-
-    try {
-      await addProductToCart(quantity);
-    } catch (error) {
-      console.error("Handle add to cart error:", error);
-    } finally {
-      setCartLoading(false);
-    }
-  };
 
   /* =====================================================
      BUY NOW
