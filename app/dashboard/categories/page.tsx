@@ -92,8 +92,8 @@ const categories: Category[] = [
     keywords: ["mobile", "phone", "smartphone", "electronics"],
   },
   {
-    name: "Appliance",
-    slug: "appliance",
+    name: "Appliances",
+    slug: "appliances",
     description:
       "Smart appliances designed to make everyday tasks easier and faster.",
     icon: WashingMachine,
