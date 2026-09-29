@@ -1007,140 +1007,179 @@ export default function CheckoutPage() {
      PLACE ORDER
   ======================================================= */
 
-  async function placeOrder() {
-    if (placingOrder) return;
+async function placeOrder() {
+  if (placingOrder) return;
 
-    if (items.length === 0) {
-      showToast("Your cart is empty.", "error");
-      return;
+  if (items.length === 0) {
+    showToast("Your cart is empty.", "error");
+    return;
+  }
+
+  if (!selectedAddress) {
+    setAddressError("Please select a delivery address.");
+    showToast("Please select a delivery address.", "error");
+    return;
+  }
+
+  if (!validatePayment()) return;
+
+  setPlacingOrder(true);
+
+  try {
+    const validItems = items.filter(
+      (item) =>
+        item &&
+        (item.product_id || item.id) &&
+        Number(item.quantity || 0) > 0
+    );
+
+    if (!validItems.length) {
+      throw new Error("No valid products found in your cart.");
     }
 
-    if (!selectedAddress) {
-      setAddressError("Please select a delivery address.");
-      showToast("Please select a delivery address.", "error");
-      return;
-    }
+    const rpcItems = validItems.map((item) => ({
+      product_id: String(item.product_id || item.id),
+      quantity: Math.max(1, Number(item.quantity || 1)),
+    }));
 
-    if (!validatePayment()) return;
+    /*
+     * IMPORTANT:
+     * The database RPC creates the order,
+     * order_items and decreases stock
+     * inside one transaction.
+     */
 
-    setPlacingOrder(true);
+    const { data: orderId, error } =
+      await supabase.rpc("place_order", {
+        p_items: rpcItems,
+        p_subtotal: subtotal,
+        p_discount:
+          productDiscount + couponDiscount,
+        p_delivery_charge: deliveryCharge,
+        p_total_amount: total,
+        p_payment_method: getPaymentLabel(),
+        p_shipping_address: selectedAddress,
+      });
 
-    try {
-      const validItems = items.filter(
-        (item) =>
-          item &&
-          (item.product_id || item.id) &&
-          Number(item.quantity || 0) > 0
+    if (error) {
+      console.error(
+        "Order placement RPC error:",
+        error
       );
 
-      if (!validItems.length) {
-        throw new Error("No valid products found in your cart.");
-      }
+      const message = String(
+        error.message || ""
+      ).toLowerCase();
 
-      /*
-       * IMPORTANT:
-       * Stock is changed in Supabase only when the order is placed.
-       * The database function performs all stock updates inside one
-       * PostgreSQL transaction, so if one product does not have enough
-       * stock, none of the products are reduced.
-       */
-      const stockItems = validItems.map((item) => ({
-        product_id: String(item.product_id || item.id),
-        quantity: Math.max(1, Number(item.quantity || 1)),
-      }));
-
-      const { error: stockError } = await supabase.rpc(
-        "decrease_cart_stock",
-        {
-          p_items: stockItems,
-        }
-      );
-
-      if (stockError) {
-        console.error("Stock update error:", stockError);
-
-        const message = String(
-          stockError.message || ""
-        ).toLowerCase();
-
-        if (message.includes("insufficient stock")) {
-          throw new Error(
-            "One or more products do not have enough stock. Please reduce the quantity and try again."
-          );
-        }
-
-        if (message.includes("product not found")) {
-          throw new Error(
-            "One or more products are no longer available. Please refresh your cart."
-          );
-        }
-
+      if (message.includes("insufficient stock")) {
         throw new Error(
-          stockError.message ||
-            "Unable to update product stock. Please try again."
+          "One or more products do not have enough stock. Please reduce the quantity and try again."
         );
       }
 
-      /* Create the existing local order after stock succeeds. */
-      const orderId = `PC-${Date.now()
-        .toString()
-        .slice(-8)}`;
+      if (message.includes("product not found")) {
+        throw new Error(
+          "One or more products are no longer available. Please refresh your cart."
+        );
+      }
 
-      const order: OrderRecord = {
-        id: orderId,
-        createdAt: new Date().toISOString(),
-        status: "Placed",
-        paymentMethod: getPaymentLabel(),
-        total,
-        subtotal,
-        delivery: deliveryCharge,
-        discount:
-          productDiscount + couponDiscount,
-        address: selectedAddress,
-        items,
-      };
+      if (message.includes("not authenticated")) {
+        throw new Error(
+          "Your session has expired. Please login again."
+        );
+      }
 
-      const existingOrders = safeParse<OrderRecord[]>(
+      throw new Error(
+        error.message ||
+          "Unable to place your order. Please try again."
+      );
+    }
+
+    if (!orderId) {
+      throw new Error(
+        "Order was not created. Please try again."
+      );
+    }
+
+    /*
+     * Keep local order information only as a
+     * temporary compatibility/fallback record.
+     *
+     * The actual source of truth is Supabase.
+     */
+
+    const localOrderId = String(orderId);
+
+    const order: OrderRecord = {
+      id: localOrderId,
+      createdAt: new Date().toISOString(),
+      status: "placed",
+      paymentMethod: getPaymentLabel(),
+      total,
+      subtotal,
+      delivery: deliveryCharge,
+      discount:
+        productDiscount + couponDiscount,
+      address: selectedAddress,
+      items: validItems,
+    };
+
+    const existingOrders =
+      safeParse<OrderRecord[]>(
         localStorage.getItem(ORDERS_KEY),
         []
       );
 
-      const updatedOrders = [order, ...existingOrders];
+    localStorage.setItem(
+      ORDERS_KEY,
+      JSON.stringify([
+        order,
+        ...existingOrders.filter(
+          (existing) =>
+            existing.id !== localOrderId
+        ),
+      ])
+    );
 
-      localStorage.setItem(
-        ORDERS_KEY,
-        JSON.stringify(updatedOrders)
-      );
+    localStorage.setItem(
+      "primecart-last-order",
+      JSON.stringify(order)
+    );
 
-      localStorage.setItem(
-        "primecart-last-order",
-        JSON.stringify(order)
-      );
+    /*
+     * Clear cart ONLY after database order
+     * creation succeeded.
+     */
+    localStorage.removeItem(CART_KEY);
 
-      localStorage.removeItem(CART_KEY);
+    showToast(
+      "Order placed successfully!",
+      "success"
+    );
 
-      showToast("Order placed successfully!", "success");
+    await new Promise((resolve) =>
+      setTimeout(resolve, 800)
+    );
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 800)
-      );
+    router.push(
+      `/dashboard/order-success?order=${localOrderId}`
+    );
+  } catch (error) {
+    console.error(
+      "Order placement error:",
+      error
+    );
 
-      router.push(
-        `/dashboard/order-success?order=${orderId}`
-      );
-    } catch (error) {
-      console.error("Order placement error:", error);
+    setPlacingOrder(false);
 
-      setPlacingOrder(false);
-
-      showToast(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again.",
-        "error"
-      );
-    }
+    showToast(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong. Please try again.",
+      "error"
+    );
   }
+}
 
   /* =======================================================
      EMPTY CART
