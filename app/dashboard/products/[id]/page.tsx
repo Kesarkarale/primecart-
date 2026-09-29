@@ -601,7 +601,7 @@ export default function ProductDetailPage() {
 
       if (user) {
         const { data: wishlistData } = await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .select("id")
           .eq("user_id", user.id)
           .eq("product_id", currentProduct.id)
@@ -843,7 +843,7 @@ export default function ProductDetailPage() {
 
       if (wishlisted) {
         const { error } = await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .delete()
           .eq("user_id", user.id)
           .eq("product_id", product.id);
@@ -854,7 +854,7 @@ export default function ProductDetailPage() {
         setToast("Removed from wishlist.");
       } else {
         const { error } = await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .insert({
             user_id: user.id,
             product_id: product.id,
@@ -923,7 +923,7 @@ export default function ProductDetailPage() {
       }
 
       const { data: existing } = await supabase
-        .from("wishlist")
+        .from("wishlist_items")
         .select("id")
         .eq("user_id", user.id)
         .eq("product_id", item.id)
@@ -931,13 +931,13 @@ export default function ProductDetailPage() {
 
       if (existing) {
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .delete()
           .eq("id", existing.id);
 
         setToast("Removed from wishlist.");
       } else {
-        await supabase.from("wishlist").insert({
+        await supabase.from("wishlist_items").insert({
           user_id: user.id,
           product_id: item.id,
         });
