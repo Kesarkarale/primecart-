@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 import {
   ArrowLeft,
   ArrowRight,
@@ -228,6 +229,71 @@ function getImageUrl(value?: string | null) {
   return `/${image}`;
 }
 
+
+function getImageCandidates(value?: string | null) {
+  if (!value?.trim()) return [];
+
+  const raw = value.trim();
+
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) {
+    return [raw];
+  }
+
+  const clean = raw
+    .replace(/^public[\\/]/i, "")
+    .replace(/^\//, "");
+
+  const encoded = clean
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+
+  return Array.from(
+    new Set([
+      `/${clean}`,
+      `/${encoded}`,
+      `/products/${clean}`,
+      `/product-images/${clean}`,
+      `/images/products/${clean}`,
+      `/images/${clean}`,
+      `/assets/products/${clean}`,
+      `/assets/images/${clean}`,
+      "/product-placeholder.png",
+    ])
+  );
+}
+
+function SafeCartImage({
+  src,
+  alt,
+  className,
+}: {
+  src?: string | null;
+  alt: string;
+  className: string;
+}) {
+  const candidates = getImageCandidates(src);
+  const [index, setIndex] = useState(0);
+
+  if (!candidates.length || index >= candidates.length) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-[#a49a8c]">
+        <Package size={28} strokeWidth={1.4} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={candidates[index]}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => setIndex((current) => current + 1)}
+    />
+  );
+}
+
 function getDeliveryDate() {
   const date = new Date();
 
@@ -285,6 +351,15 @@ function Field({
 
 export default function CheckoutPage() {
   const router = useRouter();
+
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      ),
+    []
+  );
 
   const [items, setItems] = useState<CartItem[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -931,23 +1006,13 @@ export default function CheckoutPage() {
     if (placingOrder) return;
 
     if (items.length === 0) {
-      showToast(
-        "Your cart is empty.",
-        "error"
-      );
+      showToast("Your cart is empty.", "error");
       return;
     }
 
     if (!selectedAddress) {
-      setAddressError(
-        "Please select a delivery address."
-      );
-
-      showToast(
-        "Please select a delivery address.",
-        "error"
-      );
-
+      setAddressError("Please select a delivery address.");
+      showToast("Please select a delivery address.", "error");
       return;
     }
 
@@ -956,45 +1021,90 @@ export default function CheckoutPage() {
     setPlacingOrder(true);
 
     try {
+      const validItems = items.filter(
+        (item) =>
+          item &&
+          (item.product_id || item.id) &&
+          Number(item.quantity || 0) > 0
+      );
+
+      if (!validItems.length) {
+        throw new Error("No valid products found in your cart.");
+      }
+
+      /*
+       * IMPORTANT:
+       * Stock is changed in Supabase only when the order is placed.
+       * The database function performs all stock updates inside one
+       * PostgreSQL transaction, so if one product does not have enough
+       * stock, none of the products are reduced.
+       */
+      const stockItems = validItems.map((item) => ({
+        product_id: String(item.product_id || item.id),
+        quantity: Math.max(1, Number(item.quantity || 1)),
+      }));
+
+      const { error: stockError } = await supabase.rpc(
+        "decrease_cart_stock",
+        {
+          p_items: stockItems,
+        }
+      );
+
+      if (stockError) {
+        console.error("Stock update error:", stockError);
+
+        const message = String(
+          stockError.message || ""
+        ).toLowerCase();
+
+        if (message.includes("insufficient stock")) {
+          throw new Error(
+            "One or more products do not have enough stock. Please reduce the quantity and try again."
+          );
+        }
+
+        if (message.includes("product not found")) {
+          throw new Error(
+            "One or more products are no longer available. Please refresh your cart."
+          );
+        }
+
+        throw new Error(
+          stockError.message ||
+            "Unable to update product stock. Please try again."
+        );
+      }
+
+      /* Create the existing local order after stock succeeds. */
       const orderId = `PC-${Date.now()
         .toString()
         .slice(-8)}`;
 
       const order: OrderRecord = {
         id: orderId,
-        createdAt:
-          new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         status: "Placed",
-        paymentMethod:
-          getPaymentLabel(),
+        paymentMethod: getPaymentLabel(),
         total,
         subtotal,
         delivery: deliveryCharge,
         discount:
-          productDiscount +
-          couponDiscount,
+          productDiscount + couponDiscount,
         address: selectedAddress,
         items,
       };
 
-      const existingOrders =
-        safeParse<OrderRecord[]>(
-          localStorage.getItem(
-            ORDERS_KEY
-          ),
-          []
-        );
+      const existingOrders = safeParse<OrderRecord[]>(
+        localStorage.getItem(ORDERS_KEY),
+        []
+      );
 
-      const updatedOrders = [
-        order,
-        ...existingOrders,
-      ];
+      const updatedOrders = [order, ...existingOrders];
 
       localStorage.setItem(
         ORDERS_KEY,
-        JSON.stringify(
-          updatedOrders
-        )
+        JSON.stringify(updatedOrders)
       );
 
       localStorage.setItem(
@@ -1002,27 +1112,26 @@ export default function CheckoutPage() {
         JSON.stringify(order)
       );
 
-      localStorage.removeItem(
-        CART_KEY
-      );
+      localStorage.removeItem(CART_KEY);
+
+      showToast("Order placed successfully!", "success");
 
       await new Promise((resolve) =>
-        setTimeout(resolve, 1000)
+        setTimeout(resolve, 800)
       );
 
       router.push(
         `/dashboard/order-success?order=${orderId}`
       );
     } catch (error) {
-      console.error(
-        "Order placement error:",
-        error
-      );
+      console.error("Order placement error:", error);
 
       setPlacingOrder(false);
 
       showToast(
-        "Something went wrong. Please try again.",
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
         "error"
       );
     }
@@ -2278,10 +2387,6 @@ export default function CheckoutPage() {
 
               <div className="divide-y divide-[#eee6d8]">
                 {items.map((item) => {
-                  const image = getImageUrl(
-                    item.image_url
-                  );
-
                   const discount =
                     getDiscount(
                       item.price,
@@ -2298,17 +2403,11 @@ export default function CheckoutPage() {
                       className="flex gap-3 p-4 sm:gap-5 sm:p-5"
                     >
                       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-[#eee6d8] bg-[#faf8f3] sm:h-28 sm:w-28">
-                        {image ? (
-                          <img
-                            src={image}
-                            alt={item.name}
-                            className="h-full w-full object-contain p-2.5"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[9px] text-[#9c9180]">
-                            No Image
-                          </div>
-                        )}
+                        <SafeCartImage
+                          src={item.image_url}
+                          alt={item.name}
+                          className="h-full w-full object-contain p-2.5"
+                        />
 
                         {discount > 0 && (
                           <span className="absolute left-2 top-2 rounded-md bg-green-600 px-1.5 py-1 text-[8px] font-extrabold text-white">
