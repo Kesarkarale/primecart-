@@ -367,10 +367,10 @@ export default function CheckoutPage() {
     useState("");
 
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("upi");
+    useState<PaymentMethod | "">("");
 
   const [expandedPayment, setExpandedPayment] =
-    useState<PaymentMethod>("upi");
+    useState<PaymentMethod | null>(null);
 
   const [selectedUpi, setSelectedUpi] = useState("gpay");
   const [upiId, setUpiId] = useState("");
@@ -885,6 +885,11 @@ export default function CheckoutPage() {
   }
 
   function validatePayment() {
+    if (!paymentMethod) {
+      showToast("Please select a payment method.", "error");
+      return false;
+    }
+
     if (paymentMethod === "upi") {
       if (
         selectedUpi === "upi-id" &&
@@ -1266,48 +1271,44 @@ export default function CheckoutPage() {
 
       <header className="sticky top-0 z-50 border-b border-[#eadfc9] bg-white/95 shadow-[0_3px_20px_rgba(70,45,10,0.04)] backdrop-blur-xl">
         <div className="mx-auto flex h-[62px] max-w-[1450px] items-center justify-between gap-3 px-3 sm:h-[72px] sm:px-6 lg:px-8">
-          <Link
-            href="/dashboard/cart"
-            className="group flex min-w-0 items-center gap-2.5 sm:gap-3"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#b9975b] text-white shadow-sm transition group-hover:bg-[#977538] sm:h-10 sm:w-10">
-              <ArrowLeft size={19} />
-            </div>
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Link
+              href="/dashboard/cart"
+              aria-label="Back to cart"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#80683f] shadow-sm transition hover:bg-[#fcf7ec] sm:h-10 sm:w-10"
+            >
+              <ArrowLeft size={18} />
+            </Link>
 
-            <div>
-              <p className="truncate text-sm font-extrabold sm:text-base">
+            <Link
+              href="/dashboard"
+              className="flex min-w-0 items-center gap-2"
+            >
+              <img
+                src="/logo.png"
+                alt="PrimeCart"
+                className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
+              />
+              <span className="truncate text-base font-black tracking-tight text-[#332b21] sm:text-lg">
+                Prime<span className="text-[#b8872d]">Cart</span>
+              </span>
+            </Link>
+
+            <div className="hidden h-6 w-px bg-[#eadfc9] sm:block" />
+
+            <div className="hidden min-w-0 sm:block">
+              <p className="truncate text-sm font-extrabold">
                 Checkout
               </p>
-
-              <p className="hidden text-[10px] font-medium text-[#887d6c] sm:block">
+              <p className="text-[10px] font-medium text-[#887d6c]">
                 Complete your order securely
               </p>
-            </div>
-          </Link>
-
-          <div className="hidden items-center gap-6 md:flex">
-            <div className="flex items-center gap-2 text-[#977538]">
-              <ShieldCheck size={18} />
-
-              <span className="text-[11px] font-bold">
-                100% Secure Checkout
-              </span>
-            </div>
-
-            <div className="h-5 w-px bg-[#eadfc9]" />
-
-            <div className="flex items-center gap-2 text-[#756b5d]">
-              <Lock size={16} />
-
-              <span className="text-[11px] font-semibold">
-                Your data is protected
-              </span>
             </div>
           </div>
 
           <Link
             href="/dashboard/products"
-            className="shrink-0 text-[10px] font-bold text-[#756b5d] transition hover:text-[#977538] sm:text-[11px]"
+            className="shrink-0 rounded-xl px-2 py-2 text-[10px] font-bold text-[#756b5d] transition hover:bg-[#fcf7ec] hover:text-[#977538] sm:px-3 sm:text-[11px]"
           >
             Continue Shopping
           </Link>
@@ -2522,7 +2523,7 @@ export default function CheckoutPage() {
                 TRUST STRIP
             =============================================== */}
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="hidden gap-3 sm:grid sm:grid-cols-3">
               {[
                 {
                   icon: ShieldCheck,
@@ -2872,7 +2873,7 @@ export default function CheckoutPage() {
                     )}
                   </button>
 
-                  <p className="flex items-center justify-center gap-1.5 text-center text-[8px] leading-4 text-[#948978]">
+                  <p className="hidden items-center justify-center gap-1.5 text-center text-[8px] leading-4 text-[#948978] sm:flex">
                     <ShieldCheck size={11} />
                     Secure checkout • Your information is
                     protected
