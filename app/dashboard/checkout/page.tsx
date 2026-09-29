@@ -1272,11 +1272,15 @@ async function placeOrder() {
         );
       }
 
-      if (message.includes("product not found")) {
-        throw new Error(
-          "A product could not be found. Please refresh the page and try again."
-        );
-      }
+      if (
+  message.includes("product not found") ||
+  message.includes("product not found or inactive")
+) {
+  throw new Error(
+    error.message ||
+      "Unable to find the selected product."
+  );
+}
 
       if (message.includes("not authenticated")) {
         throw new Error(
