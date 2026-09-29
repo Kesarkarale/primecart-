@@ -17,7 +17,6 @@ import {
   Plus,
   RefreshCcw,
   ShieldCheck,
-  ShoppingBag,
   ShoppingCart,
   Sparkles,
   Tag,
@@ -149,7 +148,8 @@ function ProductImage({
     setIndex(0);
   }, [src]);
 
-  const current = candidates[index] ?? "/placeholder-product.png";
+  const current =
+    candidates[index] ?? "/placeholder-product.png";
 
   return (
     <img
@@ -172,9 +172,11 @@ function readStorage<T>(key: string): T[] {
 
   try {
     const value = localStorage.getItem(key);
+
     if (!value) return [];
 
     const parsed = JSON.parse(value);
+
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -191,36 +193,50 @@ function writeStorage(key: string, value: unknown) {
   }
 }
 
-function normalizeItem(item: Partial<CartItem>): CartItem | null {
+function normalizeItem(
+  item: Partial<CartItem>
+): CartItem | null {
   if (!item.id || !item.name) return null;
 
   return {
     id: String(item.id),
     name: String(item.name),
     price: Number(item.price) || 0,
+
     original_price:
       item.original_price !== null &&
       item.original_price !== undefined
         ? Number(item.original_price)
         : null,
+
     image_url: item.image_url ?? null,
     brand: item.brand ?? null,
+
     stock:
       item.stock !== null && item.stock !== undefined
         ? Number(item.stock)
         : 99,
+
     rating:
-      item.rating !== null && item.rating !== undefined
+      item.rating !== null &&
+      item.rating !== undefined
         ? Number(item.rating)
         : null,
+
     reviews_count:
       item.reviews_count !== null &&
       item.reviews_count !== undefined
         ? Number(item.reviews_count)
         : null,
+
     category_id: item.category_id ?? null,
+
     is_active: item.is_active ?? true,
-    quantity: Math.max(1, Number(item.quantity) || 1),
+
+    quantity: Math.max(
+      1,
+      Number(item.quantity) || 1
+    ),
   };
 }
 
@@ -228,76 +244,120 @@ export default function CartPage() {
   const supabase = createClient();
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const [savedItems, setSavedItems] = useState<
+    SavedItem[]
+  >([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] =
+    useState<string | null>(null);
 
   const [coupon, setCoupon] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] =
+    useState<string | null>(null);
   const [couponOpen, setCouponOpen] = useState(false);
 
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [removedId, setRemovedId] = useState<string | null>(null);
-  const [validatingCart, setValidatingCart] = useState(false);
+  const [notice, setNotice] =
+    useState<Notice | null>(null);
+
+  const [removedId, setRemovedId] =
+    useState<string | null>(null);
+
+  const [validatingCart, setValidatingCart] =
+    useState(false);
 
   const showNotice = useCallback(
-    (message: string, type: NoticeType = "success") => {
-      setNotice({ message, type });
+    (
+      message: string,
+      type: NoticeType = "success"
+    ) => {
+      setNotice({
+        message,
+        type,
+      });
     },
     []
   );
 
   useEffect(() => {
-    const storedCart = readStorage<Partial<CartItem>>(CART_KEY)
+    const storedCart = readStorage<
+      Partial<CartItem>
+    >(CART_KEY)
       .map(normalizeItem)
-      .filter((item): item is CartItem => item !== null);
+      .filter(
+        (item): item is CartItem => item !== null
+      );
 
-    const storedSaved = readStorage<Partial<SavedItem>>(SAVED_KEY)
+    const storedSaved = readStorage<
+      Partial<SavedItem>
+    >(SAVED_KEY)
       .map(normalizeItem)
-      .filter((item): item is SavedItem => item !== null);
+      .filter(
+        (item): item is SavedItem => item !== null
+      );
 
-    const storedWishlist = readStorage<string>(WISHLIST_KEY);
+    const storedWishlist =
+      readStorage<string>(WISHLIST_KEY);
 
     setCart(storedCart);
     setSavedItems(storedSaved);
+
     setWishlist(
       storedWishlist.filter(
-        (value): value is string => typeof value === "string"
+        (value): value is string =>
+          typeof value === "string"
       )
     );
+
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (!loading) writeStorage(CART_KEY, cart);
+    if (!loading) {
+      writeStorage(CART_KEY, cart);
+    }
   }, [cart, loading]);
 
   useEffect(() => {
-    if (!loading) writeStorage(SAVED_KEY, savedItems);
+    if (!loading) {
+      writeStorage(SAVED_KEY, savedItems);
+    }
   }, [savedItems, loading]);
 
   useEffect(() => {
-    if (!loading) writeStorage(WISHLIST_KEY, wishlist);
+    if (!loading) {
+      writeStorage(WISHLIST_KEY, wishlist);
+    }
   }, [wishlist, loading]);
 
   useEffect(() => {
     if (!notice) return;
 
-    const timer = window.setTimeout(() => setNotice(null), 3200);
+    const timer = window.setTimeout(
+      () => setNotice(null),
+      3200
+    );
+
     return () => window.clearTimeout(timer);
   }, [notice]);
 
   const itemCount = useMemo(
-    () => cart.reduce((total, item) => total + item.quantity, 0),
+    () =>
+      cart.reduce(
+        (total, item) =>
+          total + item.quantity,
+        0
+      ),
     [cart]
   );
 
   const subtotal = useMemo(
     () =>
       cart.reduce(
-        (total, item) => total + item.price * item.quantity,
+        (total, item) =>
+          total +
+          item.price * item.quantity,
         0
       ),
     [cart]
@@ -307,16 +367,23 @@ export default function CartPage() {
     () =>
       cart.reduce((total, item) => {
         const original =
-          item.original_price && item.original_price > item.price
+          item.original_price &&
+          item.original_price > item.price
             ? item.original_price
             : item.price;
 
-        return total + original * item.quantity;
+        return (
+          total +
+          original * item.quantity
+        );
       }, 0),
     [cart]
   );
 
-  const productSavings = Math.max(originalTotal - subtotal, 0);
+  const productSavings = Math.max(
+    originalTotal - subtotal,
+    0
+  );
 
   const shipping =
     subtotal === 0
@@ -329,56 +396,96 @@ export default function CartPage() {
     if (!appliedCoupon) return 0;
 
     const selected =
-      COUPONS[appliedCoupon as keyof typeof COUPONS];
+      COUPONS[
+        appliedCoupon as keyof typeof COUPONS
+      ];
 
-    if (!selected || subtotal < selected.minimum) return 0;
+    if (
+      !selected ||
+      subtotal < selected.minimum
+    ) {
+      return 0;
+    }
 
     if (selected.type === "percent") {
       return Math.min(
-        Math.round((subtotal * selected.value) / 100),
+        Math.round(
+          (subtotal * selected.value) / 100
+        ),
         selected.maxDiscount
       );
     }
 
-    return Math.min(selected.value, subtotal);
+    return Math.min(
+      selected.value,
+      subtotal
+    );
   }, [appliedCoupon, subtotal]);
 
   const grandTotal = Math.max(
-    subtotal + shipping - couponDiscount,
+    subtotal +
+      shipping -
+      couponDiscount,
     0
   );
 
-  const totalSavings = productSavings + couponDiscount;
+  const totalSavings =
+    productSavings + couponDiscount;
 
-  const freeShippingRemaining = Math.max(
-    FREE_SHIPPING_LIMIT - subtotal,
-    0
-  );
+  const freeShippingRemaining =
+    Math.max(
+      FREE_SHIPPING_LIMIT -
+        subtotal,
+      0
+    );
 
   const shippingProgress = Math.min(
-    Math.round((subtotal / FREE_SHIPPING_LIMIT) * 100),
+    Math.round(
+      (subtotal /
+        FREE_SHIPPING_LIMIT) *
+        100
+    ),
     100
   );
 
-  function persistCart(nextCart: CartItem[]) {
+  function persistCart(
+    nextCart: CartItem[]
+  ) {
     setCart(nextCart);
-    writeStorage(CART_KEY, nextCart);
+    writeStorage(
+      CART_KEY,
+      nextCart
+    );
   }
 
   function updateQuantity(
     id: string,
-    direction: "increase" | "decrease"
+    direction:
+      | "increase"
+      | "decrease"
   ) {
-    const current = cart.find((item) => item.id === id);
+    const current = cart.find(
+      (item) => item.id === id
+    );
+
     if (!current) return;
 
-    const stock = Math.max(current.stock ?? 99, 1);
+    const stock = Math.max(
+      current.stock ?? 99,
+      1
+    );
 
-    if (direction === "increase" && current.quantity >= stock) {
+    if (
+      direction === "increase" &&
+      current.quantity >= stock
+    ) {
       showNotice(
-        `Only ${stock} unit${stock === 1 ? "" : "s"} available.`,
+        `Only ${stock} unit${
+          stock === 1 ? "" : "s"
+        } available.`,
         "info"
       );
+
       return;
     }
 
@@ -387,16 +494,27 @@ export default function CartPage() {
     window.setTimeout(() => {
       const nextCart = cart
         .map((item) => {
-          if (item.id !== id) return item;
+          if (item.id !== id) {
+            return item;
+          }
 
           const quantity =
             direction === "increase"
-              ? Math.min(item.quantity + 1, stock)
+              ? Math.min(
+                  item.quantity + 1,
+                  stock
+                )
               : item.quantity - 1;
 
-          return { ...item, quantity };
+          return {
+            ...item,
+            quantity,
+          };
         })
-        .filter((item) => item.quantity > 0);
+        .filter(
+          (item) =>
+            item.quantity > 0
+        );
 
       persistCart(nextCart);
       setUpdatingId(null);
@@ -407,174 +525,313 @@ export default function CartPage() {
     setRemovedId(id);
 
     window.setTimeout(() => {
-      const removed = cart.find((item) => item.id === id);
-      const nextCart = cart.filter((item) => item.id !== id);
+      const removed = cart.find(
+        (item) => item.id === id
+      );
+
+      const nextCart =
+        cart.filter(
+          (item) =>
+            item.id !== id
+        );
 
       persistCart(nextCart);
       setRemovedId(null);
 
       if (removed) {
-        showNotice(`${removed.name} removed from your cart.`, "info");
+        showNotice(
+          `${removed.name} removed from your cart.`,
+          "info"
+        );
       }
     }, 180);
   }
 
-  function saveForLater(item: CartItem) {
-    const exists = savedItems.some((saved) => saved.id === item.id);
+  function saveForLater(
+    item: CartItem
+  ) {
+    const exists =
+      savedItems.some(
+        (saved) =>
+          saved.id === item.id
+      );
 
     if (!exists) {
-      setSavedItems((previous) => [
-        ...previous,
-        { ...item, quantity: 1 },
-      ]);
+      setSavedItems(
+        (previous) => [
+          ...previous,
+          {
+            ...item,
+            quantity: 1,
+          },
+        ]
+      );
     }
 
-    persistCart(cart.filter((product) => product.id !== item.id));
-    showNotice("Product saved for later.");
+    persistCart(
+      cart.filter(
+        (product) =>
+          product.id !== item.id
+      )
+    );
+
+    showNotice(
+      "Product saved for later."
+    );
   }
 
-  function moveToCart(item: SavedItem) {
-    const existing = cart.find((product) => product.id === item.id);
+  function moveToCart(
+    item: SavedItem
+  ) {
+    const existing = cart.find(
+      (product) =>
+        product.id === item.id
+    );
 
     if (existing) {
-      const stock = Math.max(existing.stock ?? 99, 1);
+      const stock = Math.max(
+        existing.stock ?? 99,
+        1
+      );
 
       persistCart(
         cart.map((product) =>
           product.id === item.id
             ? {
                 ...product,
-                quantity: Math.min(
-                  product.quantity + item.quantity,
-                  stock
-                ),
+                quantity:
+                  Math.min(
+                    product.quantity +
+                      item.quantity,
+                    stock
+                  ),
               }
             : product
         )
       );
     } else {
-      persistCart([...cart, { ...item, quantity: 1 }]);
+      persistCart([
+        ...cart,
+        {
+          ...item,
+          quantity: 1,
+        },
+      ]);
     }
 
-    setSavedItems((previous) =>
-      previous.filter((saved) => saved.id !== item.id)
-    );
-
-    showNotice("Product moved back to your cart.");
-  }
-
-  function removeSavedItem(id: string) {
-    setSavedItems((previous) =>
-      previous.filter((item) => item.id !== id)
-    );
-    showNotice("Saved product removed.", "info");
-  }
-
-  function toggleWishlist(id: string) {
-    const exists = wishlist.includes(id);
-
-    setWishlist((previous) =>
-      exists
-        ? previous.filter((item) => item !== id)
-        : [...previous, id]
+    setSavedItems(
+      (previous) =>
+        previous.filter(
+          (saved) =>
+            saved.id !== item.id
+        )
     );
 
     showNotice(
-      exists ? "Removed from wishlist." : "Added to wishlist."
+      "Product moved back to your cart."
+    );
+  }
+
+  function removeSavedItem(
+    id: string
+  ) {
+    setSavedItems(
+      (previous) =>
+        previous.filter(
+          (item) =>
+            item.id !== id
+        )
+    );
+
+    showNotice(
+      "Saved product removed.",
+      "info"
+    );
+  }
+
+  function toggleWishlist(
+    id: string
+  ) {
+    const exists =
+      wishlist.includes(id);
+
+    setWishlist(
+      (previous) =>
+        exists
+          ? previous.filter(
+              (item) =>
+                item !== id
+            )
+          : [...previous, id]
+    );
+
+    showNotice(
+      exists
+        ? "Removed from wishlist."
+        : "Added to wishlist."
     );
   }
 
   function applyCoupon() {
-    const code = coupon.trim().toUpperCase();
+    const code =
+      coupon
+        .trim()
+        .toUpperCase();
 
     if (!code) {
-      showNotice("Enter a coupon code first.", "error");
+      showNotice(
+        "Enter a coupon code first.",
+        "error"
+      );
+
       return;
     }
 
-    const selected = COUPONS[code as keyof typeof COUPONS];
+    const selected =
+      COUPONS[
+        code as keyof typeof COUPONS
+      ];
 
     if (!selected) {
-      showNotice("This coupon code is not valid.", "error");
+      showNotice(
+        "This coupon code is not valid.",
+        "error"
+      );
+
       return;
     }
 
-    if (subtotal < selected.minimum) {
+    if (
+      subtotal <
+      selected.minimum
+    ) {
       showNotice(
-        `Add ${formatPrice(selected.minimum - subtotal)} more to use ${code}.`,
+        `Add ${formatPrice(
+          selected.minimum -
+            subtotal
+        )} more to use ${code}.`,
         "info"
       );
+
       return;
     }
 
     setAppliedCoupon(code);
     setCouponOpen(false);
-    showNotice(`${code} applied successfully.`);
+
+    showNotice(
+      `${code} applied successfully.`
+    );
   }
 
   function removeCoupon() {
     setAppliedCoupon(null);
     setCoupon("");
-    showNotice("Coupon removed.", "info");
+
+    showNotice(
+      "Coupon removed.",
+      "info"
+    );
   }
 
   async function validateCartBeforeCheckout() {
     if (!cart.length) {
-      showNotice("Your cart is empty.", "error");
+      showNotice(
+        "Your cart is empty.",
+        "error"
+      );
+
       return false;
     }
 
     setValidatingCart(true);
 
     try {
-      const ids = cart.map((item) => item.id);
+      const ids = cart.map(
+        (item) => item.id
+      );
 
-      const { data, error } = await supabase
+      const {
+        data,
+        error,
+      } = await supabase
         .from("products")
         .select(
           "id,name,price,original_price,stock,is_active,image_url,brand,rating,reviews_count,category_id"
         )
         .in("id", ids);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const products = (data ?? []) as Product[];
-      const productMap = new Map(
-        products.map((product) => [product.id, product])
-      );
+      const products =
+        (data ?? []) as Product[];
+
+      const productMap =
+        new Map(
+          products.map(
+            (product) => [
+              product.id,
+              product,
+            ]
+          )
+        );
 
       let changed = false;
-      const nextCart: CartItem[] = [];
+
+      const nextCart: CartItem[] =
+        [];
 
       for (const item of cart) {
-        const latest = productMap.get(item.id);
+        const latest =
+          productMap.get(
+            item.id
+          );
 
-        if (!latest || latest.is_active === false) {
+        if (
+          !latest ||
+          latest.is_active === false
+        ) {
           changed = true;
+
           showNotice(
             `${item.name} is no longer available.`,
             "error"
           );
+
           continue;
         }
 
-        const latestStock = Number(latest.stock ?? 0);
+        const latestStock =
+          Number(
+            latest.stock ?? 0
+          );
 
         if (latestStock <= 0) {
           changed = true;
+
           showNotice(
             `${item.name} is currently out of stock.`,
             "error"
           );
+
           continue;
         }
 
-        const quantity = Math.min(item.quantity, latestStock);
+        const quantity =
+          Math.min(
+            item.quantity,
+            latestStock
+          );
 
         if (
-          quantity !== item.quantity ||
-          latest.price !== item.price ||
-          latest.image_url !== item.image_url
+          quantity !==
+            item.quantity ||
+          latest.price !==
+            item.price ||
+          latest.image_url !==
+            item.image_url
         ) {
           changed = true;
         }
@@ -589,7 +846,9 @@ export default function CartPage() {
       if (changed) {
         persistCart(nextCart);
 
-        if (!nextCart.length) return false;
+        if (!nextCart.length) {
+          return false;
+        }
 
         showNotice(
           "Cart updated with the latest stock, price and product details.",
@@ -605,6 +864,7 @@ export default function CartPage() {
         "Could not verify your cart. Please try again.",
         "error"
       );
+
       return false;
     } finally {
       setValidatingCart(false);
@@ -612,7 +872,9 @@ export default function CartPage() {
   }
 
   async function proceedToCheckout() {
-    const valid = await validateCartBeforeCheckout();
+    const valid =
+      await validateCartBeforeCheckout();
+
     if (!valid) return;
 
     const checkoutSummary = {
@@ -625,17 +887,28 @@ export default function CartPage() {
       grandTotal,
     };
 
-    writeStorage(CHECKOUT_CART_KEY, cart);
-    writeStorage(CHECKOUT_SUMMARY_KEY, [checkoutSummary]);
+    writeStorage(
+      CHECKOUT_CART_KEY,
+      cart
+    );
 
-    window.location.href = "/dashboard/checkout";
+    writeStorage(
+      CHECKOUT_SUMMARY_KEY,
+      [checkoutSummary]
+    );
+
+    window.location.href =
+      "/dashboard/checkout";
   }
 
   function continueShopping() {
-    window.location.href = "/dashboard/products";
+    window.location.href =
+      "/dashboard/products";
   }
 
-  if (loading) return <CartLoading />;
+  if (loading) {
+    return <CartLoading />;
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#faf8f3] text-[#17130d] dark:bg-[#0c0b09] dark:text-white">
@@ -645,16 +918,21 @@ export default function CartPage() {
             <div
               className={[
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                notice.type === "success"
+
+                notice.type ===
+                "success"
                   ? "bg-emerald-50 text-emerald-600"
-                  : notice.type === "error"
+                  : notice.type ===
+                      "error"
                     ? "bg-red-50 text-red-600"
                     : "bg-[#f8f1df] text-[#a17a35]",
               ].join(" ")}
             >
-              {notice.type === "success" ? (
+              {notice.type ===
+              "success" ? (
                 <Check className="h-4 w-4" />
-              ) : notice.type === "error" ? (
+              ) : notice.type ===
+                "error" ? (
                 <X className="h-4 w-4" />
               ) : (
                 <Sparkles className="h-4 w-4" />
@@ -667,7 +945,9 @@ export default function CartPage() {
 
             <button
               type="button"
-              onClick={() => setNotice(null)}
+              onClick={() =>
+                setNotice(null)
+              }
               className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
               aria-label="Close notification"
             >
@@ -677,7 +957,7 @@ export default function CartPage() {
         </div>
       )}
 
-      {/* PrimeCart header - logo + name are visible on mobile too */}
+      {/* PrimeCart header */}
       <header className="sticky top-0 z-40 border-b border-[#eadfc9] bg-white/95 backdrop-blur-xl dark:border-[#2a261f] dark:bg-[#0c0b09]/95">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           <Link
@@ -694,7 +974,10 @@ export default function CartPage() {
 
             <div className="min-w-0">
               <div className="text-[18px] font-black tracking-tight sm:text-lg">
-                Prime<span className="text-[#b9975b]">Cart</span>
+                Prime
+                <span className="text-[#b9975b]">
+                  Cart
+                </span>
               </div>
 
               <div className="hidden text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 min-[390px]:block">
@@ -720,23 +1003,34 @@ export default function CartPage() {
 
             <div className="flex items-center gap-2 rounded-full border border-[#eadfc9] bg-[#faf8f3] px-3 py-2 dark:border-[#332d23] dark:bg-[#171512]">
               <Lock className="h-3.5 w-3.5 text-[#a17a35]" />
-              <span className="text-xs font-bold">Secure Checkout</span>
+
+              <span className="text-xs font-bold">
+                Secure Checkout
+              </span>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 rounded-full bg-[#f8f1df] px-3 py-2 text-[#8f6b31] dark:bg-[#201c15]">
             <ShoppingCart className="h-4 w-4" />
-            <span className="text-xs font-black">{itemCount}</span>
+
+            <span className="text-xs font-black">
+              {itemCount}
+            </span>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-3 pb-32 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-12">
         <nav className="mb-4 flex items-center gap-2 px-1 text-xs text-gray-500 sm:mb-5">
-          <Link href="/dashboard" className="hover:text-[#a17a35]">
+          <Link
+            href="/dashboard"
+            className="hover:text-[#a17a35]"
+          >
             Home
           </Link>
+
           <span>/</span>
+
           <span className="font-semibold text-[#17130d] dark:text-white">
             Cart
           </span>
@@ -775,12 +1069,17 @@ export default function CartPage() {
 
           {cart.length > 0 && (
             <div className="border-t border-[#eee6d8] bg-[#fcfaf6] px-5 py-4 dark:border-[#29251f] dark:bg-[#15130f] sm:px-8">
-              {shippingProgress >= 100 ? (
+              {shippingProgress >=
+              100 ? (
                 <div className="flex items-center gap-3 text-sm font-bold text-emerald-700 dark:text-emerald-400">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950">
                     <Truck className="h-4 w-4" />
                   </div>
-                  <span>FREE shipping unlocked!</span>
+
+                  <span>
+                    FREE shipping unlocked!
+                  </span>
+
                   <Check className="ml-auto h-5 w-5" />
                 </div>
               ) : (
@@ -789,17 +1088,22 @@ export default function CartPage() {
                     <span className="font-semibold text-gray-600 dark:text-gray-300">
                       Add{" "}
                       <span className="font-black text-[#9a7539]">
-                        {formatPrice(freeShippingRemaining)}
+                        {formatPrice(
+                          freeShippingRemaining
+                        )}
                       </span>{" "}
                       more for FREE delivery
                     </span>
+
                     <Truck className="h-4 w-4 text-[#a17a35]" />
                   </div>
 
                   <div className="h-2 overflow-hidden rounded-full bg-[#eadfc9] dark:bg-[#30291e]">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-[#8f6b31] via-[#b9975b] to-[#d6b875] transition-all duration-500"
-                      style={{ width: `${shippingProgress}%` }}
+                      style={{
+                        width: `${shippingProgress}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -811,302 +1115,432 @@ export default function CartPage() {
         {cart.length === 0 ? (
           <EmptyCart />
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="min-w-0 space-y-5">
-              <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-black">Your Items</h2>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {itemCount} item{itemCount === 1 ? "" : "s"} selected
-                    </p>
+          <>
+            {/* =========================================================
+                MAIN CART AREA
+                ONLY CHANGE:
+                Right column now contains ONLY Order Summary.
+                Supporting desktop cards moved below this grid.
+            ========================================================== */}
+
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+              <div className="min-w-0 space-y-5">
+                <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black">
+                        Your Items
+                      </h2>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        {itemCount} item
+                        {itemCount === 1
+                          ? ""
+                          : "s"}{" "}
+                        selected
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-[#f8f1df] px-3 py-1.5 text-xs font-black text-[#8f6b31] dark:bg-[#211c14] dark:text-[#d6b875]">
+                      {formatPrice(
+                        subtotal
+                      )}
+                    </span>
                   </div>
+                </section>
 
-                  <span className="rounded-full bg-[#f8f1df] px-3 py-1.5 text-xs font-black text-[#8f6b31] dark:bg-[#211c14] dark:text-[#d6b875]">
-                    {formatPrice(subtotal)}
-                  </span>
-                </div>
-              </section>
+                <div className="space-y-4">
+                  {cart.map((item) => {
+                    const original =
+                      item.original_price &&
+                      item.original_price >
+                        item.price
+                        ? item.original_price
+                        : item.price;
 
-              <div className="space-y-4">
-                {cart.map((item) => {
-                  const original =
-                    item.original_price &&
-                    item.original_price > item.price
-                      ? item.original_price
-                      : item.price;
+                    const discount =
+                      original >
+                      item.price
+                        ? Math.round(
+                            ((original -
+                              item.price) /
+                              original) *
+                              100
+                          )
+                        : 0;
 
-                  const discount =
-                    original > item.price
-                      ? Math.round(
-                          ((original - item.price) / original) * 100
-                        )
-                      : 0;
+                    const stock =
+                      Math.max(
+                        item.stock ?? 99,
+                        0
+                      );
 
-                  const stock = Math.max(item.stock ?? 99, 0);
+                    return (
+                      <article
+                        key={item.id}
+                        className={[
+                          "group rounded-2xl border border-[#eadfc9] bg-white p-3.5 shadow-sm transition-all hover:shadow-lg dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-4",
 
-                  return (
-                    <article
-                      key={item.id}
-                      className={[
-                        "group rounded-2xl border border-[#eadfc9] bg-white p-3.5 shadow-sm transition-all hover:shadow-lg dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-4",
-                        removedId === item.id
-                          ? "scale-[0.98] opacity-0"
-                          : "",
-                      ].join(" ")}
-                    >
-                      <div className="flex gap-3.5 sm:gap-4">
-                        <Link
-                          href={`/dashboard/products/${item.id}`}
-                          className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-xl border border-[#eee6d8] bg-[#faf8f3] dark:border-[#2b261f] dark:bg-[#191712] sm:h-36 sm:w-36"
-                        >
-                          <ProductImage
-                            src={item.image_url}
-                            alt={item.name}
-                            sizes="(max-width: 640px) 104px, 144px"
-                            className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-105 sm:p-3"
-                          />
+                          removedId ===
+                          item.id
+                            ? "scale-[0.98] opacity-0"
+                            : "",
+                        ].join(" ")}
+                      >
+                        <div className="flex gap-3.5 sm:gap-4">
+                          <Link
+                            href={`/dashboard/products/${item.id}`}
+                            className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-xl border border-[#eee6d8] bg-[#faf8f3] dark:border-[#2b261f] dark:bg-[#191712] sm:h-36 sm:w-36"
+                          >
+                            <ProductImage
+                              src={
+                                item.image_url
+                              }
+                              alt={
+                                item.name
+                              }
+                              sizes="(max-width: 640px) 104px, 144px"
+                              className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-105 sm:p-3"
+                            />
 
-                          {discount > 0 && (
-                            <span className="absolute left-1.5 top-1.5 rounded-md bg-[#8f6b31] px-1.5 py-1 text-[8px] font-black text-white sm:left-2 sm:top-2 sm:px-2 sm:text-[10px]">
-                              {discount}% OFF
-                            </span>
-                          )}
-                        </Link>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              {item.brand && (
-                                <p className="mb-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#a17a35] sm:text-[10px] sm:tracking-[0.15em]">
-                                  {item.brand}
-                                </p>
-                              )}
-
-                              <Link
-                                href={`/dashboard/products/${item.id}`}
-                                className="line-clamp-2 text-sm font-black leading-5 hover:text-[#a17a35] sm:text-base sm:leading-6"
-                              >
-                                {item.name}
-                              </Link>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item.id)}
-                              className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 sm:p-2"
-                              aria-label="Remove item"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-
-                          <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
-                            {item.rating !== null &&
-                              item.rating !== undefined && (
-                                <span className="rounded-md bg-[#fff8e9] px-1.5 py-1 text-[9px] font-bold text-[#8f6b31] dark:bg-[#211c14] sm:px-2 sm:text-[10px]">
-                                  ★ {item.rating.toFixed(1)}
-                                  {item.reviews_count
-                                    ? ` (${item.reviews_count})`
-                                    : ""}
-                                </span>
-                              )}
-
-                            {stock === 0 && (
-                              <span className="rounded-md bg-red-50 px-1.5 py-1 text-[9px] font-bold text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                                Out of stock
+                            {discount >
+                              0 && (
+                              <span className="absolute left-1.5 top-1.5 rounded-md bg-[#8f6b31] px-1.5 py-1 text-[8px] font-black text-white sm:left-2 sm:top-2 sm:px-2 sm:text-[10px]">
+                                {
+                                  discount
+                                }
+                                % OFF
                               </span>
                             )}
+                          </Link>
 
-                            {stock > 0 && stock <= 5 && (
-                              <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold text-orange-700 dark:bg-orange-950/30 dark:text-orange-300">
-                                Only {stock} left
-                              </span>
-                            )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                {item.brand && (
+                                  <p className="mb-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#a17a35] sm:text-[10px] sm:tracking-[0.15em]">
+                                    {
+                                      item.brand
+                                    }
+                                  </p>
+                                )}
 
-                            {stock > 5 && (
-                              <span className="rounded-md bg-emerald-50 px-1.5 py-1 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                In Stock
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap items-end justify-between gap-3 sm:mt-4">
-                            <div>
-                              <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-gray-400 sm:text-[10px]">
-                                Quantity
-                              </p>
-
-                              <div className="inline-flex h-9 items-center overflow-hidden rounded-xl border border-[#dfd3bd] bg-white dark:border-[#40372a] dark:bg-[#171512] sm:h-10">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateQuantity(item.id, "decrease")
-                                  }
-                                  disabled={updatingId === item.id}
-                                  className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:opacity-50 sm:w-10"
-                                  aria-label="Decrease quantity"
+                                <Link
+                                  href={`/dashboard/products/${item.id}`}
+                                  className="line-clamp-2 text-sm font-black leading-5 hover:text-[#a17a35] sm:text-base sm:leading-6"
                                 >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </button>
-
-                                <span className="flex min-w-9 items-center justify-center border-x border-[#dfd3bd] text-xs font-black dark:border-[#40372a] sm:min-w-10 sm:text-sm">
-                                  {item.quantity}
-                                </span>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateQuantity(item.id, "increase")
+                                  {
+                                    item.name
                                   }
-                                  disabled={
-                                    updatingId === item.id ||
-                                    item.quantity >= stock
-                                  }
-                                  className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-[#211e18] sm:w-10"
-                                  aria-label="Increase quantity"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </button>
+                                </Link>
                               </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeItem(
+                                    item.id
+                                  )
+                                }
+                                className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 sm:p-2"
+                                aria-label="Remove item"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
 
-                            <div className="text-right">
-                              <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-                                {original > item.price && (
-                                  <span className="text-[10px] text-gray-400 line-through sm:text-xs">
-                                    {formatPrice(original * item.quantity)}
+                            <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
+                              {item.rating !==
+                                null &&
+                                item.rating !==
+                                  undefined && (
+                                  <span className="rounded-md bg-[#fff8e9] px-1.5 py-1 text-[9px] font-bold text-[#8f6b31] dark:bg-[#211c14] sm:px-2 sm:text-[10px]">
+                                    ★{" "}
+                                    {item.rating.toFixed(
+                                      1
+                                    )}
+                                    {item.reviews_count
+                                      ? ` (${item.reviews_count})`
+                                      : ""}
                                   </span>
                                 )}
 
-                                <span className="text-lg font-black sm:text-xl">
-                                  {formatPrice(item.price * item.quantity)}
+                              {stock ===
+                                0 && (
+                                <span className="rounded-md bg-red-50 px-1.5 py-1 text-[9px] font-bold text-red-700 dark:bg-red-950/30 dark:text-red-400">
+                                  Out of stock
                                 </span>
+                              )}
+
+                              {stock >
+                                0 &&
+                                stock <=
+                                  5 && (
+                                  <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold text-orange-700 dark:bg-orange-950/30 dark:text-orange-300">
+                                    Only{" "}
+                                    {
+                                      stock
+                                    }{" "}
+                                    left
+                                  </span>
+                                )}
+
+                              {stock >
+                                5 && (
+                                <span className="rounded-md bg-emerald-50 px-1.5 py-1 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                  In Stock
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap items-end justify-between gap-3 sm:mt-4">
+                              <div>
+                                <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-gray-400 sm:text-[10px]">
+                                  Quantity
+                                </p>
+
+                                <div className="inline-flex h-9 items-center overflow-hidden rounded-xl border border-[#dfd3bd] bg-white dark:border-[#40372a] dark:bg-[#171512] sm:h-10">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateQuantity(
+                                        item.id,
+                                        "decrease"
+                                      )
+                                    }
+                                    disabled={
+                                      updatingId ===
+                                      item.id
+                                    }
+                                    className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:opacity-50 sm:w-10"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  <span className="flex min-w-9 items-center justify-center border-x border-[#dfd3bd] text-xs font-black dark:border-[#40372a] sm:min-w-10 sm:text-sm">
+                                    {
+                                      item.quantity
+                                    }
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateQuantity(
+                                        item.id,
+                                        "increase"
+                                      )
+                                    }
+                                    disabled={
+                                      updatingId ===
+                                        item.id ||
+                                      item.quantity >=
+                                        stock
+                                    }
+                                    className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-[#211e18] sm:w-10"
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </div>
 
-                              <p className="mt-0.5 text-[10px] text-gray-500 sm:mt-1 sm:text-[11px]">
-                                {formatPrice(item.price)} each
-                              </p>
+                              <div className="text-right">
+                                <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+                                  {original >
+                                    item.price && (
+                                    <span className="text-[10px] text-gray-400 line-through sm:text-xs">
+                                      {formatPrice(
+                                        original *
+                                          item.quantity
+                                      )}
+                                    </span>
+                                  )}
+
+                                  <span className="text-lg font-black sm:text-xl">
+                                    {formatPrice(
+                                      item.price *
+                                        item.quantity
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p className="mt-0.5 text-[10px] text-gray-500 sm:mt-1 sm:text-[11px]">
+                                  {formatPrice(
+                                    item.price
+                                  )}{" "}
+                                  each
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#f0e9dd] pt-2.5 dark:border-[#29251f] sm:mt-4 sm:gap-3 sm:pt-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  saveForLater(
+                                    item
+                                  )
+                                }
+                                className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                              >
+                                <Heart className="h-3.5 w-3.5" />
+                                Save for later
+                              </button>
+
+                              <span className="hidden h-3 w-px bg-[#dfd3bd] dark:bg-[#40372a] sm:block" />
+
+                              <Link
+                                href={`/dashboard/products/${item.id}`}
+                                className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                              >
+                                View product
+                                <ArrowRight className="h-3 w-3" />
+                              </Link>
                             </div>
                           </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
 
-                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#f0e9dd] pt-2.5 dark:border-[#29251f] sm:mt-4 sm:gap-3 sm:pt-3">
+                <section className="hidden gap-3 sm:grid sm:grid-cols-3">
+                  <Benefit
+                    icon={
+                      <Truck className="h-5 w-5" />
+                    }
+                    title="Fast Delivery"
+                    text="Reliable delivery to your doorstep."
+                  />
+
+                  <Benefit
+                    icon={
+                      <ShieldCheck className="h-5 w-5" />
+                    }
+                    title="Secure Shopping"
+                    text="Protected checkout experience."
+                  />
+
+                  <Benefit
+                    icon={
+                      <RefreshCcw className="h-5 w-5" />
+                    }
+                    title="Easy Returns"
+                    text="Simple returns on eligible products."
+                  />
+                </section>
+
+                {savedItems.length >
+                  0 && (
+                  <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-lg font-black">
+                          Saved for Later
+                        </h2>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          Keep products here for later.
+                        </p>
+                      </div>
+
+                      <Heart className="h-5 w-5 text-[#b9975b]" />
+                    </div>
+
+                    <div className="space-y-3">
+                      {savedItems.map(
+                        (item) => (
+                          <div
+                            key={
+                              item.id
+                            }
+                            className="flex items-center gap-3 rounded-xl border border-[#eee6d8] p-3 dark:border-[#2c271f]"
+                          >
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#faf8f3] dark:bg-[#191712]">
+                              <ProductImage
+                                src={
+                                  item.image_url
+                                }
+                                alt={
+                                  item.name
+                                }
+                                sizes="64px"
+                                className="h-full w-full object-contain p-1.5"
+                              />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <Link
+                                href={`/dashboard/products/${item.id}`}
+                                className="line-clamp-1 text-sm font-bold hover:text-[#a17a35]"
+                              >
+                                {
+                                  item.name
+                                }
+                              </Link>
+
+                              <p className="mt-1 text-sm font-black text-[#8f6b31]">
+                                {formatPrice(
+                                  item.price
+                                )}
+                              </p>
+                            </div>
+
                             <button
                               type="button"
-                              onClick={() => saveForLater(item)}
-                              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                              onClick={() =>
+                                moveToCart(
+                                  item
+                                )
+                              }
+                              className="hidden rounded-lg bg-[#f8f1df] px-3 py-2 text-xs font-black text-[#8f6b31] sm:block"
                             >
-                              <Heart className="h-3.5 w-3.5" />
-                              Save for later
+                              Move to Cart
                             </button>
 
-                            <span className="hidden h-3 w-px bg-[#dfd3bd] dark:bg-[#40372a] sm:block" />
-
-                            <Link
-                              href={`/dashboard/products/${item.id}`}
-                              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeSavedItem(
+                                  item.id
+                                )
+                              }
+                              className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                              aria-label="Remove saved item"
                             >
-                              View product
-                              <ArrowRight className="h-3 w-3" />
-                            </Link>
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+                        )
+                      )}
+                    </div>
+                  </section>
+                )}
               </div>
 
-              {/* Hidden on mobile to keep the cart compact. */}
-              <section className="hidden gap-3 sm:grid sm:grid-cols-3">
-                <Benefit
-                  icon={<Truck className="h-5 w-5" />}
-                  title="Fast Delivery"
-                  text="Reliable delivery to your doorstep."
-                />
-                <Benefit
-                  icon={<ShieldCheck className="h-5 w-5" />}
-                  title="Secure Shopping"
-                  text="Protected checkout experience."
-                />
-                <Benefit
-                  icon={<RefreshCcw className="h-5 w-5" />}
-                  title="Easy Returns"
-                  text="Simple returns on eligible products."
-                />
-              </section>
+              {/* =======================================================
+                  RIGHT SIDE
+                  ONLY ORDER SUMMARY HERE
+              ======================================================== */}
 
-              {savedItems.length > 0 && (
-                <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
-                  <div className="mb-5 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-black">Saved for Later</h2>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Keep products here for later.
-                      </p>
-                    </div>
-                    <Heart className="h-5 w-5 text-[#b9975b]" />
-                  </div>
-
-                  <div className="space-y-3">
-                    {savedItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 rounded-xl border border-[#eee6d8] p-3 dark:border-[#2c271f]"
-                      >
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#faf8f3] dark:bg-[#191712]">
-                          <ProductImage
-                            src={item.image_url}
-                            alt={item.name}
-                            sizes="64px"
-                            className="h-full w-full object-contain p-1.5"
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/dashboard/products/${item.id}`}
-                            className="line-clamp-1 text-sm font-bold hover:text-[#a17a35]"
-                          >
-                            {item.name}
-                          </Link>
-                          <p className="mt-1 text-sm font-black text-[#8f6b31]">
-                            {formatPrice(item.price)}
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => moveToCart(item)}
-                          className="hidden rounded-lg bg-[#f8f1df] px-3 py-2 text-xs font-black text-[#8f6b31] sm:block"
-                        >
-                          Move to Cart
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeSavedItem(item.id)}
-                          className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                          aria-label="Remove saved item"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-
-            <aside className="lg:sticky lg:top-24 lg:self-start">
-              <div className="space-y-4">
+              <aside className="lg:sticky lg:top-24 lg:self-start">
                 <section className="overflow-hidden rounded-2xl border border-[#d9c7a4] bg-white shadow-[0_18px_50px_rgba(72,52,18,0.08)] dark:border-[#443823] dark:bg-[#12110e]">
                   <div className="border-b border-[#eee6d8] bg-gradient-to-r from-[#fffdf8] to-[#faf5e9] p-5 dark:border-[#2b261f] dark:from-[#171510] dark:to-[#14120f]">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-lg font-black">Order Summary</h2>
+                        <h2 className="text-lg font-black">
+                          Order Summary
+                        </h2>
+
                         <p className="mt-1 text-xs text-gray-500">
-                          {itemCount} item{itemCount === 1 ? "" : "s"} in cart
+                          {itemCount} item
+                          {itemCount ===
+                          1
+                            ? ""
+                            : "s"}{" "}
+                          in cart
                         </p>
                       </div>
 
@@ -1120,7 +1554,12 @@ export default function CartPage() {
                     <div className="mb-5 overflow-hidden rounded-xl border border-[#eadfc9] dark:border-[#332d23]">
                       <button
                         type="button"
-                        onClick={() => setCouponOpen((value) => !value)}
+                        onClick={() =>
+                          setCouponOpen(
+                            (value) =>
+                              !value
+                          )
+                        }
                         className="flex w-full items-center justify-between gap-3 p-3.5 text-left hover:bg-[#fcfaf6] dark:hover:bg-[#181611]"
                       >
                         <span className="flex items-center gap-2.5">
@@ -1132,6 +1571,7 @@ export default function CartPage() {
                             <span className="block text-xs font-black">
                               Apply Coupon
                             </span>
+
                             <span className="block text-[10px] text-gray-500">
                               Save more on your order
                             </span>
@@ -1151,16 +1591,25 @@ export default function CartPage() {
                             <div className="flex items-center justify-between rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20">
                               <div>
                                 <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                                  {appliedCoupon} applied
+                                  {
+                                    appliedCoupon
+                                  }{" "}
+                                  applied
                                 </p>
+
                                 <p className="mt-0.5 text-[10px] text-emerald-600">
-                                  Saving {formatPrice(couponDiscount)}
+                                  Saving{" "}
+                                  {formatPrice(
+                                    couponDiscount
+                                  )}
                                 </p>
                               </div>
 
                               <button
                                 type="button"
-                                onClick={removeCoupon}
+                                onClick={
+                                  removeCoupon
+                                }
                                 className="text-[10px] font-black text-red-600"
                               >
                                 Remove
@@ -1170,12 +1619,25 @@ export default function CartPage() {
                             <>
                               <div className="flex gap-2">
                                 <input
-                                  value={coupon}
-                                  onChange={(event) =>
-                                    setCoupon(event.target.value.toUpperCase())
+                                  value={
+                                    coupon
                                   }
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") applyCoupon();
+                                  onChange={(
+                                    event
+                                  ) =>
+                                    setCoupon(
+                                      event.target.value.toUpperCase()
+                                    )
+                                  }
+                                  onKeyDown={(
+                                    event
+                                  ) => {
+                                    if (
+                                      event.key ===
+                                      "Enter"
+                                    ) {
+                                      applyCoupon();
+                                    }
                                   }}
                                   placeholder="Enter coupon"
                                   className="min-w-0 flex-1 rounded-lg border border-[#dfd3bd] bg-white px-3 py-2.5 text-xs font-semibold outline-none focus:border-[#b9975b] dark:border-[#40372a] dark:bg-[#171512]"
@@ -1183,7 +1645,9 @@ export default function CartPage() {
 
                                 <button
                                   type="button"
-                                  onClick={applyCoupon}
+                                  onClick={
+                                    applyCoupon
+                                  }
                                   className="rounded-lg bg-[#8f6b31] px-4 py-2 text-xs font-black text-white"
                                 >
                                   Apply
@@ -1193,7 +1657,11 @@ export default function CartPage() {
                               <div className="mt-3 flex flex-wrap gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setCoupon("PRIME10")}
+                                  onClick={() =>
+                                    setCoupon(
+                                      "PRIME10"
+                                    )
+                                  }
                                   className="rounded-md border border-[#eadfc9] px-2 py-1 text-[10px] font-bold text-[#8f6b31]"
                                 >
                                   PRIME10
@@ -1201,7 +1669,11 @@ export default function CartPage() {
 
                                 <button
                                   type="button"
-                                  onClick={() => setCoupon("WELCOME")}
+                                  onClick={() =>
+                                    setCoupon(
+                                      "WELCOME"
+                                    )
+                                  }
                                   className="rounded-md border border-[#eadfc9] px-2 py-1 text-[10px] font-bold text-[#8f6b31]"
                                 >
                                   WELCOME
@@ -1214,26 +1686,47 @@ export default function CartPage() {
                     </div>
 
                     <div className="space-y-3 text-sm">
-                      <PriceRow label="Subtotal" value={formatPrice(subtotal)} />
+                      <PriceRow
+                        label="Subtotal"
+                        value={formatPrice(
+                          subtotal
+                        )}
+                      />
 
-                      {productSavings > 0 && (
+                      {productSavings >
+                        0 && (
                         <PriceRow
                           label="Product savings"
-                          value={`-${formatPrice(productSavings)}`}
+                          value={`-${formatPrice(
+                            productSavings
+                          )}`}
                           green
                         />
                       )}
 
                       <PriceRow
                         label="Delivery"
-                        value={shipping === 0 ? "FREE" : formatPrice(shipping)}
-                        green={shipping === 0}
+                        value={
+                          shipping ===
+                          0
+                            ? "FREE"
+                            : formatPrice(
+                                shipping
+                              )
+                        }
+                        green={
+                          shipping ===
+                          0
+                        }
                       />
 
-                      {couponDiscount > 0 && (
+                      {couponDiscount >
+                        0 && (
                         <PriceRow
                           label="Coupon discount"
-                          value={`-${formatPrice(couponDiscount)}`}
+                          value={`-${formatPrice(
+                            couponDiscount
+                          )}`}
                           green
                         />
                       )}
@@ -1246,27 +1739,38 @@ export default function CartPage() {
                         <p className="text-xs font-semibold text-gray-500">
                           Total Amount
                         </p>
+
                         <p className="mt-1 text-[10px] text-gray-400">
                           Inclusive of applicable taxes
                         </p>
                       </div>
 
                       <p className="text-2xl font-black text-[#8f6b31] dark:text-[#d6b875]">
-                        {formatPrice(grandTotal)}
+                        {formatPrice(
+                          grandTotal
+                        )}
                       </p>
                     </div>
 
-                    {totalSavings > 0 && (
+                    {totalSavings >
+                      0 && (
                       <div className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
                         <Gift className="h-4 w-4" />
-                        You save {formatPrice(totalSavings)}
+                        You save{" "}
+                        {formatPrice(
+                          totalSavings
+                        )}
                       </div>
                     )}
 
                     <button
                       type="button"
-                      onClick={proceedToCheckout}
-                      disabled={validatingCart}
+                      onClick={
+                        proceedToCheckout
+                      }
+                      disabled={
+                        validatingCart
+                      }
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8f6b31] via-[#b9975b] to-[#8f6b31] px-5 py-4 text-sm font-black text-white shadow-lg shadow-[#8f6b31]/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {validatingCart ? (
@@ -1288,76 +1792,115 @@ export default function CartPage() {
                     </div>
                   </div>
                 </section>
+              </aside>
+            </div>
 
-                {/* These supporting cards are desktop-only so mobile cart stays clean. */}
-                <section className="hidden rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] lg:block">
-                  <div className="mb-4 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-[#b9975b]" />
-                    <h3 className="text-sm font-black">PrimeCart Promise</h3>
-                  </div>
+            {/* =========================================================
+                DESKTOP SUPPORTING SECTION
+                MOVED OUTSIDE RIGHT SIDEBAR
+            ========================================================== */}
 
-                  <div className="space-y-3">
-                    <Promise
-                      icon={<PackageCheck className="h-4 w-4" />}
-                      title="Quality Checked"
-                      text="Products from trusted sellers"
-                    />
-                    <Promise
-                      icon={<Truck className="h-4 w-4" />}
-                      title="Reliable Delivery"
-                      text="Track your order anytime"
-                    />
-                    <Promise
-                      icon={<RefreshCcw className="h-4 w-4" />}
-                      title="Easy Returns"
-                      text="Hassle-free eligible returns"
-                    />
-                    <Promise
-                      icon={<ShieldCheck className="h-4 w-4" />}
-                      title="Secure Payments"
-                      text="Protected checkout experience"
-                    />
-                  </div>
-                </section>
+            <section className="mt-6 hidden lg:block">
+              <div className="grid grid-cols-4 gap-4">
+                <DesktopTrustCard
+                  icon={
+                    <Truck className="h-5 w-5" />
+                  }
+                  title="Fast Delivery"
+                  text="Reliable delivery right to your doorstep."
+                  label="3–7 Business Days"
+                />
 
-                <section className="hidden rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] lg:block">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-black">We Accept</h3>
-                    <WalletCards className="h-4 w-4 text-[#b9975b]" />
-                  </div>
+                <DesktopTrustCard
+                  icon={
+                    <ShieldCheck className="h-5 w-5" />
+                  }
+                  title="Secure Shopping"
+                  text="Your checkout and payment details stay protected."
+                  label="100% Secure Checkout"
+                />
 
-                  <div className="grid grid-cols-4 gap-2">
-                    {["UPI", "VISA", "RuPay", "COD"].map((method) => (
-                      <div
-                        key={method}
-                        className="flex h-9 items-center justify-center rounded-lg border border-[#eee6d8] bg-[#fcfaf6] text-[9px] font-black text-gray-500 dark:border-[#2d2820] dark:bg-[#181611]"
-                      >
-                        {method}
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                <DesktopTrustCard
+                  icon={
+                    <RefreshCcw className="h-5 w-5" />
+                  }
+                  title="Easy Returns"
+                  text="Hassle-free returns on eligible products."
+                  label="Simple & Easy"
+                />
 
-                <section className="hidden rounded-2xl border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] to-[#f8f1df] p-5 dark:border-[#332d23] dark:from-[#171510] dark:to-[#211c14] lg:block">
-                  <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#9a7539] shadow-sm dark:bg-[#171512]">
-                      <Clock3 className="h-5 w-5" />
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-black">Estimated Delivery</p>
-                      <p className="mt-1 text-sm font-bold text-[#8f6b31] dark:text-[#d6b875]">
-                        3–7 business days
-                      </p>
-                      <p className="mt-1 text-[10px] leading-4 text-gray-500">
-                        Final delivery date will be confirmed at checkout.
-                      </p>
-                    </div>
-                  </div>
-                </section>
+                <DesktopTrustCard
+                  icon={
+                    <PackageCheck className="h-5 w-5" />
+                  }
+                  title="Quality Checked"
+                  text="Products from trusted sellers and brands."
+                  label="PrimeCart Promise"
+                />
               </div>
-            </aside>
-          </div>
+            </section>
+
+            <section className="mt-4 hidden items-center justify-between rounded-2xl border border-[#eadfc9] bg-white px-5 py-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] lg:flex">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8f1df] text-[#9a7539] dark:bg-[#211c14]">
+                  <WalletCards className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <p className="text-sm font-black">
+                    Safe & Flexible Payments
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] text-gray-500">
+                    Multiple payment options available at checkout.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {[
+                  "UPI",
+                  "VISA",
+                  "RuPay",
+                  "COD",
+                ].map(
+                  (method) => (
+                    <div
+                      key={method}
+                      className="flex h-9 min-w-[68px] items-center justify-center rounded-lg border border-[#eee6d8] bg-[#fcfaf6] px-3 text-[9px] font-black text-gray-500 dark:border-[#2d2820] dark:bg-[#181611]"
+                    >
+                      {method}
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+
+            <section className="mt-4 hidden rounded-2xl border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] to-[#f8f1df] p-5 dark:border-[#332d23] dark:from-[#171510] dark:to-[#211c14] lg:block">
+              <div className="flex items-center justify-between gap-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#9a7539] shadow-sm dark:bg-[#171512]">
+                    <Clock3 className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-black">
+                      Estimated Delivery
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-[#8f6b31] dark:text-[#d6b875]">
+                      3–7 business days
+                    </p>
+                  </div>
+                </div>
+
+                <p className="max-w-xl text-right text-[11px] leading-5 text-gray-500">
+                  Final delivery date will be confirmed at checkout.
+                  Track your order anytime from your PrimeCart account.
+                </p>
+              </div>
+            </section>
+          </>
         )}
       </div>
 
@@ -1368,19 +1911,31 @@ export default function CartPage() {
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 Total
               </p>
+
               <p className="truncate text-lg font-black text-[#8f6b31] dark:text-[#d6b875]">
-                {formatPrice(grandTotal)}
+                {formatPrice(
+                  grandTotal
+                )}
               </p>
             </div>
 
             <button
               type="button"
-              onClick={proceedToCheckout}
-              disabled={validatingCart}
+              onClick={
+                proceedToCheckout
+              }
+              disabled={
+                validatingCart
+              }
               className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#8f6b31] px-4 text-sm font-black text-white disabled:opacity-60"
             >
-              {validatingCart ? "Checking..." : "Checkout"}
-              {!validatingCart && <ArrowRight className="h-4 w-4" />}
+              {validatingCart
+                ? "Checking..."
+                : "Checkout"}
+
+              {!validatingCart && (
+                <ArrowRight className="h-4 w-4" />
+              )}
             </button>
           </div>
         </div>
@@ -1400,8 +1955,17 @@ function PriceRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-500 dark:text-gray-400">{label}</span>
-      <span className={green ? "font-bold text-emerald-600" : "font-bold"}>
+      <span className="text-gray-500 dark:text-gray-400">
+        {label}
+      </span>
+
+      <span
+        className={
+          green
+            ? "font-bold text-emerald-600"
+            : "font-bold"
+        }
+      >
         {value}
       </span>
     </div>
@@ -1422,10 +1986,50 @@ function Benefit({
       <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-[#f8f1df] text-[#9a7539] dark:bg-[#211c14]">
         {icon}
       </div>
-      <h3 className="text-xs font-black">{title}</h3>
+
+      <h3 className="text-xs font-black">
+        {title}
+      </h3>
+
       <p className="mt-1 text-[10px] leading-4 text-gray-500 dark:text-gray-400">
         {text}
       </p>
+    </div>
+  );
+}
+
+function DesktopTrustCard({
+  icon,
+  title,
+  text,
+  label,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-[#2f2a22] dark:bg-[#12110e]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f8f1df] text-[#9a7539] dark:bg-[#211c14]">
+          {icon}
+        </div>
+
+        <div className="min-w-0">
+          <h3 className="text-sm font-black">
+            {title}
+          </h3>
+
+          <p className="mt-1 text-[11px] leading-5 text-gray-500 dark:text-gray-400">
+            {text}
+          </p>
+
+          <p className="mt-2 text-[10px] font-black text-[#8f6b31] dark:text-[#d6b875]">
+            {label}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1446,7 +2050,10 @@ function Promise({
       </div>
 
       <div>
-        <p className="text-xs font-bold">{title}</p>
+        <p className="text-xs font-bold">
+          {title}
+        </p>
+
         <p className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
           {text}
         </p>
@@ -1457,7 +2064,7 @@ function Promise({
 
 function EmptyCart() {
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-[#eadfc9] bg-white px-5 py-14 text-center shadow-[0_18px_55px_rgba(72,52,18,0.06)] dark:border-[#2f2a22] dark:bg-[#12110e] sm:px-10 sm:py-24 sm:rounded-[30px]">
+    <section className="relative overflow-hidden rounded-[26px] border border-[#eadfc9] bg-white px-5 py-14 text-center shadow-[0_18px_55px_rgba(72,52,18,0.06)] dark:border-[#2f2a22] dark:bg-[#12110e] sm:rounded-[30px] sm:px-10 sm:py-24">
       <div className="absolute left-1/2 top-0 h-48 w-48 -translate-x-1/2 rounded-full bg-[#b9975b]/10 blur-3xl" />
 
       <div className="relative mx-auto max-w-md">
@@ -1506,8 +2113,10 @@ function CartLoading() {
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2.5">
             <div className="h-10 w-10 animate-pulse rounded-xl bg-[#eee6d8] dark:bg-[#252118]" />
+
             <div className="h-7 w-28 animate-pulse rounded-lg bg-[#eee6d8] dark:bg-[#252118]" />
           </div>
+
           <div className="h-9 w-20 animate-pulse rounded-full bg-[#eee6d8] dark:bg-[#252118]" />
         </div>
       </div>
@@ -1518,12 +2127,15 @@ function CartLoading() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-4">
             <div className="h-24 animate-pulse rounded-2xl bg-white dark:bg-[#12110e]" />
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="h-52 animate-pulse rounded-2xl bg-white dark:bg-[#12110e]"
-              />
-            ))}
+
+            {[1, 2, 3].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="h-52 animate-pulse rounded-2xl bg-white dark:bg-[#12110e]"
+                />
+              )
+            )}
           </div>
 
           <div className="h-[520px] animate-pulse rounded-2xl bg-white dark:bg-[#12110e]" />
