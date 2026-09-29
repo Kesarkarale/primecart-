@@ -799,6 +799,7 @@ export default function ProductDetailPage() {
             .from("cart_items")
             .update({
               quantity: newQuantity,
+		name: product.name,
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingItem.id)
@@ -852,6 +853,7 @@ export default function ProductDetailPage() {
           .insert({
             user_id: user.id,
             product_id: product.id,
+            name: product.name,
             quantity: safeQuantity,
           })
           .select(
