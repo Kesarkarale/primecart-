@@ -26,7 +26,12 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -44,9 +49,17 @@ type Product = {
   is_active?: boolean;
 };
 
-type CartItem = Product & { quantity: number };
+type CartItem = Product & {
+  quantity: number;
+  cart_item_id?: string;
+};
+
 type SavedItem = CartItem;
-type NoticeType = "success" | "error" | "info";
+
+type NoticeType =
+  | "success"
+  | "error"
+  | "info";
 
 type Notice = {
   type: NoticeType;
@@ -55,8 +68,10 @@ type Notice = {
 
 const CART_KEY = "primecart-cart";
 const SAVED_KEY = "primecart-saved";
-const CHECKOUT_CART_KEY = "primecart-checkout-cart";
-const CHECKOUT_SUMMARY_KEY = "primecart-checkout-summary";
+const CHECKOUT_CART_KEY =
+  "primecart-checkout-cart";
+const CHECKOUT_SUMMARY_KEY =
+  "primecart-checkout-summary";
 const WISHLIST_KEY = "primecart-wishlist";
 
 const FREE_SHIPPING_LIMIT = 999;
@@ -70,6 +85,7 @@ const COUPONS = {
     minimum: 0,
     label: "10% OFF up to ₹500",
   },
+
   WELCOME: {
     type: "flat" as const,
     value: 150,
@@ -86,24 +102,26 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
-/*
- * Product images:
- * Handles DB values such as:
- *   product.png
- *   /product.png
- *   public/product.png
- *   products/product.png
- *   https://...
- */
-function getImageCandidates(value?: string | null) {
+/* =========================================================
+   IMAGE HELPERS
+========================================================= */
+
+function getImageCandidates(
+  value?: string | null
+) {
   if (!value?.trim()) {
     return ["/placeholder-product.png"];
   }
 
   const raw = value.trim();
 
-  if (/^(https?:\/\/|data:)/i.test(raw)) {
-    return [raw, "/placeholder-product.png"];
+  if (
+    /^(https?:\/\/|data:)/i.test(raw)
+  ) {
+    return [
+      raw,
+      "/placeholder-product.png",
+    ];
   }
 
   const clean = raw
@@ -142,6 +160,7 @@ function ProductImage({
   sizes?: string;
 }) {
   const candidates = getImageCandidates(src);
+
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -149,7 +168,8 @@ function ProductImage({
   }, [src]);
 
   const current =
-    candidates[index] ?? "/placeholder-product.png";
+    candidates[index] ??
+    "/placeholder-product.png";
 
   return (
     <img
@@ -159,44 +179,78 @@ function ProductImage({
       className={className}
       loading="lazy"
       onError={() => {
-        if (index < candidates.length - 1) {
-          setIndex((value) => value + 1);
+        if (
+          index <
+          candidates.length - 1
+        ) {
+          setIndex(
+            (value) => value + 1
+          );
         }
       }}
     />
   );
 }
 
+/* =========================================================
+   LOCAL STORAGE HELPERS
+   Saved-for-later / wishlist remain local.
+   Actual CART source = Supabase.
+========================================================= */
+
 function readStorage<T>(key: string): T[] {
-  if (typeof window === "undefined") return [];
+  if (
+    typeof window === "undefined"
+  ) {
+    return [];
+  }
 
   try {
-    const value = localStorage.getItem(key);
+    const value =
+      localStorage.getItem(key);
 
     if (!value) return [];
 
     const parsed = JSON.parse(value);
 
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
   } catch {
     return [];
   }
 }
 
-function writeStorage(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
+function writeStorage(
+  key: string,
+  value: unknown
+) {
+  if (
+    typeof window === "undefined"
+  ) {
+    return;
+  }
 
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
   } catch {
-    // Ignore localStorage errors.
+    // Ignore storage errors.
   }
 }
+
+/* =========================================================
+   NORMALIZE SAVED ITEMS
+========================================================= */
 
 function normalizeItem(
   item: Partial<CartItem>
 ): CartItem | null {
-  if (!item.id || !item.name) return null;
+  if (!item.id || !item.name) {
+    return null;
+  }
 
   return {
     id: String(item.id),
@@ -204,16 +258,24 @@ function normalizeItem(
     price: Number(item.price) || 0,
 
     original_price:
-      item.original_price !== null &&
-      item.original_price !== undefined
-        ? Number(item.original_price)
+      item.original_price !==
+        null &&
+      item.original_price !==
+        undefined
+        ? Number(
+            item.original_price
+          )
         : null,
 
-    image_url: item.image_url ?? null,
-    brand: item.brand ?? null,
+    image_url:
+      item.image_url ?? null,
+
+    brand:
+      item.brand ?? null,
 
     stock:
-      item.stock !== null && item.stock !== undefined
+      item.stock !== null &&
+      item.stock !== undefined
         ? Number(item.stock)
         : 99,
 
@@ -224,39 +286,63 @@ function normalizeItem(
         : null,
 
     reviews_count:
-      item.reviews_count !== null &&
-      item.reviews_count !== undefined
-        ? Number(item.reviews_count)
+      item.reviews_count !==
+        null &&
+      item.reviews_count !==
+        undefined
+        ? Number(
+            item.reviews_count
+          )
         : null,
 
-    category_id: item.category_id ?? null,
+    category_id:
+      item.category_id ?? null,
 
-    is_active: item.is_active ?? true,
+    is_active:
+      item.is_active ?? true,
 
     quantity: Math.max(
       1,
       Number(item.quantity) || 1
     ),
+
+    cart_item_id:
+      item.cart_item_id,
   };
 }
+
+/* =========================================================
+   PAGE
+========================================================= */
 
 export default function CartPage() {
   const supabase = createClient();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [savedItems, setSavedItems] = useState<
-    SavedItem[]
-  >([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cart, setCart] =
+    useState<CartItem[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [savedItems, setSavedItems] =
+    useState<SavedItem[]>([]);
+
+  const [wishlist, setWishlist] =
+    useState<string[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [updatingId, setUpdatingId] =
     useState<string | null>(null);
 
-  const [coupon, setCoupon] = useState("");
-  const [appliedCoupon, setAppliedCoupon] =
-    useState<string | null>(null);
-  const [couponOpen, setCouponOpen] = useState(false);
+  const [coupon, setCoupon] =
+    useState("");
+
+  const [
+    appliedCoupon,
+    setAppliedCoupon,
+  ] = useState<string | null>(null);
+
+  const [couponOpen, setCouponOpen] =
+    useState(false);
 
   const [notice, setNotice] =
     useState<Notice | null>(null);
@@ -264,8 +350,14 @@ export default function CartPage() {
   const [removedId, setRemovedId] =
     useState<string | null>(null);
 
-  const [validatingCart, setValidatingCart] =
-    useState(false);
+  const [
+    validatingCart,
+    setValidatingCart,
+  ] = useState(false);
+
+  /* =======================================================
+     NOTICE
+  ======================================================= */
 
   const showNotice = useCallback(
     (
@@ -280,73 +372,344 @@ export default function CartPage() {
     []
   );
 
-  useEffect(() => {
-    const storedCart = readStorage<
-      Partial<CartItem>
-    >(CART_KEY)
-      .map(normalizeItem)
-      .filter(
-        (item): item is CartItem => item !== null
-      );
+  /* =======================================================
+     LOAD CART FROM SUPABASE
+  ======================================================= */
 
-    const storedSaved = readStorage<
-      Partial<SavedItem>
-    >(SAVED_KEY)
-      .map(normalizeItem)
-      .filter(
-        (item): item is SavedItem => item !== null
-      );
+  const loadCartFromDatabase =
+    useCallback(
+      async () => {
+        setLoading(true);
 
-    const storedWishlist =
-      readStorage<string>(WISHLIST_KEY);
+        try {
+          const {
+            data: {
+              user,
+            },
+            error: userError,
+          } =
+            await supabase.auth.getUser();
 
-    setCart(storedCart);
-    setSavedItems(storedSaved);
+          if (userError) {
+            throw userError;
+          }
 
-    setWishlist(
-      storedWishlist.filter(
-        (value): value is string =>
-          typeof value === "string"
-      )
+          if (!user) {
+            window.location.href =
+              "/login?redirect=/dashboard/cart";
+            return;
+          }
+
+          /*
+           * Step 1:
+           * Get current user's cart rows.
+           */
+
+          const {
+            data: cartRows,
+            error: cartError,
+          } = await supabase
+            .from("cart_items")
+            .select(
+              `
+                id,
+                user_id,
+                product_id,
+                quantity,
+                created_at
+              `
+            )
+            .eq(
+              "user_id",
+              user.id
+            )
+            .order(
+              "created_at",
+              {
+                ascending: false,
+              }
+            );
+
+          if (cartError) {
+            throw cartError;
+          }
+
+          const rows =
+            cartRows ?? [];
+
+          /*
+           * Empty cart
+           */
+
+          if (!rows.length) {
+            setCart([]);
+
+            writeStorage(
+              CART_KEY,
+              []
+            );
+
+            return;
+          }
+
+          /*
+           * Step 2:
+           * Get products separately.
+           *
+           * This avoids depending on the
+           * Supabase relationship alias.
+           */
+
+          const productIds =
+            rows.map(
+              (row) =>
+                row.product_id
+            );
+
+          const {
+            data: products,
+            error:
+              productsError,
+          } = await supabase
+            .from("products")
+            .select(
+              `
+                id,
+                name,
+                price,
+                original_price,
+                image_url,
+                brand,
+                stock,
+                rating,
+                reviews_count,
+                category_id,
+                is_active
+              `
+            )
+            .in(
+              "id",
+              productIds
+            );
+
+          if (productsError) {
+            throw productsError;
+          }
+
+          const productMap =
+            new Map<
+              string,
+              Product
+            >(
+              (
+                products ?? []
+              ).map(
+                (product) => [
+                  product.id,
+                  product as Product,
+                ]
+              )
+            );
+
+          const nextCart: CartItem[] =
+            [];
+
+          /*
+           * Combine cart_items + products
+           */
+
+          for (const row of rows) {
+            const product =
+              productMap.get(
+                row.product_id
+              );
+
+            if (!product) {
+              continue;
+            }
+
+            if (
+              product.is_active ===
+              false
+            ) {
+              continue;
+            }
+
+            const stock = Math.max(
+              Number(
+                product.stock ?? 0
+              ),
+              0
+            );
+
+            if (stock <= 0) {
+              continue;
+            }
+
+            const quantity = Math.min(
+              Math.max(
+                Number(
+                  row.quantity
+                ) || 1,
+                1
+              ),
+              stock
+            );
+
+            nextCart.push({
+              ...product,
+              quantity,
+              cart_item_id:
+                row.id,
+            });
+          }
+
+          setCart(nextCart);
+
+          /*
+           * Keep localStorage only as
+           * compatibility/cache.
+           *
+           * DB remains source of truth.
+           */
+
+          writeStorage(
+            CART_KEY,
+            nextCart
+          );
+        } catch (error) {
+          console.error(
+            "Load cart error:",
+            error
+          );
+
+          showNotice(
+            "Could not load your cart. Please refresh and try again.",
+            "error"
+          );
+        } finally {
+          setLoading(false);
+        }
+      },
+      [supabase, showNotice]
     );
 
-    setLoading(false);
-  }, []);
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function initialize() {
+      /*
+       * Load saved-for-later and wishlist.
+       */
+
+      const storedSaved =
+        readStorage<
+          Partial<SavedItem>
+        >(SAVED_KEY)
+          .map(normalizeItem)
+          .filter(
+            (
+              item
+            ): item is SavedItem =>
+              item !== null
+          );
+
+      const storedWishlist =
+        readStorage<string>(
+          WISHLIST_KEY
+        );
+
+      if (mounted) {
+        setSavedItems(
+          storedSaved
+        );
+
+        setWishlist(
+          storedWishlist.filter(
+            (
+              value
+            ): value is string =>
+              typeof value ===
+              "string"
+          )
+        );
+      }
+
+      /*
+       * Cart comes from Supabase.
+       */
+
+      await loadCartFromDatabase();
+    }
+
+    initialize();
+
+    return () => {
+      mounted = false;
+    };
+  }, [loadCartFromDatabase]);
+
+  /* =======================================================
+     SAVED / WISHLIST LOCAL STORAGE
+  ======================================================= */
 
   useEffect(() => {
     if (!loading) {
-      writeStorage(CART_KEY, cart);
+      writeStorage(
+        SAVED_KEY,
+        savedItems
+      );
     }
-  }, [cart, loading]);
+  }, [
+    savedItems,
+    loading,
+  ]);
 
   useEffect(() => {
     if (!loading) {
-      writeStorage(SAVED_KEY, savedItems);
+      writeStorage(
+        WISHLIST_KEY,
+        wishlist
+      );
     }
-  }, [savedItems, loading]);
+  }, [
+    wishlist,
+    loading,
+  ]);
 
-  useEffect(() => {
-    if (!loading) {
-      writeStorage(WISHLIST_KEY, wishlist);
-    }
-  }, [wishlist, loading]);
+  /* =======================================================
+     NOTICE TIMER
+  ======================================================= */
 
   useEffect(() => {
     if (!notice) return;
 
-    const timer = window.setTimeout(
-      () => setNotice(null),
-      3200
-    );
+    const timer =
+      window.setTimeout(
+        () => setNotice(null),
+        3200
+      );
 
-    return () => window.clearTimeout(timer);
+    return () =>
+      window.clearTimeout(
+        timer
+      );
   }, [notice]);
+
+  /* =======================================================
+     CART CALCULATIONS
+  ======================================================= */
 
   const itemCount = useMemo(
     () =>
       cart.reduce(
         (total, item) =>
-          total + item.quantity,
+          total +
+          item.quantity,
         0
       ),
     [cart]
@@ -357,7 +720,8 @@ export default function CartPage() {
       cart.reduce(
         (total, item) =>
           total +
-          item.price * item.quantity,
+          item.price *
+            item.quantity,
         0
       ),
     [cart]
@@ -365,72 +729,94 @@ export default function CartPage() {
 
   const originalTotal = useMemo(
     () =>
-      cart.reduce((total, item) => {
-        const original =
-          item.original_price &&
-          item.original_price > item.price
-            ? item.original_price
-            : item.price;
+      cart.reduce(
+        (total, item) => {
+          const original =
+            item.original_price &&
+            item.original_price >
+              item.price
+              ? item.original_price
+              : item.price;
 
-        return (
-          total +
-          original * item.quantity
-        );
-      }, 0),
+          return (
+            total +
+            original *
+              item.quantity
+          );
+        },
+        0
+      ),
     [cart]
   );
 
-  const productSavings = Math.max(
-    originalTotal - subtotal,
-    0
-  );
+  const productSavings =
+    Math.max(
+      originalTotal -
+        subtotal,
+      0
+    );
 
   const shipping =
     subtotal === 0
       ? 0
-      : subtotal >= FREE_SHIPPING_LIMIT
+      : subtotal >=
+          FREE_SHIPPING_LIMIT
         ? 0
         : STANDARD_SHIPPING;
 
-  const couponDiscount = useMemo(() => {
-    if (!appliedCoupon) return 0;
+  const couponDiscount =
+    useMemo(() => {
+      if (!appliedCoupon) {
+        return 0;
+      }
 
-    const selected =
-      COUPONS[
-        appliedCoupon as keyof typeof COUPONS
-      ];
+      const selected =
+        COUPONS[
+          appliedCoupon as keyof typeof COUPONS
+        ];
 
-    if (
-      !selected ||
-      subtotal < selected.minimum
-    ) {
-      return 0;
-    }
+      if (
+        !selected ||
+        subtotal <
+          selected.minimum
+      ) {
+        return 0;
+      }
 
-    if (selected.type === "percent") {
+      if (
+        selected.type ===
+        "percent"
+      ) {
+        return Math.min(
+          Math.round(
+            (subtotal *
+              selected.value) /
+              100
+          ),
+          selected.maxDiscount
+        );
+      }
+
       return Math.min(
-        Math.round(
-          (subtotal * selected.value) / 100
-        ),
-        selected.maxDiscount
+        selected.value,
+        subtotal
       );
-    }
+    }, [
+      appliedCoupon,
+      subtotal,
+    ]);
 
-    return Math.min(
-      selected.value,
-      subtotal
+  const grandTotal =
+    Math.max(
+      subtotal +
+        shipping -
+        couponDiscount,
+      0
     );
-  }, [appliedCoupon, subtotal]);
-
-  const grandTotal = Math.max(
-    subtotal +
-      shipping -
-      couponDiscount,
-    0
-  );
 
   const totalSavings =
-    productSavings + couponDiscount;
+    productSavings +
+    couponDiscount;
 
   const freeShippingRemaining =
     Math.max(
@@ -439,49 +825,73 @@ export default function CartPage() {
       0
     );
 
-  const shippingProgress = Math.min(
-    Math.round(
-      (subtotal /
-        FREE_SHIPPING_LIMIT) *
-        100
-    ),
-    100
-  );
+  const shippingProgress =
+    Math.min(
+      Math.round(
+        (subtotal /
+          FREE_SHIPPING_LIMIT) *
+          100
+      ),
+      100
+    );
+
+  /* =======================================================
+     UPDATE CART LOCAL STATE
+  ======================================================= */
 
   function persistCart(
     nextCart: CartItem[]
   ) {
     setCart(nextCart);
+
+    /*
+     * Cache only.
+     * Database is already updated before
+     * this function is called.
+     */
+
     writeStorage(
       CART_KEY,
       nextCart
     );
   }
 
-  function updateQuantity(
+  /* =======================================================
+     UPDATE QUANTITY - DATABASE
+  ======================================================= */
+
+  async function updateQuantity(
     id: string,
     direction:
       | "increase"
       | "decrease"
   ) {
-    const current = cart.find(
-      (item) => item.id === id
-    );
+    const current =
+      cart.find(
+        (item) =>
+          item.id === id
+      );
 
     if (!current) return;
 
     const stock = Math.max(
-      current.stock ?? 99,
-      1
+      Number(
+        current.stock ?? 0
+      ),
+      0
     );
 
     if (
-      direction === "increase" &&
-      current.quantity >= stock
+      direction ===
+        "increase" &&
+      current.quantity >=
+        stock
     ) {
       showNotice(
         `Only ${stock} unit${
-          stock === 1 ? "" : "s"
+          stock === 1
+            ? ""
+            : "s"
         } available.`,
         "info"
       );
@@ -489,65 +899,212 @@ export default function CartPage() {
       return;
     }
 
+    const nextQuantity =
+      direction ===
+      "increase"
+        ? Math.min(
+            current.quantity +
+              1,
+            stock
+          )
+        : current.quantity - 1;
+
     setUpdatingId(id);
 
-    window.setTimeout(() => {
-      const nextCart = cart
-        .map((item) => {
-          if (item.id !== id) {
-            return item;
-          }
+    try {
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
 
-          const quantity =
-            direction === "increase"
-              ? Math.min(
-                  item.quantity + 1,
-                  stock
-                )
-              : item.quantity - 1;
+      if (!user) {
+        window.location.href =
+          "/login?redirect=/dashboard/cart";
+        return;
+      }
 
-          return {
-            ...item,
-            quantity,
-          };
-        })
-        .filter(
-          (item) =>
-            item.quantity > 0
+      /*
+       * If quantity becomes zero,
+       * delete DB row.
+       */
+
+      if (
+        nextQuantity <= 0
+      ) {
+        const {
+          error,
+        } = await supabase
+          .from("cart_items")
+          .delete()
+          .eq(
+            "user_id",
+            user.id
+          )
+          .eq(
+            "product_id",
+            id
+          );
+
+        if (error) {
+          throw error;
+        }
+
+        persistCart(
+          cart.filter(
+            (item) =>
+              item.id !== id
+          )
         );
 
-      persistCart(nextCart);
-      setUpdatingId(null);
-    }, 120);
-  }
+        showNotice(
+          "Product removed from cart.",
+          "info"
+        );
 
-  function removeItem(id: string) {
-    setRemovedId(id);
+        return;
+      }
 
-    window.setTimeout(() => {
-      const removed = cart.find(
-        (item) => item.id === id
+      /*
+       * Update database quantity.
+       */
+
+      const {
+        error,
+      } = await supabase
+        .from("cart_items")
+        .update({
+          quantity:
+            nextQuantity,
+        })
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "product_id",
+          id
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      /*
+       * Update UI only after
+       * DB update succeeds.
+       */
+
+      persistCart(
+        cart.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                quantity:
+                  nextQuantity,
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Quantity update error:",
+        error
       );
 
-      const nextCart =
+      showNotice(
+        "Could not update cart quantity.",
+        "error"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  /* =======================================================
+     REMOVE ITEM - DATABASE
+  ======================================================= */
+
+  async function removeItem(
+    id: string
+  ) {
+    const removed =
+      cart.find(
+        (item) =>
+          item.id === id
+      );
+
+    if (!removed) return;
+
+    setRemovedId(id);
+
+    try {
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href =
+          "/login?redirect=/dashboard/cart";
+        return;
+      }
+
+      const {
+        error,
+      } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "product_id",
+          id
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      persistCart(
         cart.filter(
           (item) =>
             item.id !== id
-        );
+        )
+      );
 
-      persistCart(nextCart);
-      setRemovedId(null);
+      showNotice(
+        `${removed.name} removed from your cart.`,
+        "info"
+      );
+    } catch (error) {
+      console.error(
+        "Remove cart item error:",
+        error
+      );
 
-      if (removed) {
-        showNotice(
-          `${removed.name} removed from your cart.`,
-          "info"
-        );
-      }
-    }, 180);
+      showNotice(
+        "Could not remove this product.",
+        "error"
+      );
+    } finally {
+      window.setTimeout(
+        () => setRemovedId(null),
+        180
+      );
+    }
   }
 
-  function saveForLater(
+  /* =======================================================
+     SAVE FOR LATER
+  ======================================================= */
+
+  async function saveForLater(
     item: CartItem
   ) {
     const exists =
@@ -568,69 +1125,237 @@ export default function CartPage() {
       );
     }
 
-    persistCart(
-      cart.filter(
-        (product) =>
-          product.id !== item.id
-      )
-    );
+    try {
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
 
-    showNotice(
-      "Product saved for later."
-    );
-  }
+      if (!user) {
+        window.location.href =
+          "/login?redirect=/dashboard/cart";
+        return;
+      }
 
-  function moveToCart(
-    item: SavedItem
-  ) {
-    const existing = cart.find(
-      (product) =>
-        product.id === item.id
-    );
+      const {
+        error,
+      } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "product_id",
+          item.id
+        );
 
-    if (existing) {
-      const stock = Math.max(
-        existing.stock ?? 99,
-        1
-      );
+      if (error) {
+        throw error;
+      }
 
       persistCart(
-        cart.map((product) =>
-          product.id === item.id
-            ? {
-                ...product,
-                quantity:
-                  Math.min(
-                    product.quantity +
-                      item.quantity,
-                    stock
-                  ),
-              }
-            : product
+        cart.filter(
+          (product) =>
+            product.id !==
+            item.id
         )
       );
-    } else {
-      persistCart([
-        ...cart,
-        {
-          ...item,
-          quantity: 1,
-        },
-      ]);
+
+      showNotice(
+        "Product saved for later."
+      );
+    } catch (error) {
+      console.error(
+        "Save for later error:",
+        error
+      );
+
+      /*
+       * Roll back local saved item
+       * if DB operation failed.
+       */
+
+      if (!exists) {
+        setSavedItems(
+          (previous) =>
+            previous.filter(
+              (saved) =>
+                saved.id !==
+                item.id
+            )
+        );
+      }
+
+      showNotice(
+        "Could not save this product.",
+        "error"
+      );
     }
-
-    setSavedItems(
-      (previous) =>
-        previous.filter(
-          (saved) =>
-            saved.id !== item.id
-        )
-    );
-
-    showNotice(
-      "Product moved back to your cart."
-    );
   }
+
+  /* =======================================================
+     MOVE SAVED ITEM TO DATABASE CART
+  ======================================================= */
+
+  async function moveToCart(
+    item: SavedItem
+  ) {
+    try {
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href =
+          "/login?redirect=/dashboard/cart";
+        return;
+      }
+
+      const existing =
+        cart.find(
+          (product) =>
+            product.id ===
+            item.id
+        );
+
+      const stock = Math.max(
+        Number(
+          item.stock ?? 0
+        ),
+        0
+      );
+
+      if (stock <= 0) {
+        showNotice(
+          "This product is currently out of stock.",
+          "error"
+        );
+
+        return;
+      }
+
+      const quantity = existing
+        ? Math.min(
+            existing.quantity +
+              item.quantity,
+            stock
+          )
+        : Math.min(
+            item.quantity || 1,
+            stock
+          );
+
+      /*
+       * Existing row:
+       * UPDATE
+       */
+
+      if (existing) {
+        const {
+          error,
+        } = await supabase
+          .from("cart_items")
+          .update({
+            quantity,
+          })
+          .eq(
+            "user_id",
+            user.id
+          )
+          .eq(
+            "product_id",
+            item.id
+          );
+
+        if (error) {
+          throw error;
+        }
+
+        persistCart(
+          cart.map(
+            (product) =>
+              product.id ===
+              item.id
+                ? {
+                    ...product,
+                    quantity,
+                  }
+                : product
+          )
+        );
+      } else {
+        /*
+         * New row:
+         * INSERT
+         */
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id:
+              user.id,
+            product_id:
+              item.id,
+            quantity,
+          })
+          .select(
+            "id,quantity"
+          )
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        persistCart([
+          ...cart,
+          {
+            ...item,
+            quantity,
+            cart_item_id:
+              data?.id,
+          },
+        ]);
+      }
+
+      setSavedItems(
+        (previous) =>
+          previous.filter(
+            (saved) =>
+              saved.id !==
+              item.id
+          )
+      );
+
+      showNotice(
+        "Product moved back to your cart."
+      );
+    } catch (error) {
+      console.error(
+        "Move to cart error:",
+        error
+      );
+
+      showNotice(
+        "Could not move this product to cart.",
+        "error"
+      );
+    }
+  }
+
+  /* =======================================================
+     REMOVE SAVED ITEM
+  ======================================================= */
 
   function removeSavedItem(
     id: string
@@ -649,6 +1374,10 @@ export default function CartPage() {
     );
   }
 
+  /* =======================================================
+     WISHLIST
+  ======================================================= */
+
   function toggleWishlist(
     id: string
   ) {
@@ -662,7 +1391,10 @@ export default function CartPage() {
               (item) =>
                 item !== id
             )
-          : [...previous, id]
+          : [
+              ...previous,
+              id,
+            ]
     );
 
     showNotice(
@@ -671,6 +1403,10 @@ export default function CartPage() {
         : "Added to wishlist."
     );
   }
+
+  /* =======================================================
+     COUPONS
+  ======================================================= */
 
   function applyCoupon() {
     const code =
@@ -734,6 +1470,10 @@ export default function CartPage() {
     );
   }
 
+  /* =======================================================
+     VALIDATE CART AGAINST DATABASE
+  ======================================================= */
+
   async function validateCartBeforeCheckout() {
     if (!cart.length) {
       showNotice(
@@ -747,56 +1487,158 @@ export default function CartPage() {
     setValidatingCart(true);
 
     try {
-      const ids = cart.map(
-        (item) => item.id
-      );
+      const {
+        data: {
+          user,
+        },
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href =
+          "/login?redirect=/dashboard/cart";
+
+        return false;
+      }
+
+      /*
+       * Read actual DB cart again.
+       */
 
       const {
-        data,
-        error,
+        data: cartRows,
+        error: cartError,
+      } = await supabase
+        .from("cart_items")
+        .select(
+          `
+            id,
+            product_id,
+            quantity
+          `
+        )
+        .eq(
+          "user_id",
+          user.id
+        );
+
+      if (cartError) {
+        throw cartError;
+      }
+
+      if (!cartRows?.length) {
+        setCart([]);
+
+        writeStorage(
+          CART_KEY,
+          []
+        );
+
+        showNotice(
+          "Your cart is empty.",
+          "error"
+        );
+
+        return false;
+      }
+
+      const ids =
+        cartRows.map(
+          (row) =>
+            row.product_id
+        );
+
+      /*
+       * Get latest products.
+       */
+
+      const {
+        data: products,
+        error:
+          productsError,
       } = await supabase
         .from("products")
         .select(
-          "id,name,price,original_price,stock,is_active,image_url,brand,rating,reviews_count,category_id"
+          `
+            id,
+            name,
+            price,
+            original_price,
+            stock,
+            is_active,
+            image_url,
+            brand,
+            rating,
+            reviews_count,
+            category_id
+          `
         )
-        .in("id", ids);
+        .in(
+          "id",
+          ids
+        );
 
-      if (error) {
-        throw error;
+      if (productsError) {
+        throw productsError;
       }
 
-      const products =
-        (data ?? []) as Product[];
-
       const productMap =
-        new Map(
-          products.map(
+        new Map<
+          string,
+          Product
+        >(
+          (
+            products ?? []
+          ).map(
             (product) => [
               product.id,
-              product,
+              product as Product,
             ]
           )
         );
 
-      let changed = false;
-
       const nextCart: CartItem[] =
         [];
 
-      for (const item of cart) {
+      let changed = false;
+
+      /*
+       * Validate every DB cart row.
+       */
+
+      for (const row of cartRows) {
         const latest =
           productMap.get(
-            item.id
+            row.product_id
           );
+
+        /*
+         * Product deleted / unavailable
+         */
 
         if (
           !latest ||
-          latest.is_active === false
+          latest.is_active ===
+            false
         ) {
+          await supabase
+            .from(
+              "cart_items"
+            )
+            .delete()
+            .eq(
+              "user_id",
+              user.id
+            )
+            .eq(
+              "product_id",
+              row.product_id
+            );
+
           changed = true;
 
           showNotice(
-            `${item.name} is no longer available.`,
+            `${latest?.name ?? "A product"} is no longer available.`,
             "error"
           );
 
@@ -808,50 +1650,106 @@ export default function CartPage() {
             latest.stock ?? 0
           );
 
+        /*
+         * Out of stock
+         */
+
         if (latestStock <= 0) {
+          await supabase
+            .from(
+              "cart_items"
+            )
+            .delete()
+            .eq(
+              "user_id",
+              user.id
+            )
+            .eq(
+              "product_id",
+              row.product_id
+            );
+
           changed = true;
 
           showNotice(
-            `${item.name} is currently out of stock.`,
+            `${latest.name} is currently out of stock.`,
             "error"
           );
 
           continue;
         }
 
+        /*
+         * Never allow quantity above stock.
+         */
+
+        const requestedQuantity =
+          Math.max(
+            Number(
+              row.quantity
+            ) || 1,
+            1
+          );
+
         const quantity =
           Math.min(
-            item.quantity,
+            requestedQuantity,
             latestStock
           );
 
         if (
           quantity !==
-            item.quantity ||
-          latest.price !==
-            item.price ||
-          latest.image_url !==
-            item.image_url
+          requestedQuantity
         ) {
           changed = true;
+
+          await supabase
+            .from(
+              "cart_items"
+            )
+            .update({
+              quantity,
+            })
+            .eq(
+              "user_id",
+              user.id
+            )
+            .eq(
+              "product_id",
+              row.product_id
+            );
+
+          showNotice(
+            `${latest.name} quantity was adjusted to available stock.`,
+            "info"
+          );
         }
 
         nextCart.push({
-          ...item,
           ...latest,
           quantity,
+          cart_item_id:
+            row.id,
         });
       }
 
+      setCart(nextCart);
+
+      writeStorage(
+        CART_KEY,
+        nextCart
+      );
+
+      /*
+       * If cart changed, do not
+       * directly checkout.
+       *
+       * User sees latest cart first.
+       */
+
       if (changed) {
-        persistCart(nextCart);
-
-        if (!nextCart.length) {
-          return false;
-        }
-
         showNotice(
-          "Cart updated with the latest stock, price and product details.",
+          "Cart updated with the latest stock and product details.",
           "info"
         );
 
@@ -859,7 +1757,12 @@ export default function CartPage() {
       }
 
       return true;
-    } catch {
+    } catch (error) {
+      console.error(
+        "Cart validation error:",
+        error
+      );
+
       showNotice(
         "Could not verify your cart. Please try again.",
         "error"
@@ -871,11 +1774,20 @@ export default function CartPage() {
     }
   }
 
+  /* =======================================================
+     PROCEED CHECKOUT
+  ======================================================= */
+
   async function proceedToCheckout() {
     const valid =
       await validateCartBeforeCheckout();
 
     if (!valid) return;
+
+    /*
+     * Recalculate from current DB-backed
+     * cart state.
+     */
 
     const checkoutSummary = {
       itemCount,
@@ -886,6 +1798,13 @@ export default function CartPage() {
       totalSavings,
       grandTotal,
     };
+
+    /*
+     * Compatibility snapshot.
+     *
+     * Checkout should ALSO be changed to
+     * read cart_items from Supabase.
+     */
 
     writeStorage(
       CHECKOUT_CART_KEY,
@@ -901,10 +1820,18 @@ export default function CartPage() {
       "/dashboard/checkout";
   }
 
+  /* =======================================================
+     CONTINUE SHOPPING
+  ======================================================= */
+
   function continueShopping() {
     window.location.href =
       "/dashboard/products";
   }
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
 
   if (loading) {
     return <CartLoading />;
@@ -957,7 +1884,10 @@ export default function CartPage() {
         </div>
       )}
 
-      {/* PrimeCart header */}
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
+
       <header className="sticky top-0 z-40 border-b border-[#eadfc9] bg-white/95 backdrop-blur-xl dark:border-[#2a261f] dark:bg-[#0c0b09]/95">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           <Link
@@ -1020,6 +1950,10 @@ export default function CartPage() {
         </div>
       </header>
 
+      {/* =====================================================
+          CONTENT
+      ====================================================== */}
+
       <div className="mx-auto max-w-7xl px-3 pb-32 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-12">
         <nav className="mb-4 flex items-center gap-2 px-1 text-xs text-gray-500 sm:mb-5">
           <Link
@@ -1035,6 +1969,10 @@ export default function CartPage() {
             Cart
           </span>
         </nav>
+
+        {/* ===================================================
+            SMART CART HERO
+        ==================================================== */}
 
         <section className="mb-5 overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_15px_45px_rgba(72,52,18,0.06)] dark:border-[#2f2a22] dark:bg-[#12110e] sm:mb-7 sm:rounded-[28px]">
           <div className="relative p-5 sm:p-8">
@@ -1052,13 +1990,17 @@ export default function CartPage() {
                 </h1>
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-                  Review your products, unlock offers, and checkout securely.
+                  Review your products,
+                  unlock offers, and
+                  checkout securely.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={continueShopping}
+                onClick={
+                  continueShopping
+                }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9c7a4] bg-white px-5 py-3 text-sm font-bold text-[#8f6b31] hover:bg-[#faf8f3] dark:border-[#4a3d28] dark:bg-[#171512] md:w-auto"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -1077,7 +2019,8 @@ export default function CartPage() {
                   </div>
 
                   <span>
-                    FREE shipping unlocked!
+                    FREE shipping
+                    unlocked!
                   </span>
 
                   <Check className="ml-auto h-5 w-5" />
@@ -1092,7 +2035,8 @@ export default function CartPage() {
                           freeShippingRemaining
                         )}
                       </span>{" "}
-                      more for FREE delivery
+                      more for FREE
+                      delivery
                     </span>
 
                     <Truck className="h-4 w-4 text-[#a17a35]" />
@@ -1116,15 +2060,10 @@ export default function CartPage() {
           <EmptyCart />
         ) : (
           <>
-            {/* =========================================================
-                MAIN CART AREA
-                ONLY CHANGE:
-                Right column now contains ONLY Order Summary.
-                Supporting desktop cards moved below this grid.
-            ========================================================== */}
-
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 space-y-5">
+                {/* ITEMS HEADER */}
+
                 <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -1134,7 +2073,8 @@ export default function CartPage() {
 
                       <p className="mt-1 text-xs text-gray-500">
                         {itemCount} item
-                        {itemCount === 1
+                        {itemCount ===
+                        1
                           ? ""
                           : "s"}{" "}
                         selected
@@ -1149,262 +2089,277 @@ export default function CartPage() {
                   </div>
                 </section>
 
+                {/* CART ITEMS */}
+
                 <div className="space-y-4">
-                  {cart.map((item) => {
-                    const original =
-                      item.original_price &&
-                      item.original_price >
+                  {cart.map(
+                    (item) => {
+                      const original =
+                        item.original_price &&
+                        item.original_price >
+                          item.price
+                          ? item.original_price
+                          : item.price;
+
+                      const discount =
+                        original >
                         item.price
-                        ? item.original_price
-                        : item.price;
+                          ? Math.round(
+                              ((original -
+                                item.price) /
+                                original) *
+                                100
+                            )
+                          : 0;
 
-                    const discount =
-                      original >
-                      item.price
-                        ? Math.round(
-                            ((original -
-                              item.price) /
-                              original) *
-                              100
-                          )
-                        : 0;
+                      const stock =
+                        Math.max(
+                          Number(
+                            item.stock ??
+                              0
+                          ),
+                          0
+                        );
 
-                    const stock =
-                      Math.max(
-                        item.stock ?? 99,
-                        0
-                      );
+                      return (
+                        <article
+                          key={
+                            item.id
+                          }
+                          className={[
+                            "group rounded-2xl border border-[#eadfc9] bg-white p-3.5 shadow-sm transition-all hover:shadow-lg dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-4",
 
-                    return (
-                      <article
-                        key={item.id}
-                        className={[
-                          "group rounded-2xl border border-[#eadfc9] bg-white p-3.5 shadow-sm transition-all hover:shadow-lg dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-4",
-
-                          removedId ===
-                          item.id
-                            ? "scale-[0.98] opacity-0"
-                            : "",
-                        ].join(" ")}
-                      >
-                        <div className="flex gap-3.5 sm:gap-4">
-                          <Link
-                            href={`/dashboard/products/${item.id}`}
-                            className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-xl border border-[#eee6d8] bg-[#faf8f3] dark:border-[#2b261f] dark:bg-[#191712] sm:h-36 sm:w-36"
-                          >
-                            <ProductImage
-                              src={
-                                item.image_url
-                              }
-                              alt={
-                                item.name
-                              }
-                              sizes="(max-width: 640px) 104px, 144px"
-                              className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-105 sm:p-3"
-                            />
-
-                            {discount >
-                              0 && (
-                              <span className="absolute left-1.5 top-1.5 rounded-md bg-[#8f6b31] px-1.5 py-1 text-[8px] font-black text-white sm:left-2 sm:top-2 sm:px-2 sm:text-[10px]">
-                                {
-                                  discount
+                            removedId ===
+                            item.id
+                              ? "scale-[0.98] opacity-0"
+                              : "",
+                          ].join(" ")}
+                        >
+                          <div className="flex gap-3.5 sm:gap-4">
+                            <Link
+                              href={`/dashboard/products/${item.id}`}
+                              className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-xl border border-[#eee6d8] bg-[#faf8f3] dark:border-[#2b261f] dark:bg-[#191712] sm:h-36 sm:w-36"
+                            >
+                              <ProductImage
+                                src={
+                                  item.image_url
                                 }
-                                % OFF
-                              </span>
-                            )}
-                          </Link>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                {item.brand && (
-                                  <p className="mb-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#a17a35] sm:text-[10px] sm:tracking-[0.15em]">
-                                    {
-                                      item.brand
-                                    }
-                                  </p>
-                                )}
-
-                                <Link
-                                  href={`/dashboard/products/${item.id}`}
-                                  className="line-clamp-2 text-sm font-black leading-5 hover:text-[#a17a35] sm:text-base sm:leading-6"
-                                >
-                                  {
-                                    item.name
-                                  }
-                                </Link>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeItem(
-                                    item.id
-                                  )
+                                alt={
+                                  item.name
                                 }
-                                className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 sm:p-2"
-                                aria-label="Remove item"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                                sizes="(max-width: 640px) 104px, 144px"
+                                className="h-full w-full object-contain p-2.5 transition duration-500 group-hover:scale-105 sm:p-3"
+                              />
 
-                            <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
-                              {item.rating !==
-                                null &&
-                                item.rating !==
-                                  undefined && (
-                                  <span className="rounded-md bg-[#fff8e9] px-1.5 py-1 text-[9px] font-bold text-[#8f6b31] dark:bg-[#211c14] sm:px-2 sm:text-[10px]">
-                                    ★{" "}
-                                    {item.rating.toFixed(
-                                      1
-                                    )}
-                                    {item.reviews_count
-                                      ? ` (${item.reviews_count})`
-                                      : ""}
-                                  </span>
-                                )}
-
-                              {stock ===
+                              {discount >
                                 0 && (
-                                <span className="rounded-md bg-red-50 px-1.5 py-1 text-[9px] font-bold text-red-700 dark:bg-red-950/30 dark:text-red-400">
-                                  Out of stock
+                                <span className="absolute left-1.5 top-1.5 rounded-md bg-[#8f6b31] px-1.5 py-1 text-[8px] font-black text-white sm:left-2 sm:top-2 sm:px-2 sm:text-[10px]">
+                                  {
+                                    discount
+                                  }
+                                  % OFF
                                 </span>
                               )}
+                            </Link>
 
-                              {stock >
-                                0 &&
-                                stock <=
-                                  5 && (
-                                  <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold text-orange-700 dark:bg-orange-950/30 dark:text-orange-300">
-                                    Only{" "}
-                                    {
-                                      stock
-                                    }{" "}
-                                    left
-                                  </span>
-                                )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  {item.brand && (
+                                    <p className="mb-0.5 truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#a17a35] sm:text-[10px] sm:tracking-[0.15em]">
+                                      {
+                                        item.brand
+                                      }
+                                    </p>
+                                  )}
 
-                              {stock >
-                                5 && (
-                                <span className="rounded-md bg-emerald-50 px-1.5 py-1 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                  In Stock
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-end justify-between gap-3 sm:mt-4">
-                              <div>
-                                <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-gray-400 sm:text-[10px]">
-                                  Quantity
-                                </p>
-
-                                <div className="inline-flex h-9 items-center overflow-hidden rounded-xl border border-[#dfd3bd] bg-white dark:border-[#40372a] dark:bg-[#171512] sm:h-10">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateQuantity(
-                                        item.id,
-                                        "decrease"
-                                      )
-                                    }
-                                    disabled={
-                                      updatingId ===
-                                      item.id
-                                    }
-                                    className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:opacity-50 sm:w-10"
-                                    aria-label="Decrease quantity"
+                                  <Link
+                                    href={`/dashboard/products/${item.id}`}
+                                    className="line-clamp-2 text-sm font-black leading-5 hover:text-[#a17a35] sm:text-base sm:leading-6"
                                   >
-                                    <Minus className="h-3.5 w-3.5" />
-                                  </button>
-
-                                  <span className="flex min-w-9 items-center justify-center border-x border-[#dfd3bd] text-xs font-black dark:border-[#40372a] sm:min-w-10 sm:text-sm">
                                     {
-                                      item.quantity
+                                      item.name
                                     }
-                                  </span>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateQuantity(
-                                        item.id,
-                                        "increase"
-                                      )
-                                    }
-                                    disabled={
-                                      updatingId ===
-                                        item.id ||
-                                      item.quantity >=
-                                        stock
-                                    }
-                                    className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-[#211e18] sm:w-10"
-                                    aria-label="Increase quantity"
-                                  >
-                                    <Plus className="h-3.5 w-3.5" />
-                                  </button>
+                                  </Link>
                                 </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeItem(
+                                      item.id
+                                    )
+                                  }
+                                  className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 sm:p-2"
+                                  aria-label="Remove item"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
 
-                              <div className="text-right">
-                                <div className="flex items-center justify-end gap-1.5 sm:gap-2">
-                                  {original >
-                                    item.price && (
-                                    <span className="text-[10px] text-gray-400 line-through sm:text-xs">
-                                      {formatPrice(
-                                        original *
-                                          item.quantity
+                              <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
+                                {item.rating !==
+                                  null &&
+                                  item.rating !==
+                                    undefined && (
+                                    <span className="rounded-md bg-[#fff8e9] px-1.5 py-1 text-[9px] font-bold text-[#8f6b31] dark:bg-[#211c14] sm:px-2 sm:text-[10px]">
+                                      ★{" "}
+                                      {item.rating.toFixed(
+                                        1
                                       )}
+                                      {item.reviews_count
+                                        ? ` (${item.reviews_count})`
+                                        : ""}
                                     </span>
                                   )}
 
-                                  <span className="text-lg font-black sm:text-xl">
-                                    {formatPrice(
-                                      item.price *
-                                        item.quantity
-                                    )}
+                                {stock ===
+                                  0 && (
+                                  <span className="rounded-md bg-red-50 px-1.5 py-1 text-[9px] font-bold text-red-700 dark:bg-red-950/30 dark:text-red-400">
+                                    Out of
+                                    stock
                                   </span>
+                                )}
+
+                                {stock >
+                                  0 &&
+                                  stock <=
+                                    5 && (
+                                    <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold text-orange-700 dark:bg-orange-950/30 dark:text-orange-300">
+                                      Only{" "}
+                                      {
+                                        stock
+                                      }{" "}
+                                      left
+                                    </span>
+                                  )}
+
+                                {stock >
+                                  5 && (
+                                  <span className="rounded-md bg-emerald-50 px-1.5 py-1 text-[9px] font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                    In
+                                    Stock
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap items-end justify-between gap-3 sm:mt-4">
+                                <div>
+                                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-gray-400 sm:text-[10px]">
+                                    Quantity
+                                  </p>
+
+                                  <div className="inline-flex h-9 items-center overflow-hidden rounded-xl border border-[#dfd3bd] bg-white dark:border-[#40372a] dark:bg-[#171512] sm:h-10">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateQuantity(
+                                          item.id,
+                                          "decrease"
+                                        )
+                                      }
+                                      disabled={
+                                        updatingId ===
+                                        item.id
+                                      }
+                                      className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:opacity-50 sm:w-10"
+                                      aria-label="Decrease quantity"
+                                    >
+                                      <Minus className="h-3.5 w-3.5" />
+                                    </button>
+
+                                    <span className="flex min-w-9 items-center justify-center border-x border-[#dfd3bd] text-xs font-black dark:border-[#40372a] sm:min-w-10 sm:text-sm">
+                                      {
+                                        item.quantity
+                                      }
+                                    </span>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateQuantity(
+                                          item.id,
+                                          "increase"
+                                        )
+                                      }
+                                      disabled={
+                                        updatingId ===
+                                          item.id ||
+                                        item.quantity >=
+                                          stock
+                                      }
+                                      className="flex h-full w-9 items-center justify-center text-gray-500 hover:bg-[#faf8f3] hover:text-[#8f6b31] disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-[#211e18] sm:w-10"
+                                      aria-label="Increase quantity"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
 
-                                <p className="mt-0.5 text-[10px] text-gray-500 sm:mt-1 sm:text-[11px]">
-                                  {formatPrice(
-                                    item.price
-                                  )}{" "}
-                                  each
-                                </p>
+                                <div className="text-right">
+                                  <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+                                    {original >
+                                      item.price && (
+                                      <span className="text-[10px] text-gray-400 line-through sm:text-xs">
+                                        {formatPrice(
+                                          original *
+                                            item.quantity
+                                        )}
+                                      </span>
+                                    )}
+
+                                    <span className="text-lg font-black sm:text-xl">
+                                      {formatPrice(
+                                        item.price *
+                                          item.quantity
+                                      )}
+                                    </span>
+                                  </div>
+
+                                  <p className="mt-0.5 text-[10px] text-gray-500 sm:mt-1 sm:text-[11px]">
+                                    {formatPrice(
+                                      item.price
+                                    )}{" "}
+                                    each
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#f0e9dd] pt-2.5 dark:border-[#29251f] sm:mt-4 sm:gap-3 sm:pt-3">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    saveForLater(
+                                      item
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                                >
+                                  <Heart className="h-3.5 w-3.5" />
+                                  Save for
+                                  later
+                                </button>
+
+                                <span className="hidden h-3 w-px bg-[#dfd3bd] dark:bg-[#40372a] sm:block" />
+
+                                <Link
+                                  href={`/dashboard/products/${item.id}`}
+                                  className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
+                                >
+                                  View
+                                  product
+                                  <ArrowRight className="h-3 w-3" />
+                                </Link>
                               </div>
                             </div>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#f0e9dd] pt-2.5 dark:border-[#29251f] sm:mt-4 sm:gap-3 sm:pt-3">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  saveForLater(
-                                    item
-                                  )
-                                }
-                                className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
-                              >
-                                <Heart className="h-3.5 w-3.5" />
-                                Save for later
-                              </button>
-
-                              <span className="hidden h-3 w-px bg-[#dfd3bd] dark:bg-[#40372a] sm:block" />
-
-                              <Link
-                                href={`/dashboard/products/${item.id}`}
-                                className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-[#8f6b31] sm:text-xs"
-                              >
-                                View product
-                                <ArrowRight className="h-3 w-3" />
-                              </Link>
-                            </div>
                           </div>
-                        </div>
-                      </article>
-                    );
-                  })}
+                        </article>
+                      );
+                    }
+                  )}
                 </div>
+
+                {/* BENEFITS */}
 
                 <section className="hidden gap-3 sm:grid sm:grid-cols-3">
                   <Benefit
@@ -1432,6 +2387,8 @@ export default function CartPage() {
                   />
                 </section>
 
+                {/* SAVED ITEMS */}
+
                 {savedItems.length >
                   0 && (
                   <section className="rounded-2xl border border-[#eadfc9] bg-white p-4 shadow-sm dark:border-[#2f2a22] dark:bg-[#12110e] sm:p-5">
@@ -1442,7 +2399,9 @@ export default function CartPage() {
                         </h2>
 
                         <p className="mt-1 text-xs text-gray-500">
-                          Keep products here for later.
+                          Keep products
+                          here for
+                          later.
                         </p>
                       </div>
 
@@ -1497,7 +2456,8 @@ export default function CartPage() {
                               }
                               className="hidden rounded-lg bg-[#f8f1df] px-3 py-2 text-xs font-black text-[#8f6b31] sm:block"
                             >
-                              Move to Cart
+                              Move to
+                              Cart
                             </button>
 
                             <button
@@ -1520,10 +2480,9 @@ export default function CartPage() {
                 )}
               </div>
 
-              {/* =======================================================
-                  RIGHT SIDE
-                  ONLY ORDER SUMMARY HERE
-              ======================================================== */}
+              {/* =================================================
+                  ORDER SUMMARY
+              ================================================== */}
 
               <aside className="lg:sticky lg:top-24 lg:self-start">
                 <section className="overflow-hidden rounded-2xl border border-[#d9c7a4] bg-white shadow-[0_18px_50px_rgba(72,52,18,0.08)] dark:border-[#443823] dark:bg-[#12110e]">
@@ -1551,6 +2510,8 @@ export default function CartPage() {
                   </div>
 
                   <div className="p-4 sm:p-5">
+                    {/* COUPON */}
+
                     <div className="mb-5 overflow-hidden rounded-xl border border-[#eadfc9] dark:border-[#332d23]">
                       <button
                         type="button"
@@ -1573,7 +2534,8 @@ export default function CartPage() {
                             </span>
 
                             <span className="block text-[10px] text-gray-500">
-                              Save more on your order
+                              Save more on
+                              your order
                             </span>
                           </span>
                         </span>
@@ -1685,6 +2647,8 @@ export default function CartPage() {
                       )}
                     </div>
 
+                    {/* PRICE */}
+
                     <div className="space-y-3 text-sm">
                       <PriceRow
                         label="Subtotal"
@@ -1741,7 +2705,9 @@ export default function CartPage() {
                         </p>
 
                         <p className="mt-1 text-[10px] text-gray-400">
-                          Inclusive of applicable taxes
+                          Inclusive of
+                          applicable
+                          taxes
                         </p>
                       </div>
 
@@ -1776,11 +2742,13 @@ export default function CartPage() {
                       {validatingCart ? (
                         <>
                           <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          Checking Cart...
+                          Checking
+                          Cart...
                         </>
                       ) : (
                         <>
-                          Proceed to Checkout
+                          Proceed to
+                          Checkout
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}
@@ -1788,17 +2756,17 @@ export default function CartPage() {
 
                     <div className="mt-3 flex items-center justify-center gap-2 text-[10px] font-semibold text-gray-400">
                       <Lock className="h-3 w-3" />
-                      Secure encrypted checkout
+                      Secure encrypted
+                      checkout
                     </div>
                   </div>
                 </section>
               </aside>
             </div>
 
-            {/* =========================================================
-                DESKTOP SUPPORTING SECTION
-                MOVED OUTSIDE RIGHT SIDEBAR
-            ========================================================== */}
+            {/* =================================================
+                TRUST CARDS
+            ================================================== */}
 
             <section className="mt-6 hidden lg:block">
               <div className="grid grid-cols-4 gap-4">
@@ -1848,11 +2816,14 @@ export default function CartPage() {
 
                 <div>
                   <p className="text-sm font-black">
-                    Safe & Flexible Payments
+                    Safe & Flexible
+                    Payments
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-gray-500">
-                    Multiple payment options available at checkout.
+                    Multiple payment
+                    options available
+                    at checkout.
                   </p>
                 </div>
               </div>
@@ -1885,24 +2856,34 @@ export default function CartPage() {
 
                   <div>
                     <p className="text-sm font-black">
-                      Estimated Delivery
+                      Estimated
+                      Delivery
                     </p>
 
                     <p className="mt-1 text-sm font-bold text-[#8f6b31] dark:text-[#d6b875]">
-                      3–7 business days
+                      3–7 business
+                      days
                     </p>
                   </div>
                 </div>
 
                 <p className="max-w-xl text-right text-[11px] leading-5 text-gray-500">
-                  Final delivery date will be confirmed at checkout.
-                  Track your order anytime from your PrimeCart account.
+                  Final delivery date
+                  will be confirmed at
+                  checkout. Track your
+                  order anytime from
+                  your PrimeCart
+                  account.
                 </p>
               </div>
             </section>
           </>
         )}
       </div>
+
+      {/* =====================================================
+          MOBILE CHECKOUT BAR
+      ====================================================== */}
 
       {cart.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#d9c7a4] bg-white/95 p-3 shadow-[0_-10px_35px_rgba(72,52,18,0.12)] backdrop-blur-xl dark:border-[#3b3123] dark:bg-[#0f0e0c]/95 lg:hidden">
@@ -1944,6 +2925,10 @@ export default function CartPage() {
   );
 }
 
+/* =========================================================
+   PRICE ROW
+========================================================= */
+
 function PriceRow({
   label,
   value,
@@ -1972,6 +2957,10 @@ function PriceRow({
   );
 }
 
+/* =========================================================
+   BENEFIT
+========================================================= */
+
 function Benefit({
   icon,
   title,
@@ -1997,6 +2986,10 @@ function Benefit({
     </div>
   );
 }
+
+/* =========================================================
+   DESKTOP TRUST CARD
+========================================================= */
 
 function DesktopTrustCard({
   icon,
@@ -2034,33 +3027,9 @@ function DesktopTrustCard({
   );
 }
 
-function Promise({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8f1df] text-[#9a7539] dark:bg-[#211c14]">
-        {icon}
-      </div>
-
-      <div>
-        <p className="text-xs font-bold">
-          {title}
-        </p>
-
-        <p className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
-          {text}
-        </p>
-      </div>
-    </div>
-  );
-}
+/* =========================================================
+   EMPTY CART
+========================================================= */
 
 function EmptyCart() {
   return (
@@ -2082,7 +3051,9 @@ function EmptyCart() {
         </h2>
 
         <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-gray-500 dark:text-gray-400">
-          Discover products you&apos;ll love and start building your cart.
+          Discover products you&apos;ll
+          love and start building your
+          cart.
         </p>
 
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
@@ -2105,6 +3076,10 @@ function EmptyCart() {
     </section>
   );
 }
+
+/* =========================================================
+   LOADING
+========================================================= */
 
 function CartLoading() {
   return (
