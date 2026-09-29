@@ -1024,6 +1024,7 @@ async function placeOrder() {
   if (!validatePayment()) return;
 
   setPlacingOrder(true);
+  setAddressError("");
 
   try {
     const validItems = items.filter(
@@ -1037,18 +1038,212 @@ async function placeOrder() {
       throw new Error("No valid products found in your cart.");
     }
 
-    const rpcItems = validItems.map((item) => ({
-      product_id: String(item.product_id || item.id),
-      quantity: Math.max(1, Number(item.quantity || 1)),
-    }));
+    /*
+     * Resolve the REAL products.id from Supabase before
+     * calling place_order().
+     *
+     * Some older cart records may have stored the cart row id
+     * inside item.id instead of products.id. In that case the
+     * old code sent the wrong UUID to place_order(), which caused:
+     * "Product not found" even though the product was visible.
+     */
+    const resolvedItems: Array<{
+      product_id: string;
+      quantity: number;
+      item: CartItem;
+    }> = [];
+
+    for (const item of validItems) {
+      const quantity = Math.max(
+        1,
+        Number(item.quantity || 1)
+      );
+
+      const candidates = Array.from(
+        new Set(
+          [item.product_id, item.id]
+            .map((value) => String(value || "").trim())
+            .filter(Boolean)
+        )
+      );
+
+      let product: {
+        id: string;
+        name: string;
+        price: number;
+        image_url: string | null;
+        stock: number | null;
+        is_active: boolean;
+      } | null = null;
+
+      /* First try candidates that look like UUIDs. */
+      for (const candidate of candidates) {
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            candidate
+          )
+        ) {
+          continue;
+        }
+
+        const { data, error } = await supabase
+          .from("products")
+          .select(
+            "id, name, price, image_url, stock, is_active"
+          )
+          .eq("id", candidate)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (error) {
+          console.warn(
+            "Product ID lookup failed:",
+            error
+          );
+          continue;
+        }
+
+        if (data) {
+          product = data;
+          break;
+        }
+      }
+
+      /*
+       * Fallback for old cart records where product_id was not
+       * stored correctly. The visible product name is used to
+       * recover the active product's real UUID.
+       */
+      if (!product && item.name?.trim()) {
+        const { data, error } = await supabase
+          .from("products")
+          .select(
+            "id, name, price, image_url, stock, is_active"
+          )
+          .eq("name", item.name.trim())
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error(
+            "Product name lookup failed:",
+            error
+          );
+        } else if (data) {
+          product = data;
+        }
+      }
+
+      if (!product) {
+        throw new Error(
+          `Product "${item.name}" is no longer available. Please remove it from your cart and add it again.`
+        );
+      }
+
+      const availableStock = Number(
+        product.stock ?? 0
+      );
+
+      if (availableStock < quantity) {
+        throw new Error(
+          `${product.name} has only ${availableStock} item${
+            availableStock === 1 ? "" : "s"
+          } available. Please reduce the quantity and try again.`
+        );
+      }
+
+      resolvedItems.push({
+        product_id: String(product.id),
+        quantity,
+        item: {
+          ...item,
+          product_id: String(product.id),
+          price: Number(product.price ?? item.price ?? 0),
+          image_url:
+            product.image_url ?? item.image_url ?? null,
+          stock: availableStock,
+        },
+      });
+    }
+
+    /*
+     * Combine duplicate products so the RPC never receives
+     * the same product twice in one order.
+     */
+    const combined = new Map<
+      string,
+      {
+        product_id: string;
+        quantity: number;
+        item: CartItem;
+      }
+    >();
+
+    for (const entry of resolvedItems) {
+      const existing = combined.get(entry.product_id);
+
+      if (existing) {
+        combined.set(entry.product_id, {
+          ...existing,
+          quantity:
+            existing.quantity + entry.quantity,
+          item: {
+            ...existing.item,
+            quantity:
+              existing.quantity + entry.quantity,
+          },
+        });
+      } else {
+        combined.set(entry.product_id, entry);
+      }
+    }
+
+    const finalItems = Array.from(
+      combined.values()
+    );
+
+    /* Re-check combined quantities against current stock. */
+    for (const entry of finalItems) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, stock, is_active")
+        .eq("id", entry.product_id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error || !data) {
+        throw new Error(
+          `Product "${entry.item.name}" is no longer available. Please refresh your cart.`
+        );
+      }
+
+      const availableStock = Number(
+        data.stock ?? 0
+      );
+
+      if (availableStock < entry.quantity) {
+        throw new Error(
+          `${data.name} has only ${availableStock} item${
+            availableStock === 1 ? "" : "s"
+          } available. You requested ${entry.quantity}.`
+        );
+      }
+    }
+
+    const rpcItems = finalItems.map(
+      (entry) => ({
+        product_id: entry.product_id,
+        quantity: entry.quantity,
+      })
+    );
 
     /*
      * IMPORTANT:
-     * The database RPC creates the order,
-     * order_items and decreases stock
-     * inside one transaction.
+     * place_order() is the ONLY database operation that creates
+     * the order and decreases stock. It runs inside one database
+     * transaction, so a failed order does not partially decrease stock.
      */
-
     const { data: orderId, error } =
       await supabase.rpc("place_order", {
         p_items: rpcItems,
@@ -1079,7 +1274,7 @@ async function placeOrder() {
 
       if (message.includes("product not found")) {
         throw new Error(
-          "One or more products are no longer available. Please refresh your cart."
+          "A product could not be found. Please refresh the page and try again."
         );
       }
 
@@ -1101,13 +1296,6 @@ async function placeOrder() {
       );
     }
 
-    /*
-     * Keep local order information only as a
-     * temporary compatibility/fallback record.
-     *
-     * The actual source of truth is Supabase.
-     */
-
     const localOrderId = String(orderId);
 
     const order: OrderRecord = {
@@ -1121,9 +1309,16 @@ async function placeOrder() {
       discount:
         productDiscount + couponDiscount,
       address: selectedAddress,
-      items: validItems,
+      items: finalItems.map(
+        (entry) => entry.item
+      ),
     };
 
+    /*
+     * Keep local order information only for compatibility
+     * with the existing order-success page. Supabase remains
+     * the actual source of truth.
+     */
     const existingOrders =
       safeParse<OrderRecord[]>(
         localStorage.getItem(ORDERS_KEY),
@@ -1146,11 +1341,9 @@ async function placeOrder() {
       JSON.stringify(order)
     );
 
-    /*
-     * Clear cart ONLY after database order
-     * creation succeeded.
-     */
+    /* Clear cart ONLY after DB order creation succeeds. */
     localStorage.removeItem(CART_KEY);
+    window.dispatchEvent(new Event("storage"));
 
     showToast(
       "Order placed successfully!",
