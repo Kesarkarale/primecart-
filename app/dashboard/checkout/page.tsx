@@ -1145,7 +1145,7 @@ export default function CheckoutPage() {
     return (
       <main className="min-h-screen bg-[#faf8f3] text-[#17130d]">
         <header className="sticky top-0 z-50 border-b border-[#eadfc9] bg-white/95 backdrop-blur-xl">
-          <div className="mx-auto flex h-[72px] max-w-[1450px] items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto flex h-[62px] max-w-[1450px] items-center justify-between gap-3 px-3 sm:h-[72px] sm:px-6 lg:px-8">
             <Link
               href="/dashboard/products"
               className="flex items-center gap-3"
@@ -1212,7 +1212,7 @@ export default function CheckoutPage() {
   ======================================================= */
 
   return (
-    <main className="min-h-screen bg-[#faf8f3] pb-24 text-[#17130d] lg:pb-0">
+    <main className="min-h-screen overflow-x-hidden bg-[#faf8f3] pb-24 text-[#17130d] lg:pb-0">
       {/* ===================================================
           TOAST
       =================================================== */}
@@ -1265,17 +1265,17 @@ export default function CheckoutPage() {
       =================================================== */}
 
       <header className="sticky top-0 z-50 border-b border-[#eadfc9] bg-white/95 shadow-[0_3px_20px_rgba(70,45,10,0.04)] backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1450px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-[62px] max-w-[1450px] items-center justify-between gap-3 px-3 sm:h-[72px] sm:px-6 lg:px-8">
           <Link
             href="/dashboard/cart"
-            className="group flex items-center gap-3"
+            className="group flex min-w-0 items-center gap-2.5 sm:gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b9975b] text-white shadow-sm transition group-hover:bg-[#977538]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#b9975b] text-white shadow-sm transition group-hover:bg-[#977538] sm:h-10 sm:w-10">
               <ArrowLeft size={19} />
             </div>
 
             <div>
-              <p className="text-base font-extrabold">
+              <p className="truncate text-sm font-extrabold sm:text-base">
                 Checkout
               </p>
 
@@ -1307,7 +1307,7 @@ export default function CheckoutPage() {
 
           <Link
             href="/dashboard/products"
-            className="text-[11px] font-bold text-[#756b5d] transition hover:text-[#977538]"
+            className="shrink-0 text-[10px] font-bold text-[#756b5d] transition hover:text-[#977538] sm:text-[11px]"
           >
             Continue Shopping
           </Link>
@@ -1319,8 +1319,8 @@ export default function CheckoutPage() {
       =================================================== */}
 
       <div className="border-b border-[#eadfc9] bg-white">
-        <div className="mx-auto max-w-[1450px] px-4 py-4 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-4xl items-center">
+        <div className="mx-auto max-w-[1450px] px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+          <div className="mx-auto flex max-w-4xl items-center px-0.5">
             {[
               {
                 number: "1",
@@ -1374,7 +1374,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {index < 3 && (
-                  <div className="mx-2 h-px flex-1 bg-[#e7ddcc] sm:mx-5" />
+                  <div className="mx-1.5 h-px flex-1 bg-[#e7ddcc] sm:mx-5" />
                 )}
               </div>
             ))}
@@ -1386,20 +1386,20 @@ export default function CheckoutPage() {
           CONTENT
       =================================================== */}
 
-      <div className="mx-auto max-w-[1450px] px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px] xl:gap-8">
+      <div className="mx-auto max-w-[1450px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-9">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_390px] xl:gap-8">
           {/* =================================================
               LEFT
           ================================================= */}
 
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {/* ===============================================
                 DELIVERY PROGRESS
             =============================================== */}
 
-            <section className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_10px_30px_rgba(70,45,10,0.045)]">
-              <div className="flex items-start gap-3 p-4 sm:p-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7f0df] text-[#a47d3d]">
+            <section className="overflow-hidden rounded-[18px] border border-[#eadfc9] bg-white shadow-[0_8px_24px_rgba(70,45,10,0.045)] sm:rounded-[24px] sm:shadow-[0_10px_30px_rgba(70,45,10,0.045)]">
+              <div className="flex items-start gap-2.5 p-3.5 sm:gap-3 sm:p-5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7f0df] text-[#a47d3d] sm:h-10 sm:w-10">
                   <Truck size={18} />
                 </div>
 
@@ -1455,15 +1455,15 @@ export default function CheckoutPage() {
                 ADDRESS
             =============================================== */}
 
-            <section className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
-              <div className="flex items-center justify-between border-b border-[#eee6d8] px-5 py-4 sm:px-6">
+            <section className="overflow-hidden rounded-[18px] border border-[#eadfc9] bg-white shadow-[0_8px_24px_rgba(70,45,10,0.05)] sm:rounded-[24px] sm:shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
+              <div className="flex items-center justify-between border-b border-[#eee6d8] px-3.5 py-3.5 sm:px-6 sm:py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f0df] text-[#a47d3d]">
                     <MapPin size={18} />
                   </div>
 
                   <div>
-                    <h2 className="text-base font-extrabold">
+                    <h2 className="truncate text-sm font-extrabold sm:text-base">
                       Delivery Address
                     </h2>
 
@@ -1776,7 +1776,7 @@ export default function CheckoutPage() {
                 PAYMENT
             =============================================== */}
 
-            <section className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
+            <section className="overflow-hidden rounded-[18px] border border-[#eadfc9] bg-white shadow-[0_8px_24px_rgba(70,45,10,0.05)] sm:rounded-[24px] sm:shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
               <div className="border-b border-[#eee6d8] px-5 py-4 sm:px-6">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f0df] text-[#a47d3d]">
@@ -1784,7 +1784,7 @@ export default function CheckoutPage() {
                   </div>
 
                   <div>
-                    <h2 className="text-base font-extrabold">
+                    <h2 className="truncate text-sm font-extrabold sm:text-base">
                       Payment Method
                     </h2>
 
@@ -2355,15 +2355,15 @@ export default function CheckoutPage() {
                 ORDER ITEMS
             =============================================== */}
 
-            <section className="overflow-hidden rounded-[24px] border border-[#eadfc9] bg-white shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
-              <div className="flex items-center justify-between border-b border-[#eee6d8] px-5 py-4 sm:px-6">
+            <section className="overflow-hidden rounded-[18px] border border-[#eadfc9] bg-white shadow-[0_8px_24px_rgba(70,45,10,0.05)] sm:rounded-[24px] sm:shadow-[0_12px_35px_rgba(70,45,10,0.05)]">
+              <div className="flex items-center justify-between border-b border-[#eee6d8] px-3.5 py-3.5 sm:px-6 sm:py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f0df] text-[#a47d3d]">
                     <Package size={18} />
                   </div>
 
                   <div>
-                    <h2 className="text-base font-extrabold">
+                    <h2 className="truncate text-sm font-extrabold sm:text-base">
                       Order Items
                     </h2>
 
@@ -2400,9 +2400,9 @@ export default function CheckoutPage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex gap-3 p-4 sm:gap-5 sm:p-5"
+                      className="flex gap-2.5 p-3.5 sm:gap-5 sm:p-5"
                     >
-                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-[#eee6d8] bg-[#faf8f3] sm:h-28 sm:w-28">
+                      <div className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl border border-[#eee6d8] bg-[#faf8f3] sm:h-28 sm:w-28 sm:rounded-2xl">
                         <SafeCartImage
                           src={item.image_url}
                           alt={item.name}
@@ -2419,7 +2419,7 @@ export default function CheckoutPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="line-clamp-2 text-sm font-extrabold leading-5">
+                            <p className="line-clamp-2 text-[12px] font-extrabold leading-[17px] sm:text-sm sm:leading-5">
                               {item.name}
                             </p>
 
@@ -2451,8 +2451,8 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center overflow-hidden rounded-xl border border-[#ddd2c0] bg-white">
+                        <div className="mt-2.5 flex items-center justify-between gap-2 sm:mt-3 sm:gap-3">
+                          <div className="flex items-center overflow-hidden rounded-lg border border-[#ddd2c0] bg-white sm:rounded-xl">
                             <button
                               type="button"
                               onClick={() =>
@@ -2465,12 +2465,12 @@ export default function CheckoutPage() {
                                 item.quantity <=
                                 1
                               }
-                              className="flex h-8 w-8 items-center justify-center transition hover:bg-[#f5f0e6] disabled:cursor-not-allowed disabled:opacity-40"
+                              className="flex h-8 w-8 items-center justify-center transition hover:bg-[#f5f0e6] disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
                             >
                               <Minus size={13} />
                             </button>
 
-                            <span className="flex h-8 min-w-9 items-center justify-center border-x border-[#ddd2c0] text-xs font-extrabold">
+                            <span className="flex h-8 min-w-8 items-center justify-center border-x border-[#ddd2c0] text-[11px] font-extrabold sm:h-9 sm:min-w-9 sm:text-xs">
                               {item.quantity}
                             </span>
 
@@ -2584,7 +2584,7 @@ export default function CheckoutPage() {
                 className="flex w-full items-center justify-between border-b border-[#eee6d8] p-5 text-left lg:cursor-default"
               >
                 <div>
-                  <p className="text-base font-extrabold">
+                  <p className="truncate text-sm font-extrabold sm:text-base">
                     Price Details
                   </p>
 
@@ -2929,8 +2929,8 @@ export default function CheckoutPage() {
           MOBILE BOTTOM BAR
       =================================================== */}
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#eadfc9] bg-white/95 p-3 shadow-[0_-10px_35px_rgba(40,30,10,0.12)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-xl items-center gap-3">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#eadfc9] bg-white/96 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-10px_35px_rgba(40,30,10,0.12)] backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-xl items-center gap-2.5">
           <button
             type="button"
             onClick={() =>
@@ -2952,7 +2952,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <p className="text-lg font-black">
+            <p className="text-base font-black sm:text-lg">
               {formatPrice(total)}
             </p>
           </button>
@@ -2961,7 +2961,7 @@ export default function CheckoutPage() {
             type="button"
             onClick={placeOrder}
             disabled={placingOrder}
-            className="flex h-12 min-w-[165px] items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-4 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(185,151,91,0.25)] transition hover:bg-[#977538] disabled:opacity-70"
+            className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-3 text-[11px] font-extrabold text-white shadow-[0_8px_20px_rgba(185,151,91,0.25)] transition hover:bg-[#977538] disabled:opacity-70 sm:min-w-[165px] sm:px-4 sm:text-xs"
           >
             {placingOrder ? (
               <>
@@ -2979,6 +2979,25 @@ export default function CheckoutPage() {
       </div>
 
       <style jsx global>{`
+        input,
+        button,
+        select,
+        textarea {
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (max-width: 639px) {
+          input,
+          select,
+          textarea {
+            max-width: 100%;
+          }
+
+          button {
+            touch-action: manipulation;
+          }
+        }
+
         @keyframes slideIn {
           from {
             opacity: 0;
