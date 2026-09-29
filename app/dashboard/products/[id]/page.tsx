@@ -78,14 +78,6 @@ type Category = {
   slug: string | null;
 };
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  quantity: number;
-};
-
 type RecentlyViewedItem = {
   id: string;
   viewedAt: number;
@@ -103,7 +95,6 @@ type ImageFallbackProps = {
 /* =========================================================
    CONSTANTS
 ========================================================= */
-
 
 const RECENT_KEY = "primecart-recently-viewed";
 
@@ -166,7 +157,6 @@ function getImageCandidates(value: string | null | undefined) {
   return [...new Set(candidates)];
 }
 
- 
 function readRecentlyViewed(): RecentlyViewedItem[] {
   if (typeof window === "undefined") return [];
 
@@ -472,59 +462,55 @@ export default function ProductDetailPage() {
   const [recentLoaded, setRecentLoaded] = useState(false);
 
   /* =====================================================
-     LOAD CART COUNT
+     LOAD CART COUNT FROM SUPABASE
   ===================================================== */
 
-  /* =====================================================
-   LOAD CART COUNT FROM SUPABASE
-===================================================== */
+  const loadCartCount = useCallback(async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-const loadCartCount = useCallback(async () => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
 
-    if (!user) {
-      setCartCount(0);
-      return;
-    }
+      const { data, error } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("user_id", user.id);
 
-    const { data, error } = await supabase
-      .from("cart_items")
-      .select("quantity")
-      .eq("user_id", user.id);
+      if (error) {
+        console.error("Cart count error:", error);
+        return;
+      }
 
-    if (error) {
+      const count = (data || []).reduce(
+        (sum, item) => sum + Number(item.quantity || 0),
+        0
+      );
+
+      setCartCount(count);
+    } catch (error) {
       console.error("Cart count error:", error);
-      return;
+      setCartCount(0);
     }
+  }, [supabase]);
 
-    const count = (data || []).reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0
-    );
-
-    setCartCount(count);
-  } catch (error) {
-    console.error("Cart count error:", error);
-    setCartCount(0);
-  }
-}, [supabase]);
-
-useEffect(() => {
-  loadCartCount();
-
-  const handleCartUpdated = () => {
+  useEffect(() => {
     loadCartCount();
-  };
 
-  window.addEventListener("cart-updated", handleCartUpdated);
+    const handleCartUpdated = () => {
+      loadCartCount();
+    };
 
-  return () => {
-    window.removeEventListener("cart-updated", handleCartUpdated);
-  };
-}, [loadCartCount]);
+    window.addEventListener("cart-updated", handleCartUpdated);
+
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdated);
+    };
+  }, [loadCartCount]);
 
   /* =====================================================
      TOAST
@@ -570,10 +556,6 @@ useEffect(() => {
 
       setProduct(currentProduct);
 
-      /* ---------------------------------------------------
-         CATEGORY
-      --------------------------------------------------- */
-
       if (currentProduct.category_id) {
         const { data: categoryData } = await supabase
           .from("categories")
@@ -585,10 +567,6 @@ useEffect(() => {
       } else {
         setCategory(null);
       }
-
-      /* ---------------------------------------------------
-         RELATED PRODUCTS
-      --------------------------------------------------- */
 
       if (currentProduct.category_id) {
         const { data: relatedData } = await supabase
@@ -606,10 +584,6 @@ useEffect(() => {
         setRelatedProducts([]);
       }
 
-      /* ---------------------------------------------------
-         RECOMMENDED PRODUCTS
-      --------------------------------------------------- */
-
       const { data: recommendationData } = await supabase
         .from("products")
         .select("*")
@@ -621,14 +595,8 @@ useEffect(() => {
 
       setRecommendedProducts((recommendationData as Product[]) || []);
 
-      /* ---------------------------------------------------
-         WISHLIST
-      --------------------------------------------------- */
-
       const {
-        data: {
-          user,
-        },
+        data: { user },
       } = await supabase.auth.getUser();
 
       if (user) {
@@ -641,10 +609,6 @@ useEffect(() => {
 
         setWishlisted(Boolean(wishlistData));
       }
-
-      /* ---------------------------------------------------
-         RECENTLY VIEWED
-      --------------------------------------------------- */
 
       saveRecentlyViewed(currentProduct.id);
 
@@ -662,8 +626,7 @@ useEffect(() => {
           .in("id", recentIds);
 
         const mapped = ((recentData as Product[]) || []).sort(
-          (a, b) =>
-            recentIds.indexOf(a.id) - recentIds.indexOf(b.id)
+          (a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id)
         );
 
         setRecentProducts(mapped);
@@ -674,7 +637,6 @@ useEffect(() => {
       setRecentLoaded(true);
     } catch (error) {
       console.error("Product load error:", error);
-
       setPageError("Unable to load this product right now.");
     } finally {
       setLoading(false);
@@ -724,123 +686,141 @@ useEffect(() => {
       : 0;
 
   /* =====================================================
-     ADD TO CART
+     ADD TO CART - SUPABASE DATABASE
   ===================================================== */
 
-const addProductToCart = useCallback(
-  async (qty = quantity) => {
-    if (!product || isOutOfStock) {
-      return false;
-    }
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push("/auth/login");
+  const addProductToCart = useCallback(
+    async (qty = quantity) => {
+      if (!product || isOutOfStock) {
         return false;
       }
 
-      const safeQuantity = Math.max(
-        1,
-        Math.min(Number(qty) || 1, maxQuantity)
-      );
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      const { data: existingItem, error: existingError } =
-        await supabase
-          .from("cart_items")
-          .select("id, quantity")
-          .eq("user_id", user.id)
-          .eq("product_id", product.id)
-          .maybeSingle();
+        if (!user) {
+          router.push("/auth/login");
+          return false;
+        }
 
-      if (existingError) {
-        throw existingError;
-      }
-
-      if (existingItem) {
-        const newQuantity = Math.min(
-          maxQuantity,
-          Number(existingItem.quantity || 0) + safeQuantity
+        const safeQuantity = Math.max(
+          1,
+          Math.min(Number(qty) || 1, maxQuantity)
         );
 
-        const { error: updateError } = await supabase
-          .from("cart_items")
-          .update({
-            quantity: newQuantity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingItem.id)
-          .eq("user_id", user.id);
+        const { data: existingItem, error: existingError } =
+          await supabase
+            .from("cart_items")
+            .select("id, quantity")
+            .eq("user_id", user.id)
+            .eq("product_id", product.id)
+            .maybeSingle();
 
-        if (updateError) {
-          throw updateError;
+        if (existingError) {
+          throw existingError;
         }
-      } else {
-        const { error: insertError } = await supabase
-          .from("cart_items")
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: safeQuantity,
-          });
 
-        if (insertError) {
-          throw insertError;
+        if (existingItem) {
+          const newQuantity = Math.min(
+            maxQuantity,
+            Number(existingItem.quantity || 0) + safeQuantity
+          );
+
+          const { error: updateError } = await supabase
+            .from("cart_items")
+            .update({
+              quantity: newQuantity,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingItem.id)
+            .eq("user_id", user.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          const { error: insertError } = await supabase
+            .from("cart_items")
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: safeQuantity,
+            });
+
+          if (insertError) {
+            throw insertError;
+          }
         }
+
+        await loadCartCount();
+
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+
+        setToast(
+          existingItem
+            ? "Cart quantity updated."
+            : "Product added to your cart."
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Add to cart error:", error);
+        setToast("Unable to add this product to cart.");
+        return false;
       }
+    },
+    [
+      product,
+      quantity,
+      maxQuantity,
+      isOutOfStock,
+      supabase,
+      router,
+      loadCartCount,
+    ]
+  );
 
-      await loadCartCount();
+  /* =====================================================
+     ADD TO CART BUTTON
+  ===================================================== */
 
-      window.dispatchEvent(
-        new CustomEvent("cart-updated")
-      );
+  const handleAddToCart = async () => {
+    if (cartLoading || !product || isOutOfStock) return;
 
-      setToast(
-        existingItem
-          ? "Cart quantity updated."
-          : "Product added to your cart."
-      );
+    setCartLoading(true);
 
-      return true;
+    try {
+      await addProductToCart(quantity);
     } catch (error) {
-      console.error("Add to cart error:", error);
-      setToast("Unable to add this product to cart.");
-      return false;
+      console.error("Handle add to cart error:", error);
+    } finally {
+      setCartLoading(false);
     }
-  },
-  [
-    product,
-    quantity,
-    maxQuantity,
-    isOutOfStock,
-    supabase,
-    router,
-    loadCartCount,
-  ]
-);
+  };
 
   /* =====================================================
      BUY NOW
   ===================================================== */
 
   const handleBuyNow = async () => {
-  if (!product || isOutOfStock || cartLoading) return;
+    if (!product || isOutOfStock || cartLoading) return;
 
-  setCartLoading(true);
+    setCartLoading(true);
 
-  try {
-    const added = await addProductToCart(quantity);
+    try {
+      const added = await addProductToCart(quantity);
 
-    if (added) {
-      router.push("/dashboard/checkout");
+      if (added) {
+        router.push("/dashboard/checkout");
+      }
+    } catch (error) {
+      console.error("Buy now error:", error);
+    } finally {
+      setCartLoading(false);
     }
-  } finally {
-    setCartLoading(false);
-  }
-};
+  };
 
   /* =====================================================
      WISHLIST
@@ -1169,9 +1149,7 @@ const addProductToCart = useCallback(
         }
       `}</style>
 
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+      {/* HEADER */}
 
       <header className="sticky top-0 z-40 border-b border-[#eadfcb]/80 bg-[#fffdf9]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-[1500px] items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -1260,10 +1238,6 @@ const addProductToCart = useCallback(
       </header>
 
       <main>
-        {/* =================================================
-            BREADCRUMB
-        ================================================= */}
-
         <div className="mx-auto max-w-[1500px] px-4 pt-5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-xs text-[#9a8e7c]">
             <Link
@@ -1303,16 +1277,8 @@ const addProductToCart = useCallback(
           </div>
         </div>
 
-        {/* =================================================
-            MAIN PRODUCT AREA
-        ================================================= */}
-
         <section className="mx-auto max-w-[1500px] px-4 pb-8 pt-5 sm:px-6 lg:px-8">
           <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.12fr)_minmax(400px,0.88fr)] xl:gap-10">
-            {/* =============================================
-                IMAGE GALLERY
-            ============================================= */}
-
             <div className="pc-scale">
               <div className="overflow-hidden rounded-[30px] border border-[#eadfcb] bg-white shadow-[0_15px_55px_rgba(84,63,32,0.07)]">
                 <div className="relative flex min-h-[470px] items-center justify-center bg-[#faf7f1] sm:min-h-[570px] lg:min-h-[650px]">
@@ -1376,8 +1342,6 @@ const addProductToCart = useCallback(
                     />
                   </button>
                 </div>
-
-                {/* THUMBNAILS */}
 
                 <div className="border-t border-[#eee4d4] bg-white px-4 py-4 sm:px-6">
                   <div className="flex items-center gap-3">
@@ -1445,8 +1409,6 @@ const addProductToCart = useCallback(
                 </div>
               </div>
 
-              {/* GALLERY TRUST STRIP */}
-
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border border-[#eadfcb] bg-white px-3 py-3 text-center">
                   <ShieldCheck
@@ -1490,14 +1452,8 @@ const addProductToCart = useCallback(
               </div>
             </div>
 
-            {/* =============================================
-                PRODUCT INFORMATION
-            ============================================= */}
-
             <div className="pc-fade-up lg:sticky lg:top-[88px]">
               <div className="rounded-[30px] border border-[#eadfcb] bg-white p-5 shadow-[0_15px_55px_rgba(84,63,32,0.07)] sm:p-7">
-                {/* BRAND */}
-
                 {product.brand && (
                   <div className="mb-3 flex items-center gap-2">
                     <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#a18966]">
@@ -1512,21 +1468,15 @@ const addProductToCart = useCallback(
                   </div>
                 )}
 
-                {/* TITLE */}
-
                 <h1 className="text-2xl font-extrabold leading-tight tracking-[-0.025em] text-[#40372d] sm:text-[30px]">
                   {product.name}
                 </h1>
-
-                {/* SHORT DESCRIPTION */}
 
                 {product.short_description && (
                   <p className="mt-3 text-sm leading-6 text-[#817667] sm:text-[15px]">
                     {product.short_description}
                   </p>
                 )}
-
-                {/* RATING */}
 
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   <button
@@ -1555,8 +1505,6 @@ const addProductToCart = useCallback(
                 </div>
 
                 <div className="my-6 h-px bg-[#eee5d7]" />
-
-                {/* PRICE */}
 
                 <div className="rounded-[22px] border border-[#eadfcb] bg-[#fcf8f0] p-5">
                   <div className="flex flex-wrap items-end gap-3">
@@ -1590,8 +1538,6 @@ const addProductToCart = useCallback(
                   </p>
                 </div>
 
-                {/* FLASH DEAL */}
-
                 {product.is_flash_sale && (
                   <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#ecd5a9] bg-[#fff7e7] p-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f1dfba] text-[#956d32]">
@@ -1609,8 +1555,6 @@ const addProductToCart = useCallback(
                     </div>
                   </div>
                 )}
-
-                {/* STOCK */}
 
                 <div className="mt-5">
                   <div className="flex items-center justify-between">
@@ -1659,8 +1603,6 @@ const addProductToCart = useCallback(
                   )}
                 </div>
 
-                {/* QUANTITY */}
-
                 {!isOutOfStock && (
                   <div className="mt-6 flex items-center justify-between">
                     <span className="text-xs font-bold text-[#625645]">
@@ -1693,8 +1635,6 @@ const addProductToCart = useCallback(
                   </div>
                 )}
 
-                {/* ACTIONS */}
-
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
@@ -1720,15 +1660,13 @@ const addProductToCart = useCallback(
                   <button
                     type="button"
                     onClick={handleBuyNow}
-                    disabled={isOutOfStock}
+                    disabled={isOutOfStock || cartLoading}
                     className="pc-pulse-gold flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#b9975b] px-4 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(185,151,91,0.22)] transition hover:bg-[#a7844e] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ShoppingBag size={18} />
                     Buy Now
                   </button>
                 </div>
-
-                {/* WISHLIST + SHARE */}
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <button
@@ -1753,8 +1691,6 @@ const addProductToCart = useCallback(
                     Share Product
                   </button>
                 </div>
-
-                {/* PURCHASE BENEFITS */}
 
                 <div className="mt-6 grid gap-3 border-t border-[#eee5d7] pt-5 sm:grid-cols-2">
                   <div className="flex items-start gap-3">
@@ -1826,10 +1762,6 @@ const addProductToCart = useCallback(
           </div>
         </section>
 
-        {/* =================================================
-            STICKY PRODUCT NAV
-        ================================================= */}
-
         <div className="sticky top-[68px] z-30 border-y border-[#eadfcb] bg-[#fffdf9]/95 backdrop-blur-xl">
           <div className="mx-auto max-w-[1500px] overflow-x-auto px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-max items-center gap-1 py-2">
@@ -1863,10 +1795,6 @@ const addProductToCart = useCallback(
           </div>
         </div>
 
-        {/* =================================================
-            OVERVIEW
-        ================================================= */}
-
         <section
           id="overview"
           className="pc-section mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8"
@@ -1897,10 +1825,6 @@ const addProductToCart = useCallback(
             />
           </div>
         </section>
-
-        {/* =================================================
-            DETAILS
-        ================================================= */}
 
         <section
           id="details"
@@ -1945,9 +1869,7 @@ const addProductToCart = useCallback(
 
                 <div className="mt-4 divide-y divide-[#e9dfcf]">
                   <div className="flex justify-between gap-4 py-3">
-                    <span className="text-xs text-[#958978]">
-                      Brand
-                    </span>
+                    <span className="text-xs text-[#958978]">Brand</span>
                     <span className="text-right text-xs font-bold text-[#55493a]">
                       {product.brand || "PrimeCart"}
                     </span>
@@ -2020,10 +1942,6 @@ const addProductToCart = useCallback(
             </div>
           </div>
         </section>
-
-        {/* =================================================
-            REVIEWS
-        ================================================= */}
 
         <section
           id="reviews"
@@ -2137,10 +2055,6 @@ const addProductToCart = useCallback(
           </div>
         </section>
 
-        {/* =================================================
-            RELATED PRODUCTS
-        ================================================= */}
-
         <section
           id="related"
           className="pc-section mx-auto max-w-[1500px] px-4 pb-12 sm:px-6 lg:px-8"
@@ -2184,10 +2098,6 @@ const addProductToCart = useCallback(
           )}
         </section>
 
-        {/* =================================================
-            YOU MAY ALSO LIKE
-        ================================================= */}
-
         {recommendedProducts.length > 0 && (
           <section className="mx-auto max-w-[1500px] px-4 pb-12 sm:px-6 lg:px-8">
             <div className="mb-5">
@@ -2224,10 +2134,6 @@ const addProductToCart = useCallback(
             </div>
           </section>
         )}
-
-        {/* =================================================
-            RECENTLY VIEWED
-        ================================================= */}
 
         {recentLoaded && recentProducts.length > 0 && (
           <section className="mx-auto max-w-[1500px] px-4 pb-14 sm:px-6 lg:px-8">
@@ -2266,10 +2172,6 @@ const addProductToCart = useCallback(
           </section>
         )}
 
-        {/* =================================================
-            FINAL CTA
-        ================================================= */}
-
         <section className="mx-auto max-w-[1500px] px-4 pb-28 sm:px-6 lg:px-8 lg:pb-14">
           <div className="relative overflow-hidden rounded-[30px] border border-[#dfcda9] bg-[#f7ecd9] p-7 sm:p-10">
             <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/40 blur-3xl" />
@@ -2306,10 +2208,6 @@ const addProductToCart = useCallback(
         </section>
       </main>
 
-      {/* ===================================================
-          MOBILE BOTTOM PURCHASE BAR
-      =================================================== */}
-
       {!isOutOfStock && (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e6dbc8] bg-[#fffdf9]/96 p-3 shadow-[0_-12px_35px_rgba(68,52,28,0.12)] backdrop-blur-xl lg:hidden">
           <div className="mx-auto flex max-w-2xl items-center gap-2">
@@ -2326,16 +2224,22 @@ const addProductToCart = useCallback(
             <button
               type="button"
               onClick={handleAddToCart}
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-[#cbaa6e] bg-[#fff9ee] px-3 text-xs font-extrabold text-[#8f6833]"
+              disabled={cartLoading}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-[#cbaa6e] bg-[#fff9ee] px-3 text-xs font-extrabold text-[#8f6833] disabled:opacity-50"
             >
-              <ShoppingCart size={17} />
-              Add to Cart
+              {cartLoading ? (
+                <RefreshCw size={17} className="animate-spin" />
+              ) : (
+                <ShoppingCart size={17} />
+              )}
+              {cartLoading ? "Adding..." : "Add to Cart"}
             </button>
 
             <button
               type="button"
               onClick={handleBuyNow}
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-3 text-xs font-extrabold text-white"
+              disabled={cartLoading}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-3 text-xs font-extrabold text-white disabled:opacity-50"
             >
               <ShoppingBag size={17} />
               Buy Now
@@ -2343,10 +2247,6 @@ const addProductToCart = useCallback(
           </div>
         </div>
       )}
-
-      {/* ===================================================
-          SHARE MESSAGE
-      =================================================== */}
 
       {shareMessage && (
         <div className="fixed bottom-5 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-[#dbc69b] bg-white px-5 py-3 text-xs font-bold text-[#76592f] shadow-[0_15px_40px_rgba(62,48,27,0.15)]">
@@ -2356,10 +2256,6 @@ const addProductToCart = useCallback(
           </span>
         </div>
       )}
-
-      {/* ===================================================
-          TOAST
-      =================================================== */}
 
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-[80] -translate-x-1/2 sm:bottom-7">
@@ -2372,10 +2268,6 @@ const addProductToCart = useCallback(
           </div>
         </div>
       )}
-
-      {/* ===================================================
-          IMAGE ZOOM MODAL
-      =================================================== */}
 
       {zoomOpen && activeImage && (
         <div
