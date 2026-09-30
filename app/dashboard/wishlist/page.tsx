@@ -67,28 +67,36 @@ export default function WishlistPage() {
   } | null>(null);
 
   const getImageUrl = useCallback(
-    (imageUrl: string | null) => {
-      if (!imageUrl) return null;
+  (imageUrl: string | null) => {
+    if (!imageUrl) return null;
 
-      const value = imageUrl.trim();
+    const value = imageUrl.trim();
 
-      if (!value) return null;
+    if (!value) return null;
 
-      if (
-        value.startsWith("http://") ||
-        value.startsWith("https://")
-      ) {
-        return value;
-      }
+    // Full external URL
+    if (
+      value.startsWith("http://") ||
+      value.startsWith("https://")
+    ) {
+      return value;
+    }
 
-      if (value.startsWith("/")) {
-        return value;
-      }
+    // Already has a proper public path
+    if (value.startsWith("/products/")) {
+      return value;
+    }
 
-      return `/${value}`;
-    },
-    []
-  );
+    // Any other absolute local path
+    if (value.startsWith("/")) {
+      return value;
+    }
+
+    // Database stores only filename
+    return `/products/${value}`;
+  },
+  []
+);
 
   const formatPrice = useCallback((price: number) => {
     return new Intl.NumberFormat("en-IN", {
