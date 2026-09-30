@@ -347,36 +347,48 @@ export default function CartPage() {
       );
 
       const nextCart: CartItem[] = [];
-      
       const rowsToUpdate: Array<{ id: string; quantity: number }> = [];
 
-      for (const row of cartRows) {
-        const product = productMap.get(row.product_id);
+for (const row of cartRows) {
+  const product = productMap.get(row.product_id);
 
-        // If the product could not be loaded, keep the cart row instead of
-        // silently deleting it. This protects the user's DB cart from data/RLS
-        // loading issues.
-        if (!product) {
-          continue;
-        }
+  // Keep cart_items permanently stored.
+  // Do not delete cart rows because a product is unavailable/out of stock.
+  if (!product) {
+    continue;
+  }
 
-        if (!product.is_active || product.stock <= 0) {
-          rowsToDelete.push(row.id);
-          continue;
-        }
+  if (product.is_active === false || product.stock <= 0) {
+    continue;
+  }
 
-        const requested = Math.max(1, Number(row.quantity) || 1);
-        const quantity = Math.min(requested, product.stock);
+  const requested = Math.max(1, Number(row.quantity) || 1);
+  const quantity = Math.min(requested, product.stock);
 
-        if (quantity !== requested) {
-          rowsToUpdate.push({ id: row.id, quantity });
-        }
+  if (quantity !== requested) {
+    const { error } = await supabase
+      .from("cart_items")
+      .update({ quantity })
+      .eq("id", row.id)
+      .eq("user_id", user.id);
 
-        nextCart.push({
-          ...product,
-          quantity,
-          cart_item_id: row.id,
-        });
+    if (error) throw error;
+
+    changed = true;
+    messages.push(
+      `${product.name} quantity was adjusted to available stock.`,
+    );
+  }
+
+  nextCart.push({
+    ...product,
+    quantity,
+    cart_item_id: row.id,
+  });
+}
+
+      if (rowsToDelete.length) {
+        await supabase.from("cart_items").delete().in("id", rowsToDelete);
       }
 
       if (rowsToUpdate.length) {
@@ -936,31 +948,6 @@ export default function CartPage() {
       for (const row of cartRows) {
         const product = productMap.get(row.product_id);
 
-        if (!product || product.is_active === false) {
-          await supabase
-            .from("cart_items")
-            .delete()
-            .eq("id", row.id)
-            .eq("user_id", user.id);
-
-          changed = true;
-          messages.push(
-            `${product?.name ?? "A product"} was removed because it is unavailable.`,
-          );
-          continue;
-        }
-
-        if (product.stock <= 0) {
-          await supabase
-            .from("cart_items")
-            .delete()
-            .eq("id", row.id)
-            .eq("user_id", user.id);
-
-          changed = true;
-          messages.push(`${product.name} is out of stock.`);
-          continue;
-        }
 
         const requested = Math.max(1, Number(row.quantity) || 1);
         const quantity = Math.min(requested, product.stock);
