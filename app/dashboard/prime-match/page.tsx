@@ -1309,7 +1309,7 @@ function ProductCard({
       </div>
 
       {/* CONTENT */}
-      <div className="p-5">
+      <div className="p-2 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <span className="max-w-[65%] truncate text-[10px] font-black uppercase tracking-[0.14em] text-[#a17b2f]">
             {product.categoryName}
@@ -2541,7 +2541,7 @@ async function runMatch() {
                 />
               </div>
 
-              <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">
+              <p className="mt-2 text-[8px] leading-3.5 text-gray-500 sm:mt-4 sm:text-xs sm:leading-5">
                 Adjust your preferences below
                 to change the ranking instantly.
               </p>
@@ -3610,50 +3610,50 @@ async function runMatch() {
                   </span>
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-5 lg:grid-cols-3">
                   {results.slice(0, 3).map((product, index) => {
                     const tier = getMatchTier(product.matchScore);
                     return (
-                      <article key={product.id} className="overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(100,75,25,0.10)]">
-                        <div className="relative h-64 bg-[#faf8f2]">
+                      <article key={product.id} className="overflow-hidden rounded-[14px] border border-[#e8dfcf] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(100,75,25,0.10)] sm:rounded-[26px]">
+                        <div className="relative h-24 bg-[#faf8f2] sm:h-64">
                           <ProductImage
                             src={getImageUrl(product.image_url)}
                             alt={product.name}
-                            className="h-full w-full object-contain p-7"
+                            className="h-full w-full object-contain p-2.5 sm:p-7"
                           />
-                          <div className="absolute left-4 top-4 flex items-center gap-2">
-                            <span className="rounded-full bg-[#fff0c8] px-3 py-1.5 text-[10px] font-black text-[#8f6b25]">#{index + 1}</span>
-                            <span className="rounded-full border border-[#ead9ad] bg-white/95 px-3 py-1.5 text-[10px] font-black text-[#956f27]">{tier.label}</span>
+                          <div className="absolute left-1.5 top-1.5 flex items-center gap-1 sm:left-4 sm:top-4 sm:gap-2">
+                            <span className="rounded-full bg-[#fff0c8] px-1.5 py-0.5 text-[8px] font-black text-[#8f6b25] sm:px-3 sm:py-1.5 sm:text-[10px]">#{index + 1}</span>
+                            <span className="max-w-[72px] truncate rounded-full border border-[#ead9ad] bg-white/95 px-1.5 py-0.5 text-[7px] font-black text-[#956f27] sm:max-w-none sm:px-3 sm:py-1.5 sm:text-[10px]">{tier.label}</span>
                           </div>
                         </div>
                         <div className="p-5">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-2xl font-black text-[#9b762b]">{product.matchScore}%</span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#fffaf0] px-2.5 py-1 text-[10px] font-black text-[#8f6b25]">
-                              <Star size={11} fill="currentColor" /> {Number(product.rating || 0).toFixed(1)}
+                            <span className="text-sm font-black text-[#9b762b] sm:text-2xl">{product.matchScore}%</span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#fffaf0] px-1 py-0.5 text-[7px] font-black text-[#8f6b25] sm:px-2.5 sm:py-1 sm:text-[10px]">
+                              <Star size={8} fill="currentColor" /> {Number(product.rating || 0).toFixed(1)}
                             </span>
                           </div>
-                          <Link href={`/dashboard/products/${product.id}`} className="mt-2 block line-clamp-2 text-base font-black leading-6 hover:text-[#9b762b]">{product.name}</Link>
-                          <p className="mt-1 text-[10px] font-semibold text-gray-400">{product.categoryName} · {product.brand || "Any brand"}</p>
-                          <div className="mt-4 flex items-end justify-between gap-3">
-                            <span className="text-lg font-black">{money(Number(product.price))}</span>
+                          <Link href={`/dashboard/products/${product.id}`} className="mt-1 block line-clamp-2 text-[10px] font-black leading-3.5 hover:text-[#9b762b] sm:mt-2 sm:text-base sm:leading-6">{product.name}</Link>
+                          <p className="mt-1 line-clamp-1 text-[7px] font-semibold text-gray-400 sm:text-[10px]">{product.categoryName} · {product.brand || "Any brand"}</p>
+                          <div className="mt-2 flex items-end justify-between gap-1 sm:mt-4 sm:gap-3">
+                            <span className="text-[10px] font-black sm:text-lg">{money(Number(product.price))}</span>
                             {discount(Number(product.price), product.original_price) > 0 && (
-                              <span className="rounded-full bg-[#fff4d6] px-2 py-1 text-[9px] font-black text-[#956f27]">{discount(Number(product.price), product.original_price)}% OFF</span>
+                              <span className="rounded-full bg-[#fff4d6] px-1 py-0.5 text-[7px] font-black text-[#956f27] sm:px-2 sm:py-1 sm:text-[9px]">{discount(Number(product.price), product.original_price)}% OFF</span>
                             )}
                           </div>
-                          <div className="mt-4 space-y-2">
+                          <div className="mt-2 hidden space-y-2 sm:block sm:mt-4">
                             {product.reasons.slice(0, 2).map((reason) => (
                               <div key={reason} className="flex items-center gap-2 text-[10px] font-semibold text-gray-500">
                                 <Check size={12} className="shrink-0 text-[#b58a32]" /> {reason}
                               </div>
                             ))}
                           </div>
-                          <div className="mt-5 grid grid-cols-2 gap-2">
-                            <button type="button" disabled={product.stock <= 0} onClick={() => addToCart(product)} className="flex items-center justify-center gap-1.5 rounded-xl bg-[#c9a24d] px-3 py-2.5 text-[10px] font-black text-white transition hover:bg-[#b58a32] disabled:cursor-not-allowed disabled:bg-[#f1ede4] disabled:text-gray-400">
-                              <ShoppingCart size={13} /> {cartIds.includes(product.id) ? "Added" : "Add to Cart"}
+                          <div className="mt-2 grid grid-cols-2 gap-1 sm:mt-5 sm:gap-2">
+                            <button type="button" disabled={product.stock <= 0} onClick={() => addToCart(product)} className="flex items-center justify-center gap-1.5 rounded-xl bg-[#c9a24d] px-1.5 py-1.5 text-[8px] font-black text-white sm:px-3 sm:py-2.5 sm:text-[10px] transition hover:bg-[#b58a32] disabled:cursor-not-allowed disabled:bg-[#f1ede4] disabled:text-gray-400">
+                              <ShoppingCart size={10} /> {cartIds.includes(product.id) ? "Added" : "Add"}
                             </button>
-                            <Link href={`/dashboard/products/${product.id}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#dfd3bf] bg-white px-3 py-2.5 text-[10px] font-black text-[#956f27] hover:bg-[#fff8e8]">
-                              View <ArrowRight size={13} />
+                            <Link href={`/dashboard/products/${product.id}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#dfd3bf] bg-white px-1.5 py-1.5 text-[8px] font-black text-[#956f27] sm:px-3 sm:py-2.5 sm:text-[10px] hover:bg-[#fff8e8]">
+                              View <ArrowRight size={10} />
                             </Link>
                           </div>
                         </div>
@@ -3667,7 +3667,7 @@ async function runMatch() {
                   MATCH SUMMARY
               ================================================= */}
 
-              <section className="mt-5 grid gap-3 md:mt-8 md:grid-cols-3">
+              <section className="hidden sm:grid mt-5 gap-3 md:mt-8 md:grid-cols-3">
                 <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Target size={18} /></div>
@@ -3695,16 +3695,16 @@ async function runMatch() {
                   BUDGET ADVISOR + ANALYTICS
               ================================================= */}
               {budgetAdvisor && (
-                <section className="mt-5 grid gap-3 lg:mt-8 lg:grid-cols-[1.1fr_.9fr]">
-                  <div className="rounded-[26px] border border-[#e8dfcf] bg-gradient-to-br from-[#fffaf0] to-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Budget advisor</p><h3 className="mt-1 text-xl font-black">Make the most of your budget</h3></div>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><TrendingUp size={18} /></div>
+                <section className="mt-3 grid gap-2 sm:mt-5 sm:gap-3 lg:mt-8 lg:grid-cols-[1.1fr_.9fr]">
+                  <div className="rounded-[16px] border border-[#e8dfcf] bg-gradient-to-br from-[#fffaf0] to-white p-2.5 shadow-sm sm:rounded-[26px] sm:p-6">
+                    <div className="flex items-center justify-between gap-2">
+                      <div><p className="text-[8px] font-black uppercase tracking-[0.14em] text-[#a17b2f] sm:text-[10px] sm:tracking-[0.18em]">Budget advisor</p><h3 className="mt-0.5 text-xs font-black sm:mt-1 sm:text-xl">Make the most of your budget</h3></div>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fff3d2] text-[#9b762b] sm:h-10 sm:w-10 sm:rounded-xl"><TrendingUp size={14} className="sm:h-[18px] sm:w-[18px]" /></div>
                     </div>
-                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">In budget</p><p className="mt-1 text-xl font-black text-[#9b762b]">{budgetAdvisor.count}</p><p className="text-[10px] text-gray-400">matched products</p></div>
-                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Best match</p><p className="mt-1 text-xl font-black">{money(Number(budgetAdvisor.best.price))}</p><p className="text-[10px] text-gray-400">{budgetAdvisor.best.matchScore}% fit</p></div>
-                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Average price</p><p className="mt-1 text-xl font-black">{money(budgetAdvisor.avg)}</p><p className="text-[10px] text-gray-400">top available options</p></div>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5 sm:mt-5 sm:gap-3">
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-2"><p className="text-[8px] font-bold text-gray-400 sm:text-[10px]">In budget</p><p className="mt-0.5 text-sm font-black text-[#9b762b] sm:mt-1 sm:text-xl">{budgetAdvisor.count}</p><p className="text-[10px] text-gray-400">matched products</p></div>
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-2"><p className="text-[8px] font-bold text-gray-400 sm:text-[10px]">Best match</p><p className="mt-0.5 text-sm font-black sm:mt-1 sm:text-xl">{money(Number(budgetAdvisor.best.price))}</p><p className="text-[10px] text-gray-400">{budgetAdvisor.best.matchScore}% fit</p></div>
+                      <div className="rounded-2xl border border-[#eadfc9] bg-white p-2"><p className="text-[8px] font-bold text-gray-400 sm:text-[10px]">Average price</p><p className="mt-0.5 text-sm font-black sm:mt-1 sm:text-xl">{money(budgetAdvisor.avg)}</p><p className="text-[10px] text-gray-400">top available options</p></div>
                     </div>
                     <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "There are no exact in-budget products, so PrimeMatch is showing the closest alternatives."}</p>
                   </div>
@@ -3845,7 +3845,7 @@ async function runMatch() {
   !matching &&
   results.length > 0 && (
 
-              <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
                 {results.map(
                   (
                     product,
@@ -3917,7 +3917,7 @@ async function runMatch() {
             </h2>
           </div>
 
-          <div className="grid gap-0 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-0 md:grid-cols-3">
             {[
               {
                 number: "01",
@@ -3955,7 +3955,7 @@ async function runMatch() {
                   key={
                     item.number
                   }
-                  className={`p-4 sm:p-8 ${
+                  className={`p-2.5 sm:p-8 ${
                     index <
                     2
                       ? "border-b md:border-b-0 md:border-r border-[#eee5d6]"
@@ -3963,24 +3963,24 @@ async function runMatch() {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-[#c9a24d]">
+                    <span className="text-[9px] font-black text-[#c9a24d] sm:text-xs">
                       {item.number}
                     </span>
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff5dc] text-[#a17b2f]">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#fff5dc] text-[#a17b2f] sm:h-10 sm:w-10 sm:rounded-xl">
                       {
                         item.icon
                       }
                     </div>
                   </div>
 
-                  <h3 className="mt-7 text-base font-black">
+                  <h3 className="mt-3 text-[10px] font-black leading-4 sm:mt-7 sm:text-base">
                     {
                       item.title
                     }
                   </h3>
 
-                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                  <p className="mt-1 text-[9px] leading-4 text-gray-500 sm:mt-2 sm:text-sm sm:leading-6">
                     {
                       item.text
                     }
