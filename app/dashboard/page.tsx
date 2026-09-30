@@ -1225,7 +1225,6 @@ export default function DashboardPage() {
   /* ------------------------------------------------------------------------ */
 
   return (
-    <main className="store-shell">
       {/* TOP OFFER BAR */}
       <div className="top-strip">
         <div className="container strip-inner">
@@ -7408,7 +7407,6 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         }
  `}
       </style>
-    </main>
   );
 }
 
