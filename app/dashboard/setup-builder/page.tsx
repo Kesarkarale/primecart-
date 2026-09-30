@@ -320,25 +320,79 @@ const setupKeywords: Record<
   ],
 };
 
-function getImageUrl(value: string | null) {
-  if (!value) return null;
+function getImageCandidates(value: string | null) {
+  if (!value) return [];
 
   const image = value.trim();
+  if (!image) return [];
 
-  if (!image) return null;
-
-  if (
-    image.startsWith("http://") ||
-    image.startsWith("https://")
-  ) {
-    return image;
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return [image];
   }
+
+  const clean = image.replace(/^\/+/, "");
 
   if (image.startsWith("/")) {
-    return image;
+    return [
+      image,
+      `/products/${clean}`,
+      `/product-images/${clean}`,
+      `/images/${clean}`,
+      `/images/products/${clean}`,
+    ];
   }
 
-  return `/${image}`;
+  return [
+    `/${clean}`,
+    `/products/${clean}`,
+    `/product-images/${clean}`,
+    `/images/${clean}`,
+    `/images/products/${clean}`,
+  ];
+}
+
+function getImageUrl(value: string | null) {
+  return getImageCandidates(value)[0] || null;
+}
+
+function ProductImage({
+  src,
+  alt,
+  className,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  sizes?: string;
+}) {
+  const candidates = getImageCandidates(src);
+  const [index, setIndex] = useState(0);
+
+  const current = candidates[index];
+
+  if (!current) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-gray-300">
+        <Package size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={current}
+      alt={alt}
+      className={className}
+      sizes={sizes}
+      loading="lazy"
+      onError={() => {
+        if (index < candidates.length - 1) {
+          setIndex((currentIndex) => currentIndex + 1);
+        }
+      }}
+    />
+  );
 }
 
 function formatPrice(value: number) {
@@ -2459,15 +2513,10 @@ export default function SetupBuilderPage() {
                             <div className="flex flex-col sm:flex-row">
                               <div className="relative h-56 w-full shrink-0 bg-[#faf9f6] sm:h-48 sm:w-48">
                                 {image ? (
-                                  <Image
-                                    src={
-                                      image
-                                    }
-                                    alt={
-                                      product.name
-                                    }
-                                    fill
-                                    className="object-contain p-5 transition duration-500 group-hover:scale-105"
+                                  <ProductImage
+                                    src={image}
+                                    alt={product.name}
+                                    className="h-full w-full object-contain p-5 transition duration-500 group-hover:scale-105"
                                     sizes="192px"
                                   />
                                 ) : (
