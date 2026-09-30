@@ -107,6 +107,10 @@ const CART_KEY = "primecart-cart";
 const WISHLIST_KEY = "primecart-wishlist";
 const THEME_KEY = "primecart-theme";
 
+// Supabase tables used for persistent, user-specific cart and wishlist data.
+const CART_TABLE = "cart_items";
+const WISHLIST_TABLE = "wishlist_items";
+
 const HERO_BANNERS = [
   "/banner/hero-banner.png",
   "/banner/hero-banner2.png",
@@ -416,7 +420,7 @@ export default function DashboardPage() {
   });
 
   /* ------------------------------------------------------------------------ */
-  /* LOAD DASHBOARD                                                           */
+  /* LOAD DASHBOARD + DATABASE CART/WISHLIST                                  */
   /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
@@ -427,31 +431,32 @@ export default function DashboardPage() {
         setLoading(true);
         setErrorMessage("");
 
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const localCart = (): CartItem[] => {
+          try {
+            const value = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        };
 
-        if (!mounted) return;
-
-        if (user) {
-          setUserLoggedIn(true);
-
-          const meta = user.user_metadata || {};
-
-          setUserInfo({
-            name:
-              meta.full_name ||
-              meta.name ||
-              user.email?.split("@")[0] ||
-              "PrimeCart User",
-            email: user.email || "",
-          });
-        }
+        const localWishlist = (): Array<string | number> => {
+          try {
+            const value = JSON.parse(
+              localStorage.getItem(WISHLIST_KEY) || "[]"
+            );
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        };
 
         const [
+          { data: { user } },
           { data: productData, error: productError },
           { data: categoryData, error: categoryError },
         ] = await Promise.all([
+          supabase.auth.getUser(),
           supabase
             .from("products")
             .select(
@@ -460,7 +465,6 @@ export default function DashboardPage() {
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(100),
-
           supabase
             .from("categories")
             .select("id,name")
@@ -469,20 +473,162 @@ export default function DashboardPage() {
 
         if (productError) throw productError;
 
-        if (categoryError) {
-          console.warn(categoryError.message);
-        }
-
         if (!mounted) return;
 
         setProducts(productData || []);
         setCategories(categoryData || []);
+
+        if (categoryError) {
+          console.warn("Category loading warning:", categoryError.message);
+        }
+
+        if (user) {
+          setUserLoggedIn(true);
+
+          const meta = user.user_metadata || {};
+          setUserInfo({
+            name:
+              meta.full_name ||
+              meta.name ||
+              user.email?.split("@")[0] ||
+              "PrimeCart User",
+            email: user.email || "",
+          });
+
+          /*
+           * Database is the source of truth for logged-in users.
+           * Existing localStorage data is migrated only when the user's
+           * database tables are empty. Nothing is automatically deleted.
+           */
+          const [
+            { data: dbCart, error: dbCartError },
+            { data: dbWishlist, error: dbWishlistError },
+          ] = await Promise.all([
+            supabase
+              .from(CART_TABLE)
+              .select("product_id,name,price,image_url,quantity,created_at")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: true }),
+            supabase
+              .from(WISHLIST_TABLE)
+              .select("product_id,created_at")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: true }),
+          ]);
+
+          if (dbCartError || dbWishlistError) {
+            console.error("Cart/Wishlist database error:", {
+              cart: dbCartError?.message,
+              wishlist: dbWishlistError?.message,
+            });
+
+            if (mounted) {
+              setErrorMessage(
+                "Cart/Wishlist database tables are not ready. Run the PrimeCart cart & wishlist SQL once in Supabase SQL Editor."
+              );
+            }
+          } else {
+            let finalCart: CartItem[] = (dbCart || []).map((item) => ({
+              id: item.product_id,
+              name: item.name || "PrimeCart Product",
+              price: Number(item.price || 0),
+              image_url: item.image_url || null,
+              quantity: Math.max(1, Number(item.quantity || 1)),
+            }));
+
+            let finalWishlist: Array<string | number> = (dbWishlist || []).map(
+              (item) => item.product_id
+            );
+
+            /* One-time safe migration from the old localStorage cart. */
+            if (!dbCart?.length && localCart().length) {
+              const rows = localCart()
+                .filter((item) => item?.id != null)
+                .map((item) => ({
+                  user_id: user.id,
+                  product_id: String(item.id),
+                  name: item.name || "PrimeCart Product",
+                  price: Number(item.price || 0),
+                  image_url: item.image_url || null,
+                  quantity: Math.max(1, Number(item.quantity || 1)),
+                }));
+
+              if (rows.length) {
+                const { error } = await supabase
+                  .from(CART_TABLE)
+                  .upsert(rows, { onConflict: "user_id,product_id" });
+
+                if (!error) {
+                  finalCart = rows.map((item) => ({
+                    id: item.product_id,
+                    name: item.name,
+                    price: item.price,
+                    image_url: item.image_url,
+                    quantity: item.quantity,
+                  }));
+                } else {
+                  console.error("Cart migration failed:", error.message);
+                }
+              }
+            }
+
+            /* One-time safe migration from the old localStorage wishlist. */
+            if (!dbWishlist?.length && localWishlist().length) {
+              const rows = Array.from(
+                new Set(
+                  localWishlist()
+                    .filter((id) => id != null)
+                    .map((id) => String(id))
+                )
+              ).map((productId) => ({
+                user_id: user.id,
+                product_id: productId,
+              }));
+
+              if (rows.length) {
+                const { error } = await supabase
+                  .from(WISHLIST_TABLE)
+                  .upsert(rows, { onConflict: "user_id,product_id" });
+
+                if (!error) {
+                  finalWishlist = rows.map((item) => item.product_id);
+                } else {
+                  console.error(
+                    "Wishlist migration failed:",
+                    error.message
+                  );
+                }
+              }
+            }
+
+            if (mounted) {
+              setCart(finalCart);
+              setWishlist(finalWishlist);
+              localStorage.setItem(CART_KEY, JSON.stringify(finalCart));
+              localStorage.setItem(
+                WISHLIST_KEY,
+                JSON.stringify(finalWishlist)
+              );
+            }
+          }
+        } else {
+          /* Guest fallback: keep the old localStorage behaviour. */
+          const guestCart = localCart();
+          const guestWishlist = localWishlist();
+          setCart(guestCart);
+          setWishlist(guestWishlist);
+        }
+
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === "dark" && mounted) {
+          setTheme("dark");
+        }
       } catch (error) {
-        console.error(error);
+        console.error("Dashboard loading error:", error);
 
         if (mounted) {
           setErrorMessage(
-            "Unable to load products right now. Please try again."
+            "Unable to load PrimeCart right now. Please try again."
           );
         }
       } finally {
@@ -493,32 +639,6 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-
-    try {
-      const savedCart = JSON.parse(
-        localStorage.getItem(CART_KEY) || "[]"
-      );
-
-      const savedWishlist = JSON.parse(
-        localStorage.getItem(WISHLIST_KEY) || "[]"
-      );
-
-      const savedTheme = localStorage.getItem(THEME_KEY);
-
-      if (Array.isArray(savedCart)) {
-        setCart(savedCart);
-      }
-
-      if (Array.isArray(savedWishlist)) {
-        setWishlist(savedWishlist);
-      }
-
-      if (savedTheme === "dark") {
-        setTheme("dark");
-      }
-    } catch {
-      // Ignore invalid local storage.
-    }
 
     return () => {
       mounted = false;
@@ -745,72 +865,125 @@ export default function DashboardPage() {
     setToast(message);
   }
 
-  function toggleWishlist(id: string | number) {
-    setWishlist((current) => {
-      const exists = current.some(
-        (value) => String(value) === String(id)
+  async function toggleWishlist(id: string | number) {
+    const normalizedId = String(id);
+    const exists = wishlist.some(
+      (value) => String(value) === normalizedId
+    );
+
+    const next = exists
+      ? wishlist.filter((value) => String(value) !== normalizedId)
+      : [...wishlist, id];
+
+    /* UI + local mirror update immediately. */
+    setWishlist(next);
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      if (exists) {
+        /* This happens only after the user explicitly taps the active heart. */
+        const { error } = await supabase
+          .from(WISHLIST_TABLE)
+          .delete()
+          .eq("user_id", user.id)
+          .eq("product_id", normalizedId);
+
+        if (error) {
+          console.error("Wishlist remove failed:", error.message);
+          setWishlist(wishlist);
+          localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+          showToast("Could not update Wishlist");
+          return;
+        }
+
+        showToast("Removed from Wishlist");
+        return;
+      }
+
+      const { error } = await supabase.from(WISHLIST_TABLE).upsert(
+        {
+          user_id: user.id,
+          product_id: normalizedId,
+        },
+        { onConflict: "user_id,product_id" }
       );
 
-      const next = exists
-        ? current.filter(
-            (value) => String(value) !== String(id)
-          )
-        : [...current, id];
+      if (error) {
+        console.error("Wishlist save failed:", error.message);
+        setWishlist(wishlist);
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+        showToast("Could not save Wishlist");
+        return;
+      }
+    }
 
-      localStorage.setItem(
-        WISHLIST_KEY,
-        JSON.stringify(next)
-      );
-
-      showToast(
-        exists
-          ? "Removed from Wishlist"
-          : "Added to Wishlist"
-      );
-
-      return next;
-    });
+    showToast("Added to Wishlist");
   }
 
-  function addToCart(product: Product) {
-    setCart((current) => {
-      const exists = current.find(
-        (item) =>
+  async function addToCart(product: Product) {
+    const exists = cart.find(
+      (item) => String(item.id) === String(product.id)
+    );
+
+    const maxStock = Number(product.stock || 999);
+    const next: CartItem[] = exists
+      ? cart.map((item) =>
           String(item.id) === String(product.id)
+            ? {
+                ...item,
+                quantity: Math.min(item.quantity + 1, maxStock),
+              }
+            : item
+        )
+      : [
+          ...cart,
+          {
+            id: product.id,
+            name: product.name,
+            price: Number(product.price || 0),
+            image_url: product.image_url,
+            quantity: 1,
+          },
+        ];
+
+    setCart(next);
+    localStorage.setItem(CART_KEY, JSON.stringify(next));
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const item = next.find(
+        (entry) => String(entry.id) === String(product.id)
       );
 
-      const maxStock = Number(product.stock || 999);
+      if (item) {
+        const { error } = await supabase.from(CART_TABLE).upsert(
+          {
+            user_id: user.id,
+            product_id: String(product.id),
+            name: item.name,
+            price: item.price,
+            image_url: item.image_url || null,
+            quantity: item.quantity,
+          },
+          { onConflict: "user_id,product_id" }
+        );
 
-      const next = exists
-        ? current.map((item) =>
-            String(item.id) === String(product.id)
-              ? {
-                  ...item,
-                  quantity: Math.min(
-                    item.quantity + 1,
-                    maxStock
-                  ),
-                }
-              : item
-          )
-        : [
-            ...current,
-            {
-              id: product.id,
-              name: product.name,
-              price: Number(product.price || 0),
-              image_url: product.image_url,
-              quantity: 1,
-            },
-          ];
-
-      localStorage.setItem(
-        CART_KEY,
-        JSON.stringify(next)
-      );
-
-      return next;
-    });
+        if (error) {
+          console.error("Cart save failed:", error.message);
+          setCart(cart);
+          localStorage.setItem(CART_KEY, JSON.stringify(cart));
+          showToast("Could not save Cart");
+          return;
+        }
+      }
+    }
 
     showToast("Added to Cart");
   }
@@ -7163,6 +7336,119 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           }
         }
 
+
+
+        /* FINAL MOBILE POLISH — keeps the existing PrimeCart UI intact */
+        @media (max-width: 680px) {
+          .page-content {
+            padding-bottom: 10px !important;
+          }
+
+          .products-grid.five-columns {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 9px !important;
+          }
+
+          .product-card {
+            min-width: 0 !important;
+            border-radius: 14px !important;
+            overflow: hidden !important;
+          }
+
+          .product-image-wrap {
+            height: 154px !important;
+            min-height: 154px !important;
+          }
+
+          .product-image {
+            max-width: 88% !important;
+            max-height: 88% !important;
+            object-fit: contain !important;
+          }
+
+          .product-copy {
+            padding: 10px !important;
+          }
+
+          .product-name {
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+            min-height: 30px !important;
+          }
+
+          .price-row strong {
+            font-size: 15px !important;
+          }
+
+          .add-cart-btn {
+            width: 100% !important;
+            min-height: 35px !important;
+            font-size: 9px !important;
+          }
+
+          .wish-btn {
+            width: 31px !important;
+            height: 31px !important;
+            z-index: 5 !important;
+          }
+
+          .hero-carousel,
+          .hero-image-frame {
+            width: 100% !important;
+          }
+
+          .category-rail {
+            padding-bottom: 4px !important;
+            scrollbar-width: none !important;
+          }
+
+          .category-rail::-webkit-scrollbar {
+            display: none !important;
+          }
+
+          .smart-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .flash-products,
+          .promo-grid {
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          .mobile-bottom-nav {
+            padding-bottom: env(safe-area-inset-bottom) !important;
+            height: calc(66px + env(safe-area-inset-bottom)) !important;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .products-grid.five-columns {
+            gap: 7px !important;
+          }
+
+          .product-image-wrap {
+            height: 145px !important;
+            min-height: 145px !important;
+          }
+
+          .product-copy {
+            padding: 9px !important;
+          }
+
+          .product-name {
+            font-size: 10px !important;
+          }
+
+          .price-row strong {
+            font-size: 14px !important;
+          }
+
+          .add-cart-btn {
+            min-height: 33px !important;
+            font-size: 8.5px !important;
+          }
+        }
+
       `}</style>
     </main>
   );
@@ -7360,6 +7646,7 @@ function TrustItem({
     </div>
   );
 }
+
 /* -------------------------------------------------------------------------- */
 /* LOADING                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -7402,4 +7689,4 @@ function LoadingScreen() {
       </div>
     </div>
   );
-} 
+}
