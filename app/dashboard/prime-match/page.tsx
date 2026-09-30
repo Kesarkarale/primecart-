@@ -1041,13 +1041,6 @@ function parseSmartQuery(query: string): SmartQuery {
   return { budgetMax, purpose, categoryHint, keywords };
 }
 
-function getProfileLabel(value: number) {
-  if (value >= 85) return "Very high";
-  if (value >= 65) return "High";
-  if (value >= 40) return "Balanced";
-  return "Light";
-}
-
 /* =========================================================
    MATCH PRESENTATION HELPERS
 ========================================================= */
@@ -1578,11 +1571,6 @@ const [matchStage, setMatchStage] =
       rating: 65,
     });
 
-  /* COMPARISON */
-
-  const [compareIds, setCompareIds] =
-    useState<string[]>([]);
-
   const [history, setHistory] =
     useState<MatchHistoryEntry[]>([]);
 
@@ -1620,47 +1608,51 @@ const [matchStage, setMatchStage] =
      CART SYNC
   ===================================================== */
 
-  async function syncCart() {
+  function syncCart() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const stored =
+        localStorage.getItem(
+          "primecart-cart"
+        );
 
-      if (!user) {
+      if (!stored) {
         setCartIds([]);
         return;
       }
 
-      const { data, error } = await supabase
-        .from("cart_items")
-        .select("product_id, quantity")
-        .eq("user_id", user.id);
+      const parsed =
+        JSON.parse(stored);
 
-      if (error) {
-        console.error("Cart sync error:", error);
+      if (!Array.isArray(parsed)) {
         setCartIds([]);
         return;
       }
 
-      const ids = (data || [])
-        .map((item) => String(item.product_id))
+      const ids = parsed
+        .map((item: any) =>
+          String(
+            item?.product_id ??
+              item?.productId ??
+              item?.id ??
+              ""
+          )
+        )
         .filter(Boolean);
 
       setCartIds(ids);
-    } catch (error) {
-      console.error("Cart sync error:", error);
+    } catch {
       setCartIds([]);
     }
   }
 
   useEffect(() => {
-    void syncCart();
+    syncCart();
 
     const handleCartUpdate =
-      () => { void syncCart(); };
+      () => syncCart();
 
     const handleStorage =
-      () => { void syncCart(); };
+      () => syncCart();
 
     window.addEventListener(
       "cart-updated",
@@ -1748,7 +1740,7 @@ const [matchStage, setMatchStage] =
           }),
 
         supabase
-          .from("wishlist_items")
+          .from("wishlist")
           .select("product_id")
           .eq(
             "user_id",
@@ -1816,7 +1808,7 @@ const [matchStage, setMatchStage] =
         )
       );
 
-      void syncCart();
+      syncCart();
     } catch (err) {
       console.error(
         "PrimeMatch load error:",
@@ -2010,126 +2002,6 @@ const [matchStage, setMatchStage] =
   }, [results, products.length]);
 
   /* =====================================================
-     SPECIAL RECOMMENDATIONS
-  ===================================================== */
-
-  const bestValue =
-    useMemo(() => {
-      const available =
-        results.filter(
-          (product) =>
-            product.stock > 0
-        );
-
-      return (
-        [...available].sort(
-          (a, b) => {
-            const valueA =
-              a.matchScore +
-              Number(a.rating) * 5 +
-              discount(
-                Number(a.price),
-                a.original_price
-              ) *
-                0.4;
-
-            const valueB =
-              b.matchScore +
-              Number(b.rating) * 5 +
-              discount(
-                Number(b.price),
-                b.original_price
-              ) *
-                0.4;
-
-            return valueB - valueA;
-          }
-        )[0] || null
-      );
-    }, [results]);
-
-  const budgetPick =
-    useMemo(() => {
-      const available =
-        results.filter(
-          (product) =>
-            product.stock > 0
-        );
-
-      return (
-        [...available].sort(
-          (a, b) =>
-            Number(a.price) -
-              Number(b.price) ||
-            b.matchScore -
-              a.matchScore
-        )[0] || null
-      );
-    }, [results]);
-
-  const topRated =
-    useMemo(() => {
-      return (
-        [...results]
-          .filter(
-            (product) =>
-              product.stock > 0
-          )
-          .sort(
-            (a, b) =>
-              Number(b.rating) -
-                Number(a.rating) ||
-              b.reviews_count -
-                a.reviews_count
-          )[0] || null
-      );
-    }, [results]);
-
-  const premiumPick =
-    useMemo(() => {
-      return (
-        [...results]
-          .filter(
-            (product) =>
-              product.stock > 0
-          )
-          .sort((a, b) => {
-            const qualityA =
-              a.breakdown.quality * 0.55 +
-              a.breakdown.rating * 0.30 +
-              Math.min(100, a.reviews_count / 20) * 0.15;
-            const qualityB =
-              b.breakdown.quality * 0.55 +
-              b.breakdown.rating * 0.30 +
-              Math.min(100, b.reviews_count / 20) * 0.15;
-
-            return (qualityB - qualityA) ||
-              (b.matchScore - a.matchScore);
-          })[0] || null
-      );
-    }, [results]);
-
-  const compareProducts =
-    useMemo(() => {
-      return compareIds
-        .map((id) =>
-          results.find(
-            (product) =>
-              product.id === id
-          )
-        )
-        .filter(
-          (
-            item
-          ): item is MatchProduct =>
-            Boolean(item)
-        );
-    }, [
-      compareIds,
-      results,
-    ]);
-
-  /* =====================================================
      LIVE MATCH POTENTIAL
   ===================================================== */
 
@@ -2146,7 +2018,7 @@ const [matchStage, setMatchStage] =
      CART
   ===================================================== */
 
-  async function addToCart(
+  function addToCart(
     product: MatchProduct
   ) {
     try {
@@ -2154,124 +2026,109 @@ const [matchStage, setMatchStage] =
         setToast("This product is currently out of stock.");
         return;
       }
+      const stored =
+        localStorage.getItem(
+          "primecart-cart"
+        );
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      let current: any[] = [];
 
-      if (!user) {
-        window.location.href = "/auth/login";
-        return;
-      }
+      if (stored) {
+        try {
+          const parsed =
+            JSON.parse(stored);
 
-      const { data: existingItem, error: existingError } =
-        await supabase
-          .from("cart_items")
-          .select("id, product_id, quantity")
-          .eq("user_id", user.id)
-          .eq("product_id", product.id)
-          .maybeSingle();
-
-      if (existingError) {
-        throw existingError;
-      }
-
-      const currentQuantity = Number(existingItem?.quantity || 0);
-      const nextQuantity = currentQuantity + 1;
-
-      if (nextQuantity > Number(product.stock)) {
-        setToast(`Only ${product.stock} available in stock`);
-        return;
-      }
-
-      if (existingItem) {
-        const { error } = await supabase
-          .from("cart_items")
-          .update({
-            quantity: nextQuantity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingItem.id)
-          .eq("user_id", user.id);
-
-        if (error) {
-          throw error;
-        }
-      } else {
-        const { error } = await supabase
-          .from("cart_items")
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: 1,
-          });
-
-        if (error) {
-          throw error;
+          if (Array.isArray(parsed)) {
+            current = parsed;
+          }
+        } catch {
+          current = [];
         }
       }
 
-      /* Keep the existing local cart snapshot in sync for older UI flows. */
-      try {
-        const stored = localStorage.getItem("primecart-cart");
-        const parsed = stored ? JSON.parse(stored) : [];
-        const current = Array.isArray(parsed) ? parsed : [];
-        const index = current.findIndex(
-          (item: any) =>
-            String(item?.product_id ?? item?.productId ?? item?.id ?? "") ===
+      const existingIndex =
+        current.findIndex(
+          (item) =>
+            String(
+              item?.product_id ??
+                item?.productId ??
+                item?.id ??
+                ""
+            ) ===
             String(product.id)
         );
 
-        if (index >= 0) {
-          current[index] = {
-            ...current[index],
-            id: product.id,
-            product_id: product.id,
-            productId: product.id,
-            name: product.name,
-            price: Number(product.price),
-            image_url: product.image_url,
-            image: product.image_url,
-            quantity: nextQuantity,
-            stock: product.stock,
-          };
-        } else {
-          current.push({
-            id: product.id,
-            product_id: product.id,
-            productId: product.id,
-            name: product.name,
-            price: Number(product.price),
-            image_url: product.image_url,
-            image: product.image_url,
-            quantity: 1,
-            stock: product.stock,
-          });
+      if (
+        existingIndex >= 0
+      ) {
+        const currentQuantity =
+          Number(
+            current[existingIndex]?.quantity
+          ) || 0;
+
+        if (
+          product.stock > 0 &&
+          currentQuantity >= product.stock
+        ) {
+          setToast(`Only ${product.stock} available in stock`);
+          return;
         }
 
-        localStorage.setItem("primecart-cart", JSON.stringify(current));
-      } catch (localError) {
-        console.warn("Local cart mirror could not be updated:", localError);
+        current[existingIndex] = {
+          ...current[existingIndex],
+          quantity: currentQuantity + 1,
+        };
+      } else {
+        current.push({
+          id: product.id,
+          product_id:
+            product.id,
+          productId:
+            product.id,
+          name: product.name,
+          price: Number(
+            product.price
+          ),
+          image_url:
+            product.image_url,
+          image:
+            product.image_url,
+          quantity: 1,
+          stock: product.stock,
+        });
       }
 
-      setCartIds((previous) =>
-        previous.includes(product.id)
-          ? previous
-          : [...previous, product.id]
+      localStorage.setItem(
+        "primecart-cart",
+        JSON.stringify(current)
       );
 
-      window.dispatchEvent(new Event("cart-updated"));
+      setCartIds((previous) =>
+        previous.includes(
+          product.id
+        )
+          ? previous
+          : [
+              ...previous,
+              product.id,
+            ]
+      );
+
+      window.dispatchEvent(
+        new Event("cart-updated")
+      );
+
       setToast(
-        existingItem
-          ? `${product.name} quantity updated to ${nextQuantity}`
-          : `${product.name} added to cart`
+        `${product.name} added to cart`
       );
     } catch (err) {
-      console.error("Cart database error:", err);
+      console.error(
+        "Cart error:",
+        err
+      );
+
       setToast(
-        err instanceof Error && err.message
-          ? err.message
-          : "Could not add product to cart."
+        "Could not add product to cart."
       );
     }
   }
@@ -2286,110 +2143,81 @@ const [matchStage, setMatchStage] =
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } =
+        await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/auth/login";
+        window.location.href =
+          "/auth/login";
         return;
       }
 
-      const exists = wishlist.includes(product.id);
+      const exists =
+        wishlist.includes(
+          product.id
+        );
 
       if (exists) {
-        const { error } = await supabase
-          .from("wishlist_items")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("product_id", product.id);
+        const { error: deleteError } =
+          await supabase
+            .from("wishlist")
+            .delete()
+            .eq(
+              "user_id",
+              user.id
+            )
+            .eq(
+              "product_id",
+              product.id
+            );
 
-        if (error) {
-          throw error;
+        if (deleteError) {
+          throw deleteError;
         }
 
         setWishlist((previous) =>
-          previous.filter((id) => id !== product.id)
+          previous.filter(
+            (id) =>
+              id !== product.id
+          )
         );
 
-        setToast("Removed from wishlist");
+        setToast(
+          "Removed from wishlist"
+        );
       } else {
-        const { data: existing, error: checkError } = await supabase
-          .from("wishlist_items")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("product_id", product.id)
-          .maybeSingle();
-
-        if (checkError) {
-          throw checkError;
-        }
-
-        if (!existing) {
-          const { error } = await supabase
-            .from("wishlist_items")
+        const { error: insertError } =
+          await supabase
+            .from("wishlist")
             .insert({
               user_id: user.id,
-              product_id: product.id,
+              product_id:
+                product.id,
             });
 
-          if (error) {
-            throw error;
-          }
+        if (insertError) {
+          throw insertError;
         }
 
-        setWishlist((previous) =>
-          previous.includes(product.id)
-            ? previous
-            : [...previous, product.id]
-        );
+        setWishlist((previous) => [
+          ...previous,
+          product.id,
+        ]);
 
-        setToast("Added to wishlist");
+        setToast(
+          "Added to wishlist"
+        );
       }
     } catch (err) {
-      console.error("Wishlist database error:", err);
+      console.error(
+        "Wishlist error:",
+        err
+      );
+
       setToast(
-        err instanceof Error && err.message
-          ? err.message
-          : "Could not update wishlist."
+        "Could not update wishlist."
       );
     }
-  }
-
-  /* =====================================================
-     COMPARE
-  ===================================================== */
-
-  function toggleCompare(
-    productId: string
-  ) {
-    setCompareIds(
-      (previous) => {
-        if (
-          previous.includes(
-            productId
-          )
-        ) {
-          return previous.filter(
-            (id) =>
-              id !== productId
-          );
-        }
-
-        if (
-          previous.length >= 3
-        ) {
-          setToast(
-            "You can compare up to 3 products."
-          );
-
-          return previous;
-        }
-
-        return [
-          ...previous,
-          productId,
-        ];
-      }
-    );
   }
 
   function applySmartSearch() {
@@ -2443,7 +2271,6 @@ async function runMatch() {
   setMatched(false);
   setMatchedResults([]);
   setMatchStage(0);
-  setCompareIds([]);
   setError("");
 
   const stages = [
@@ -2529,7 +2356,6 @@ async function runMatch() {
   setMatched(false);
   setMatchedResults([]);
   setMatchStage(0);
-  setCompareIds([]);
   setSurpriseId(null);
 }
 
@@ -2583,22 +2409,27 @@ async function runMatch() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a17b2f]">
-              <Sparkles
-                size={18}
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 items-center gap-2.5"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
+              <img
+                src="/logo.png"
+                alt="PrimeCart"
+                className="h-full w-full object-contain p-1"
               />
             </div>
 
-            <div>
-              <p className="text-sm font-black tracking-tight">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black tracking-tight text-[#241d14]">
+                PrimeCart
+              </p>
+              <p className="truncate text-[9px] font-bold uppercase tracking-[0.16em] text-gray-400">
                 PrimeMatch
               </p>
-              <p className="hidden text-[9px] font-bold uppercase tracking-[0.16em] text-gray-400 sm:block">
-                Smart shopping
-              </p>
             </div>
-          </div>
+          </Link>
 
           <Link
             href="/dashboard/cart"
@@ -3847,7 +3678,7 @@ async function runMatch() {
                 <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Lightbulb size={18} /></div>
-                    <div><p className="text-[10px] font-black uppercase tracking-wider text-[#a17b2f]">Budget insight</p><p className="mt-1 text-lg font-black">{bestValue ? money(Number(bestValue.price)) : "—"}</p></div>
+                    <div><p className="text-[10px] font-black uppercase tracking-wider text-[#a17b2f]">Budget insight</p><p className="mt-1 text-lg font-black">{budgetAdvisor?.best ? money(Number(budgetAdvisor.best.price)) : "—"}</p></div>
                   </div>
                   <p className="mt-3 text-xs leading-5 text-gray-500">Best-value recommendation balancing match quality, price, rating and active savings.</p>
                 </div>
@@ -3900,408 +3731,6 @@ async function runMatch() {
                 {surpriseId && (() => { const product = results.find((item) => item.id === surpriseId); if (!product) return null; return <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4 sm:flex-row sm:items-center"><div className="h-28 w-full shrink-0 rounded-xl bg-white sm:w-28"><ProductImage src={getImageUrl(product.image_url)} alt={product.name} className="h-full w-full object-contain p-3" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#fff3d2] px-2.5 py-1 text-[9px] font-black text-[#8f6b24]">Surprise Pick</span><span className="text-[10px] font-black text-[#9b762b]">{product.matchScore}% match</span></div><Link href={`/dashboard/products/${product.id}`} className="mt-2 block truncate text-sm font-black hover:text-[#9b762b]">{product.name}</Link><p className="mt-1 text-[10px] text-gray-400">{product.categoryName} · {money(Number(product.price))} · {Number(product.rating || 0).toFixed(1)}★</p></div></div>; })()}
               </section>
 
-              {/* =================================================
-                  SMART PICKS
-              ================================================= */}
-
-              <section className="mt-10">
-                <div className="mb-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                    Smart alternatives
-                  </p>
-
-                  <h2 className="mt-1 text-2xl font-black">
-                    More ways to shop your match
-                  </h2>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    {
-                      label: "Best Value",
-                      text: "Balanced price + match",
-                      product:
-                        bestValue,
-                      icon: (
-                        <TrendingUp
-                          size={17}
-                        />
-                      ),
-                    },
-                    {
-                      label: "Budget Pick",
-                      text: "Lower price option",
-                      product:
-                        budgetPick,
-                      icon: (
-                        <Target
-                          size={17}
-                        />
-                      ),
-                    },
-                    {
-                      label: "Top Rated",
-                      text: "Highest rated option",
-                      product:
-                        topRated,
-                      icon: (
-                        <Star
-                          size={17}
-                          fill="currentColor"
-                        />
-                      ),
-                    },
-                    {
-                      label: "Premium Pick",
-                      text: "Higher-end option",
-                      product:
-                        premiumPick,
-                      icon: (
-                        <Sparkles
-                          size={17}
-                        />
-                      ),
-                    },
-                  ].map(
-                    (item) => (
-                      <div
-                        key={
-                          item.label
-                        }
-                        className="overflow-hidden rounded-[24px] border border-[#e8dfcf] bg-white"
-                      >
-                        {item.product ? (
-                          <>
-                            <Link
-                              href={`/dashboard/products/${item.product.id}`}
-                              className="block"
-                            >
-                              <div className="relative h-44 bg-[#faf9f6]">
-                                <ProductImage
-                                  src={getImageUrl(
-                                    item
-                                      .product
-                                      .image_url
-                                  )}
-                                  alt={
-                                    item
-                                      .product
-                                      .name
-                                  }
-                                  className="h-full w-full object-contain p-5"
-                                />
-
-                                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[10px] font-black text-[#956f27] shadow-sm">
-                                  {
-                                    item.icon
-                                  }
-                                  {
-                                    item.label
-                                  }
-                                </div>
-                              </div>
-                            </Link>
-
-                            <div className="p-4">
-                              <p className="text-[10px] font-bold text-gray-400">
-                                {
-                                  item.text
-                                }
-                              </p>
-
-                              <Link
-                                href={`/dashboard/products/${item.product.id}`}
-                                className="mt-1 block line-clamp-2 text-sm font-black hover:text-[#9b762b]"
-                              >
-                                {
-                                  item
-                                    .product
-                                    .name
-                                }
-                              </Link>
-
-                              <div className="mt-3 flex items-center justify-between">
-                                <span className="text-sm font-black">
-                                  {money(
-                                    Number(
-                                      item
-                                        .product
-                                        .price
-                                    )
-                                  )}
-                                </span>
-
-                                <span className="rounded-full bg-[#fff4d6] px-2 py-1 text-[9px] font-black text-[#956f27]">
-                                  {
-                                    item
-                                      .product
-                                      .matchScore
-                                  }
-                                  %
-                                </span>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex h-64 items-center justify-center p-6 text-center">
-                            <div>
-                              <ShoppingBag
-                                size={
-                                  28
-                                }
-                                className="mx-auto text-gray-300"
-                              />
-
-                              <p className="mt-3 text-xs font-bold text-gray-400">
-                                No suitable
-                                product found
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  )}
-                </div>
-              </section>
-
-              {/* =================================================
-                  COMPARE
-              ================================================= */}
-
-              <section className="mt-10">
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                      Compare
-                    </p>
-
-                    <h2 className="mt-1 text-2xl font-black">
-                      Compare your shortlisted products
-                    </h2>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      Select up to 3 products from
-                      the results below.
-                    </p>
-                  </div>
-
-                  {compareProducts.length >
-                    0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCompareIds(
-                          []
-                        )
-                      }
-                      className="text-xs font-black text-gray-400 hover:text-red-500"
-                    >
-                      Clear comparison
-                    </button>
-                  )}
-                </div>
-
-                {compareProducts.length >
-                0 ? (
-                  <div className="overflow-x-auto rounded-[26px] border border-[#e8dfcf] bg-white">
-                    <table className="w-full min-w-[760px] text-left">
-                      <thead>
-                        <tr className="border-b border-[#eee5d6] bg-[#fffdfa]">
-                          <th className="w-40 px-5 py-4 text-[10px] font-black uppercase tracking-wide text-gray-400">
-                            Feature
-                          </th>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <th
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4"
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="line-clamp-2 text-xs font-black">
-                                    {
-                                      product.name
-                                    }
-                                  </span>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      toggleCompare(
-                                        product.id
-                                      )
-                                    }
-                                    className="text-gray-400 hover:text-red-500"
-                                  >
-                                    <X
-                                      size={
-                                        14
-                                      }
-                                    />
-                                  </button>
-                                </div>
-                              </th>
-                            )
-                          )}
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        <tr className="border-b border-[#f0eadf]">
-                          <td className="px-5 py-4 text-xs font-black text-gray-500">
-                            Match
-                          </td>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <td
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4 text-sm font-black text-[#9b762b]"
-                              >
-                                {
-                                  product.matchScore
-                                }
-                                %
-                              </td>
-                            )
-                          )}
-                        </tr>
-
-                        <tr className="border-b border-[#f0eadf]">
-                          <td className="px-5 py-4 text-xs font-black text-gray-500">
-                            Price
-                          </td>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <td
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4 text-sm font-black"
-                              >
-                                {money(
-                                  Number(
-                                    product.price
-                                  )
-                                )}
-                              </td>
-                            )
-                          )}
-                        </tr>
-
-                        <tr className="border-b border-[#f0eadf]">
-                          <td className="px-5 py-4 text-xs font-black text-gray-500">
-                            Rating
-                          </td>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <td
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4 text-sm font-black"
-                              >
-                                <span className="inline-flex items-center gap-1">
-                                  <Star
-                                    size={
-                                      13
-                                    }
-                                    fill="currentColor"
-                                    className="text-[#c9a24d]"
-                                  />
-                                  {Number(
-                                    product.rating ||
-                                      0
-                                  ).toFixed(
-                                    1
-                                  )}
-                                </span>
-                              </td>
-                            )
-                          )}
-                        </tr>
-
-                        <tr className="border-b border-[#f0eadf]">
-                          <td className="px-5 py-4 text-xs font-black text-gray-500">
-                            Category
-                          </td>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <td
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4 text-xs font-bold text-gray-600"
-                              >
-                                {
-                                  product.categoryName
-                                }
-                              </td>
-                            )
-                          )}
-                        </tr>
-
-                        <tr>
-                          <td className="px-5 py-4 text-xs font-black text-gray-500">
-                            Brand
-                          </td>
-
-                          {compareProducts.map(
-                            (
-                              product
-                            ) => (
-                              <td
-                                key={
-                                  product.id
-                                }
-                                className="px-5 py-4 text-xs font-bold text-gray-600"
-                              >
-                                {product.brand ||
-                                  "Generic"}
-                              </td>
-                            )
-                          )}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="rounded-[26px] border border-dashed border-[#ddcfb5] bg-white p-8 text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dd] text-[#b58a32]">
-                      <Target
-                        size={21}
-                      />
-                    </div>
-
-                    <p className="mt-3 text-sm font-black">
-                      No products selected
-                    </p>
-
-                    <p className="mt-1 text-xs text-gray-400">
-                      Use the Compare button on
-                      product cards below.
-                    </p>
-                  </div>
-                )}
-              </section>
             </>
           )}
 
@@ -4453,28 +3882,7 @@ async function runMatch() {
                         }
                       />
 
-                      {/* COMPARE BUTTON */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          toggleCompare(
-                            product.id
-                          )
-                        }
-                        className={`absolute bottom-[88px] right-5 rounded-lg px-2.5 py-1.5 text-[9px] font-black transition ${
-                          compareIds.includes(
-                            product.id
-                          )
-                            ? "bg-[#fff0c8] text-[#956f27]"
-                            : "bg-white/95 text-gray-500 shadow-sm hover:text-[#956f27]"
-                        }`}
-                      >
-                        {compareIds.includes(
-                          product.id
-                        )
-                          ? "✓ Comparing"
-                          : "Compare"}
-                      </button>
+
                     </div>
                   )
                 )}
