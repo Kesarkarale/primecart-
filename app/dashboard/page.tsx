@@ -7528,7 +7528,6 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           }
         }
 
-      `}
         /* ================================================================
            FINAL MOBILE POLISH - PrimeCart
            ================================================================ */
@@ -7607,7 +7606,8 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           .price-row strong { font-size: 14px !important; }
           .add-cart-btn { height: 33px !important; font-size: 8.5px !important; }
         }
-</style>
+ `}
+      </style>
     </main>
   );
 }
