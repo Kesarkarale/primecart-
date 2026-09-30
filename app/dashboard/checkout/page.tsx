@@ -1717,7 +1717,46 @@ async function placeOrder() {
       JSON.stringify(order)
     );
 
-    /* Clear cart ONLY after DB order creation succeeds. */
+    /*
+     * IMPORTANT: Remove ONLY the products that were successfully
+     * ordered from the logged-in user's Supabase cart.
+     * The products table, wishlist, and other users' carts are
+     * never touched. This runs only after place_order() succeeds.
+     */
+    const {
+      data: { user: currentUser },
+      error: currentUserError,
+    } = await supabase.auth.getUser();
+
+    if (currentUserError || !currentUser) {
+      throw new Error(
+        "Order was created, but your session could not be verified to clear the cart. Please refresh the cart page."
+      );
+    }
+
+    const orderedProductIds = finalItems.map(
+      (entry) => entry.product_id
+    );
+
+    if (orderedProductIds.length > 0) {
+      const { error: clearCartError } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq("user_id", currentUser.id)
+        .in("product_id", orderedProductIds);
+
+      if (clearCartError) {
+        console.error(
+          "Cart cleanup after order failed:",
+          clearCartError
+        );
+        throw new Error(
+          "Order was placed successfully, but the cart could not be cleared. Please open Cart and refresh once."
+        );
+      }
+    }
+
+    /* Keep the browser cart in sync with the database. */
     localStorage.removeItem(CART_KEY);
     window.dispatchEvent(new Event("storage"));
 
