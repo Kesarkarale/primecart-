@@ -1225,6 +1225,7 @@ export default function DashboardPage() {
   /* ------------------------------------------------------------------------ */
 
   return (
+     <>
       {/* TOP OFFER BAR */}
       <div className="top-strip">
         <div className="container strip-inner">
