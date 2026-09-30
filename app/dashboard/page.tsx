@@ -475,7 +475,8 @@ export default function DashboardPage() {
 
         if (!mounted) return;
 
-        setProducts(productData || []);
+        const loadedProducts = (productData || []) as Product[];
+        setProducts(loadedProducts);
         setCategories(categoryData || []);
 
         if (categoryError) {
@@ -506,7 +507,7 @@ export default function DashboardPage() {
           ] = await Promise.all([
             supabase
               .from(CART_TABLE)
-              .select("product_id,name,price,image_url,quantity,created_at")
+              .select("id,product_id,quantity,created_at,updated_at")
               .eq("user_id", user.id)
               .order("created_at", { ascending: true }),
             supabase
@@ -528,13 +529,22 @@ export default function DashboardPage() {
               );
             }
           } else {
-            let finalCart: CartItem[] = (dbCart || []).map((item) => ({
-              id: item.product_id,
-              name: item.name || "PrimeCart Product",
-              price: Number(item.price || 0),
-              image_url: item.image_url || null,
-              quantity: Math.max(1, Number(item.quantity || 1)),
-            }));
+            const loadedProducts = (productData || []) as Product[];
+            const productById = new Map(
+              loadedProducts.map((product) => [String(product.id), product])
+            );
+
+            let finalCart: CartItem[] = (dbCart || []).map((item) => {
+              const product = productById.get(String(item.product_id));
+
+              return {
+                id: item.product_id,
+                name: product?.name || "PrimeCart Product",
+                price: Number(product?.price || 0),
+                image_url: product?.image_url || null,
+                quantity: Math.max(1, Number(item.quantity || 1)),
+              };
+            });
 
             let finalWishlist: Array<string | number> = (dbWishlist || []).map(
               (item) => item.product_id
@@ -547,9 +557,6 @@ export default function DashboardPage() {
                 .map((item) => ({
                   user_id: user.id,
                   product_id: String(item.id),
-                  name: item.name || "PrimeCart Product",
-                  price: Number(item.price || 0),
-                  image_url: item.image_url || null,
                   quantity: Math.max(1, Number(item.quantity || 1)),
                 }));
 
@@ -559,13 +566,17 @@ export default function DashboardPage() {
                   .upsert(rows, { onConflict: "user_id,product_id" });
 
                 if (!error) {
-                  finalCart = rows.map((item) => ({
-                    id: item.product_id,
-                    name: item.name,
-                    price: item.price,
-                    image_url: item.image_url,
-                    quantity: item.quantity,
-                  }));
+                  finalCart = rows.map((item) => {
+                    const product = productById.get(String(item.product_id));
+
+                    return {
+                      id: item.product_id,
+                      name: product?.name || "PrimeCart Product",
+                      price: Number(product?.price || 0),
+                      image_url: product?.image_url || null,
+                      quantity: item.quantity,
+                    };
+                  });
                 } else {
                   console.error("Cart migration failed:", error.message);
                 }
@@ -941,16 +952,23 @@ export default function DashboardPage() {
       }
     }
 
+    window.dispatchEvent(new Event("wishlist-updated"));
     showToast("Added to Wishlist");
   }
 
   async function addToCart(product: Product) {
     const productId = String(product.id);
+    const availableStock = Number(product.stock || 0);
+
+    if (availableStock <= 0) {
+      showToast("This product is currently out of stock.");
+      return;
+    }
     const previous = cart;
     const existing = cart.find(
       (item) => String(item.id) === productId
     );
-    const maxStock = Math.max(Number(product.stock || 999), 1);
+    const maxStock = Math.max(availableStock, 1);
     const nextQuantity = Math.min(
       Number(existing?.quantity || 0) + 1,
       maxStock
@@ -1007,12 +1025,10 @@ export default function DashboardPage() {
     const payload = {
       user_id: user.id,
       product_id: productId,
-      name: product.name,
-      price: Number(product.price || 0),
-      image_url: product.image_url || null,
       quantity: existingRow
         ? Math.min(Number(existingRow.quantity || 0) + 1, maxStock)
         : 1,
+      updated_at: new Date().toISOString(),
     };
 
     let saveError = null;
@@ -1021,10 +1037,8 @@ export default function DashboardPage() {
       const result = await supabase
         .from(CART_TABLE)
         .update({
-          name: payload.name,
-          price: payload.price,
-          image_url: payload.image_url,
           quantity: payload.quantity,
+          updated_at: payload.updated_at,
         })
         .eq("id", existingRow.id)
         .eq("user_id", user.id);
@@ -1046,13 +1060,30 @@ export default function DashboardPage() {
 
     // Keep the UI quantity identical to the database quantity.
     const savedQuantity = payload.quantity;
-    setCart((current) =>
-      current.map((item) =>
+    setCart((current) => {
+      const existsInState = current.some(
+        (item) => String(item.id) === productId
+      );
+
+      if (!existsInState) {
+        return [
+          ...current,
+          {
+            id: product.id,
+            name: product.name,
+            price: Number(product.price || 0),
+            image_url: product.image_url || null,
+            quantity: savedQuantity,
+          },
+        ];
+      }
+
+      return current.map((item) =>
         String(item.id) === productId
           ? { ...item, quantity: savedQuantity }
           : item
-      )
-    );
+      );
+    });
     localStorage.setItem(
       CART_KEY,
       JSON.stringify(
@@ -1064,6 +1095,7 @@ export default function DashboardPage() {
       )
     );
 
+    window.dispatchEvent(new Event("cart-updated"));
     showToast(existingRow ? "Cart quantity updated" : "Added to Cart");
   }
 
@@ -4622,112 +4654,128 @@ export default function DashboardPage() {
           display: grid;
           place-items: center;
           overflow: hidden;
+          isolation: isolate;
+          padding: 18px;
           background:
-            radial-gradient(circle at 50% 36%, rgba(255, 247, 226, 0.96) 0%, rgba(255, 253, 249, 0.98) 38%, #f6f3ed 100%);
-        }
-
-        .loading-screen::before,
-        .loading-screen::after {
-          content: "";
-          position: absolute;
-          width: 420px;
-          height: 420px;
-          border-radius: 50%;
-          pointer-events: none;
-          border: 1px solid rgba(199, 154, 59, 0.11);
+            radial-gradient(circle at 50% 18%, rgba(255, 249, 231, 0.98) 0%, rgba(255, 253, 249, 0.98) 34%, #f5f1e8 100%);
         }
 
         .loading-screen::before {
-          transform: translate(-42%, -34%);
-          box-shadow: 0 0 0 70px rgba(199, 154, 59, 0.025), 0 0 0 140px rgba(199, 154, 59, 0.018);
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            linear-gradient(120deg, transparent 20%, rgba(255,255,255,.72) 50%, transparent 80%);
+          transform: translateX(-100%);
+          animation: loadingSweep 4.8s ease-in-out infinite;
         }
 
         .loading-screen::after {
-          transform: translate(48%, 38%);
-          width: 300px;
-          height: 300px;
+          content: "";
+          position: absolute;
+          width: 680px;
+          height: 680px;
+          border-radius: 50%;
+          border: 1px solid rgba(199,154,59,.12);
+          box-shadow:
+            0 0 0 70px rgba(199,154,59,.025),
+            0 0 0 150px rgba(199,154,59,.015);
+          pointer-events: none;
         }
+
+        .loading-orb {
+          position: absolute;
+          width: 220px;
+          height: 220px;
+          border-radius: 50%;
+          background: rgba(199,154,59,.08);
+          filter: blur(2px);
+          pointer-events: none;
+          animation: loadingOrb 7s ease-in-out infinite;
+        }
+
+        .loading-orb-one { top: -80px; left: -70px; }
+        .loading-orb-two { right: -70px; bottom: -80px; animation-delay: -3s; }
 
         .loading-inner {
           position: relative;
           z-index: 2;
-          width: min(380px, calc(100vw - 42px));
-          padding: 34px 28px 30px;
+          width: min(410px, 100%);
+          padding: 38px 30px 28px;
           text-align: center;
-          border: 1px solid rgba(199, 154, 59, 0.18);
-          border-radius: 28px;
-          background: rgba(255, 255, 255, 0.74);
-          box-shadow: 0 24px 70px rgba(78, 59, 23, 0.11), inset 0 1px 0 rgba(255,255,255,.9);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(199,154,59,.2);
+          border-radius: 30px;
+          background: rgba(255,255,255,.84);
+          box-shadow:
+            0 30px 90px rgba(78,59,23,.13),
+            inset 0 1px 0 rgba(255,255,255,.95);
+          backdrop-filter: blur(22px);
+          -webkit-backdrop-filter: blur(22px);
           animation: loadingCardIn .65s cubic-bezier(.2,.8,.2,1) both;
         }
 
         .loading-logo-wrap {
           position: relative;
-          width: 88px;
-          height: 88px;
+          width: 104px;
+          height: 104px;
           margin: 0 auto 18px;
           display: grid;
           place-items: center;
         }
 
-        .loading-logo-wrap::before {
-          content: "";
+        .loading-orbit {
           position: absolute;
           inset: 0;
           border-radius: 50%;
-          border: 1px solid rgba(199, 154, 59, 0.25);
-          animation: loadingOrbit 2.8s linear infinite;
+          border: 1px solid rgba(199,154,59,.24);
         }
 
-        .loading-logo-wrap::after {
-          content: "";
-          position: absolute;
-          inset: 7px;
-          border-radius: 50%;
-          background: linear-gradient(145deg, #fffdf8, #f8efdc);
-          border: 1px solid rgba(199, 154, 59, 0.28);
-          box-shadow: 0 12px 32px rgba(184, 137, 36, 0.15);
-        }
+        .loading-orbit-one { animation: loadingOrbit 3.2s linear infinite; }
+        .loading-orbit-two { inset: 9px; border-color: rgba(199,154,59,.13); animation: loadingOrbitReverse 2.4s linear infinite; }
 
         .loading-logo {
           position: relative;
           z-index: 2;
-          width: 55px;
-          height: 55px;
+          width: 66px;
+          height: 66px;
           display: grid;
           place-items: center;
           overflow: hidden;
-          border-radius: 16px;
+          border-radius: 20px;
           background: #fff;
-          border: 1px solid rgba(199, 154, 59, 0.22);
-          box-shadow: 0 8px 22px rgba(79, 57, 20, 0.1);
+          border: 1px solid rgba(199,154,59,.24);
+          box-shadow: 0 12px 30px rgba(79,57,20,.12);
           animation: loadingLogoFloat 1.8s ease-in-out infinite;
         }
 
         .loading-logo img {
           width: 100%;
           height: 100%;
-          padding: 7px;
+          padding: 8px;
           object-fit: contain;
           display: block;
+        }
+
+        .loading-logo-fallback {
+          display: none;
+          position: absolute;
+          color: var(--gold);
         }
 
         .loading-brand {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          margin-top: 2px;
+          gap: 9px;
         }
 
         .loading-brand strong {
           color: #252015;
-          font-size: clamp(24px, 5vw, 29px);
+          font-size: clamp(27px, 6vw, 32px);
           line-height: 1;
-          letter-spacing: -0.8px;
-          font-weight: 800;
+          letter-spacing: -1px;
+          font-weight: 850;
         }
 
         .loading-brand-mark {
@@ -4739,45 +4787,41 @@ export default function DashboardPage() {
         }
 
         .loading-kicker {
-          margin-top: 10px;
+          margin-top: 11px;
           color: #a27b32;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 2.2px;
+          font-size: 9px;
+          font-weight: 850;
+          letter-spacing: 2.4px;
           text-transform: uppercase;
         }
 
         .loading-message {
           display: block;
+          max-width: 290px;
+          margin: 9px auto 0;
           color: #777066;
           font-size: 12px;
-          line-height: 1.55;
-          margin-top: 8px;
+          line-height: 1.6;
         }
 
         .loading-progress {
-          width: min(230px, 100%);
-          margin: 22px auto 0;
+          width: min(260px, 100%);
+          margin: 24px auto 0;
         }
 
         .loading-progress-head {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 8px;
+          margin-bottom: 9px;
           color: #9a907f;
           font-size: 9px;
-          font-weight: 700;
-          letter-spacing: .8px;
+          font-weight: 750;
+          letter-spacing: .75px;
           text-transform: uppercase;
         }
 
-        .loading-dots {
-          display: inline-flex;
-          gap: 4px;
-          align-items: center;
-        }
-
+        .loading-dots { display: inline-flex; gap: 4px; align-items: center; }
         .loading-dots i {
           width: 4px;
           height: 4px;
@@ -4785,59 +4829,60 @@ export default function DashboardPage() {
           background: var(--gold);
           animation: loadingDot 1.2s ease-in-out infinite;
         }
-
         .loading-dots i:nth-child(2) { animation-delay: .16s; }
         .loading-dots i:nth-child(3) { animation-delay: .32s; }
 
         .loading-bar {
           position: relative;
           width: 100%;
-          height: 5px;
+          height: 6px;
           overflow: hidden;
           border-radius: 999px;
           background: #eee6d7;
           box-shadow: inset 0 1px 2px rgba(70,50,15,.05);
         }
 
-        .loading-bar:after {
+        .loading-bar::after {
           content: "";
           position: absolute;
           inset: 0 auto 0 0;
           width: 38%;
           border-radius: inherit;
           background: linear-gradient(90deg, #a97820, #d5ad58, #f0d795);
-          box-shadow: 0 0 14px rgba(199,154,59,.34);
+          box-shadow: 0 0 16px rgba(199,154,59,.36);
           animation: loading 1.25s cubic-bezier(.45,0,.25,1) infinite;
         }
 
-        .loading-footer {
-          margin-top: 18px;
-          color: #b0a99d;
+        .loading-trust-row {
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+          flex-wrap: wrap;
+          margin-top: 20px;
+          color: #a29a8e;
           font-size: 9px;
-          letter-spacing: .3px;
+          font-weight: 700;
         }
 
+        .loading-trust-row span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .loading-trust-row svg { color: var(--gold); }
+
         @media (max-width: 480px) {
+          .loading-screen { padding: 14px; }
           .loading-inner {
-            width: min(360px, calc(100vw - 28px));
-            padding: 30px 20px 25px;
-            border-radius: 24px;
+            width: 100%;
+            padding: 32px 20px 25px;
+            border-radius: 25px;
           }
-
-          .loading-logo-wrap {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 16px;
-          }
-
-          .loading-logo {
-            width: 50px;
-            height: 50px;
-          }
-
-          .loading-message {
-            font-size: 11px;
-          }
+          .loading-logo-wrap { width: 90px; height: 90px; margin-bottom: 16px; }
+          .loading-logo { width: 58px; height: 58px; border-radius: 17px; }
+          .loading-message { font-size: 11px; }
+          .loading-trust-row { gap: 10px; }
         }
 
         html.dark .loading-screen {
@@ -4879,6 +4924,20 @@ export default function DashboardPage() {
           .loading-inner, .loading-logo, .loading-logo-wrap::before, .loading-bar:after, .loading-dots i {
             animation: none !important;
           }
+        }
+
+        @keyframes loadingSweep {
+          0%, 18% { transform: translateX(-100%); }
+          52%, 100% { transform: translateX(100%); }
+        }
+
+        @keyframes loadingOrb {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(20px, -18px, 0) scale(1.08); }
+        }
+
+        @keyframes loadingOrbitReverse {
+          to { transform: rotate(-360deg); }
         }
 
         @keyframes loadingCardIn {
@@ -7811,11 +7870,25 @@ function TrustItem({
 
 function LoadingScreen() {
   return (
-    <div className="loading-screen" aria-label="Loading PrimeCart">
+    <div className="loading-screen" aria-label="Loading PrimeCart" role="status" aria-live="polite">
+      <div className="loading-orb loading-orb-one" />
+      <div className="loading-orb loading-orb-two" />
+
       <div className="loading-inner">
         <div className="loading-logo-wrap">
+          <span className="loading-orbit loading-orbit-one" />
+          <span className="loading-orbit loading-orbit-two" />
           <div className="loading-logo">
-            <img src="/logo.png" alt="PrimeCart" />
+            <img
+              src="/logo.png"
+              alt="PrimeCart"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+                const fallback = event.currentTarget.nextElementSibling as HTMLElement | null;
+                if (fallback) fallback.style.display = "block";
+              }}
+            />
+            <ShoppingBag className="loading-logo-fallback" size={30} />
           </div>
         </div>
 
@@ -7827,23 +7900,27 @@ function LoadingScreen() {
 
         <div className="loading-kicker">Premium Shopping Experience</div>
 
-        <span className="loading-message">
+        <p className="loading-message">
           Preparing your personalized shopping experience...
-        </span>
+        </p>
 
         <div className="loading-progress">
           <div className="loading-progress-head">
-            <span>Loading store</span>
+            <span>Loading your store</span>
             <span className="loading-dots" aria-hidden="true">
               <i />
               <i />
               <i />
             </span>
           </div>
-          <div className="loading-bar" />
+          <div className="loading-bar" aria-hidden="true" />
         </div>
 
-        <div className="loading-footer">Curated for you • Secure • Simple • Prime</div>
+        <div className="loading-trust-row">
+          <span><ShieldCheck size={12} /> Secure</span>
+          <span><Zap size={12} /> Fast</span>
+          <span><Heart size={12} /> Curated</span>
+        </div>
       </div>
     </div>
   );
