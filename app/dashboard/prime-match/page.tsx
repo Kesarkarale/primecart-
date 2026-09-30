@@ -2376,7 +2376,7 @@ async function runMatch() {
   ===================================================== */
 
   return (
-    <main className="min-h-screen bg-[#fcfbf8] text-[#3f3525]">
+    <main className="min-h-screen overflow-x-hidden bg-[#fcfbf8] text-[#3f3525]">
       {/* =================================================
           TOAST
       ================================================= */}
@@ -2398,7 +2398,7 @@ async function runMatch() {
       ================================================= */}
 
       <header className="sticky top-0 z-50 border-b border-[#eee5d6] bg-[#fcfbf8]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-2 px-2.5 py-2.5 sm:gap-4 sm:px-6 sm:py-3 lg:px-8">
           <Link
             href="/dashboard"
             className="flex items-center gap-2 text-xs font-black text-gray-600 transition hover:text-[#a17b2f]"
@@ -2411,18 +2411,18 @@ async function runMatch() {
 
           <Link
             href="/dashboard"
-            className="flex min-w-0 items-center gap-2.5"
+            className="flex min-w-0 items-center gap-2 sm:gap-2.5"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
               <img
                 src="/logo.png"
                 alt="PrimeCart"
-                className="h-full w-full object-contain p-1"
+                className="h-full w-full object-contain p-0.5 sm:p-1"
               />
             </div>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-black tracking-tight text-[#241d14]">
+              <p className="truncate text-[13px] font-black tracking-tight text-[#241d14] sm:text-sm">
                 PrimeCart
               </p>
               <p className="truncate text-[9px] font-bold uppercase tracking-[0.16em] text-gray-400">
@@ -2446,36 +2446,36 @@ async function runMatch() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1500px] px-4 pb-16 pt-7 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1500px] px-2.5 pb-10 pt-3 sm:px-6 sm:pb-16 sm:pt-7 lg:px-8">
         {/* =================================================
             HERO
         ================================================= */}
 
-        <section className="relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] via-white to-[#f9f5ea] px-6 py-9 shadow-sm sm:px-10 sm:py-12">
+        <section className="relative overflow-hidden rounded-[22px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] via-white to-[#f9f5ea] px-4 py-5 shadow-sm sm:rounded-[32px] sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#e8cc83]/20 blur-3xl" />
 
-          <div className="relative grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:items-center">
+          <div className="relative grid gap-5 sm:gap-8 lg:grid-cols-[1.2fr_.8fr] lg:items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#e6d6af] bg-white/80 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#9b762b]">
                 <Sparkles size={12} />
                 Personalised shopping
               </div>
 
-              <h1 className="mt-5 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="mt-3 max-w-3xl text-[30px] font-black leading-[1.06] tracking-tight sm:mt-5 sm:text-5xl lg:text-6xl">
                 Find products that
                 <span className="block text-[#b58a32]">
                   actually fit you.
                 </span>
               </h1>
 
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-gray-500 sm:text-base">
+              <p className="mt-3 max-w-2xl text-[13px] leading-6 text-gray-500 sm:mt-5 sm:text-base sm:leading-7">
                 Tell PrimeMatch what you need,
                 your budget, preferred category
                 and brand. We rank the available
                 products based on your priorities.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
                 <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-gray-600 shadow-sm">
                   <BadgeCheck
                     size={15}
@@ -2503,7 +2503,7 @@ async function runMatch() {
             </div>
 
             {/* LIVE POTENTIAL */}
-            <div className="rounded-[28px] border border-[#e8d8b2] bg-white/90 p-6 shadow-sm">
+            <div className="rounded-[20px] border border-[#e8d8b2] bg-white/90 p-4 shadow-sm sm:rounded-[28px] sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">
@@ -2522,8 +2522,8 @@ async function runMatch() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-end gap-2">
-                <span className="text-5xl font-black text-[#3f3525]">
+              <div className="mt-4 flex items-end gap-2 sm:mt-6">
+                <span className="text-4xl font-black text-[#3f3525] sm:text-5xl">
                   {livePotential}%
                 </span>
 
@@ -2532,7 +2532,7 @@ async function runMatch() {
                 </span>
               </div>
 
-              <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#eee8dc]">
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#eee8dc] sm:mt-4 sm:h-3">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#b58a32] to-[#e0c274] transition-all duration-700"
                   style={{
@@ -2541,7 +2541,7 @@ async function runMatch() {
                 />
               </div>
 
-              <p className="mt-4 text-xs leading-5 text-gray-500">
+              <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">
                 Adjust your preferences below
                 to change the ranking instantly.
               </p>
@@ -2554,7 +2554,7 @@ async function runMatch() {
         ================================================= */}
 
         {history.length > 0 && !matched && (
-          <section className="mt-8">
+          <section className="mt-5 sm:mt-8">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -2567,7 +2567,7 @@ async function runMatch() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-5">
               {history.map((item, index) => {
                 const purposeLabel = PURPOSES.find((p) => p.id === item.purpose)?.title || item.purpose;
                 const budgetLabel = BUDGETS.find((b) => b.id === item.budget)?.label || item.budget;
@@ -2607,7 +2607,7 @@ async function runMatch() {
             BUILDER
         ================================================= */}
 
-        <section className="mt-8">
+        <section className="mt-5 sm:mt-8">
           <div className="mb-5">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
               Step 1
@@ -3595,7 +3595,7 @@ async function runMatch() {
                   TOP 3 PERSONALIZED MATCHES
               ================================================= */}
 
-              <section className="mt-10">
+              <section className="mt-7 sm:mt-10">
                 <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
@@ -3667,7 +3667,7 @@ async function runMatch() {
                   MATCH SUMMARY
               ================================================= */}
 
-              <section className="mt-8 grid gap-4 md:grid-cols-3">
+              <section className="mt-5 grid gap-3 md:mt-8 md:grid-cols-3">
                 <div className="rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Target size={18} /></div>
@@ -3695,7 +3695,7 @@ async function runMatch() {
                   BUDGET ADVISOR + ANALYTICS
               ================================================= */}
               {budgetAdvisor && (
-                <section className="mt-8 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+                <section className="mt-5 grid gap-3 lg:mt-8 lg:grid-cols-[1.1fr_.9fr]">
                   <div className="rounded-[26px] border border-[#e8dfcf] bg-gradient-to-br from-[#fffaf0] to-white p-6 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Budget advisor</p><h3 className="mt-1 text-xl font-black">Make the most of your budget</h3></div>
@@ -3706,7 +3706,7 @@ async function runMatch() {
                       <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Best match</p><p className="mt-1 text-xl font-black">{money(Number(budgetAdvisor.best.price))}</p><p className="text-[10px] text-gray-400">{budgetAdvisor.best.matchScore}% fit</p></div>
                       <div className="rounded-2xl border border-[#eadfc9] bg-white p-4"><p className="text-[10px] font-bold text-gray-400">Average price</p><p className="mt-1 text-xl font-black">{money(budgetAdvisor.avg)}</p><p className="text-[10px] text-gray-400">top available options</p></div>
                     </div>
-                    <p className="mt-4 text-xs leading-5 text-gray-500">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "There are no exact in-budget products, so PrimeMatch is showing the closest alternatives."}</p>
+                    <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "There are no exact in-budget products, so PrimeMatch is showing the closest alternatives."}</p>
                   </div>
 
                   {matchAnalytics && (
@@ -3723,7 +3723,7 @@ async function runMatch() {
               {/* =================================================
                   SMART SURPRISE
               ================================================= */}
-              <section id="surprise-match" className="mt-8 rounded-[26px] border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-6">
+              <section id="surprise-match" className="mt-5 rounded-[20px] border border-[#eadfc9] bg-white p-4 shadow-sm sm:mt-8 sm:rounded-[26px] sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Something unexpected</p><h3 className="mt-1 text-xl font-black">✨ Surprise me</h3><p className="mt-1 text-xs leading-5 text-gray-500">Get a relevant alternative from your matched products without changing your preferences.</p></div>
                   <button type="button" onClick={surpriseMe} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d9c79f] bg-white px-5 py-3 text-xs font-black text-[#8f6b24] transition hover:bg-[#fff8e8]"><Sparkles size={15} /> Surprise Me</button>
@@ -3738,8 +3738,8 @@ async function runMatch() {
             PRODUCT RESULTS
         ================================================= */}
 
-        <section className="mt-10">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="mt-7 sm:mt-10">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <Sparkles
@@ -3785,7 +3785,7 @@ async function runMatch() {
 
           {/* LOADING */}
           {loading && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({
                 length: 8,
               }).map(
@@ -3845,7 +3845,7 @@ async function runMatch() {
   !matching &&
   results.length > 0 && (
 
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {results.map(
                   (
                     product,
@@ -3894,7 +3894,7 @@ async function runMatch() {
             PRIMEPOINTS PREVIEW
         ================================================= */}
         {matched && topMatch && (
-          <section className="mt-8 rounded-[28px] border border-[#eadfc9] bg-gradient-to-r from-[#fffaf0] via-white to-[#fff7e4] p-6 shadow-sm sm:p-8">
+          <section className="mt-5 rounded-[20px] border border-[#eadfc9] bg-gradient-to-r from-[#fffaf0] via-white to-[#fff7e4] p-4 shadow-sm sm:mt-8 sm:rounded-[28px] sm:p-8">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div><div className="flex items-center gap-2 text-[#9b762b]"><Award size={17} /><span className="text-[10px] font-black uppercase tracking-[0.18em]">PrimePoints preview</span></div><h2 className="mt-2 text-2xl font-black">Earn {Math.max(20, Math.round(topMatch.matchScore * 1.25))} PrimePoints on this match</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">A small reward for discovering products through PrimeMatch. This is a preview UI and does not change your existing rewards database.</p></div>
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] border border-[#e6d4a7] bg-white text-2xl font-black text-[#b58a32] shadow-sm">{Math.max(20, Math.round(topMatch.matchScore * 1.25))}</div>
@@ -3906,7 +3906,7 @@ async function runMatch() {
             HOW IT WORKS
         ================================================= */}
 
-        <section className="mt-12 overflow-hidden rounded-[30px] border border-[#eadfc9] bg-white">
+        <section className="mt-7 overflow-hidden rounded-[22px] border border-[#eadfc9] bg-white sm:mt-12 sm:rounded-[30px]">
           <div className="border-b border-[#eee5d6] bg-[#fffaf0] px-6 py-7 sm:px-8">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
               How PrimeMatch works
@@ -3955,7 +3955,7 @@ async function runMatch() {
                   key={
                     item.number
                   }
-                  className={`p-6 sm:p-8 ${
+                  className={`p-4 sm:p-8 ${
                     index <
                     2
                       ? "border-b md:border-b-0 md:border-r border-[#eee5d6]"
@@ -3995,7 +3995,7 @@ async function runMatch() {
             FINAL CTA
         ================================================= */}
 
-        <section className="mt-8 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-10 text-gray-800 sm:px-10">
+        <section className="mt-5 rounded-[22px] border border-[#eadfc9] bg-white px-4 py-6 text-gray-800 sm:mt-8 sm:rounded-[30px] sm:px-10 sm:py-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2 text-[#d8b866]">
