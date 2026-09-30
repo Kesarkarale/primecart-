@@ -61,13 +61,6 @@ type Category = {
   slug: string;
 };
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  quantity: number;
-};
 
 type SetupType =
   | "work"
@@ -546,6 +539,9 @@ export default function SetupBuilderPage() {
   const [cartIds, setCartIds] =
     useState<string[]>([]);
 
+  const [cartLoading, setCartLoading] =
+    useState<string | null>(null);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -612,6 +608,7 @@ export default function SetupBuilderPage() {
         productResponse,
         categoryResponse,
         wishlistResponse,
+        cartResponse,
       ] = await Promise.all([
         supabase
           .from("products")
@@ -648,9 +645,19 @@ export default function SetupBuilderPage() {
           .order("name"),
 
         supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .select(
             "product_id"
+          )
+          .eq(
+            "user_id",
+            user.id
+          ),
+
+        supabase
+          .from("cart_items")
+          .select(
+            "product_id, quantity"
           )
           .eq(
             "user_id",
@@ -676,6 +683,16 @@ export default function SetupBuilderPage() {
           (item) =>
             item.product_id
         )
+      );
+
+      setCartIds(
+        (cartResponse.data || [])
+          .filter(
+            (item) => Number(item.quantity || 0) > 0
+          )
+          .map(
+            (item) => item.product_id
+          )
       );
     } catch (error) {
       console.error(
@@ -1104,95 +1121,118 @@ export default function SetupBuilderPage() {
     );
   }
 
-  function getCart(): CartItem[] {
-    try {
-      const saved =
-        localStorage.getItem(
-          "primecart-cart"
-        );
-
-      if (!saved) {
-        return [];
-      }
-
-      const parsed =
-        JSON.parse(saved);
-
-      return Array.isArray(
-        parsed
-      )
-        ? parsed
-        : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveCart(
-    items: CartItem[]
-  ) {
-    localStorage.setItem(
-      "primecart-cart",
-      JSON.stringify(items)
-    );
-
-    window.dispatchEvent(
-      new Event(
-        "cart-updated"
-      )
-    );
-  }
-
-  function addToCart(
+  async function addToCart(
     product: Product
   ) {
-    const cart =
-      getCart();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const existing =
-      cart.find(
-        (item) =>
-          item.id ===
-          product.id
-      );
-
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({
-        id: product.id,
-        name: product.name,
-        price: Number(
-          product.price
-        ),
-        image_url:
-          product.image_url,
-        quantity: 1,
-      });
+    if (!user) {
+      window.location.href =
+        "/auth/login";
+      return;
     }
 
-    saveCart(cart);
+    if (product.stock <= 0) {
+      return;
+    }
 
-    setCartIds(
-      (current) =>
-        current.includes(
-          product.id
-        )
+    setCartLoading(product.id);
+
+    try {
+      const {
+        data: existingItem,
+        error: lookupError,
+      } = await supabase
+        .from("cart_items")
+        .select("id, quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error(
+          "Cart lookup error:",
+          lookupError
+        );
+        return;
+      }
+
+      if (existingItem) {
+        const currentQuantity = Number(
+          existingItem.quantity || 0
+        );
+        const newQuantity = Math.min(
+          currentQuantity + 1,
+          product.stock
+        );
+
+        if (newQuantity !== currentQuantity) {
+          const { error: updateError } =
+            await supabase
+              .from("cart_items")
+              .update({
+                quantity: newQuantity,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existingItem.id)
+              .eq("user_id", user.id);
+
+          if (updateError) {
+            console.error(
+              "Cart update error:",
+              updateError
+            );
+            return;
+          }
+        }
+      } else {
+        const { error: insertError } =
+          await supabase
+            .from("cart_items")
+            .insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: 1,
+            });
+
+        if (insertError) {
+          console.error(
+            "Cart insert error:",
+            insertError
+          );
+          return;
+        }
+      }
+
+      setCartIds((current) =>
+        current.includes(product.id)
           ? current
-          : [
-              ...current,
-              product.id,
-            ]
-    );
+          : [...current, product.id]
+      );
+
+      window.dispatchEvent(
+        new Event("cart-updated")
+      );
+    } catch (error) {
+      console.error(
+        "Add to cart error:",
+        error
+      );
+    } finally {
+      setCartLoading(null);
+    }
   }
 
-  function addCompleteSetup() {
-    finalProducts.forEach(
-      (product) =>
-        addToCart(
-          product
-        )
-    );
+  async function addCompleteSetup() {
+    if (finalProducts.length === 0) {
+      return;
+    }
+
+    for (const product of finalProducts) {
+      await addToCart(product);
+    }
   }
 
   async function toggleWishlist(
@@ -1217,7 +1257,7 @@ export default function SetupBuilderPage() {
     if (exists) {
       const { error } =
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .delete()
           .eq(
             "user_id",
@@ -1246,7 +1286,7 @@ export default function SetupBuilderPage() {
     } else {
       const { error } =
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .insert({
             user_id:
               user.id,
@@ -1302,16 +1342,24 @@ export default function SetupBuilderPage() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/dashboard/products"
-              className="hidden h-10 items-center gap-2 rounded-xl border border-[#e7dfd0] px-4 text-[10px] font-black text-gray-600 transition hover:border-[#c9a24d] sm:flex"
+              href="/dashboard/wishlist"
+              aria-label="Wishlist"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-gray-500 transition hover:border-[#c9a24d] hover:text-[#a17b2f]"
             >
-              <ShoppingCart size={14} />
-              Browse Products
+              <Heart size={17} />
+            </Link>
+
+            <Link
+              href="/dashboard/cart"
+              aria-label="Cart"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-gray-500 transition hover:border-[#c9a24d] hover:text-[#a17b2f]"
+            >
+              <ShoppingCart size={17} />
             </Link>
 
             <Link
               href="/dashboard"
-              className="flex h-10 items-center gap-2 rounded-xl bg-[#fff4d7] px-4 text-[10px] font-black text-[#956f27]"
+              className="hidden h-10 items-center gap-2 rounded-xl bg-[#fff4d7] px-4 text-[10px] font-black text-[#956f27] sm:flex"
             >
               Dashboard
               <ArrowRight size={13} />
@@ -1325,14 +1373,14 @@ export default function SetupBuilderPage() {
         <section className="relative overflow-hidden rounded-[32px] border border-[#e5d8bd] bg-white">
           <div className="absolute -right-32 -top-40 h-[550px] w-[550px] rounded-full bg-[#f1dca7]/30 blur-3xl" />
 
-          <div className="relative grid items-center gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-16 lg:py-14">
-            <div>
+          <div className="relative flex gap-4 overflow-x-auto px-4 py-5 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:gap-10 sm:overflow-visible sm:px-10 sm:py-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-16 lg:py-14">
+            <div className="min-w-[88vw] snap-start self-stretch sm:min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#e8dcc3] bg-[#fffaf0] px-4 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
                 <Sparkles size={12} />
                 PrimeCart Smart Studio
               </div>
 
-              <h2 className="mt-6 max-w-3xl text-[42px] font-black leading-[1.02] tracking-[-0.045em] sm:text-5xl lg:text-[64px]">
+              <h2 className="mt-6 max-w-3xl text-[34px] font-black leading-[1.02] tracking-[-0.045em] sm:text-5xl lg:text-[64px]">
                 Build your
                 <span className="block text-[#b58a32]">
                   perfect setup.
@@ -1369,8 +1417,8 @@ export default function SetupBuilderPage() {
             </div>
 
             {/* HERO PREVIEW */}
-            <div className="mx-auto w-full max-w-[420px]">
-              <div className="rounded-[30px] border border-[#e8dcc3] bg-[#fffaf0] p-5 shadow-[0_25px_70px_rgba(120,90,30,0.08)]">
+            <div className="min-w-[88vw] snap-start sm:min-w-0 sm:mx-auto sm:w-full sm:max-w-[420px]">
+              <div className="rounded-[28px] border border-[#e8dcc3] bg-[#fffaf0] p-4 shadow-[0_25px_70px_rgba(120,90,30,0.08)] sm:p-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
@@ -1582,7 +1630,7 @@ export default function SetupBuilderPage() {
                 </p>
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="-mx-1 mt-8 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-5">
                 {setupTypes.map(
                   (item) => {
                     const Icon =
@@ -1606,7 +1654,7 @@ export default function SetupBuilderPage() {
                             false
                           );
                         }}
-                        className={`relative rounded-[24px] border p-5 text-left transition duration-200 ${
+                        className={`relative min-w-[78vw] snap-start rounded-[24px] border p-5 text-left transition duration-200 sm:min-w-0 ${
                           active
                             ? "border-[#c9a24d] bg-[#fffaf0] shadow-[0_12px_35px_rgba(150,110,35,0.08)]"
                             : "border-[#e8e0d2] bg-white hover:-translate-y-1 hover:border-[#d2b66e] hover:shadow-md"
@@ -1734,7 +1782,7 @@ export default function SetupBuilderPage() {
                   </p>
                 </div>
 
-                <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                <div className="-mx-1 mt-8 flex gap-2 overflow-x-auto px-1 pb-1 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-5 sm:overflow-visible">
                   {budgetPresets.map(
                     (preset) => {
                       const active =
@@ -1752,7 +1800,7 @@ export default function SetupBuilderPage() {
                               preset.amount
                             )
                           }
-                          className={`rounded-xl border px-3 py-3 text-center transition ${
+                          className={`min-w-[112px] snap-start rounded-xl border px-3 py-3 text-center transition sm:min-w-0 ${
                             active
                               ? "border-[#c9a24d] bg-[#fff5dc] text-[#956f27]"
                               : "border-[#e5ddcf] hover:border-[#d0b46c]"
@@ -1929,7 +1977,7 @@ export default function SetupBuilderPage() {
                     </span>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="-mx-1 mt-5 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible">
                     {components.map(
                       (component) => {
                         const Icon =
@@ -1951,7 +1999,7 @@ export default function SetupBuilderPage() {
                                 component.id
                               )
                             }
-                            className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                            className={`min-w-[78vw] snap-start flex items-center gap-4 rounded-2xl border p-4 text-left transition sm:min-w-0 ${
                               active
                                 ? "border-[#c9a24d] bg-[#fffaf0]"
                                 : "border-[#e8e0d2] hover:border-[#d2b66e]"
@@ -2388,7 +2436,7 @@ export default function SetupBuilderPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:block md:space-y-4 md:overflow-visible md:pb-0">
                     {finalProducts.map(
                       (
                         product,
@@ -2434,10 +2482,10 @@ export default function SetupBuilderPage() {
                             key={
                               product.id
                             }
-                            className="group overflow-hidden rounded-[26px] border border-[#e8dfd0] bg-white transition hover:border-[#d3b76e] hover:shadow-lg"
+                            className="group min-w-[86vw] snap-start overflow-hidden rounded-[26px] border border-[#e8dfd0] bg-white transition hover:border-[#d3b76e] hover:shadow-lg md:min-w-0"
                           >
                             <div className="flex flex-col sm:flex-row">
-                              <div className="relative h-56 w-full shrink-0 bg-[#faf9f6] sm:h-48 sm:w-48">
+                              <div className="relative h-48 w-full shrink-0 bg-[#faf9f6] sm:h-48 sm:w-48">
                                 {image ? (
                                   <Image
                                     src={
@@ -2664,13 +2712,16 @@ export default function SetupBuilderPage() {
                                           product
                                         )
                                       }
-                                      className={`flex h-10 items-center gap-2 rounded-xl px-4 text-[10px] font-black ${
+                                      disabled={cartLoading === product.id}
+                                      className={`flex h-10 items-center gap-2 rounded-xl px-4 text-[10px] font-black disabled:cursor-not-allowed disabled:opacity-60 ${
                                         added
                                           ? "bg-emerald-600 text-white"
                                           : "bg-[#fff3d4] text-[#956f27]"
                                       }`}
                                     >
-                                      {added ? (
+                                      {cartLoading === product.id ? (
+                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                      ) : added ? (
                                         <Check
                                           size={
                                             13
@@ -2828,7 +2879,8 @@ export default function SetupBuilderPage() {
                       }
                       disabled={
                         finalProducts.length ===
-                        0
+                        0 ||
+                        cartLoading !== null
                       }
                       className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c9a24d] text-xs font-black text-white shadow-lg shadow-[#c9a24d]/15 disabled:opacity-50"
                     >
@@ -2928,7 +2980,7 @@ export default function SetupBuilderPage() {
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="-mx-1 mt-8 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-5">
             {components.map(
               (component) => {
                 const Icon =
@@ -2945,7 +2997,7 @@ export default function SetupBuilderPage() {
                         component.id
                       )
                     }
-                    className="rounded-[22px] border border-[#e8dfd0] bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-[#d2b66e] hover:shadow-md"
+                    className="min-w-[72vw] snap-start rounded-[22px] border border-[#e8dfd0] bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-[#d2b66e] hover:shadow-md sm:min-w-0"
                   >
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58a32]">
                       <Icon size={20} />
