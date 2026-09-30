@@ -2435,7 +2435,7 @@ export default function BudgetBuilderPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
                   {planProducts.map(
                     (
                       product,
@@ -2472,7 +2472,7 @@ export default function BudgetBuilderPage() {
                           key={
                             product.id
                           }
-                          className="group flex flex-col gap-4 rounded-[22px] border border-[#e8dfcf] bg-white p-4 transition hover:border-[#d5bb7c] hover:shadow-md sm:flex-row sm:items-center"
+                          className="group flex min-w-[84vw] snap-start flex-col gap-4 rounded-[22px] border border-[#e8dfcf] bg-white p-4 transition hover:border-[#d5bb7c] hover:shadow-md sm:min-w-[420px] sm:flex-row sm:items-center md:min-w-0"
                         >
                           <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-2xl bg-[#faf9f6] sm:h-28 sm:w-28">
                             {image ? (
@@ -3464,7 +3464,7 @@ export default function BudgetBuilderPage() {
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="-mx-1 mt-8 flex gap-4 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
             {[
               {
                 number: "01",
@@ -3499,7 +3499,7 @@ export default function BudgetBuilderPage() {
                   key={
                     item.number
                   }
-                  className="relative overflow-hidden rounded-[24px] border border-[#e8dfcf] bg-white p-6 shadow-sm"
+                  className="relative min-w-[82vw] snap-start overflow-hidden rounded-[24px] border border-[#e8dfcf] bg-white p-5 shadow-sm sm:min-w-[360px] md:min-w-0 md:p-6"
                 >
                   <span className="absolute right-5 top-4 text-4xl font-black text-[#f2eadb]">
                     {
