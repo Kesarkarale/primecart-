@@ -347,7 +347,7 @@ export default function CartPage() {
       );
 
       const nextCart: CartItem[] = [];
-      const rowsToDelete: string[] = [];
+      
       const rowsToUpdate: Array<{ id: string; quantity: number }> = [];
 
       for (const row of cartRows) {
@@ -377,10 +377,6 @@ export default function CartPage() {
           quantity,
           cart_item_id: row.id,
         });
-      }
-
-      if (rowsToDelete.length) {
-        await supabase.from("cart_items").delete().in("id", rowsToDelete);
       }
 
       if (rowsToUpdate.length) {
