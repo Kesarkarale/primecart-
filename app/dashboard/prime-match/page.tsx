@@ -1984,23 +1984,6 @@ const [matchStage, setMatchStage] =
     [search]
   );
 
-  const profile = useMemo(() => {
-    const quality = importance.quality;
-    const budgetFocus = importance.budget;
-    const brandFocus = importance.brand;
-    const ratingFocus = importance.rating;
-    return {
-      budget: budgetFocus,
-      quality,
-      brand: brandFocus,
-      rating: ratingFocus,
-      budgetLabel: getProfileLabel(budgetFocus),
-      qualityLabel: getProfileLabel(quality),
-      brandLabel: getProfileLabel(brandFocus),
-      ratingLabel: getProfileLabel(ratingFocus),
-    };
-  }, [importance]);
-
   const budgetAdvisor = useMemo(() => {
     if (!results.length) return null;
     const selected = BUDGETS.find((item) => item.id === budget);
@@ -2788,34 +2771,6 @@ async function runMatch() {
             </div>
           </section>
         )}
-
-        {/* =================================================
-            SHOPPING PROFILE
-        ================================================= */}
-        <section className="mt-8 rounded-[28px] border border-[#eadfc9] bg-white p-5 shadow-sm sm:p-7">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">Your shopping profile</p>
-              <h2 className="mt-1 text-xl font-black">What matters most to you</h2>
-              <p className="mt-1 text-sm text-gray-500">PrimeMatch uses these priorities to shape your recommendations.</p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3d2] text-[#9b762b]"><Target size={19} /></div>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["Budget", profile.budget, profile.budgetLabel],
-              ["Quality", profile.quality, profile.qualityLabel],
-              ["Brand", profile.brand, profile.brandLabel],
-              ["Rating", profile.rating, profile.ratingLabel],
-            ].map(([label, value, level]) => (
-              <div key={String(label)} className="rounded-2xl border border-[#eee5d6] bg-[#fffdfa] p-4">
-                <div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-[#4c4030]">{label}</span><span className="text-[10px] font-black text-[#9b762b]">{level}</span></div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee8dc]"><div className="h-full rounded-full bg-gradient-to-r from-[#c9a24d] to-[#e5ca82]" style={{ width: `${Number(value)}%` }} /></div>
-                <p className="mt-2 text-[10px] font-bold text-gray-400">{Number(value)}% importance</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* =================================================
             BUILDER
