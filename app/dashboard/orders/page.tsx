@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Star,
   ShoppingBag,
   ShoppingCart,
   Sparkles,
@@ -48,6 +49,15 @@ type OrderItem = {
   quantity: number;
   subtotal: number;
   image_url?: string | null;
+};
+
+type Review = {
+  id: string;
+  user_id: string;
+  product_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
 };
 
 type OrderAddress = {
@@ -474,6 +484,27 @@ export default function OrdersPage() {
     useState("");
 
   const [successMessage, setSuccessMessage] =
+    useState("");
+
+  const [reviewTarget, setReviewTarget] =
+    useState<{ order: Order; item: OrderItem } | null>(null);
+
+  const [reviewExisting, setReviewExisting] =
+    useState<Review | null>(null);
+
+  const [reviewRating, setReviewRating] =
+    useState(0);
+
+  const [reviewComment, setReviewComment] =
+    useState("");
+
+  const [reviewLoading, setReviewLoading] =
+    useState(false);
+
+  const [reviewSaving, setReviewSaving] =
+    useState(false);
+
+  const [reviewError, setReviewError] =
     useState("");
 
   /* =======================================================
@@ -945,6 +976,180 @@ export default function OrdersPage() {
       setCancelling(false);
     }
   }
+
+  /* =======================================================
+     REVIEWS - ONLY FOR DELIVERED / COMPLETED ORDERS
+  ======================================================= */
+
+  const openReview = useCallback(
+    async (order: Order, item: OrderItem) => {
+      const status = normalizeStatus(order.status);
+
+      if (status !== "delivered" && status !== "completed") {
+        setErrorMessage("You can review a product only after the order is delivered.");
+        return;
+      }
+
+      setReviewTarget({ order, item });
+      setReviewExisting(null);
+      setReviewRating(0);
+      setReviewComment("");
+      setReviewError("");
+      setReviewLoading(true);
+
+      try {
+        const { data: { user }, error: authError } =
+          await supabase.auth.getUser();
+
+        if (authError || !user) {
+          setReviewError("Please login to write a review.");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("reviews")
+          .select("id,user_id,product_id,rating,comment,created_at")
+          .eq("user_id", user.id)
+          .eq("product_id", item.product_id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.error("Review load error:", error);
+          setReviewError(error.message || "Couldn't load your review.");
+          return;
+        }
+
+        const existing = data?.[0] as Review | undefined;
+
+        if (existing) {
+          setReviewExisting(existing);
+          setReviewRating(Number(existing.rating) || 0);
+          setReviewComment(existing.comment || "");
+        }
+      } finally {
+        setReviewLoading(false);
+      }
+    },
+    [supabase]
+  );
+
+  const closeReview = () => {
+    if (reviewSaving) return;
+    setReviewTarget(null);
+    setReviewExisting(null);
+    setReviewRating(0);
+    setReviewComment("");
+    setReviewError("");
+  };
+
+  const submitReview = async () => {
+    if (!reviewTarget) return;
+
+    const { order, item } = reviewTarget;
+    const status = normalizeStatus(order.status);
+
+    if (status !== "delivered" && status !== "completed") {
+      setReviewError("You can review a product only after the order is delivered.");
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewError("Please select a rating from 1 to 5 stars.");
+      return;
+    }
+
+    const comment = reviewComment.trim();
+
+    if (!comment) {
+      setReviewError("Please write a short review.");
+      return;
+    }
+
+    setReviewSaving(true);
+    setReviewError("");
+    setSuccessMessage("");
+
+    try {
+      const { data: { user }, error: authError } =
+        await supabase.auth.getUser();
+
+      if (authError || !user) {
+        setReviewError("Your session has expired. Please login again.");
+        return;
+      }
+
+      // Re-check the user's existing review before inserting, so one product
+      // does not receive duplicate reviews from the same account.
+      const { data: existingRows, error: findError } = await supabase
+        .from("reviews")
+        .select("id,rating,comment,created_at,user_id,product_id")
+        .eq("user_id", user.id)
+        .eq("product_id", item.product_id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (findError) {
+        setReviewError(findError.message || "Couldn't verify your existing review.");
+        return;
+      }
+
+      const latest = existingRows?.[0] as Review | undefined;
+
+      if (latest?.id) {
+        const { data, error } = await supabase
+          .from("reviews")
+          .update({
+            rating: reviewRating,
+            comment,
+          })
+          .eq("id", latest.id)
+          .eq("user_id", user.id)
+          .select("id,user_id,product_id,rating,comment,created_at")
+          .single();
+
+        if (error) {
+          setReviewError(error.message || "Couldn't update your review.");
+          return;
+        }
+
+        setReviewExisting(data as Review);
+        setSuccessMessage("Review updated successfully.");
+      } else {
+        const { data, error } = await supabase
+          .from("reviews")
+          .insert({
+            user_id: user.id,
+            product_id: item.product_id,
+            rating: reviewRating,
+            comment,
+          })
+          .select("id,user_id,product_id,rating,comment,created_at")
+          .single();
+
+        if (error) {
+          setReviewError(error.message || "Couldn't save your review.");
+          return;
+        }
+
+        setReviewExisting(data as Review);
+        setSuccessMessage("Review submitted successfully.");
+      }
+
+      setReviewTarget(null);
+      setReviewComment("");
+      setReviewRating(0);
+    } catch (error) {
+      console.error("Review submit error:", error);
+      setReviewError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while saving your review."
+      );
+    } finally {
+      setReviewSaving(false);
+    }
+  };
 
   /* =======================================================
      FILTER + SORT
@@ -1959,6 +2164,20 @@ export default function OrdersPage() {
                                       )}{" "}
                                       each
                                     </span>
+
+                                    {normalizedStatus === "delivered" ||
+                                    normalizedStatus === "completed" ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openReview(order, item)
+                                        }
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#d9c294] bg-[#fffaf0] px-3 text-xs font-bold text-[#986f27] transition hover:border-[#b9975b] hover:bg-[#f8efd9]"
+                                      >
+                                        <Star size={13} />
+                                        Rate & Review
+                                      </button>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>
@@ -2475,6 +2694,167 @@ export default function OrdersPage() {
 
         <div className="h-6" />
       </div>
+
+      {/* REVIEW MODAL */}
+
+      {reviewTarget && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-[#211b13]/45 px-4 py-6 backdrop-blur-sm"
+          onClick={() => {
+            if (!reviewSaving) closeReview();
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-product-title"
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_25px_80px_rgba(60,45,20,0.22)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="border-b border-[#f0e8da] px-5 py-5 sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffdf9]">
+                    <ProductImage
+                      src={reviewTarget.item.image_url}
+                      alt={reviewTarget.item.product_name}
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a47a2c]">
+                      Delivered Product
+                    </p>
+                    <h2
+                      id="review-product-title"
+                      className="mt-1 line-clamp-2 text-base font-bold text-[#2e2519]"
+                    >
+                      {reviewTarget.item.product_name}
+                    </h2>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={reviewSaving}
+                  onClick={closeReview}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#8b7b65] transition hover:bg-[#f8f2e7] hover:text-[#4b3b27] disabled:opacity-50"
+                  aria-label="Close review dialog"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-5 py-5 sm:px-6">
+              {reviewLoading ? (
+                <div className="space-y-4">
+                  <div className="h-5 w-32 animate-pulse rounded bg-[#eee7d9]" />
+                  <div className="h-12 w-full animate-pulse rounded-2xl bg-[#f7f2e9]" />
+                  <div className="h-28 w-full animate-pulse rounded-2xl bg-[#f7f2e9]" />
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-[#eadfc9] bg-[#fffdf9] p-4 text-center">
+                    <p className="text-sm font-bold text-[#382d20]">
+                      {reviewExisting ? "Update your review" : "How was your product?"}
+                    </p>
+
+                    <div className="mt-3 flex items-center justify-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          disabled={reviewSaving}
+                          onClick={() => setReviewRating(star)}
+                          className="rounded-lg p-1 transition hover:scale-105 disabled:cursor-not-allowed"
+                          aria-label={`${star} star${star > 1 ? "s" : ""}`}
+                        >
+                          <Star
+                            size={29}
+                            fill={reviewRating >= star ? "currentColor" : "none"}
+                            className={
+                              reviewRating >= star
+                                ? "text-[#c79a3b]"
+                                : "text-[#d9cdb7]"
+                            }
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    <p className="mt-2 text-xs font-semibold text-[#8b7b65]">
+                      {reviewRating === 0
+                        ? "Tap a star to rate"
+                        : `${reviewRating} out of 5 stars`}
+                    </p>
+                  </div>
+
+                  <div className="mt-4">
+                    <label
+                      htmlFor="review-comment"
+                      className="text-sm font-bold text-[#382d20]"
+                    >
+                      Your Review
+                    </label>
+
+                    <textarea
+                      id="review-comment"
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      disabled={reviewSaving}
+                      rows={5}
+                      maxLength={1000}
+                      placeholder="Tell other PrimeCart customers about the quality, value and your experience..."
+                      className="mt-2 w-full resize-none rounded-2xl border border-[#eadfc9] bg-[#fffdf9] px-4 py-3 text-sm leading-6 text-[#382d20] outline-none transition placeholder:text-[#b2a38d] focus:border-[#c79a3b] focus:ring-4 focus:ring-[#c79a3b]/10 disabled:opacity-60"
+                    />
+
+                    <div className="mt-1 flex justify-end text-[11px] text-[#9a8b76]">
+                      {reviewComment.length}/1000
+                    </div>
+                  </div>
+
+                  {reviewError && (
+                    <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700">
+                      {reviewError}
+                    </div>
+                  )}
+
+                  <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      disabled={reviewSaving}
+                      onClick={closeReview}
+                      className="h-11 rounded-xl border border-[#eadfc9] bg-white px-5 text-sm font-bold text-[#66543b] transition hover:bg-[#fffaf0] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={reviewSaving || reviewLoading}
+                      onClick={submitReview}
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-5 text-sm font-bold text-white shadow-[0_7px_18px_rgba(185,151,91,0.18)] transition hover:bg-[#a98449] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {reviewSaving ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Star size={16} />
+                          {reviewExisting ? "Update Review" : "Submit Review"}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CANCEL MODAL */}
 
