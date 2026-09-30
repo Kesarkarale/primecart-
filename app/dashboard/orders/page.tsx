@@ -759,6 +759,132 @@ export default function OrdersPage() {
   );
 
   /* =======================================================
+     AUTOMATIC DEMO DELIVERY
+     Orders move automatically from Placed -> Confirmed ->
+     Processing -> Shipped -> Out for Delivery -> Delivered.
+     Delivery time is a stable 15-20 minutes per order.
+  ======================================================= */
+
+  const getDemoDeliveryMinutes = useCallback((orderId: string) => {
+    let hash = 0;
+    for (let i = 0; i < orderId.length; i += 1) {
+      hash = (hash * 31 + orderId.charCodeAt(i)) >>> 0;
+    }
+    return 15 + (hash % 6);
+  }, []);
+
+  const getAutomaticStatus = useCallback(
+    (order: Order) => {
+      const current = normalizeStatus(order.status);
+
+      if (
+        current === "cancelled" ||
+        current === "canceled" ||
+        current === "delivered" ||
+        current === "completed"
+      ) {
+        return current === "completed" ? "delivered" : current;
+      }
+
+      const createdAt = new Date(order.created_at).getTime();
+      if (!Number.isFinite(createdAt)) return current || "placed";
+
+      const elapsedMinutes =
+        Math.max(0, Date.now() - createdAt) / 60000;
+      const deliveryMinutes = getDemoDeliveryMinutes(order.id);
+
+      if (elapsedMinutes >= deliveryMinutes) return "delivered";
+      if (elapsedMinutes >= 11) return "out_for_delivery";
+      if (elapsedMinutes >= 8) return "shipped";
+      if (elapsedMinutes >= 5) return "processing";
+      if (elapsedMinutes >= 2) return "confirmed";
+      return "placed";
+    },
+    [getDemoDeliveryMinutes]
+  );
+
+  const advanceOrdersAutomatically = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, status, created_at, updated_at")
+        .eq("user_id", user.id)
+        .not("status", "in", "(cancelled,canceled,delivered,completed)");
+
+      if (error || !data?.length) return;
+
+      const statusRank: Record<string, number> = {
+        placed: 0,
+        confirmed: 1,
+        processing: 2,
+        shipped: 3,
+        out_for_delivery: 4,
+        delivered: 5,
+        completed: 5,
+      };
+
+      const changes = data
+        .map((row: any) => {
+          const order: Order = {
+            id: String(row.id),
+            user_id: user.id,
+            status: row.status || "placed",
+            created_at: row.created_at,
+            updated_at: row.updated_at || null,
+            subtotal: 0,
+            total_amount: 0,
+            delivery_charge: 0,
+            discount: 0,
+          };
+          const current = normalizeStatus(row.status);
+          const next = getAutomaticStatus(order);
+
+          return {
+            id: String(row.id),
+            current,
+            next,
+          };
+        })
+        .filter((item) =>
+          item.next &&
+          item.next !== item.current &&
+          (statusRank[item.next] ?? -1) > (statusRank[item.current] ?? -1)
+        );
+
+      if (!changes.length) return;
+
+      for (const change of changes) {
+        await supabase
+          .from("orders")
+          .update({
+            status: change.next,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", change.id)
+          .eq("user_id", user.id);
+      }
+
+      setOrders((currentOrders) =>
+        currentOrders.map((order) => {
+          const change = changes.find((item) => item.id === order.id);
+          return change
+            ? {
+                ...order,
+                status: change.next,
+                updated_at: new Date().toISOString(),
+              }
+            : order;
+        })
+      );
+    } catch (error) {
+      console.error("Automatic delivery update error:", error);
+    }
+  }, [getAutomaticStatus, supabase]);
+
+  /* =======================================================
      INITIAL LOAD
   ======================================================= */
 
@@ -781,6 +907,17 @@ export default function OrdersPage() {
       );
     };
   }, [loadOrders]);
+
+  useEffect(() => {
+    // Run immediately, then keep order status in sync every 30 seconds.
+    advanceOrdersAutomatically();
+
+    const timer = window.setInterval(() => {
+      advanceOrdersAutomatically();
+    }, 30_000);
+
+    return () => window.clearInterval(timer);
+  }, [advanceOrdersAutomatically]);
 
   /* =======================================================
      OPEN CANCEL MODAL
