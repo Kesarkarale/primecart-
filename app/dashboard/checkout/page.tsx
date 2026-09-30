@@ -61,6 +61,7 @@ type Address = {
   state: string;
   pincode: string;
   type: "Home" | "Work" | "Other";
+  isDefault?: boolean;
 };
 
 type PaymentMethod =
@@ -413,11 +414,13 @@ export default function CheckoutPage() {
     useState("");
 
   /* =======================================================
-     LOAD LOCAL DATA
+     LOAD LOCAL DATA + SUPABASE ADDRESSES
   ======================================================= */
 
   useEffect(() => {
-    try {
+    let cancelled = false;
+
+    async function loadCheckoutData() {
       const savedCart = safeParse<CartItem[]>(
         localStorage.getItem(CART_KEY),
         []
@@ -434,23 +437,195 @@ export default function CheckoutPage() {
           price: Number(item.price || 0),
         }));
 
-      setItems(normalizedCart);
+      if (!cancelled) {
+        setItems(normalizedCart);
+      }
 
-      const savedAddresses = safeParse<Address[]>(
+      const localAddresses = safeParse<Address[]>(
         localStorage.getItem(ADDRESS_KEY),
         []
       );
 
-      setAddresses(savedAddresses);
+      /*
+       * Supabase is the permanent source of truth for addresses.
+       * Existing local addresses are migrated only when the
+       * user's database address list is empty. Nothing is
+       * automatically deleted.
+       */
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-      if (savedAddresses.length > 0) {
-        setSelectedAddressId(savedAddresses[0].id);
+      if (authError || !user) {
+        if (!cancelled) {
+          setAddresses(localAddresses);
+          setSelectedAddressId(
+            localAddresses.find((item) => item.isDefault)?.id ||
+              localAddresses[0]?.id ||
+              ""
+          );
+        }
+        return;
       }
-    } catch {
-      setItems([]);
-      setAddresses([]);
+
+      const { data: dbRows, error: dbError } = await supabase
+        .from("addresses")
+        .select(
+          "id,user_id,full_name,phone,address_line,city,state,postal_code,country,address_type,is_default,created_at"
+        )
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (dbError) {
+        console.error("Address load error:", dbError);
+
+        if (!cancelled) {
+          setAddresses(localAddresses);
+          setSelectedAddressId(
+            localAddresses.find((item) => item.isDefault)?.id ||
+              localAddresses[0]?.id ||
+              ""
+          );
+        }
+        return;
+      }
+
+      /*
+       * One-time safe migration:
+       * if Supabase has no addresses but the browser has old
+       * locally saved addresses, copy them into Supabase.
+       */
+      if ((dbRows?.length ?? 0) === 0 && localAddresses.length > 0) {
+        const rowsToInsert = localAddresses.map((address, index) => ({
+          user_id: user.id,
+          full_name: address.name.trim(),
+          phone: address.phone.trim(),
+          address_line: address.address.trim(),
+          city: address.city.trim(),
+          state: address.state.trim(),
+          postal_code: address.pincode.trim(),
+          country: "India",
+          address_type: address.type || "Home",
+          is_default:
+            Boolean(address.isDefault) ||
+            (index === 0 && !localAddresses.some((item) => item.isDefault)),
+        }));
+
+        const { error: migrationError } = await supabase
+          .from("addresses")
+          .insert(rowsToInsert);
+
+        if (migrationError) {
+          console.error(
+            "Local address migration failed:",
+            migrationError
+          );
+
+          if (!cancelled) {
+            setAddresses(localAddresses);
+            setSelectedAddressId(
+              localAddresses.find((item) => item.isDefault)?.id ||
+                localAddresses[0]?.id ||
+                ""
+            );
+          }
+          return;
+        }
+
+        const { data: migratedRows, error: migratedLoadError } =
+          await supabase
+            .from("addresses")
+            .select(
+              "id,user_id,full_name,phone,address_line,city,state,postal_code,country,address_type,is_default,created_at"
+            )
+            .eq("user_id", user.id)
+            .order("is_default", { ascending: false })
+            .order("created_at", { ascending: false });
+
+        if (migratedLoadError) {
+          console.error(
+            "Migrated address reload failed:",
+            migratedLoadError
+          );
+          return;
+        }
+
+        if (!cancelled) {
+          const mapped = (migratedRows || []).map((row) => ({
+            id: String(row.id),
+            name: row.full_name || "",
+            phone: row.phone || "",
+            address: row.address_line || "",
+            city: row.city || "",
+            state: row.state || "",
+            pincode: row.postal_code || "",
+            type:
+              row.address_type === "Work" ||
+              row.address_type === "Other"
+                ? row.address_type
+                : "Home",
+            isDefault: Boolean(row.is_default),
+          }));
+
+          setAddresses(mapped);
+          setSelectedAddressId(
+            mapped.find((item) => item.isDefault)?.id ||
+              mapped[0]?.id ||
+              ""
+          );
+
+          try {
+            localStorage.setItem(
+              ADDRESS_KEY,
+              JSON.stringify(mapped)
+            );
+          } catch {
+            // local cache is optional
+          }
+        }
+
+        return;
+      }
+
+      if (!cancelled) {
+        const mapped = (dbRows || []).map((row) => ({
+          id: String(row.id),
+          name: row.full_name || "",
+          phone: row.phone || "",
+          address: row.address_line || "",
+          city: row.city || "",
+          state: row.state || "",
+          pincode: row.postal_code || "",
+          type: "Home" as const,
+          isDefault: Boolean(row.is_default),
+        }));
+
+        setAddresses(mapped);
+        setSelectedAddressId(
+          mapped.find((item) => item.isDefault)?.id ||
+            mapped[0]?.id ||
+            ""
+        );
+
+        try {
+          localStorage.setItem(
+            ADDRESS_KEY,
+            JSON.stringify(mapped)
+          );
+        } catch {
+          // local cache is optional
+        }
+      }
     }
-  }, []);
+
+    loadCheckoutData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   /* =======================================================
      TOAST
@@ -685,6 +860,7 @@ export default function CheckoutPage() {
     setAddressForm({
       ...defaultAddress,
       id: "default-address",
+      isDefault: addresses.length === 0,
     });
 
     setEditingAddressId(null);
@@ -702,26 +878,15 @@ export default function CheckoutPage() {
     setShowAddressForm(true);
   }
 
-  function saveAddress() {
+  async function saveAddress() {
     setAddressError("");
 
-    const name =
-      addressForm.name.trim();
-
-    const phone =
-      addressForm.phone.trim();
-
-    const address =
-      addressForm.address.trim();
-
-    const city =
-      addressForm.city.trim();
-
-    const state =
-      addressForm.state.trim();
-
-    const pincode =
-      addressForm.pincode.trim();
+    const name = addressForm.name.trim();
+    const phone = addressForm.phone.trim();
+    const address = addressForm.address.trim();
+    const city = addressForm.city.trim();
+    const state = addressForm.state.trim();
+    const pincode = addressForm.pincode.trim();
 
     if (
       !name ||
@@ -751,106 +916,313 @@ export default function CheckoutPage() {
       return;
     }
 
-    let updatedAddresses: Address[];
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (editingAddressId) {
-      updatedAddresses = addresses.map(
-        (existing) =>
-          existing.id === editingAddressId
+    if (authError || !user) {
+      setAddressError(
+        "Your session has expired. Please login again."
+      );
+      showToast(
+        "Please login before saving an address.",
+        "error"
+      );
+      return;
+    }
+
+    const makeDefault =
+      addresses.length === 0 || Boolean(addressForm.isDefault);
+
+    try {
+      if (editingAddressId) {
+        if (makeDefault) {
+          /*
+           * Only the currently logged-in user's addresses are
+           * updated. Existing addresses are never deleted.
+           */
+          const { error: clearDefaultError } = await supabase
+            .from("addresses")
+            .update({ is_default: false })
+            .eq("user_id", user.id)
+            .neq("id", editingAddressId);
+
+          if (clearDefaultError) {
+            throw clearDefaultError;
+          }
+        }
+
+        const { data, error } = await supabase
+          .from("addresses")
+          .update({
+            full_name: name,
+            phone,
+            address_line: address,
+            city,
+            state,
+            postal_code: pincode,
+            country: "India",
+            address_type: addressForm.type || "Home",
+            is_default: makeDefault
+              ? true
+              : Boolean(addressForm.isDefault),
+          })
+          .eq("id", editingAddressId)
+          .eq("user_id", user.id)
+          .select(
+            "id,full_name,phone,address_line,city,state,postal_code,country,address_type,is_default,created_at"
+          )
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data) {
+          throw new Error(
+            "Address could not be updated."
+          );
+        }
+
+        const updatedAddresses = addresses.map((existing) =>
+          existing.id === String(data.id)
             ? {
-                ...addressForm,
-                name,
-                phone,
-                address,
-                city,
-                state,
-                pincode,
+                ...existing,
+                id: String(data.id),
+                name: data.full_name || name,
+                phone: data.phone || phone,
+                address: data.address_line || address,
+                city: data.city || city,
+                state: data.state || state,
+                pincode: data.postal_code || pincode,
+                type:
+                  data.address_type === "Work" ||
+                  data.address_type === "Other"
+                    ? data.address_type
+                    : "Home",
+                isDefault: Boolean(data.is_default),
+              }
+            : makeDefault
+            ? {
+                ...existing,
+                isDefault: false,
               }
             : existing
-      );
-    } else {
+        );
+
+        setAddresses(updatedAddresses);
+        setSelectedAddressId(String(data.id));
+
+        try {
+          localStorage.setItem(
+            ADDRESS_KEY,
+            JSON.stringify(updatedAddresses)
+          );
+        } catch {
+          // local cache is optional
+        }
+
+        setAddressForm({ ...defaultAddress });
+        setEditingAddressId(null);
+        setShowAddressForm(false);
+
+        showToast("Address updated successfully.");
+        return;
+      }
+
+      if (makeDefault) {
+        const { error: clearDefaultError } = await supabase
+          .from("addresses")
+          .update({ is_default: false })
+          .eq("user_id", user.id);
+
+        if (clearDefaultError) {
+          throw clearDefaultError;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          full_name: name,
+          phone,
+          address_line: address,
+          city,
+          state,
+          postal_code: pincode,
+          country: "India",
+          address_type: addressForm.type || "Home",
+          is_default: makeDefault,
+        })
+        .select(
+          "id,full_name,phone,address_line,city,state,postal_code,country,address_type,is_default,created_at"
+        )
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error(
+          "Address was not saved."
+        );
+      }
+
       const newAddress: Address = {
-        ...addressForm,
-        id: `address-${Date.now()}`,
-        name,
-        phone,
-        address,
-        city,
-        state,
-        pincode,
+        id: String(data.id),
+        name: data.full_name || name,
+        phone: data.phone || phone,
+        address: data.address_line || address,
+        city: data.city || city,
+        state: data.state || state,
+        pincode: data.postal_code || pincode,
+        type: addressForm.type || "Home",
+        isDefault: Boolean(data.is_default),
       };
 
-      updatedAddresses = [
-        ...addresses,
-        newAddress,
-      ];
+      const updatedAddresses = makeDefault
+        ? [
+            ...addresses.map((existing) => ({
+              ...existing,
+              isDefault: false,
+            })),
+            newAddress,
+          ]
+        : [...addresses, newAddress];
+
+      setAddresses(updatedAddresses);
+      setSelectedAddressId(newAddress.id);
+
+      try {
+        localStorage.setItem(
+          ADDRESS_KEY,
+          JSON.stringify(updatedAddresses)
+        );
+      } catch {
+        // local cache is optional
+      }
+
+      setAddressForm({ ...defaultAddress });
+      setEditingAddressId(null);
+      setShowAddressForm(false);
+
+      showToast("New address saved to your account.");
+    } catch (error) {
+      console.error("Save address error:", error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to save address.";
+
+      setAddressError(
+        `Couldn't save address: ${message}`
+      );
+
+      showToast(
+        `Couldn't save address: ${message}`,
+        "error"
+      );
+    }
+  }
+
+  async function deleteAddress(id: string) {
+    const address = addresses.find(
+      (item) => item.id === id
+    );
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      showToast(
+        "Please login again to manage addresses.",
+        "error"
+      );
+      return;
     }
 
     try {
-      localStorage.setItem(
-        ADDRESS_KEY,
-        JSON.stringify(updatedAddresses)
-      );
-    } catch {
-      // ignore
-    }
+      const { error } = await supabase
+        .from("addresses")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
 
-    setAddresses(updatedAddresses);
+      if (error) {
+        throw error;
+      }
 
-    const newAddressId =
-      editingAddressId ||
-      updatedAddresses[
-        updatedAddresses.length - 1
-      ].id;
-
-    setSelectedAddressId(newAddressId);
-
-    setAddressForm({
-      ...defaultAddress,
-    });
-
-    setEditingAddressId(null);
-    setShowAddressForm(false);
-
-    showToast(
-      editingAddressId
-        ? "Address updated successfully."
-        : "New address saved successfully."
-    );
-  }
-
-  function deleteAddress(id: string) {
-    const address =
-      addresses.find(
-        (item) => item.id === id
-      );
-
-    const updated =
-      addresses.filter(
+      const updated = addresses.filter(
         (item) => item.id !== id
       );
 
-    setAddresses(updated);
+      /*
+       * If the deleted address was the default one, promote
+       * the first remaining address. This does not delete
+       * any other address.
+       */
+      if (
+        address?.isDefault &&
+        updated.length > 0
+      ) {
+        const nextDefault = updated[0];
 
-    try {
-      localStorage.setItem(
-        ADDRESS_KEY,
-        JSON.stringify(updated)
-      );
-    } catch {
-      // ignore
-    }
+        const { error: defaultError } = await supabase
+          .from("addresses")
+          .update({ is_default: true })
+          .eq("id", nextDefault.id)
+          .eq("user_id", user.id);
 
-    if (selectedAddressId === id) {
-      setSelectedAddressId(
-        updated[0]?.id || ""
-      );
-    }
+        if (defaultError) {
+          throw defaultError;
+        }
 
-    if (address) {
+        updated[0] = {
+          ...nextDefault,
+          isDefault: true,
+        };
+      }
+
+      setAddresses(updated);
+
+      const nextSelectedId =
+        selectedAddressId === id
+          ? updated.find((item) => item.isDefault)?.id ||
+            updated[0]?.id ||
+            ""
+          : selectedAddressId;
+
+      setSelectedAddressId(nextSelectedId);
+
+      try {
+        localStorage.setItem(
+          ADDRESS_KEY,
+          JSON.stringify(updated)
+        );
+      } catch {
+        // local cache is optional
+      }
+
+      if (address) {
+        showToast(
+          `${address.type} address removed.`,
+          "info"
+        );
+      }
+    } catch (error) {
+      console.error("Delete address error:", error);
+
       showToast(
-        `${address.type} address removed.`,
-        "info"
+        error instanceof Error
+          ? `Couldn't delete address: ${error.message}`
+          : "Couldn't delete address.",
+        "error"
       );
     }
   }
@@ -1961,6 +2333,27 @@ async function placeOrder() {
                         maxLength={6}
                         inputMode="numeric"
                       />
+
+                      <div className="flex items-center gap-2 rounded-xl border border-[#e2d7c5] bg-white px-3">
+                        <input
+                          id="address-default"
+                          type="checkbox"
+                          checked={Boolean(addressForm.isDefault)}
+                          onChange={(e) =>
+                            setAddressForm({
+                              ...addressForm,
+                              isDefault: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 accent-[#b9975b]"
+                        />
+                        <label
+                          htmlFor="address-default"
+                          className="text-[10px] font-extrabold text-[#655c50]"
+                        >
+                          Save as default address
+                        </label>
+                      </div>
 
                       <div>
                         <label className="mb-1.5 block text-[11px] font-bold text-[#655c50]">
