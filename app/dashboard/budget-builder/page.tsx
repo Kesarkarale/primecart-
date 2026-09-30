@@ -266,10 +266,10 @@ export default function BudgetBuilderPage() {
   const [building, setBuilding] = useState(false);
   const [planReady, setPlanReady] = useState(false);
 
-  const [budget, setBudget] = useState(10000);
-  const [customBudget, setCustomBudget] = useState("10000");
+  const [budget, setBudget] = useState(0);
+  const [customBudget, setCustomBudget] = useState("");
 
-  const [goal, setGoal] = useState("value");
+  const [goal, setGoal] = useState("");
   const [categoryId, setCategoryId] = useState("all");
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -676,8 +676,6 @@ export default function BudgetBuilderPage() {
     setBudget(safe);
     setCustomBudget(String(safe));
     setPlanReady(false);
-    setSelectedProducts([]);
-    setManualPlanMode(false);
   }
 
   function handleBudgetInput(value: string) {
@@ -698,12 +696,20 @@ export default function BudgetBuilderPage() {
     ) {
       setBudget(numeric);
       setPlanReady(false);
-      setSelectedProducts([]);
-      setManualPlanMode(false);
     }
   }
 
   async function buildBudgetPlan() {
+    if (budget < 500) {
+      showNotice("Please select a budget first.");
+      return;
+    }
+
+    if (!goal) {
+      showNotice("Please choose what matters most to you.");
+      return;
+    }
+
     setBuilding(true);
     setPlanReady(false);
 
@@ -711,8 +717,9 @@ export default function BudgetBuilderPage() {
       setTimeout(resolve, 1100)
     );
 
-    setSelectedProducts([]);
-    setManualPlanMode(false);
+    if (!manualPlanMode && selectedProducts.length === 0) {
+      setSelectedProducts([]);
+    }
     setPlanReady(true);
     setBuilding(false);
 
@@ -727,9 +734,9 @@ export default function BudgetBuilderPage() {
   }
 
   function resetBuilder() {
-    setBudget(10000);
-    setCustomBudget("10000");
-    setGoal("value");
+    setBudget(0);
+    setCustomBudget("");
+    setGoal("");
     setCategoryId("all");
     setSelectedProducts([]);
     setManualPlanMode(false);
@@ -1581,38 +1588,60 @@ export default function BudgetBuilderPage() {
               <ArrowLeft size={17} />
             </Link>
 
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a24d] text-white shadow-sm">
-                <Wallet size={18} />
-              </div>
-
-              <div>
-                <h1 className="text-sm font-black sm:text-base">
+            <Link
+              href="/dashboard"
+              className="flex min-w-0 items-center gap-2.5"
+            >
+              <img
+                src="/logo.png"
+                alt="PrimeCart"
+                className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-base font-black tracking-tight text-[#181818] sm:text-lg">
+                  PrimeCart
+                </p>
+                <p className="hidden text-[9px] font-bold uppercase tracking-[0.16em] text-[#a17b2f] sm:block">
                   Budget Builder
-                </h1>
-
-                <p className="hidden text-[10px] text-gray-400 sm:block">
-                  Smart Budget Studio
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/dashboard/products"
-              className="hidden h-10 items-center gap-2 rounded-xl border border-[#e7dece] px-4 text-xs font-bold text-gray-600 transition hover:border-[#c9a24d] hover:bg-[#fffaf0] sm:flex"
+              aria-label="Products"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7dece] text-gray-600 transition hover:border-[#c9a24d] hover:bg-[#fffaf0] sm:h-10 sm:w-auto sm:gap-2 sm:px-4 sm:text-xs sm:font-bold"
             >
               <ShoppingBag size={14} />
-              Products
+              <span className="hidden sm:inline">Products</span>
+            </Link>
+
+            <Link
+              href="/wishlist"
+              aria-label="Wishlist"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7dece] text-gray-600 transition hover:border-[#c9a24d] hover:bg-[#fffaf0] sm:h-10 sm:w-auto sm:gap-2 sm:px-4 sm:text-xs sm:font-bold"
+            >
+              <Heart size={14} />
+              <span className="hidden sm:inline">Wishlist</span>
+            </Link>
+
+            <Link
+              href="/cart"
+              aria-label="Cart"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7dece] text-gray-600 transition hover:border-[#c9a24d] hover:bg-[#fffaf0] sm:h-10 sm:w-auto sm:gap-2 sm:px-4 sm:text-xs sm:font-bold"
+            >
+              <ShoppingCart size={14} />
+              <span className="hidden sm:inline">Cart</span>
             </Link>
 
             <Link
               href="/dashboard"
-              className="flex h-10 items-center gap-2 rounded-xl bg-[#fff6df] px-4 text-xs font-black text-[#956f27] transition hover:bg-[#f9eac7]"
+              className="flex h-9 items-center gap-1.5 rounded-xl bg-[#fff6df] px-3 text-[10px] font-black text-[#956f27] transition hover:bg-[#f9eac7] sm:h-10 sm:px-4 sm:text-xs"
             >
-              Dashboard
-              <ArrowRight size={14} />
+              <span>Dashboard</span>
+              <ArrowRight size={13} />
             </Link>
           </div>
         </div>
@@ -1635,27 +1664,27 @@ export default function BudgetBuilderPage() {
 
           <div className="absolute -bottom-48 left-1/3 h-[500px] w-[500px] rounded-full bg-[#fff7e5] blur-3xl" />
 
-          <div className="relative grid min-h-[400px] items-center gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[1.1fr_0.9fr] lg:px-16 lg:py-14">
+          <div className="relative grid min-h-[235px] grid-cols-[1.12fr_0.88fr] items-center gap-3 px-3 py-4 sm:min-h-[320px] sm:gap-7 sm:px-8 sm:py-8 lg:min-h-[400px] lg:gap-10 lg:px-16 lg:py-14">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#eadfc9] bg-[#fffaf0] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">
                 <Sparkles size={13} />
                 PrimeCart Smart Shopping
               </div>
 
-              <h2 className="mt-6 max-w-3xl text-[42px] font-black leading-[1.03] tracking-[-0.04em] sm:text-5xl lg:text-[64px]">
+              <h2 className="mt-3 max-w-3xl text-[24px] font-black leading-[1.03] tracking-[-0.04em] sm:mt-5 sm:text-4xl lg:text-[64px]">
                 Build your perfect cart
                 <span className="block text-[#b58a32]">
                   without breaking your budget.
                 </span>
               </h2>
 
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-gray-500 sm:text-base">
+              <p className="mt-3 max-w-2xl text-[9px] leading-4 text-gray-500 sm:mt-4 sm:text-sm sm:leading-6 lg:text-base lg:leading-7">
                 Tell PrimeCart how much you want to spend.
                 We&apos;ll help you discover products, balance
                 your cart and make every rupee count.
               </p>
 
-              <div className="mt-7 flex flex-wrap gap-2.5">
+              <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-5 sm:gap-2.5">
                 {[
                   "Live budget tracking",
                   "Smart recommendations",
@@ -1663,7 +1692,7 @@ export default function BudgetBuilderPage() {
                 ].map((text) => (
                   <span
                     key={text}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#ebe3d5] bg-[#fffdf9] px-3 py-2 text-[10px] font-bold text-gray-600"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#ebe3d5] bg-[#fffdf9] px-2 py-1.5 text-[8px] font-bold text-gray-600 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[10px]"
                   >
                     <Check
                       size={13}
@@ -1676,15 +1705,15 @@ export default function BudgetBuilderPage() {
             </div>
 
             <div className="mx-auto w-full max-w-[440px]">
-              <div className="relative rounded-[30px] border border-[#eadfca] bg-[#fffaf0] p-5 shadow-[0_20px_60px_rgba(120,90,30,0.08)]">
+              <div className="relative rounded-[20px] border border-[#eadfca] bg-[#fffaf0] p-3 shadow-[0_12px_35px_rgba(120,90,30,0.08)] sm:rounded-[28px] sm:p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
                       Current Budget
                     </p>
 
-                    <p className="mt-1 text-3xl font-black">
-                      {formatPrice(budget)}
+                    <p className="mt-1 text-lg font-black sm:text-3xl">
+                      {budget > 0 ? formatPrice(budget) : "Select budget"}
                     </p>
                   </div>
 
@@ -1693,7 +1722,7 @@ export default function BudgetBuilderPage() {
                   </div>
                 </div>
 
-                <div className="relative mx-auto mt-7 flex h-44 w-44 items-center justify-center">
+                <div className="relative mx-auto mt-3 flex h-24 w-24 items-center justify-center sm:mt-6 sm:h-36 sm:w-36 lg:h-44 lg:w-44">
                   <svg
                     className="h-full w-full -rotate-90"
                     viewBox="0 0 120 120"
@@ -1725,38 +1754,34 @@ export default function BudgetBuilderPage() {
                   </svg>
 
                   <div className="absolute text-center">
-                    <p className="text-3xl font-black">
+                    <p className="text-xl font-black sm:text-3xl">
                       {usage}%
                     </p>
 
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                    <p className="text-[7px] font-bold uppercase tracking-wider text-gray-400 sm:text-[9px]">
                       Allocated
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="mt-2 grid grid-cols-2 gap-1.5 sm:mt-3 sm:gap-3">
                   <div className="rounded-2xl bg-white p-3">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                    <p className="text-[7px] font-bold uppercase tracking-wider text-gray-400 sm:text-[9px]">
                       Planned
                     </p>
 
-                    <p className="mt-1 text-sm font-black">
-                      {formatPrice(
-                        plannedSpend
-                      )}
+                    <p className="mt-1 text-[10px] font-black sm:text-sm">
+                      {formatPrice(plannedSpend)}
                     </p>
                   </div>
 
                   <div className="rounded-2xl bg-white p-3">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                    <p className="text-[7px] font-bold uppercase tracking-wider text-gray-400 sm:text-[9px]">
                       Available
                     </p>
 
-                    <p className="mt-1 text-sm font-black text-emerald-600">
-                      {formatPrice(
-                        remainingBudget
-                      )}
+                    <p className="mt-1 text-[10px] font-black text-emerald-600 sm:text-sm">
+                      {formatPrice(remainingBudget)}
                     </p>
                   </div>
                 </div>
@@ -1862,10 +1887,8 @@ export default function BudgetBuilderPage() {
                   min="500"
                   max="100000"
                   step="500"
-                  value={Math.min(
-                    budget,
-                    100000
-                  )}
+                  value={Math.max(500, Math.min(budget || 500, 100000))}
+                  disabled={budget < 500}
                   onChange={(e) =>
                     changeBudget(
                       Number(
@@ -1895,7 +1918,7 @@ export default function BudgetBuilderPage() {
                 </h4>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
                 {shoppingGoals.map(
                   (item) => {
                     const Icon =
@@ -1918,11 +1941,8 @@ export default function BudgetBuilderPage() {
                           setPlanReady(
                             false
                           );
-                          setSelectedProducts(
-                            []
-                          );
                         }}
-                        className={`group relative rounded-2xl border p-4 text-left transition duration-200 ${
+                        className={`group relative min-w-[210px] snap-start rounded-2xl border p-4 text-left transition duration-200 sm:min-w-0 ${
                           active
                             ? "border-[#c9a24d] bg-[#fffaf0] shadow-sm"
                             : "border-[#e9e2d5] hover:-translate-y-0.5 hover:border-[#d5b76c] hover:shadow-sm"
@@ -1979,9 +1999,6 @@ export default function BudgetBuilderPage() {
                     );
                     setPlanReady(
                       false
-                    );
-                    setSelectedProducts(
-                      []
                     );
                   }}
                   className="h-[52px] w-full appearance-none rounded-2xl border border-[#e4dbca] bg-[#fffdf9] px-4 pr-11 text-sm font-bold text-gray-700 outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
@@ -2099,7 +2116,9 @@ export default function BudgetBuilderPage() {
                 type="button"
                 disabled={
                   loading ||
-                  building
+                  building ||
+                  budget < 500 ||
+                  !goal
                 }
                 onClick={
                   buildBudgetPlan
@@ -2959,10 +2978,9 @@ export default function BudgetBuilderPage() {
               </p>
 
               <h3 className="mt-1 text-2xl font-black">
-                Smart picks within ₹
-                {budget.toLocaleString(
-                  "en-IN"
-                )}
+                {budget > 0
+                  ? `Smart picks within ₹${budget.toLocaleString("en-IN")}`
+                  : "Choose your budget to explore picks"}
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
@@ -2982,7 +3000,7 @@ export default function BudgetBuilderPage() {
           </div>
 
           {loading ? (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {[1, 2, 3, 4].map(
                 (item) => (
                   <div
@@ -3012,7 +3030,7 @@ export default function BudgetBuilderPage() {
               </p>
             </div>
           ) : (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {rankedProducts
                 .slice(0, 8)
                 .map(
