@@ -393,7 +393,6 @@ export default function DashboardPage() {
     email: "",
   });
 
-  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   const [search, setSearch] = useState("");
@@ -428,7 +427,6 @@ export default function DashboardPage() {
 
     async function loadDashboard() {
       try {
-        setLoading(true);
         setErrorMessage("");
 
         const localCart = (): CartItem[] => {
@@ -644,7 +642,6 @@ export default function DashboardPage() {
         }
       } finally {
         if (mounted) {
-          setLoading(false);
         }
       }
     }
@@ -798,12 +795,66 @@ export default function DashboardPage() {
   /* ------------------------------------------------------------------------ */
 
   const featuredProducts = useMemo(() => {
-    const featured = products.filter(
-      (product) => product.is_featured
-    );
+    const source = products.filter((product) => product.is_active !== false);
+    const selected: Product[] = [];
+    const used = new Set<string>();
 
-    return (featured.length ? featured : products).slice(0, 5);
-  }, [products]);
+    // Show one strong deal from every available category.
+    // Priority: higher discount -> higher rating -> more reviews.
+    visibleCategories.forEach((category) => {
+      const categoryProducts = source
+        .filter(
+          (product) =>
+            String(product.category_id) === String(category.id)
+        )
+        .sort((a, b) => {
+          const discountDiff =
+            getDiscount(b.price, b.original_price) -
+            getDiscount(a.price, a.original_price);
+
+          if (discountDiff !== 0) return discountDiff;
+
+          const ratingDiff =
+            Number(b.rating || 0) - Number(a.rating || 0);
+
+          if (ratingDiff !== 0) return ratingDiff;
+
+          return Number(b.reviews_count || 0) - Number(a.reviews_count || 0);
+        });
+
+      const product = categoryProducts[0];
+
+      if (product && !used.has(String(product.id))) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
+
+    // Fallback for products whose category is not present in the categories table.
+    source
+      .filter((product) => !used.has(String(product.id)))
+      .sort((a, b) => {
+        const discountDiff =
+          getDiscount(b.price, b.original_price) -
+          getDiscount(a.price, a.original_price);
+
+        if (discountDiff !== 0) return discountDiff;
+        return Number(b.rating || 0) - Number(a.rating || 0);
+      })
+      .forEach((product) => {
+        const hasCategory = visibleCategories.some(
+          (category) =>
+            String(category.id) === String(product.category_id)
+        );
+
+        if (!hasCategory) {
+          selected.push(product);
+          used.add(String(product.id));
+        }
+      });
+
+    return selected;
+  }, [products, visibleCategories]);
 
   const flashProducts = useMemo(() => {
     const flash = products.filter(
@@ -1142,14 +1193,6 @@ export default function DashboardPage() {
 
   function formatCountdown(value: number) {
     return String(value).padStart(2, "0");
-  }
-
-  /* ------------------------------------------------------------------------ */
-  /* LOADING                                                                  */
-  /* ------------------------------------------------------------------------ */
-
-  if (loading) {
-    return <LoadingScreen />;
   }
 
   /* ------------------------------------------------------------------------ */
@@ -4643,265 +4686,6 @@ export default function DashboardPage() {
         }
 
         /* -------------------------------------------------------------- */
-        /* LOADING                                                          */
-        /* -------------------------------------------------------------- */
-
-        .loading-screen {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-          background: rgba(255, 253, 249, 0.96);
-          backdrop-filter: blur(3px);
-          -webkit-backdrop-filter: blur(3px);
-        }
-
-        .loading-screen::before {
-          content: "";
-          position: absolute;
-          width: 360px;
-          height: 360px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(199,154,59,.09) 0%, rgba(199,154,59,.035) 38%, transparent 70%);
-          pointer-events: none;
-        }
-
-        .loading-screen::after {
-          content: "";
-          position: absolute;
-          width: 170px;
-          height: 170px;
-          border: 1px solid rgba(199,154,59,.10);
-          border-radius: 50%;
-          pointer-events: none;
-        }
-
-        .loading-orb {
-          display: none;
-        }
-
-        .loading-inner {
-          position: relative;
-          z-index: 2;
-          width: 250px;
-          padding: 0;
-          text-align: center;
-          background: transparent;
-          border: 0;
-          box-shadow: none;
-          animation: loadingCardIn .45s ease-out both;
-        }
-
-        .loading-logo-wrap {
-          position: relative;
-          width: 76px;
-          height: 76px;
-          margin: 0 auto 14px;
-          display: grid;
-          place-items: center;
-        }
-
-        .loading-orbit {
-          position: absolute;
-          border-radius: 50%;
-          border: 1px solid rgba(199,154,59,.28);
-        }
-
-        .loading-orbit-one {
-          inset: 0;
-          border-top-color: var(--gold);
-          animation: loadingOrbit 1.8s linear infinite;
-        }
-
-        .loading-orbit-two {
-          inset: 7px;
-          border-color: rgba(199,154,59,.12);
-          animation: loadingOrbitReverse 2.4s linear infinite;
-        }
-
-        .loading-logo {
-          position: relative;
-          z-index: 2;
-          width: 52px;
-          height: 52px;
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-          border-radius: 15px;
-          background: #fff;
-          border: 1px solid rgba(199,154,59,.22);
-          box-shadow: 0 8px 24px rgba(79,57,20,.12);
-          animation: loadingLogoFloat 1.8s ease-in-out infinite;
-        }
-
-        .loading-logo img {
-          width: 100%;
-          height: 100%;
-          padding: 7px;
-          object-fit: contain;
-          display: block;
-        }
-
-        .loading-logo-fallback {
-          display: none;
-          position: absolute;
-          color: var(--gold);
-        }
-
-        .loading-brand {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-        }
-
-        .loading-brand strong {
-          color: #252015;
-          font-size: 22px;
-          line-height: 1;
-          letter-spacing: -.6px;
-          font-weight: 850;
-        }
-
-        .loading-brand-mark {
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background: var(--gold);
-        }
-
-        .loading-kicker {
-          margin-top: 7px;
-          color: #a27b32;
-          font-size: 7px;
-          font-weight: 850;
-          letter-spacing: 1.7px;
-          text-transform: uppercase;
-        }
-
-        .loading-message {
-          margin: 7px auto 0;
-          color: #837b70;
-          font-size: 10px;
-          line-height: 1.45;
-        }
-
-        .loading-progress {
-          width: 210px;
-          margin: 17px auto 0;
-        }
-
-        .loading-progress-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 6px;
-          color: #a09789;
-          font-size: 7px;
-          font-weight: 750;
-          letter-spacing: .65px;
-          text-transform: uppercase;
-        }
-
-        .loading-dots {
-          display: inline-flex;
-          gap: 3px;
-          align-items: center;
-        }
-
-        .loading-dots i {
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: var(--gold);
-          animation: loadingDot 1.2s ease-in-out infinite;
-        }
-
-        .loading-dots i:nth-child(2) { animation-delay: .16s; }
-        .loading-dots i:nth-child(3) { animation-delay: .32s; }
-
-        .loading-bar {
-          position: relative;
-          width: 100%;
-          height: 4px;
-          overflow: hidden;
-          border-radius: 999px;
-          background: #eee7da;
-        }
-
-        .loading-bar::after {
-          content: "";
-          position: absolute;
-          inset: 0 auto 0 0;
-          width: 35%;
-          border-radius: inherit;
-          background: linear-gradient(90deg, #a97820, #d5ad58, #f0d795);
-          box-shadow: 0 0 12px rgba(199,154,59,.32);
-          animation: loading 1.15s cubic-bezier(.45,0,.25,1) infinite;
-        }
-
-        .loading-trust-row {
-          display: none;
-        }
-
-        @media (max-width: 480px) {
-          .loading-inner { width: 230px; }
-          .loading-logo-wrap { width: 70px; height: 70px; }
-          .loading-logo { width: 48px; height: 48px; border-radius: 14px; }
-          .loading-progress { width: 195px; }
-        }
-
-        html.dark .loading-screen {
-          background: rgba(17, 16, 14, 0.96);
-        }
-
-        html.dark .loading-brand strong { color: #fffaf0; }
-        html.dark .loading-message { color: #aaa296; }
-        html.dark .loading-progress-head { color: #8e877b; }
-        html.dark .loading-bar { background: #403a2e; }
-
-        @media (prefers-reduced-motion: reduce) {
-          .loading-inner, .loading-logo, .loading-bar:after, .loading-dots i, .loading-orbit {
-            animation: none !important;
-          }
-        }
-
-        @keyframes loadingSweep {
-          0%, 18% { transform: translateX(-100%); }
-          52%, 100% { transform: translateX(100%); }
-        }
-
-        @keyframes loadingOrb {
-          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(20px, -18px, 0) scale(1.08); }
-        }
-
-        @keyframes loadingOrbitReverse {
-          to { transform: rotate(-360deg); }
-        }
-
-        @keyframes loadingCardIn {
-          from { opacity: 0; transform: translateY(14px) scale(.985); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes loadingLogoFloat {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-3px) scale(1.015); }
-        }
-
-        @keyframes loadingOrbit {
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes loadingDot {
-          0%, 60%, 100% { opacity: .25; transform: translateY(0); }
-          30% { opacity: 1; transform: translateY(-2px); }
-        }
-
-        /* -------------------------------------------------------------- */
         /* ANIMATIONS                                                       */
         /* -------------------------------------------------------------- */
 
@@ -4983,16 +4767,6 @@ export default function DashboardPage() {
         @keyframes pulse {
           50% {
             transform: scale(1.05);
-          }
-        }
-
-        @keyframes loading {
-          0% {
-            transform: translateX(-100%);
-          }
-
-          100% {
-            transform: translateX(320%);
           }
         }
 
@@ -7801,65 +7575,6 @@ function TrustItem({
       <div>
         <strong>{title}</strong>
         <small>{text}</small>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* LOADING                                                                    */
-/* -------------------------------------------------------------------------- */
-
-function LoadingScreen() {
-  return (
-    <div className="loading-screen" aria-label="Loading PrimeCart" role="status" aria-live="polite">
-      <div className="loading-inner">
-        <div className="loading-logo-wrap">
-          <span className="loading-orbit loading-orbit-one" />
-          <span className="loading-orbit loading-orbit-two" />
-          <div className="loading-logo">
-            <img
-              src="/logo.png"
-              alt="PrimeCart"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-                const fallback = event.currentTarget.nextElementSibling as HTMLElement | null;
-                if (fallback) fallback.style.display = "block";
-              }}
-            />
-            <ShoppingBag className="loading-logo-fallback" size={30} />
-          </div>
-        </div>
-
-        <div className="loading-brand">
-          <span className="loading-brand-mark" aria-hidden="true" />
-          <strong>PrimeCart</strong>
-          <span className="loading-brand-mark" aria-hidden="true" />
-        </div>
-
-        <div className="loading-kicker">Premium Shopping Experience</div>
-
-        <p className="loading-message">
-          Preparing your personalized shopping experience...
-        </p>
-
-        <div className="loading-progress">
-          <div className="loading-progress-head">
-            <span>Loading your store</span>
-            <span className="loading-dots" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-          </div>
-          <div className="loading-bar" aria-hidden="true" />
-        </div>
-
-        <div className="loading-trust-row">
-          <span><ShieldCheck size={12} /> Secure</span>
-          <span><Zap size={12} /> Fast</span>
-          <span><Heart size={12} /> Curated</span>
-        </div>
       </div>
     </div>
   );
