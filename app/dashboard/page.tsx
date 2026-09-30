@@ -795,13 +795,17 @@ export default function DashboardPage() {
   /* ------------------------------------------------------------------------ */
 
   const featuredProducts = useMemo(() => {
-    const source = products.filter((product) => product.is_active !== false);
+    const source = products.filter(
+      (product) => product.is_active !== false
+    );
+
     const selected: Product[] = [];
     const used = new Set<string>();
 
-    // Show one strong deal from every available category.
-    // Priority: higher discount -> higher rating -> more reviews.
-    visibleCategories.forEach((category) => {
+    // Best Deals for You:
+    // exactly one best product from EVERY category returned by Supabase.
+    // Priority: discount -> rating -> reviews -> price.
+    categories.forEach((category) => {
       const categoryProducts = source
         .filter(
           (product) =>
@@ -819,7 +823,13 @@ export default function DashboardPage() {
 
           if (ratingDiff !== 0) return ratingDiff;
 
-          return Number(b.reviews_count || 0) - Number(a.reviews_count || 0);
+          const reviewsDiff =
+            Number(b.reviews_count || 0) -
+            Number(a.reviews_count || 0);
+
+          if (reviewsDiff !== 0) return reviewsDiff;
+
+          return Number(a.price || 0) - Number(b.price || 0);
         });
 
       const product = categoryProducts[0];
@@ -830,31 +840,46 @@ export default function DashboardPage() {
       }
     });
 
-    // Fallback for products whose category is not present in the categories table.
-    source
-      .filter((product) => !used.has(String(product.id)))
-      .sort((a, b) => {
-        const discountDiff =
-          getDiscount(b.price, b.original_price) -
-          getDiscount(a.price, a.original_price);
+    // If a product has a category_id that is not present in the categories
+    // table, still show one best deal for that orphan category.
+    const unmatchedCategoryIds = Array.from(
+      new Set(
+        source
+          .map((product) => String(product.category_id || ""))
+          .filter(Boolean)
+          .filter(
+            (categoryId) =>
+              !categories.some(
+                (category) => String(category.id) === categoryId
+              )
+          )
+      )
+    );
 
-        if (discountDiff !== 0) return discountDiff;
-        return Number(b.rating || 0) - Number(a.rating || 0);
-      })
-      .forEach((product) => {
-        const hasCategory = visibleCategories.some(
-          (category) =>
-            String(category.id) === String(product.category_id)
-        );
+    unmatchedCategoryIds.forEach((categoryId) => {
+      const product = source
+        .filter(
+          (item) =>
+            String(item.category_id) === categoryId &&
+            !used.has(String(item.id))
+        )
+        .sort((a, b) => {
+          const discountDiff =
+            getDiscount(b.price, b.original_price) -
+            getDiscount(a.price, a.original_price);
 
-        if (!hasCategory) {
-          selected.push(product);
-          used.add(String(product.id));
-        }
-      });
+          if (discountDiff !== 0) return discountDiff;
+          return Number(b.rating || 0) - Number(a.rating || 0);
+        })[0];
+
+      if (product) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
 
     return selected;
-  }, [products, visibleCategories]);
+  }, [products, categories]);
 
   const flashProducts = useMemo(() => {
     const flash = products.filter(
