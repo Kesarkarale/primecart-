@@ -135,11 +135,8 @@ export default function LoginPage() {
         return;
       }
 
-      setSuccess("Login successful! Taking you to PrimeCart...");
-
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 850);
+window.location.href = "/dashboard";
+      
     } catch (err) {
       console.error("Login error:", err);
 
