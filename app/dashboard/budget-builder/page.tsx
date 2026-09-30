@@ -16,24 +16,6 @@ import {
   CircleDollarSign,
   GitCompare,
   Lightbulb,
-  Clock3,"use client";
-
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
-import {
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  BarChart3,
-  Bookmark,
-  BookmarkCheck,
-  Check,
-  ChevronDown,
-  Copy,
-  CircleDollarSign,
-  GitCompare,
-  Lightbulb,
   Clock3,
   Crown,
   Heart,
