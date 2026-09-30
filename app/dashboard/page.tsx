@@ -7408,6 +7408,7 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         }
  `}
       </style>
+       </>
   );
 }
 
