@@ -4650,109 +4650,96 @@ export default function DashboardPage() {
           position: fixed;
           inset: 0;
           z-index: 9999;
-          min-height: 100dvh;
           display: grid;
           place-items: center;
           overflow: hidden;
-          isolation: isolate;
-          padding: 18px;
-          background:
-            radial-gradient(circle at 50% 18%, rgba(255, 249, 231, 0.98) 0%, rgba(255, 253, 249, 0.98) 34%, #f5f1e8 100%);
+          background: rgba(255, 253, 249, 0.96);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
         }
 
         .loading-screen::before {
           content: "";
           position: absolute;
-          inset: 0;
+          width: 360px;
+          height: 360px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(199,154,59,.09) 0%, rgba(199,154,59,.035) 38%, transparent 70%);
           pointer-events: none;
-          background:
-            linear-gradient(120deg, transparent 20%, rgba(255,255,255,.72) 50%, transparent 80%);
-          transform: translateX(-100%);
-          animation: loadingSweep 4.8s ease-in-out infinite;
         }
 
         .loading-screen::after {
           content: "";
           position: absolute;
-          width: 680px;
-          height: 680px;
+          width: 170px;
+          height: 170px;
+          border: 1px solid rgba(199,154,59,.10);
           border-radius: 50%;
-          border: 1px solid rgba(199,154,59,.12);
-          box-shadow:
-            0 0 0 70px rgba(199,154,59,.025),
-            0 0 0 150px rgba(199,154,59,.015);
           pointer-events: none;
         }
 
         .loading-orb {
-          position: absolute;
-          width: 220px;
-          height: 220px;
-          border-radius: 50%;
-          background: rgba(199,154,59,.08);
-          filter: blur(2px);
-          pointer-events: none;
-          animation: loadingOrb 7s ease-in-out infinite;
+          display: none;
         }
-
-        .loading-orb-one { top: -80px; left: -70px; }
-        .loading-orb-two { right: -70px; bottom: -80px; animation-delay: -3s; }
 
         .loading-inner {
           position: relative;
           z-index: 2;
-          width: min(410px, 100%);
-          padding: 38px 30px 28px;
+          width: 250px;
+          padding: 0;
           text-align: center;
-          border: 1px solid rgba(199,154,59,.2);
-          border-radius: 30px;
-          background: rgba(255,255,255,.84);
-          box-shadow:
-            0 30px 90px rgba(78,59,23,.13),
-            inset 0 1px 0 rgba(255,255,255,.95);
-          backdrop-filter: blur(22px);
-          -webkit-backdrop-filter: blur(22px);
-          animation: loadingCardIn .65s cubic-bezier(.2,.8,.2,1) both;
+          background: transparent;
+          border: 0;
+          box-shadow: none;
+          animation: loadingCardIn .45s ease-out both;
         }
 
         .loading-logo-wrap {
           position: relative;
-          width: 104px;
-          height: 104px;
-          margin: 0 auto 18px;
+          width: 76px;
+          height: 76px;
+          margin: 0 auto 14px;
           display: grid;
           place-items: center;
         }
 
         .loading-orbit {
           position: absolute;
-          inset: 0;
           border-radius: 50%;
-          border: 1px solid rgba(199,154,59,.24);
+          border: 1px solid rgba(199,154,59,.28);
         }
 
-        .loading-orbit-one { animation: loadingOrbit 3.2s linear infinite; }
-        .loading-orbit-two { inset: 9px; border-color: rgba(199,154,59,.13); animation: loadingOrbitReverse 2.4s linear infinite; }
+        .loading-orbit-one {
+          inset: 0;
+          border-top-color: var(--gold);
+          animation: loadingOrbit 1.8s linear infinite;
+        }
+
+        .loading-orbit-two {
+          inset: 7px;
+          border-color: rgba(199,154,59,.12);
+          animation: loadingOrbitReverse 2.4s linear infinite;
+        }
 
         .loading-logo {
           position: relative;
           z-index: 2;
-          width: 66px;
-          height: 66px;
+          width: 52px;
+          height: 52px;
           display: grid;
           place-items: center;
           overflow: hidden;
-          border-radius: 20px;
+          border-radius: 15px;
           background: #fff;
-          border: 1px solid rgba(199,154,59,.24);
-          box-shadow: 0 12px 30px rgba(79,57,20,.12);
+          border: 1px solid rgba(199,154,59,.22);
+          box-shadow: 0 8px 24px rgba(79,57,20,.12);
           animation: loadingLogoFloat 1.8s ease-in-out infinite;
         }
 
         .loading-logo img {
           width: 100%;
           height: 100%;
-          padding: 8px;
+          padding: 7px;
           object-fit: contain;
           display: block;
         }
@@ -4767,161 +4754,116 @@ export default function DashboardPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 9px;
+          gap: 7px;
         }
 
         .loading-brand strong {
           color: #252015;
-          font-size: clamp(27px, 6vw, 32px);
+          font-size: 22px;
           line-height: 1;
-          letter-spacing: -1px;
+          letter-spacing: -.6px;
           font-weight: 850;
         }
 
         .loading-brand-mark {
-          width: 6px;
-          height: 6px;
+          width: 4px;
+          height: 4px;
           border-radius: 50%;
           background: var(--gold);
-          box-shadow: 0 0 0 5px rgba(199,154,59,.1);
         }
 
         .loading-kicker {
-          margin-top: 11px;
+          margin-top: 7px;
           color: #a27b32;
-          font-size: 9px;
+          font-size: 7px;
           font-weight: 850;
-          letter-spacing: 2.4px;
+          letter-spacing: 1.7px;
           text-transform: uppercase;
         }
 
         .loading-message {
-          display: block;
-          max-width: 290px;
-          margin: 9px auto 0;
-          color: #777066;
-          font-size: 12px;
-          line-height: 1.6;
+          margin: 7px auto 0;
+          color: #837b70;
+          font-size: 10px;
+          line-height: 1.45;
         }
 
         .loading-progress {
-          width: min(260px, 100%);
-          margin: 24px auto 0;
+          width: 210px;
+          margin: 17px auto 0;
         }
 
         .loading-progress-head {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 9px;
-          color: #9a907f;
-          font-size: 9px;
+          margin-bottom: 6px;
+          color: #a09789;
+          font-size: 7px;
           font-weight: 750;
-          letter-spacing: .75px;
+          letter-spacing: .65px;
           text-transform: uppercase;
         }
 
-        .loading-dots { display: inline-flex; gap: 4px; align-items: center; }
+        .loading-dots {
+          display: inline-flex;
+          gap: 3px;
+          align-items: center;
+        }
+
         .loading-dots i {
-          width: 4px;
-          height: 4px;
+          width: 3px;
+          height: 3px;
           border-radius: 50%;
           background: var(--gold);
           animation: loadingDot 1.2s ease-in-out infinite;
         }
+
         .loading-dots i:nth-child(2) { animation-delay: .16s; }
         .loading-dots i:nth-child(3) { animation-delay: .32s; }
 
         .loading-bar {
           position: relative;
           width: 100%;
-          height: 6px;
+          height: 4px;
           overflow: hidden;
           border-radius: 999px;
-          background: #eee6d7;
-          box-shadow: inset 0 1px 2px rgba(70,50,15,.05);
+          background: #eee7da;
         }
 
         .loading-bar::after {
           content: "";
           position: absolute;
           inset: 0 auto 0 0;
-          width: 38%;
+          width: 35%;
           border-radius: inherit;
           background: linear-gradient(90deg, #a97820, #d5ad58, #f0d795);
-          box-shadow: 0 0 16px rgba(199,154,59,.36);
-          animation: loading 1.25s cubic-bezier(.45,0,.25,1) infinite;
+          box-shadow: 0 0 12px rgba(199,154,59,.32);
+          animation: loading 1.15s cubic-bezier(.45,0,.25,1) infinite;
         }
 
         .loading-trust-row {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          flex-wrap: wrap;
-          margin-top: 20px;
-          color: #a29a8e;
-          font-size: 9px;
-          font-weight: 700;
+          display: none;
         }
-
-        .loading-trust-row span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-        }
-
-        .loading-trust-row svg { color: var(--gold); }
 
         @media (max-width: 480px) {
-          .loading-screen { padding: 14px; }
-          .loading-inner {
-            width: 100%;
-            padding: 32px 20px 25px;
-            border-radius: 25px;
-          }
-          .loading-logo-wrap { width: 90px; height: 90px; margin-bottom: 16px; }
-          .loading-logo { width: 58px; height: 58px; border-radius: 17px; }
-          .loading-message { font-size: 11px; }
-          .loading-trust-row { gap: 10px; }
+          .loading-inner { width: 230px; }
+          .loading-logo-wrap { width: 70px; height: 70px; }
+          .loading-logo { width: 48px; height: 48px; border-radius: 14px; }
+          .loading-progress { width: 195px; }
         }
 
         html.dark .loading-screen {
-          background: radial-gradient(circle at 50% 35%, #29251d 0%, #171512 46%, #100f0d 100%);
+          background: rgba(17, 16, 14, 0.96);
         }
 
-        html.dark .loading-inner {
-          background: rgba(31, 29, 25, 0.84);
-          border-color: rgba(199,154,59,.24);
-          box-shadow: 0 28px 80px rgba(0,0,0,.36);
-        }
-
-        html.dark .loading-logo-wrap::after {
-          background: linear-gradient(145deg, #29251e, #211f1a);
-        }
-
-        html.dark .loading-logo {
-          background: #fdfbf6;
-        }
-
-        html.dark .loading-brand strong {
-          color: #fffaf0;
-        }
-
-        html.dark .loading-message {
-          color: #aaa296;
-        }
-
-        html.dark .loading-progress-head,
-        html.dark .loading-footer {
-          color: #8e877b;
-        }
-
-        html.dark .loading-bar {
-          background: #403a2e;
-        }
+        html.dark .loading-brand strong { color: #fffaf0; }
+        html.dark .loading-message { color: #aaa296; }
+        html.dark .loading-progress-head { color: #8e877b; }
+        html.dark .loading-bar { background: #403a2e; }
 
         @media (prefers-reduced-motion: reduce) {
-          .loading-inner, .loading-logo, .loading-logo-wrap::before, .loading-bar:after, .loading-dots i {
+          .loading-inner, .loading-logo, .loading-bar:after, .loading-dots i, .loading-orbit {
             animation: none !important;
           }
         }
@@ -7871,9 +7813,6 @@ function TrustItem({
 function LoadingScreen() {
   return (
     <div className="loading-screen" aria-label="Loading PrimeCart" role="status" aria-live="polite">
-      <div className="loading-orb loading-orb-one" />
-      <div className="loading-orb loading-orb-two" />
-
       <div className="loading-inner">
         <div className="loading-logo-wrap">
           <span className="loading-orbit loading-orbit-one" />
