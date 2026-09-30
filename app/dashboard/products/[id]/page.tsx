@@ -78,15 +78,6 @@ type Category = {
   slug: string | null;
 };
 
-type Review = {
-  id: string;
-  user_id: string;
-  product_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-};
-
 type RecentlyViewedItem = {
   id: string;
   viewedAt: number;
@@ -471,17 +462,6 @@ export default function ProductDetailPage() {
   const [recentLoaded, setRecentLoaded] = useState(false);
 
   /* =====================================================
-     REVIEWS - SUPABASE DATABASE
-  ===================================================== */
-
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
-  const [reviewUserId, setReviewUserId] = useState<string | null>(null);
-
-  /* =====================================================
      LOAD CART COUNT FROM SUPABASE
   ===================================================== */
 
@@ -575,47 +555,6 @@ export default function ProductDetailPage() {
       const currentProduct = data as Product;
 
       setProduct(currentProduct);
-
-      /* Load all product reviews from Supabase. RLS allows public read. */
-      const { data: reviewData, error: reviewLoadError } = await supabase
-        .from("reviews")
-        .select("id,user_id,product_id,rating,comment,created_at")
-        .eq("product_id", currentProduct.id)
-        .order("created_at", { ascending: false });
-
-      if (reviewLoadError) {
-        console.error("Reviews load error:", reviewLoadError);
-        setReviews([]);
-      } else {
-        setReviews((reviewData as Review[]) || []);
-      }
-
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData.user?.id || null;
-      setReviewUserId(currentUserId);
-
-      if (currentUserId) {
-        const { data: myReview } = await supabase
-          .from("reviews")
-          .select("id,user_id,product_id,rating,comment,created_at")
-          .eq("product_id", currentProduct.id)
-          .eq("user_id", currentUserId)
-          .maybeSingle();
-
-        if (myReview) {
-          setEditingReviewId(myReview.id);
-          setReviewRating(Number(myReview.rating) || 0);
-          setReviewComment(myReview.comment || "");
-        } else {
-          setEditingReviewId(null);
-          setReviewRating(0);
-          setReviewComment("");
-        }
-      } else {
-        setEditingReviewId(null);
-        setReviewRating(0);
-        setReviewComment("");
-      }
 
       if (currentProduct.category_id) {
         const { data: categoryData } = await supabase
@@ -1132,118 +1071,6 @@ const handleAddToCart = async () => {
       setToast("Unable to update wishlist.");
     } finally {
       setWishlistLoading(false);
-    }
-  };
-
-  /* =====================================================
-     REVIEWS - SAVE / UPDATE / DELETE
-  ===================================================== */
-
-  const submitReview = async () => {
-    if (!product?.id) return;
-
-    if (!reviewUserId) {
-      setToast("Please login to write a review.");
-      router.push("/auth/login");
-      return;
-    }
-
-    if (reviewRating < 1 || reviewRating > 5) {
-      setToast("Please select a rating from 1 to 5 stars.");
-      return;
-    }
-
-    const comment = reviewComment.trim();
-
-    if (!comment) {
-      setToast("Please write your review.");
-      return;
-    }
-
-    setReviewSubmitting(true);
-
-    try {
-      if (editingReviewId) {
-        const { data, error } = await supabase
-          .from("reviews")
-          .update({
-            rating: reviewRating,
-            comment,
-          })
-          .eq("id", editingReviewId)
-          .eq("user_id", reviewUserId)
-          .select("id,user_id,product_id,rating,comment,created_at")
-          .single();
-
-        if (error) throw error;
-
-        setReviews((current) =>
-          current.map((item) =>
-            item.id === editingReviewId ? (data as Review) : item
-          )
-        );
-        setToast("Review updated successfully.");
-      } else {
-        const { data, error } = await supabase
-          .from("reviews")
-          .insert({
-            user_id: reviewUserId,
-            product_id: product.id,
-            rating: reviewRating,
-            comment,
-          })
-          .select("id,user_id,product_id,rating,comment,created_at")
-          .single();
-
-        if (error) throw error;
-
-        const newReview = data as Review;
-        setReviews((current) => [newReview, ...current]);
-        setEditingReviewId(newReview.id);
-        setToast("Review saved successfully.");
-      }
-    } catch (error) {
-      console.error("Review save error:", error);
-      setToast(
-        error instanceof Error
-          ? error.message
-          : "Unable to save your review."
-      );
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const deleteMyReview = async () => {
-    if (!editingReviewId || !reviewUserId) return;
-
-    setReviewSubmitting(true);
-
-    try {
-      const { error } = await supabase
-        .from("reviews")
-        .delete()
-        .eq("id", editingReviewId)
-        .eq("user_id", reviewUserId);
-
-      if (error) throw error;
-
-      setReviews((current) =>
-        current.filter((item) => item.id !== editingReviewId)
-      );
-      setEditingReviewId(null);
-      setReviewRating(0);
-      setReviewComment("");
-      setToast("Your review was deleted.");
-    } catch (error) {
-      console.error("Review delete error:", error);
-      setToast(
-        error instanceof Error
-          ? error.message
-          : "Unable to delete your review."
-      );
-    } finally {
-      setReviewSubmitting(false);
     }
   };
 
@@ -2327,6 +2154,7 @@ const handleAddToCart = async () => {
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#a18b68]">
                   Customer Feedback
                 </p>
+
                 <h2 className="mt-1 text-xl font-extrabold text-[#443a2e]">
                   Ratings & Reviews
                 </h2>
@@ -2335,26 +2163,21 @@ const handleAddToCart = async () => {
               <div className="flex items-center gap-4">
                 <div className="text-center">
                   <p className="text-4xl font-black text-[#443a2e]">
-                    {(reviews.length
-                      ? reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) /
-                        reviews.length
-                      : rating
-                    ).toFixed(1)}
+                    {rating.toFixed(1)}
                   </p>
+
                   <div className="mt-1 flex justify-center text-[#b9975b]">
-                    {Array.from({ length: 5 }).map((_, index) => {
-                      const liveRating = reviews.length
-                        ? reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) /
-                          reviews.length
-                        : rating;
-                      return (
-                        <Star
-                          key={index}
-                          size={14}
-                          fill={index < Math.round(liveRating) ? "currentColor" : "none"}
-                        />
-                      );
-                    })}
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star
+                        key={index}
+                        size={14}
+                        fill={
+                          index < Math.round(rating)
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                    ))}
                   </div>
                 </div>
 
@@ -2362,8 +2185,9 @@ const handleAddToCart = async () => {
 
                 <div>
                   <p className="text-sm font-bold text-[#55493a]">
-                    {reviews.length.toLocaleString("en-IN")}
+                    {reviewCount.toLocaleString("en-IN")}
                   </p>
+
                   <p className="text-[10px] text-[#9b907f]">
                     ratings & reviews
                   </p>
@@ -2371,120 +2195,42 @@ const handleAddToCart = async () => {
               </div>
             </div>
 
-            {/* Write / edit review */}
-            <div className="mt-7 rounded-2xl border border-[#eadfcb] bg-[#fcf8f1] p-4 sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-extrabold text-[#514636]">
-                    {editingReviewId ? "Your Review" : "Write a Review"}
-                  </h3>
-                  <p className="mt-1 text-xs text-[#8d806e]">
-                    Share your experience with this product.
-                  </p>
-                </div>
-
-                {!reviewUserId && (
-                  <button
-                    type="button"
-                    onClick={() => router.push("/auth/login")}
-                    className="rounded-xl border border-[#d9c29a] bg-white px-4 py-2 text-xs font-extrabold text-[#8e6b37]"
-                  >
-                    Login to Review
-                  </button>
-                )}
-              </div>
-
-              {reviewUserId && (
-                <>
-                  <div className="mt-4 flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReviewRating(star)}
-                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-                        className="rounded-md p-1 transition-transform hover:scale-110"
-                      >
-                        <Star
-                          size={23}
-                          fill={star <= reviewRating ? "currentColor" : "none"}
-                          className={
-                            star <= reviewRating
-                              ? "text-[#b9975b]"
-                              : "text-[#cfc2ae]"
-                          }
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-bold text-[#8b7d6a]">
-                      {reviewRating ? `${reviewRating}/5` : "Select rating"}
-                    </span>
-                  </div>
-
-                  <textarea
-                    value={reviewComment}
-                    onChange={(event) => setReviewComment(event.target.value)}
-                    placeholder="Tell other shoppers what you liked or disliked..."
-                    rows={4}
-                    maxLength={1000}
-                    className="mt-3 w-full resize-none rounded-xl border border-[#e4d7c3] bg-white px-4 py-3 text-sm text-[#514636] outline-none transition focus:border-[#b9975b] focus:ring-2 focus:ring-[#b9975b]/15"
-                  />
-
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-[10px] text-[#9b907f]">
-                      {reviewComment.length}/1000 characters
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {editingReviewId && (
-                        <button
-                          type="button"
-                          disabled={reviewSubmitting}
-                          onClick={deleteMyReview}
-                          className="rounded-xl border border-[#e7cfc8] bg-white px-4 py-2.5 text-xs font-extrabold text-[#a25d50] disabled:opacity-50"
-                        >
-                          Delete Review
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        disabled={reviewSubmitting}
-                        onClick={submitReview}
-                        className="rounded-xl bg-[#b9975b] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {reviewSubmitting
-                          ? "Saving..."
-                          : editingReviewId
-                          ? "Update Review"
-                          : "Submit Review"}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Live rating distribution */}
-            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="mt-7 grid gap-5 lg:grid-cols-2">
               {[5, 4, 3, 2, 1].map((star) => {
-                const count = reviews.filter(
-                  (item) => Number(item.rating) === star
-                ).length;
-                const ratio = reviews.length
-                  ? Math.round((count / reviews.length) * 100)
-                  : 0;
+                const ratio =
+                  star === 5
+                    ? 72
+                    : star === 4
+                    ? 19
+                    : star === 3
+                    ? 6
+                    : star === 2
+                    ? 2
+                    : 1;
 
                 return (
-                  <div key={star} className="flex items-center gap-3">
+                  <div
+                    key={star}
+                    className="flex items-center gap-3"
+                  >
                     <span className="flex w-8 items-center gap-1 text-xs font-bold text-[#766a59]">
                       {star}
-                      <Star size={11} fill="currentColor" className="text-[#b9975b]" />
+                      <Star
+                        size={11}
+                        fill="currentColor"
+                        className="text-[#b9975b]"
+                      />
                     </span>
+
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#eee7da]">
                       <div
-                        className="h-full rounded-full bg-[#b9975b] transition-all"
-                        style={{ width: `${ratio}%` }}
+                        className="h-full rounded-full bg-[#b9975b]"
+                        style={{
+                          width: `${ratio}%`,
+                        }}
                       />
                     </div>
+
                     <span className="w-8 text-right text-[10px] text-[#9d9180]">
                       {ratio}%
                     </span>
@@ -2493,65 +2239,23 @@ const handleAddToCart = async () => {
               })}
             </div>
 
-            {/* Review list */}
-            <div className="mt-7 space-y-3">
-              {reviews.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[#dfd0b8] bg-[#fcf8f1] p-6 text-center">
-                  <Star size={24} className="mx-auto text-[#b9975b]" />
-                  <p className="mt-2 text-sm font-extrabold text-[#55493a]">
-                    No reviews yet
-                  </p>
-                  <p className="mt-1 text-xs text-[#918575]">
-                    Be the first customer to review this product.
-                  </p>
-                </div>
-              ) : (
-                reviews.map((review) => (
-                  <article
-                    key={review.id}
-                    className="rounded-2xl border border-[#eee5d7] bg-white p-4 sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5ead8] text-sm font-black text-[#98743f]">
-                          {review.user_id === reviewUserId ? "You" : "PC"}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-extrabold text-[#514636]">
-                            {review.user_id === reviewUserId ? "Your Review" : "PrimeCart Customer"}
-                          </p>
-                          <p className="text-[10px] text-[#9b907f]">
-                            {new Date(review.created_at).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </p>
-                        </div>
-                      </div>
+            <div className="mt-6 rounded-2xl border border-dashed border-[#dfd0b8] bg-[#fcf8f1] p-4">
+              <div className="flex items-start gap-3">
+                <Info
+                  size={16}
+                  className="mt-0.5 shrink-0 text-[#9b7439]"
+                />
 
-                      <div className="flex shrink-0 items-center rounded-lg bg-[#f8efdf] px-2 py-1 text-[#a27c42]">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
-                            key={index}
-                            size={12}
-                            fill={index < Number(review.rating) ? "currentColor" : "none"}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {review.comment && (
-                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#716555]">
-                        {review.comment}
-                      </p>
-                    )}
-                  </article>
-                ))
-              )}
+                <p className="text-xs leading-5 text-[#887b69]">
+                  This summary uses the rating and review count stored
+                  for this product. Individual customer reviews are
+                  displayed only when review-level data is available.
+                </p>
+              </div>
             </div>
           </div>
         </section>
+
         <section
           id="related"
           className="pc-section mx-auto max-w-[1500px] px-4 pb-12 sm:px-6 lg:px-8"
