@@ -871,52 +871,72 @@ export default function DashboardPage() {
       (value) => String(value) === normalizedId
     );
 
+    const previous = wishlist;
     const next = exists
       ? wishlist.filter((value) => String(value) !== normalizedId)
       : [...wishlist, id];
 
-    /* UI + local mirror update immediately. */
     setWishlist(next);
     localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
 
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (user) {
-      if (exists) {
-        /* This happens only after the user explicitly taps the active heart. */
-        const { error } = await supabase
-          .from(WISHLIST_TABLE)
-          .delete()
-          .eq("user_id", user.id)
-          .eq("product_id", normalizedId);
+    if (authError || !user) {
+      // Keep the local wishlist working even if the session is unavailable.
+      showToast(exists ? "Removed from Wishlist" : "Added to Wishlist");
+      return;
+    }
 
-        if (error) {
-          console.error("Wishlist remove failed:", error.message);
-          setWishlist(wishlist);
-          localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
-          showToast("Could not update Wishlist");
-          return;
-        }
+    if (exists) {
+      const { error } = await supabase
+        .from(WISHLIST_TABLE)
+        .delete()
+        .eq("user_id", user.id)
+        .eq("product_id", normalizedId);
 
-        showToast("Removed from Wishlist");
+      if (error) {
+        console.error("Wishlist delete failed:", error);
+        setWishlist(previous);
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
+        showToast(`Couldn't update Wishlist: ${error.message}`);
         return;
       }
 
-      const { error } = await supabase.from(WISHLIST_TABLE).upsert(
-        {
-          user_id: user.id,
-          product_id: normalizedId,
-        },
-        { onConflict: "user_id,product_id" }
-      );
+      showToast("Removed from Wishlist");
+      return;
+    }
+
+    // Insert instead of upsert. This avoids relying on PostgREST's
+    // onConflict metadata and works reliably with the unique constraint.
+    const { data: existingRow, error: findError } = await supabase
+      .from(WISHLIST_TABLE)
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("product_id", normalizedId)
+      .maybeSingle();
+
+    if (findError) {
+      console.error("Wishlist lookup failed:", findError);
+      setWishlist(previous);
+      localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
+      showToast(`Couldn't save Wishlist: ${findError.message}`);
+      return;
+    }
+
+    if (!existingRow) {
+      const { error } = await supabase.from(WISHLIST_TABLE).insert({
+        user_id: user.id,
+        product_id: normalizedId,
+      });
 
       if (error) {
-        console.error("Wishlist save failed:", error.message);
-        setWishlist(wishlist);
-        localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
-        showToast("Could not save Wishlist");
+        console.error("Wishlist insert failed:", error);
+        setWishlist(previous);
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
+        showToast(`Couldn't save Wishlist: ${error.message}`);
         return;
       }
     }
@@ -925,18 +945,21 @@ export default function DashboardPage() {
   }
 
   async function addToCart(product: Product) {
-    const exists = cart.find(
-      (item) => String(item.id) === String(product.id)
+    const productId = String(product.id);
+    const previous = cart;
+    const existing = cart.find(
+      (item) => String(item.id) === productId
+    );
+    const maxStock = Math.max(Number(product.stock || 999), 1);
+    const nextQuantity = Math.min(
+      Number(existing?.quantity || 0) + 1,
+      maxStock
     );
 
-    const maxStock = Number(product.stock || 999);
-    const next: CartItem[] = exists
+    const next: CartItem[] = existing
       ? cart.map((item) =>
-          String(item.id) === String(product.id)
-            ? {
-                ...item,
-                quantity: Math.min(item.quantity + 1, maxStock),
-              }
+          String(item.id) === productId
+            ? { ...item, quantity: nextQuantity }
             : item
         )
       : [
@@ -950,42 +973,98 @@ export default function DashboardPage() {
           },
         ];
 
+    // Instant UI update + local mirror.
     setCart(next);
     localStorage.setItem(CART_KEY, JSON.stringify(next));
 
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (user) {
-      const item = next.find(
-        (entry) => String(entry.id) === String(product.id)
-      );
-
-      if (item) {
-        const { error } = await supabase.from(CART_TABLE).upsert(
-          {
-            user_id: user.id,
-            product_id: String(product.id),
-            name: item.name,
-            price: item.price,
-            image_url: item.image_url || null,
-            quantity: item.quantity,
-          },
-          { onConflict: "user_id,product_id" }
-        );
-
-        if (error) {
-          console.error("Cart save failed:", error.message);
-          setCart(cart);
-          localStorage.setItem(CART_KEY, JSON.stringify(cart));
-          showToast("Could not save Cart");
-          return;
-        }
-      }
+    if (authError || !user) {
+      showToast("Added to Cart");
+      return;
     }
 
-    showToast("Added to Cart");
+    // First find the row. This is more reliable than upsert when a
+    // Supabase project has an older/changed constraint definition.
+    const { data: existingRow, error: findError } = await supabase
+      .from(CART_TABLE)
+      .select("id,quantity")
+      .eq("user_id", user.id)
+      .eq("product_id", productId)
+      .maybeSingle();
+
+    if (findError) {
+      console.error("Cart lookup failed:", findError);
+      setCart(previous);
+      localStorage.setItem(CART_KEY, JSON.stringify(previous));
+      showToast(`Couldn't save Add Cart: ${findError.message}`);
+      return;
+    }
+
+    const payload = {
+      user_id: user.id,
+      product_id: productId,
+      name: product.name,
+      price: Number(product.price || 0),
+      image_url: product.image_url || null,
+      quantity: existingRow
+        ? Math.min(Number(existingRow.quantity || 0) + 1, maxStock)
+        : 1,
+    };
+
+    let saveError = null;
+
+    if (existingRow?.id) {
+      const result = await supabase
+        .from(CART_TABLE)
+        .update({
+          name: payload.name,
+          price: payload.price,
+          image_url: payload.image_url,
+          quantity: payload.quantity,
+        })
+        .eq("id", existingRow.id)
+        .eq("user_id", user.id);
+      saveError = result.error;
+    } else {
+      const result = await supabase
+        .from(CART_TABLE)
+        .insert(payload);
+      saveError = result.error;
+    }
+
+    if (saveError) {
+      console.error("Cart save failed:", saveError);
+      setCart(previous);
+      localStorage.setItem(CART_KEY, JSON.stringify(previous));
+      showToast(`Couldn't save Add Cart: ${saveError.message}`);
+      return;
+    }
+
+    // Keep the UI quantity identical to the database quantity.
+    const savedQuantity = payload.quantity;
+    setCart((current) =>
+      current.map((item) =>
+        String(item.id) === productId
+          ? { ...item, quantity: savedQuantity }
+          : item
+      )
+    );
+    localStorage.setItem(
+      CART_KEY,
+      JSON.stringify(
+        next.map((item) =>
+          String(item.id) === productId
+            ? { ...item, quantity: savedQuantity }
+            : item
+        )
+      )
+    );
+
+    showToast(existingRow ? "Cart quantity updated" : "Added to Cart");
   }
 
   function openProduct(product: Product) {
@@ -7449,7 +7528,86 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           }
         }
 
-      `}</style>
+      `}
+        /* ================================================================
+           FINAL MOBILE POLISH - PrimeCart
+           ================================================================ */
+        @media (max-width: 680px) {
+          html, body { overflow-x: hidden !important; }
+          body { padding-bottom: 76px !important; }
+          .store-shell { width: 100% !important; overflow-x: hidden !important; }
+          .container { width: calc(100% - 20px) !important; max-width: none !important; }
+
+          .main-header { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+          .header-main { width: 100% !important; grid-template-columns: minmax(0,1fr) auto !important; }
+          .brand-copy { min-width: 0 !important; }
+          .brand-name { white-space: nowrap !important; }
+          .header-actions { min-width: 0 !important; }
+          .header-actions .icon-action { width: 38px !important; height: 38px !important; }
+          .mobile-menu-button { width: 38px !important; height: 38px !important; }
+
+          .search-box { position: relative !important; z-index: 30 !important; }
+          .search-dropdown { left: 0 !important; right: 0 !important; width: 100% !important; max-height: 62vh !important; overflow-y: auto !important; }
+
+          .page-content { width: 100% !important; overflow: hidden !important; }
+          .hero-layout { display: block !important; width: 100% !important; }
+          .hero-carousel { width: 100% !important; overflow: hidden !important; }
+          .hero-image-frame { width: 100% !important; height: clamp(175px, 50vw, 245px) !important; }
+          .hero-banner { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+          .right-rail { width: 100% !important; }
+
+          .category-section, .smart-section, .flash-section, .trust-section {
+            width: 100% !important;
+            overflow: hidden !important;
+          }
+          .category-rail { display: flex !important; overflow-x: auto !important; overscroll-behavior-x: contain; }
+          .category-item { flex: 0 0 76px !important; }
+
+          .section-head { gap: 8px !important; align-items: center !important; }
+          .section-head > div { min-width: 0 !important; }
+          .section-title { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+          .section-head > a { flex: 0 0 auto !important; white-space: nowrap !important; }
+
+          .products-grid.five-columns {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            width: 100% !important;
+            gap: 10px !important;
+          }
+          .products-grid.five-columns .product-card { display: flex !important; min-width: 0 !important; width: 100% !important; }
+          .product-image-wrap { width: 100% !important; height: 155px !important; }
+          .product-image { max-width: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+          .product-copy { min-width: 0 !important; }
+          .product-name { display: -webkit-box !important; -webkit-box-orient: vertical !important; -webkit-line-clamp: 2 !important; overflow: hidden !important; }
+          .price-row { min-width: 0 !important; flex-wrap: wrap !important; }
+          .add-cart-btn { width: 100% !important; min-width: 0 !important; }
+
+          .smart-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+          .promo-grid { grid-template-columns: 1fr !important; }
+          .trust-strip { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .trust-item { min-width: 0 !important; }
+
+          .mobile-menu-overlay { z-index: 1000 !important; }
+          .mobile-menu-panel { width: min(88vw, 360px) !important; max-width: 360px !important; }
+
+          .toast { left: 10px !important; right: 10px !important; bottom: 84px !important; width: auto !important; max-width: none !important; text-align: center !important; }
+          .bottom-nav, .mobile-bottom-nav { z-index: 900 !important; }
+        }
+
+        @media (max-width: 390px) {
+          .container { width: calc(100% - 14px) !important; }
+          .brand-logo-box { width: 36px !important; height: 36px !important; }
+          .prime-logo { width: 32px !important; height: 32px !important; }
+          .brand-name { font-size: 16px !important; }
+          .brand-tagline { font-size: 6px !important; }
+          .header-actions .icon-action, .mobile-menu-button { width: 35px !important; height: 35px !important; }
+          .product-image-wrap { height: 140px !important; }
+          .product-copy { padding: 8px !important; }
+          .product-name { font-size: 10.5px !important; }
+          .price-row strong { font-size: 14px !important; }
+          .add-cart-btn { height: 33px !important; font-size: 8.5px !important; }
+        }
+</style>
     </main>
   );
 }
