@@ -1,12 +1,4 @@
-"use client";
-
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
-import {
-  ArrowRight,
-  BadgeCheck,
-  BarChart3,"use client";
+ "use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
