@@ -96,6 +96,129 @@ const shoppingGoals = [
   },
 ];
 
+/*
+ * PrimeCart Budget Builder subcategories.
+ * The current products table does not expose a subcategory_id field,
+ * so these are intelligent UI filters matched against product name,
+ * brand, slug and description.
+ */
+const subcategoryMap: Record<string, string[]> = {
+  mobile: ["Smartphones", "Mobile Accessories", "Audio", "Smartwatches"],
+  electronics: ["Laptops", "Headphones & Audio", "Televisions", "Cameras", "Accessories"],
+  "home-kitchen": ["Kitchen", "Cookware", "Home Decor", "Storage", "Cleaning"],
+  fashion: ["Men's Fashion", "Women's Fashion", "Kids Fashion", "Ethnic Wear"],
+  footwear: ["Men's Footwear", "Women's Footwear", "Sports Shoes", "Casual Shoes"],
+  beauty: ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
+  "beauty-personal-care": ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
+  "toy-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
+  "toys-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
+  "sports-fitness": ["Fitness", "Running", "Sports Equipment", "Outdoor"],
+  appliance: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
+  appliances: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
+  automotive: ["Car Accessories", "Bike Accessories", "Car Care", "Electronics"],
+  eyewear: ["Sunglasses", "Eyeglasses", "Blue Light Glasses"],
+  books: ["Fiction", "Non-Fiction", "Self Help", "Academic"],
+  gaming: ["Gaming Consoles", "Gaming Accessories", "PC Gaming", "Games"],
+  watch: ["Smartwatches", "Analog Watches", "Digital Watches", "Watch Accessories"],
+  bag: ["Backpacks", "Handbags", "Travel Bags", "Laptop Bags"],
+};
+
+const subcategoryKeywords: Record<string, string[]> = {
+  Smartphones: ["smartphone", "phone", "mobile"],
+  "Mobile Accessories": ["charger", "cable", "case", "cover", "power bank", "adapter"],
+  Audio: ["headphone", "earbud", "earphone", "speaker", "audio"],
+  Smartwatches: ["smartwatch", "smart watch", "fitness band"],
+  Laptops: ["laptop", "notebook", "macbook"],
+  "Headphones & Audio": ["headphone", "earbud", "earphone", "speaker", "soundbar"],
+  Televisions: ["tv", "television", "led tv", "smart tv"],
+  Cameras: ["camera", "dslr", "mirrorless", "action cam"],
+  Accessories: ["mouse", "keyboard", "hub", "adapter", "cable", "stand", "bag"],
+  Kitchen: ["kitchen", "mixer", "coffee", "toaster", "cook", "air fryer"],
+  Cookware: ["pan", "pot", "cookware", "kadhai", "pressure cooker"],
+  "Home Decor": ["decor", "lamp", "cushion", "curtain", "wall"],
+  Storage: ["storage", "organizer", "rack", "box"],
+  Cleaning: ["cleaning", "vacuum", "mop"],
+  "Men's Fashion": ["men", "shirt", "jeans", "jacket", "t-shirt", "kurta"],
+  "Women's Fashion": ["women", "dress", "saree", "top", "kurti", "jeans"],
+  "Kids Fashion": ["kids", "kid", "children", "boy", "girl"],
+  "Ethnic Wear": ["ethnic", "kurta", "kurti", "saree", "lehenga"],
+  "Men's Footwear": ["men", "men's", "formal shoes", "loafers", "sneakers"],
+  "Women's Footwear": ["women", "women's", "heels", "flats", "sandals"],
+  "Sports Shoes": ["running", "sports shoes", "training", "gym", "sneakers"],
+  "Casual Shoes": ["casual", "loafer", "slip-on", "sneaker"],
+  Skincare: ["serum", "face", "skin", "moisturizer", "sunscreen", "cleanser"],
+  Haircare: ["hair", "shampoo", "conditioner", "serum", "trimmer"],
+  Makeup: ["lipstick", "foundation", "makeup", "mascara", "concealer"],
+  Fragrance: ["perfume", "fragrance", "deodorant", "body spray"],
+  "Personal Care": ["trimmer", "shaver", "grooming", "oral", "body"],
+  Toys: ["toy", "puzzle", "doll", "car", "building"],
+  "Baby Care": ["baby", "diaper", "feeding", "newborn"],
+  "Baby Gear": ["stroller", "carrier", "crib", "baby gear"],
+  "Learning & Educational": ["learning", "educational", "book", "stem", "activity"],
+  Fitness: ["fitness", "gym", "dumbbell", "yoga", "workout"],
+  Running: ["running", "jogging", "marathon"],
+  "Sports Equipment": ["cricket", "football", "badminton", "sports"],
+  Outdoor: ["camping", "hiking", "outdoor", "cycling"],
+  "Kitchen Appliances": ["mixer", "grinder", "microwave", "air fryer", "coffee maker"],
+  "Home Appliances": ["washing machine", "refrigerator", "fan", "iron"],
+  Cooling: ["ac", "air conditioner", "cooler", "fan"],
+  "Cleaning Appliances": ["vacuum", "cleaner", "steam"],
+  "Car Accessories": ["car", "dash cam", "car charger", "seat", "car"],
+  "Bike Accessories": ["bike", "motorcycle", "helmet", "riding"],
+  "Car Care": ["car care", "polish", "cleaner", "wax"],
+  Eyewear: ["glasses", "eyewear", "spectacles"],
+  "Sunglasses": ["sunglasses"],
+  "Eyeglasses": ["eyeglasses", "spectacles", "frame"],
+  "Blue Light Glasses": ["blue light"],
+  Fiction: ["fiction", "novel", "story"],
+  "Non-Fiction": ["non-fiction", "biography", "history"],
+  "Self Help": ["self-help", "self help", "motivation", "productivity"],
+  Academic: ["academic", "textbook", "programming", "study"],
+  "Gaming Consoles": ["playstation", "xbox", "nintendo", "console"],
+  "Gaming Accessories": ["gaming mouse", "gaming keyboard", "controller", "headset"],
+  "PC Gaming": ["gaming pc", "graphics card", "gpu", "gaming monitor"],
+  Games: ["game", "gaming"],
+  "Analog Watches": ["analog", "chronograph", "watch"],
+  "Digital Watches": ["digital watch"],
+  "Watch Accessories": ["watch strap", "watch accessory"],
+  Backpacks: ["backpack", "rucksack"],
+  Handbags: ["handbag", "purse"],
+  "Travel Bags": ["travel bag", "duffle", "trolley"],
+  "Laptop Bags": ["laptop bag", "laptop backpack"],
+};
+
+function normalizeText(value: string | null | undefined) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function getSubcategories(category?: Category) {
+  if (!category) return [];
+  const key = normalizeText(category.slug).replace(/ /g, "-");
+  const bySlug = subcategoryMap[key];
+  if (bySlug) return bySlug;
+  const byName = Object.keys(subcategoryMap).find(
+    (item) => normalizeText(item) === normalizeText(category.name)
+  );
+  return byName ? subcategoryMap[byName] : [];
+}
+
+function matchesSubcategory(product: Product, subcategory: string) {
+  if (subcategory === "all") return true;
+  const keywords = subcategoryKeywords[subcategory] || [];
+  const haystack = normalizeText(
+    `${product.name} ${product.brand || ""} ${product.slug} ${product.short_description || ""} ${product.description || ""}`
+  );
+  return keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+}
+
+function seededOrder(id: string, seed: number) {
+  let hash = seed * 97 + 17;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
 function getImageUrl(value: string | null) {
   if (!value) return null;
 
@@ -270,6 +393,8 @@ export default function BudgetBuilderPage() {
 
   const [goal, setGoal] = useState("");
   const [categoryId, setCategoryId] = useState("all");
+  const [subcategory, setSubcategory] = useState("all");
+  const [buildSeed, setBuildSeed] = useState(0);
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [manualPlanMode, setManualPlanMode] = useState(false);
@@ -427,6 +552,15 @@ export default function BudgetBuilderPage() {
     }
   }
 
+  const selectedCategory = categories.find(
+    (category) => category.id === categoryId
+  );
+
+  const availableSubcategories = useMemo(
+    () => getSubcategories(selectedCategory),
+    [selectedCategory]
+  );
+
   const rankedProducts = useMemo(() => {
     let list = products.filter(
       (product) =>
@@ -436,24 +570,34 @@ export default function BudgetBuilderPage() {
 
     if (categoryId !== "all") {
       list = list.filter(
-        (product) =>
-          product.category_id === categoryId
+        (product) => product.category_id === categoryId
+      );
+    }
+
+    if (subcategory !== "all") {
+      list = list.filter((product) =>
+        matchesSubcategory(product, subcategory)
       );
     }
 
     return list
       .map((product) => ({
         ...product,
-        score: getProductScore(
-          product,
-          budget,
-          goal
-        ),
+        score: getProductScore(product, budget, goal),
       }))
-      .sort(
-        (a, b) => b.score - a.score
-      );
-  }, [products, budget, goal, categoryId]);
+      .sort((a, b) => {
+        const scoreDiff = b.score - a.score;
+        if (scoreDiff !== 0) return scoreDiff;
+        return seededOrder(a.id, buildSeed) - seededOrder(b.id, buildSeed);
+      });
+  }, [
+    products,
+    budget,
+    goal,
+    categoryId,
+    subcategory,
+    buildSeed,
+  ]);
 
   const autoPlan = useMemo(() => {
     const result: Product[] = [];
@@ -466,9 +610,15 @@ export default function BudgetBuilderPage() {
         ? 3
         : 5;
 
+    // First pass: different categories whenever the user selected all categories.
     const usedCategories = new Set<string>();
+    const firstPass = [...rankedProducts].sort(
+      (a, b) =>
+        seededOrder(a.id, buildSeed + 11) -
+        seededOrder(b.id, buildSeed + 11)
+    );
 
-    for (const product of rankedProducts) {
+    for (const product of firstPass) {
       if (result.length >= limit) break;
 
       const price = Number(product.price);
@@ -485,19 +635,18 @@ export default function BudgetBuilderPage() {
       }
     }
 
-    for (const product of rankedProducts) {
-      if (result.length >= limit) break;
+    // Second pass: fill the remaining budget with unique products only.
+    const secondPass = [...rankedProducts].sort(
+      (a, b) =>
+        seededOrder(a.id, buildSeed + 29) -
+        seededOrder(b.id, buildSeed + 29)
+    );
 
-      if (
-        result.some(
-          (item) => item.id === product.id
-        )
-      ) {
-        continue;
-      }
+    for (const product of secondPass) {
+      if (result.length >= limit) break;
+      if (result.some((item) => item.id === product.id)) continue;
 
       const price = Number(product.price);
-
       if (price <= remaining) {
         result.push(product);
         remaining -= price;
@@ -506,14 +655,12 @@ export default function BudgetBuilderPage() {
 
     if (goal === "premium") {
       return [...result].sort(
-        (a, b) =>
-          Number(b.price) -
-          Number(a.price)
+        (a, b) => Number(b.price) - Number(a.price)
       );
     }
 
     return result;
-  }, [rankedProducts, budget, goal]);
+  }, [rankedProducts, budget, goal, buildSeed]);
 
   const activePlanIds = manualPlanMode
     ? selectedProducts
@@ -646,11 +793,6 @@ export default function BudgetBuilderPage() {
       })()
     : [];
 
-  const selectedCategory = categories.find(
-    (category) =>
-      category.id === categoryId
-  );
-
   const categoryName =
     selectedCategory?.name ||
     "All Categories";
@@ -712,8 +854,11 @@ export default function BudgetBuilderPage() {
     setBuilding(true);
     setPlanReady(false);
 
+    // A new seed gives every build a fresh, non-repeating recommendation order.
+    setBuildSeed((current) => current + 1);
+
     await new Promise((resolve) =>
-      setTimeout(resolve, 1100)
+      setTimeout(resolve, 650)
     );
 
     if (!manualPlanMode && selectedProducts.length === 0) {
@@ -737,6 +882,7 @@ export default function BudgetBuilderPage() {
     setCustomBudget("");
     setGoal("");
     setCategoryId("all");
+    setSubcategory("all");
     setSelectedProducts([]);
     setManualPlanMode(false);
     setPlanReady(false);
@@ -895,6 +1041,7 @@ export default function BudgetBuilderPage() {
           budget,
           goal,
           categoryId,
+          subcategory,
           productIds: activePlanIds,
           savedAt:
             new Date().toISOString(),
@@ -954,6 +1101,15 @@ export default function BudgetBuilderPage() {
       ) {
         setCategoryId(
           saved.categoryId
+        );
+      }
+
+      if (
+        typeof saved.subcategory ===
+        "string"
+      ) {
+        setSubcategory(
+          saved.subcategory
         );
       }
 
@@ -1890,122 +2046,188 @@ export default function BudgetBuilderPage() {
                 </h4>
               </div>
 
-              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-                {shoppingGoals.map(
-                  (item) => {
-                    const Icon =
-                      item.icon;
+              <div className="-mx-1 grid grid-cols-1 gap-3 px-1 sm:grid-cols-2 lg:grid-cols-4">
+                {shoppingGoals.map((item) => {
+                  const Icon = item.icon;
+                  const active = goal === item.id;
 
-                    const active =
-                      goal ===
-                      item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setGoal(item.id);
+                        setPlanReady(false);
+                      }}
+                      className={`group relative overflow-hidden rounded-[22px] border p-4 text-left transition duration-200 sm:p-5 ${
+                        active
+                          ? "border-[#c9a24d] bg-[#fffaf0] shadow-[0_10px_30px_rgba(160,120,40,0.10)]"
+                          : "border-[#e9e2d5] bg-white hover:-translate-y-0.5 hover:border-[#d5b76c] hover:shadow-md"
+                      }`}
+                    >
+                      <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-[#f8edcf]/60 blur-2xl" />
 
-                    return (
-                      <button
-                        key={
-                          item.id
-                        }
-                        type="button"
-                        onClick={() => {
-                          setGoal(
-                            item.id
-                          );
-                          setPlanReady(
-                            false
-                          );
-                        }}
-                        className={`group relative min-w-[210px] snap-start rounded-2xl border p-4 text-left transition duration-200 sm:min-w-0 ${
-                          active
-                            ? "border-[#c9a24d] bg-[#fffaf0] shadow-sm"
-                            : "border-[#e9e2d5] hover:-translate-y-0.5 hover:border-[#d5b76c] hover:shadow-sm"
-                        }`}
-                      >
-                        {active && (
-                          <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#c9a24d] text-white">
-                            <Check size={11} />
-                          </span>
-                        )}
-
+                      <div className="relative flex items-start justify-between gap-3">
                         <span
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
                             active
-                              ? "bg-[#c9a24d] text-white"
-                              : "bg-[#f8f4ec] text-[#a17b2f]"
+                              ? "bg-[#c9a24d] text-white shadow-md"
+                              : "bg-[#fff6df] text-[#a17b2f] group-hover:bg-[#f8edcf]"
                           }`}
                         >
-                          <Icon size={18} />
+                          <Icon size={19} />
                         </span>
 
-                        <p className="mt-4 text-sm font-black">
-                          {item.title}
-                        </p>
+                        {active ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#c9a24d] text-white shadow-sm">
+                            <Check size={12} strokeWidth={3} />
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-[#eadfca] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-gray-400">
+                            Select
+                          </span>
+                        )}
+                      </div>
 
-                        <p className="mt-1 text-[10px] leading-4 text-gray-400">
-                          {item.description}
-                        </p>
-                      </button>
-                    );
-                  }
-                )}
+                      <p className="relative mt-5 text-[14px] font-black text-gray-900">
+                        {item.title}
+                      </p>
+                      <p className="relative mt-1.5 min-h-[32px] text-[10px] leading-4 text-gray-400">
+                        {item.description}
+                      </p>
+
+                      <div className={`relative mt-4 inline-flex items-center gap-1.5 text-[9px] font-black ${
+                        active ? "text-[#956f27]" : "text-gray-400"
+                      }`}>
+                        {active ? "Selected for your plan" : "Use this preference"}
+                        <ArrowRight size={11} />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* CATEGORY */}
+            {/* CATEGORY + SUBCATEGORY */}
             <div className="mt-10">
-              <div className="mb-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
-                  Shopping focus
-                </p>
-
-                <h4 className="mt-1 text-xl font-black">
-                  Where do you want to spend it?
-                </h4>
+              <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
+                    Shopping focus
+                  </p>
+                  <h4 className="mt-1 text-xl font-black">
+                    Where do you want to spend it?
+                  </h4>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-gray-400">
+                    Pick a category first. We&apos;ll then show relevant subcategories
+                    and build your plan around that focus.
+                  </p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#eadfca] bg-[#fffaf0] px-3 py-1.5 text-[9px] font-black text-[#a17b2f]">
+                  <Sparkles size={11} />
+                  Smart filtering
+                </span>
               </div>
 
-              <div className="relative max-w-2xl">
-                <select
-                  value={categoryId}
-                  onChange={(e) => {
-                    setCategoryId(
-                      e.target.value
-                    );
-                    setPlanReady(
-                      false
-                    );
-                  }}
-                  className="h-[52px] w-full appearance-none rounded-2xl border border-[#e4dbca] bg-[#fffdf9] px-4 pr-11 text-sm font-bold text-gray-700 outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
-                >
-                  <option value="all">
-                    Everything on PrimeCart
-                  </option>
-
-                  {categories.map(
-                    (category) => (
-                      <option
-                        key={
-                          category.id
-                        }
-                        value={
-                          category.id
-                        }
-                      >
-                        {
-                          category.name
-                        }
+              <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
+                <div className="relative">
+                  <label className="mb-2 block text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
+                    Category
+                  </label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value);
+                      setSubcategory("all");
+                      setPlanReady(false);
+                    }}
+                    className="h-[54px] w-full appearance-none rounded-2xl border border-[#e4dbca] bg-[#fffdf9] px-4 pr-11 text-sm font-bold text-gray-700 outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
+                  >
+                    <option value="all">Everything on PrimeCart</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
                       </option>
-                    )
-                  )}
-                </select>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={17}
+                    className="pointer-events-none absolute bottom-4 right-4 text-gray-400"
+                  />
+                </div>
 
-                <ChevronDown
-                  size={17}
-                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
+                <div className="relative">
+                  <label className="mb-2 block text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
+                    Subcategory
+                  </label>
+                  <select
+                    value={subcategory}
+                    disabled={categoryId === "all" || availableSubcategories.length === 0}
+                    onChange={(e) => {
+                      setSubcategory(e.target.value);
+                      setPlanReady(false);
+                    }}
+                    className="h-[54px] w-full appearance-none rounded-2xl border border-[#e4dbca] bg-[#fffdf9] px-4 pr-11 text-sm font-bold text-gray-700 outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10 disabled:cursor-not-allowed disabled:bg-[#f7f3eb] disabled:text-gray-400"
+                  >
+                    <option value="all">
+                      {categoryId === "all"
+                        ? "Select a category first"
+                        : availableSubcategories.length
+                        ? "All subcategories"
+                        : "No subcategories available"}
+                    </option>
+                    {availableSubcategories.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={17}
+                    className="pointer-events-none absolute bottom-4 right-4 text-gray-400"
+                  />
+                </div>
               </div>
+
+              {categoryId !== "all" && availableSubcategories.length > 0 && (
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubcategory("all");
+                      setPlanReady(false);
+                    }}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-[10px] font-black transition ${
+                      subcategory === "all"
+                        ? "border-[#c9a24d] bg-[#fff7e3] text-[#956f27]"
+                        : "border-[#e8e0d2] bg-white text-gray-500 hover:border-[#d5b76c]"
+                    }`}
+                  >
+                    All
+                  </button>
+                  {availableSubcategories.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setSubcategory(item);
+                        setPlanReady(false);
+                      }}
+                      className={`shrink-0 rounded-full border px-4 py-2 text-[10px] font-black transition ${
+                        subcategory === item
+                          ? "border-[#c9a24d] bg-[#c9a24d] text-white shadow-sm"
+                          : "border-[#e8e0d2] bg-white text-gray-500 hover:border-[#d5b76c] hover:bg-[#fffaf0]"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* SUMMARY */}
-            <div className="mt-10 grid overflow-hidden rounded-2xl border border-[#eadfca] bg-[#fffaf0] sm:grid-cols-4">
+            <div className="mt-10 grid overflow-hidden rounded-2xl border border-[#eadfca] bg-[#fffaf0] sm:grid-cols-2 lg:grid-cols-5">
               <div className="border-b border-[#eadfca] p-4 sm:border-b-0 sm:border-r">
                 <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
                   Budget
@@ -2025,6 +2247,15 @@ export default function BudgetBuilderPage() {
 
                 <p className="mt-1 truncate text-sm font-black">
                   {categoryName}
+                </p>
+              </div>
+
+              <div className="border-b border-[#eadfca] p-4 sm:border-b-0 sm:border-r">
+                <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
+                  Subcategory
+                </p>
+                <p className="mt-1 truncate text-sm font-black">
+                  {subcategory === "all" ? "All" : subcategory}
                 </p>
               </div>
 
