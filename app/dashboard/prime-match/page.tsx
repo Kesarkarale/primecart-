@@ -11,7 +11,6 @@ import {
   Check,
   ChevronDown,
   Heart,
-  History,
   Lightbulb,
   Loader2,
   RefreshCw,
@@ -89,14 +88,6 @@ type Importance = {
   rating: number;
 };
 
-type MatchHistoryEntry = {
-  purpose: string;
-  budget: string;
-  category: string;
-  brand: string;
-  search: string;
-  createdAt: number;
-};
 
 /* =========================================================
    CONSTANTS
@@ -169,6 +160,152 @@ const BUDGETS: Budget[] = [
     max: Infinity,
   },
 ];
+
+/* =========================================================
+   CATEGORY → SUBCATEGORY
+   Subcategories are matched against the product name,
+   brand and descriptions, so no database schema change
+   is required.
+========================================================= */
+
+const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> = {
+  fashion: [
+    { label: "T-Shirts", keywords: ["tshirt", "t-shirt", "tee", "t shirt"] },
+    { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt"] },
+    { label: "Tops", keywords: ["top", "crop top", "tank top"] },
+    { label: "Jeans", keywords: ["jeans", "denim jeans"] },
+    { label: "Dresses", keywords: ["dress", "gown"] },
+    { label: "Jackets", keywords: ["jacket", "coat", "blazer"] },
+    { label: "Hoodies", keywords: ["hoodie", "sweatshirt"] },
+    { label: "Ethnic Wear", keywords: ["kurta", "kurti", "saree", "ethnic", "salwar", "lehenga"] },
+  ],
+  mobile: [
+    { label: "Smartphones", keywords: ["mobile", "phone", "smartphone", "iphone", "android"] },
+    { label: "Cases & Covers", keywords: ["case", "cover", "back cover"] },
+    { label: "Chargers", keywords: ["charger", "charging", "adapter"] },
+    { label: "Power Banks", keywords: ["power bank", "powerbank"] },
+    { label: "Screen Protectors", keywords: ["screen protector", "tempered", "glass protector"] },
+  ],
+  electronics: [
+    { label: "Headphones", keywords: ["headphone", "headset", "earphone", "earbuds"] },
+    { label: "Speakers", keywords: ["speaker", "soundbar"] },
+    { label: "Keyboards", keywords: ["keyboard"] },
+    { label: "Mice", keywords: ["mouse"] },
+    { label: "Monitors", keywords: ["monitor", "display"] },
+    { label: "Cameras", keywords: ["camera", "dslr", "mirrorless"] },
+  ],
+  "home & kitchen": [
+    { label: "Kitchen", keywords: ["kitchen", "cookware", "pan", "pot", "utensil"] },
+    { label: "Coffee & Tea", keywords: ["coffee", "tea", "kettle"] },
+    { label: "Home Decor", keywords: ["decor", "decoration", "wall", "lamp", "cushion"] },
+    { label: "Storage", keywords: ["storage", "organizer", "rack", "box"] },
+    { label: "Furniture", keywords: ["furniture", "chair", "table", "sofa", "desk"] },
+  ],
+  appliance: [
+    { label: "Kitchen Appliances", keywords: ["air fryer", "mixer", "oven", "microwave", "kettle", "coffee maker"] },
+    { label: "Refrigerators", keywords: ["refrigerator", "fridge"] },
+    { label: "Washing Machines", keywords: ["washing machine", "washer"] },
+    { label: "Air Conditioners", keywords: ["air conditioner", "ac"] },
+    { label: "Fans", keywords: ["fan", "ceiling fan"] },
+  ],
+  footwear: [
+    { label: "Sneakers", keywords: ["sneaker", "sneakers"] },
+    { label: "Running Shoes", keywords: ["running", "running shoe"] },
+    { label: "Sports Shoes", keywords: ["sports shoe", "training shoe", "sportswear"] },
+    { label: "Sandals", keywords: ["sandal", "sandals"] },
+    { label: "Slippers", keywords: ["slipper", "slippers"] },
+    { label: "Formal Shoes", keywords: ["formal shoe", "loafers", "loafer"] },
+  ],
+  beauty: [
+    { label: "Skincare", keywords: ["serum", "face wash", "moisturizer", "cream", "skincare", "sunscreen"] },
+    { label: "Makeup", keywords: ["makeup", "lipstick", "foundation", "mascara", "eyeliner"] },
+    { label: "Hair Care", keywords: ["shampoo", "conditioner", "hair", "serum"] },
+    { label: "Fragrance", keywords: ["perfume", "fragrance", "deodorant"] },
+  ],
+  "toy & baby": [
+    { label: "Toys", keywords: ["toy", "toys", "doll", "car toy", "puzzle"] },
+    { label: "Baby Care", keywords: ["baby", "diaper", "feeding", "infant"] },
+    { label: "Games", keywords: ["game", "board game", "educational"] },
+  ],
+  sports: [
+    { label: "Fitness", keywords: ["fitness", "gym", "dumbbell", "workout"] },
+    { label: "Running", keywords: ["running", "jogging"] },
+    { label: "Yoga", keywords: ["yoga", "mat"] },
+    { label: "Sportswear", keywords: ["sportswear", "track", "activewear"] },
+  ],
+  automotive: [
+    { label: "Car Accessories", keywords: ["car", "car accessory", "car cover"] },
+    { label: "Bike Accessories", keywords: ["bike", "motorcycle", "helmet"] },
+    { label: "Cleaning & Care", keywords: ["cleaning", "polish", "car care"] },
+  ],
+  gaming: [
+    { label: "Gaming Keyboards", keywords: ["gaming keyboard", "mechanical keyboard"] },
+    { label: "Gaming Mice", keywords: ["gaming mouse", "gaming mice"] },
+    { label: "Gaming Headsets", keywords: ["gaming headset", "gaming headphone"] },
+    { label: "Controllers", keywords: ["controller", "gamepad"] },
+    { label: "Consoles", keywords: ["console", "playstation", "xbox", "nintendo"] },
+  ],
+  watch: [
+    { label: "Smartwatches", keywords: ["smartwatch", "smart watch"] },
+    { label: "Analog Watches", keywords: ["analog", "analogue", "wrist watch"] },
+    { label: "Digital Watches", keywords: ["digital watch"] },
+  ],
+  bag: [
+    { label: "Backpacks", keywords: ["backpack", "backpacks"] },
+    { label: "Handbags", keywords: ["handbag", "hand bag"] },
+    { label: "Travel Bags", keywords: ["travel bag", "luggage", "duffle", "duffel"] },
+    { label: "Wallets", keywords: ["wallet", "card holder"] },
+  ],
+  books: [
+    { label: "Study & Academic", keywords: ["study", "academic", "textbook", "college"] },
+    { label: "Fiction", keywords: ["fiction", "novel", "story"] },
+    { label: "Self Help", keywords: ["self help", "personal development", "motivation"] },
+  ],
+  eyewear: [
+    { label: "Sunglasses", keywords: ["sunglass", "sunglasses"] },
+    { label: "Eyeglasses", keywords: ["eyeglass", "spectacle", "glasses"] },
+  ],
+};
+
+function getSubcategoryOptions(categoryName: string) {
+  const name = normalize(categoryName);
+
+  if (name.includes("fashion")) return SUBCATEGORY_MAP.fashion;
+  if (name.includes("mobile")) return SUBCATEGORY_MAP.mobile;
+  if (name.includes("electronics")) return SUBCATEGORY_MAP.electronics;
+  if (name.includes("home") || name.includes("living") || name.includes("kitchen")) return SUBCATEGORY_MAP["home & kitchen"];
+  if (name.includes("appliance")) return SUBCATEGORY_MAP.appliance;
+  if (name.includes("footwear") || name.includes("foot wear") || name.includes("shoe")) return SUBCATEGORY_MAP.footwear;
+  if (name.includes("beauty")) return SUBCATEGORY_MAP.beauty;
+  if (name.includes("toy") || name.includes("baby")) return SUBCATEGORY_MAP["toy & baby"];
+  if (name.includes("sport") || name.includes("fitness")) return SUBCATEGORY_MAP.sports;
+  if (name.includes("automotive")) return SUBCATEGORY_MAP.automotive;
+  if (name.includes("gaming") || name.includes("game")) return SUBCATEGORY_MAP.gaming;
+  if (name.includes("watch")) return SUBCATEGORY_MAP.watch;
+  if (name.includes("bag")) return SUBCATEGORY_MAP.bag;
+  if (name.includes("book")) return SUBCATEGORY_MAP.books;
+  if (name.includes("eyewear") || name.includes("eye wear")) return SUBCATEGORY_MAP.eyewear;
+
+  return [];
+}
+
+function productMatchesSubcategory(product: Product, categoryName: string, subcategory: string) {
+  if (!subcategory || subcategory === "all") return true;
+  const options = getSubcategoryOptions(categoryName);
+  const selected = options.find((item) => item.label === subcategory);
+  if (!selected) return true;
+
+  const text = normalize([
+    product.name,
+    product.brand,
+    product.short_description,
+    product.description,
+    categoryName,
+  ].join(" "));
+
+  return selected.keywords.some((keyword) => text.includes(normalize(keyword)));
+}
+
 
 /* =========================================================
    HELPERS
@@ -1557,6 +1694,9 @@ const [matchStage, setMatchStage] =
   const [category, setCategory] =
     useState("all");
 
+  const [subcategory, setSubcategory] =
+    useState("all");
+
   const [brand, setBrand] =
     useState("Any Brand");
 
@@ -1571,8 +1711,6 @@ const [matchStage, setMatchStage] =
       rating: 65,
     });
 
-  const [history, setHistory] =
-    useState<MatchHistoryEntry[]>([]);
 
   const [surpriseId, setSurpriseId] =
     useState<string | null>(null);
@@ -1593,16 +1731,6 @@ const [matchStage, setMatchStage] =
       window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(
-        localStorage.getItem("prime-match-history") || "[]"
-      );
-      setHistory(Array.isArray(stored) ? stored.slice(0, 5) : []);
-    } catch {
-      setHistory([]);
-    }
-  }, []);
 
   /* =====================================================
      CART SYNC
@@ -1828,7 +1956,12 @@ const [matchStage, setMatchStage] =
   ===================================================== */
 
   const allResults = useMemo(() => {
-    return products
+    const categoryProducts =
+      category === "all"
+        ? products
+        : products.filter((product) => product.category_id === category);
+
+    return categoryProducts
       .map((product) =>
         scoreProduct(
           product,
@@ -1857,6 +1990,20 @@ const [matchStage, setMatchStage] =
           b.stock > 0
         ) {
           return 1;
+        }
+
+        const budgetForSort = BUDGETS.find((item) => item.id === budget);
+        if (budgetForSort) {
+          const aInBudget =
+            Number(a.price) >= budgetForSort.min &&
+            Number(a.price) <= budgetForSort.max;
+          const bInBudget =
+            Number(b.price) >= budgetForSort.min &&
+            Number(b.price) <= budgetForSort.max;
+
+          if (aInBudget !== bInBudget) {
+            return aInBudget ? -1 : 1;
+          }
         }
 
         if (
@@ -1932,6 +2079,19 @@ const [matchStage, setMatchStage] =
       allResults,
       search,
     ]);
+
+  const subcategoryResults = useMemo(() => {
+    if (category === "all" || subcategory === "all") {
+      return filteredResults;
+    }
+
+    const selectedCategory = categories.find((item) => item.id === category);
+    if (!selectedCategory) return filteredResults;
+
+    return filteredResults.filter((product) =>
+      productMatchesSubcategory(product, selectedCategory.name, subcategory)
+    );
+  }, [filteredResults, category, subcategory, categories]);
 
   // Products stay hidden until the user explicitly runs PrimeMatch.
   // After matching, we keep a snapshot so changing controls does not
@@ -2291,39 +2451,11 @@ async function runMatch() {
 
   // Freeze the exact recommendations generated from the current
   // preferences. This makes the result screen stable and predictable.
-  setMatchedResults([...filteredResults]);
+  setMatchedResults([...subcategoryResults]);
   setMatchStage(5);
   setMatched(true);
   setMatching(false);
 
-  try {
-    const history = JSON.parse(
-      localStorage.getItem("prime-match-history") || "[]"
-    );
-    const entry = {
-      purpose,
-      budget,
-      category,
-      brand,
-      search: search.trim(),
-      createdAt: Date.now(),
-    };
-    const next = [entry, ...(Array.isArray(history) ? history : [])]
-      .filter((item, index, arr) =>
-        index === arr.findIndex((other) =>
-          other.purpose === item.purpose &&
-          other.budget === item.budget &&
-          other.category === item.category &&
-          other.brand === item.brand &&
-          other.search === item.search
-        )
-      )
-      .slice(0, 5);
-    localStorage.setItem("prime-match-history", JSON.stringify(next));
-    setHistory(next);
-  } catch {
-    // Match history is optional and should never block recommendations.
-  }
 
   window.setTimeout(() => {
     document
@@ -2342,6 +2474,7 @@ async function runMatch() {
   setPurpose("everyday");
   setBudget("1000-5000");
   setCategory("all");
+  setSubcategory("all");
   setBrand("Any Brand");
   setSearch("");
 
@@ -2548,60 +2681,6 @@ async function runMatch() {
             </div>
           </div>
         </section>
-
-        {/* =================================================
-            RECENT PRIME MATCHES
-        ================================================= */}
-
-        {history.length > 0 && !matched && (
-          <section className="mt-5 sm:mt-8">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <History size={14} className="text-[#b58a32]" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                    Your recent matches
-                  </p>
-                </div>
-                <h2 className="mt-1 text-xl font-black">Pick up where you left off</h2>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-5">
-              {history.map((item, index) => {
-                const purposeLabel = PURPOSES.find((p) => p.id === item.purpose)?.title || item.purpose;
-                const budgetLabel = BUDGETS.find((b) => b.id === item.budget)?.label || item.budget;
-                const categoryLabel = item.category === "all" ? "All Categories" : categories.find((c) => c.id === item.category)?.name || "Category";
-                return (
-                  <button
-                    key={`${item.createdAt}-${index}`}
-                    type="button"
-                    onClick={() => {
-                      setPurpose(item.purpose);
-                      setBudget(item.budget);
-                      setCategory(item.category);
-                      setBrand(item.brand);
-                      setSearch(item.search);
-                      setMatched(false);
-                      setMatchedResults([]);
-                      setToast("Previous PrimeMatch preferences restored");
-                    }}
-                    className="rounded-2xl border border-[#e9dfcc] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#c9a24d] hover:shadow-md"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff3d2] text-[#a17b2f]">
-                      <History size={15} />
-                    </span>
-                    <p className="mt-3 line-clamp-1 text-xs font-black text-[#4c4030]">{purposeLabel}</p>
-                    <p className="mt-1 line-clamp-1 text-[10px] font-semibold text-gray-400">{budgetLabel} · {categoryLabel}</p>
-                    {item.search && (
-                      <p className="mt-2 line-clamp-1 text-[10px] font-bold text-[#9b762b]">“{item.search}”</p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
 
         {/* =================================================
             BUILDER
@@ -2820,12 +2899,10 @@ async function runMatch() {
                 <div className="relative">
                   <select
                     value={category}
-                    onChange={(event) =>
-                      setCategory(
-                        event.target
-                          .value
-                      )
-                    }
+                    onChange={(event) => {
+                      setCategory(event.target.value);
+                      setSubcategory("all");
+                    }}
                     className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                   >
                     <option value="all">
@@ -2856,6 +2933,54 @@ async function runMatch() {
                   />
                 </div>
               </div>
+
+              {/* SUBCATEGORY */}
+              {activeCategory && getSubcategoryOptions(activeCategory.name).length > 0 && (
+                <div className="md:col-span-3">
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <label className="block text-xs font-black text-gray-700">
+                        {activeCategory.name} Subcategory
+                      </label>
+                      <p className="mt-1 text-[11px] font-semibold text-gray-400">
+                        Choose a more specific product type for a better match.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black text-[#a17b2f]">
+                      {getSubcategoryOptions(activeCategory.name).length} types available
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                    <button
+                      type="button"
+                      onClick={() => setSubcategory("all")}
+                      className={`rounded-2xl border px-3 py-3 text-left text-xs font-black transition ${
+                        subcategory === "all"
+                          ? "border-[#c9a24d] bg-[#fff8e8] text-[#8f6b25] shadow-sm"
+                          : "border-[#eee5d6] bg-white text-gray-600 hover:border-[#dbc58e]"
+                      }`}
+                    >
+                      All {activeCategory.name}
+                    </button>
+
+                    {getSubcategoryOptions(activeCategory.name).map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => setSubcategory(item.label)}
+                        className={`rounded-2xl border px-3 py-3 text-left text-xs font-black transition ${
+                          subcategory === item.label
+                            ? "border-[#c9a24d] bg-[#fff8e8] text-[#8f6b25] shadow-sm"
+                            : "border-[#eee5d6] bg-white text-gray-600 hover:border-[#dbc58e]"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* BRAND */}
               <div>
@@ -3031,6 +3156,12 @@ async function runMatch() {
                   ?.name ||
                   "All Categories"}
               </span>
+
+              {subcategory !== "all" && (
+                <span className="rounded-full bg-[#fff4d6] px-3 py-1.5 text-[10px] font-black text-[#956f27]">
+                  {subcategory}
+                </span>
+              )}
 
               <span className="rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black text-gray-600">
                 {brand}
@@ -3754,7 +3885,9 @@ async function runMatch() {
 
               <h2 className="mt-1 text-2xl font-black">
                {matched
-                 ? "Your ranked matches"
+                 ? subcategory !== "all"
+                   ? `${subcategory} matches`
+                   : "Your ranked matches"
                  : "Ready to find your match?"}
               </h2>
 
