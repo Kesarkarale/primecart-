@@ -251,10 +251,9 @@ function getImageCandidates(value?: string | null) {
 
   return Array.from(
     new Set([
-      `/products/${clean}`,
-      `/products/${encoded}`,
       `/${clean}`,
       `/${encoded}`,
+      `/products/${clean}`,
       `/product-images/${clean}`,
       `/images/products/${clean}`,
       `/images/${clean}`,
@@ -291,7 +290,6 @@ function SafeCartImage({
       alt={alt}
       className={className}
       loading="lazy"
-      decoding="async"
       onError={() => setIndex((current) => current + 1)}
     />
   );
@@ -432,102 +430,15 @@ export default function CheckoutPage() {
         .filter((item) => item && item.id)
         .map((item) => ({
           ...item,
-          quantity: Math.max(1, Number(item.quantity || 1)),
+          quantity: Math.max(
+            1,
+            Number(item.quantity || 1)
+          ),
           price: Number(item.price || 0),
         }));
 
-      /* Refresh current product price + image from Supabase. */
-      let enrichedCart = normalizedCart;
-
-      try {
-        const productIds = Array.from(
-          new Set(
-            normalizedCart
-              .map((item) => String(item.product_id || "").trim())
-              .filter((value) =>
-                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
-              )
-          )
-        );
-
-        let productRows: Array<{
-          id: string;
-          name: string;
-          price: number;
-          original_price: number | null;
-          image_url: string | null;
-          stock: number | null;
-          is_active: boolean;
-        }> = [];
-
-        if (productIds.length > 0) {
-          const { data, error } = await supabase
-            .from("products")
-            .select("id,name,price,original_price,image_url,stock,is_active")
-            .in("id", productIds)
-            .eq("is_active", true);
-
-          if (error) {
-            console.error("Checkout product refresh failed:", error);
-          } else {
-            productRows = (data || []) as typeof productRows;
-          }
-        }
-
-        for (const item of normalizedCart) {
-          const alreadyFound = productRows.some(
-            (product) =>
-              String(product.id) === String(item.product_id || "") ||
-              product.name?.trim() === item.name?.trim()
-          );
-
-          if (alreadyFound || !item.name?.trim()) continue;
-
-          const { data, error } = await supabase
-            .from("products")
-            .select("id,name,price,original_price,image_url,stock,is_active")
-            .eq("name", item.name.trim())
-            .eq("is_active", true)
-            .limit(1)
-            .maybeSingle();
-
-          if (!error && data) {
-            productRows.push(data as typeof productRows[number]);
-          }
-        }
-
-        enrichedCart = normalizedCart.map((item) => {
-          const product = productRows.find(
-            (row) =>
-              String(row.id) === String(item.product_id || "") ||
-              row.name?.trim() === item.name?.trim()
-          );
-
-          if (!product) return item;
-
-          return {
-            ...item,
-            product_id: String(product.id),
-            price: Number(product.price ?? item.price ?? 0),
-            original_price:
-              product.original_price != null
-                ? Number(product.original_price)
-                : item.original_price ?? null,
-            image_url: product.image_url || item.image_url || null,
-            stock: Number(product.stock ?? item.stock ?? 0),
-          };
-        });
-      } catch (error) {
-        console.error("Checkout product enrichment error:", error);
-      }
-
       if (!cancelled) {
-        setItems(enrichedCart);
-        try {
-          localStorage.setItem(CART_KEY, JSON.stringify(enrichedCart));
-        } catch {
-          // Local cache is optional.
-        }
+        setItems(normalizedCart);
       }
 
       const localAddresses = safeParse<Address[]>(
@@ -1488,6 +1399,10 @@ async function placeOrder() {
   setAddressError("");
 
   try {
+    /* =====================================================
+       STEP 1: VALID CART ITEMS
+    ===================================================== */
+
     const validItems = items.filter(
       (item) =>
         item &&
@@ -1499,15 +1414,10 @@ async function placeOrder() {
       throw new Error("No valid products found in your cart.");
     }
 
-    /*
-     * Resolve the REAL products.id from Supabase before
-     * calling place_order().
-     *
-     * Some older cart records may have stored the cart row id
-     * inside item.id instead of products.id. In that case the
-     * old code sent the wrong UUID to place_order(), which caused:
-     * "Product not found" even though the product was visible.
-     */
+    /* =====================================================
+       STEP 2: RESOLVE REAL SUPABASE PRODUCTS
+    ===================================================== */
+
     const resolvedItems: Array<{
       product_id: string;
       quantity: number;
@@ -1523,7 +1433,9 @@ async function placeOrder() {
       const candidates = Array.from(
         new Set(
           [item.product_id, item.id]
-            .map((value) => String(value || "").trim())
+            .map((value) =>
+              String(value || "").trim()
+            )
             .filter(Boolean)
         )
       );
@@ -1532,13 +1444,15 @@ async function placeOrder() {
         id: string;
         name: string;
         price: number;
-        original_price: number | null;
         image_url: string | null;
         stock: number | null;
         is_active: boolean;
       } | null = null;
 
-      /* First try candidates that look like UUIDs. */
+      /* ---------------------------------------------------
+         TRY REAL UUIDs FIRST
+      --------------------------------------------------- */
+
       for (const candidate of candidates) {
         if (
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -1551,7 +1465,7 @@ async function placeOrder() {
         const { data, error } = await supabase
           .from("products")
           .select(
-            "id, name, price, original_price, image_url, stock, is_active"
+            "id, name, price, image_url, stock, is_active"
           )
           .eq("id", candidate)
           .eq("is_active", true)
@@ -1571,16 +1485,15 @@ async function placeOrder() {
         }
       }
 
-      /*
-       * Fallback for old cart records where product_id was not
-       * stored correctly. The visible product name is used to
-       * recover the active product's real UUID.
-       */
+      /* ---------------------------------------------------
+         FALLBACK: FIND BY PRODUCT NAME
+      --------------------------------------------------- */
+
       if (!product && item.name?.trim()) {
         const { data, error } = await supabase
           .from("products")
           .select(
-            "id, name, price, original_price, image_url, stock, is_active"
+            "id, name, price, image_url, stock, is_active"
           )
           .eq("name", item.name.trim())
           .eq("is_active", true)
@@ -1597,11 +1510,19 @@ async function placeOrder() {
         }
       }
 
+      /* ---------------------------------------------------
+         PRODUCT NOT FOUND
+      --------------------------------------------------- */
+
       if (!product) {
         throw new Error(
           `Product "${item.name}" is no longer available. Please remove it from your cart and add it again.`
         );
       }
+
+      /* ---------------------------------------------------
+         STOCK CHECK
+      --------------------------------------------------- */
 
       const availableStock = Number(
         product.stock ?? 0
@@ -1615,28 +1536,56 @@ async function placeOrder() {
         );
       }
 
+      /* ---------------------------------------------------
+         IMPORTANT:
+         ALWAYS USE CURRENT SUPABASE PRICE
+      --------------------------------------------------- */
+
+      const actualProductPrice = Number(
+        product.price ?? 0
+      );
+
+      if (
+        !Number.isFinite(actualProductPrice) ||
+        actualProductPrice < 0
+      ) {
+        throw new Error(
+          `Invalid price for product "${product.name}".`
+        );
+      }
+
       resolvedItems.push({
         product_id: String(product.id),
         quantity,
         item: {
           ...item,
+
+          /* REAL PRODUCT ID */
           product_id: String(product.id),
-          price: Number(product.price ?? item.price ?? 0),
+
+          /* REAL CURRENT SUPABASE PRICE */
+          price: actualProductPrice,
+
+          /* Keep original price if available */
           original_price:
-            product.original_price != null
-              ? Number(product.original_price)
-              : item.original_price ?? null,
+            Number(item.original_price || 0) > 0
+              ? Number(item.original_price)
+              : actualProductPrice,
+
           image_url:
-            product.image_url ?? item.image_url ?? null,
+            product.image_url ??
+            item.image_url ??
+            null,
+
           stock: availableStock,
         },
       });
     }
 
-    /*
-     * Combine duplicate products so the RPC never receives
-     * the same product twice in one order.
-     */
+    /* =====================================================
+       STEP 3: COMBINE DUPLICATE PRODUCTS
+    ===================================================== */
+
     const combined = new Map<
       string,
       {
@@ -1647,21 +1596,29 @@ async function placeOrder() {
     >();
 
     for (const entry of resolvedItems) {
-      const existing = combined.get(entry.product_id);
+      const existing = combined.get(
+        entry.product_id
+      );
 
       if (existing) {
+        const newQuantity =
+          existing.quantity + entry.quantity;
+
         combined.set(entry.product_id, {
           ...existing,
-          quantity:
-            existing.quantity + entry.quantity,
+
+          quantity: newQuantity,
+
           item: {
             ...existing.item,
-            quantity:
-              existing.quantity + entry.quantity,
+            quantity: newQuantity,
           },
         });
       } else {
-        combined.set(entry.product_id, entry);
+        combined.set(
+          entry.product_id,
+          entry
+        );
       }
     }
 
@@ -1669,11 +1626,16 @@ async function placeOrder() {
       combined.values()
     );
 
-    /* Re-check combined quantities against current stock. */
+    /* =====================================================
+       STEP 4: FINAL STOCK CHECK
+    ===================================================== */
+
     for (const entry of finalItems) {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, original_price, image_url, stock, is_active")
+        .select(
+          "id, name, stock, is_active, price, image_url"
+        )
         .eq("id", entry.product_id)
         .eq("is_active", true)
         .maybeSingle();
@@ -1696,74 +1658,144 @@ async function placeOrder() {
         );
       }
 
-      /* Refresh the final item with the latest DB values. */
+      /* ---------------------------------------------------
+         FINAL PRICE REFRESH
+         Make absolutely sure finalItems contains the
+         latest Supabase price.
+      --------------------------------------------------- */
+
+      const latestPrice = Number(
+        data.price ?? entry.item.price ?? 0
+      );
+
       entry.item = {
         ...entry.item,
-        product_id: String(data.id),
-        price: Number(data.price ?? entry.item.price ?? 0),
-        original_price:
-          data.original_price != null
-            ? Number(data.original_price)
-            : entry.item.original_price ?? null,
+        price: latestPrice,
         image_url:
-          data.image_url ?? entry.item.image_url ?? null,
+          data.image_url ??
+          entry.item.image_url ??
+          null,
         stock: availableStock,
       };
     }
 
     /* =====================================================
-       FINAL ORDER TOTALS FROM CURRENT SUPABASE PRODUCTS
+       STEP 5: RECALCULATE EVERYTHING FROM FINAL ITEMS
+
+       IMPORTANT:
+       DO NOT USE THE OLD `subtotal`, `total`,
+       `deliveryCharge` variables here.
+
+       These final values come directly from the
+       latest Supabase product prices.
     ===================================================== */
 
     const finalSubtotal = finalItems.reduce(
-      (sum, entry) =>
-        sum +
-        Number(entry.item.price || 0) *
-        Number(entry.quantity || 0),
-      0
-    );
-
-    const finalMrp = finalItems.reduce(
       (sum, entry) => {
-        const price = Number(entry.item.price || 0);
-        const original =
-          Number(entry.item.original_price || 0) > 0
-            ? Number(entry.item.original_price)
-            : price;
+        const price = Number(
+          entry.item.price || 0
+        );
+
+        const quantity = Number(
+          entry.quantity || 0
+        );
 
         return (
-          sum +
-          Math.max(original, price) *
-            Number(entry.quantity || 0)
+          sum + price * quantity
         );
       },
       0
     );
 
-    const finalProductDiscount = Math.max(
-      finalMrp - finalSubtotal,
+    /* ---------------------------------------------------
+       FINAL MRP
+    --------------------------------------------------- */
+
+    const finalMrp = finalItems.reduce(
+      (sum, entry) => {
+        const currentPrice = Number(
+          entry.item.price || 0
+        );
+
+        const originalPrice =
+          Number(
+            entry.item.original_price || 0
+          ) > 0
+            ? Number(
+                entry.item.original_price
+              )
+            : currentPrice;
+
+        const quantity = Number(
+          entry.quantity || 0
+        );
+
+        return (
+          sum +
+          Math.max(
+            originalPrice,
+            currentPrice
+          ) * quantity
+        );
+      },
       0
     );
 
-    const finalCouponDiscount = couponApplied
-      ? Math.min(
-          Math.round(
-            finalSubtotal *
-              (COUPON_PERCENT / 100)
-          ),
-          COUPON_MAX
-        )
-      : 0;
+    /* ---------------------------------------------------
+       PRODUCT DISCOUNT
+    --------------------------------------------------- */
 
-    const finalAmountAfterDiscount = Math.max(
-      finalSubtotal - finalCouponDiscount,
-      0
-    );
+    const finalProductDiscount =
+      Math.max(
+        finalMrp - finalSubtotal,
+        0
+      );
+
+    /* ---------------------------------------------------
+       COUPON DISCOUNT
+
+       PRIME10 = 10%
+       Maximum discount = ₹500
+    --------------------------------------------------- */
+
+    const finalCouponDiscount =
+      couponApplied
+        ? Math.min(
+            Math.round(
+              finalSubtotal *
+                (COUPON_PERCENT / 100)
+            ),
+            COUPON_MAX
+          )
+        : 0;
+
+    /* ---------------------------------------------------
+       AMOUNT AFTER COUPON
+    --------------------------------------------------- */
+
+    const finalAmountAfterDiscount =
+      Math.max(
+        finalSubtotal -
+          finalCouponDiscount,
+        0
+      );
+
+    /* ---------------------------------------------------
+       DELIVERY
+
+       ₹999 or above = FREE
+       Below ₹999 = ₹49
+    --------------------------------------------------- */
 
     const finalDeliveryCharge =
-      finalAmountAfterDiscount >= FREE_DELIVERY_LIMIT
+      finalAmountAfterDiscount >=
+      FREE_DELIVERY_LIMIT
         ? 0
         : DELIVERY_CHARGE;
+
+    /* ---------------------------------------------------
+       FINAL ORDER TOTAL
+    --------------------------------------------------- */
 
     const finalTotal = Math.max(
       finalAmountAfterDiscount +
@@ -1771,30 +1803,95 @@ async function placeOrder() {
       0
     );
 
+    /* =====================================================
+       SAFETY VALIDATION
+    ===================================================== */
+
+    if (
+      !Number.isFinite(finalSubtotal) ||
+      finalSubtotal < 0
+    ) {
+      throw new Error(
+        "Unable to calculate order subtotal. Please refresh your cart and try again."
+      );
+    }
+
+    if (
+      !Number.isFinite(finalTotal) ||
+      finalTotal < 0
+    ) {
+      throw new Error(
+        "Unable to calculate order total. Please refresh your cart and try again."
+      );
+    }
+
+    /* =====================================================
+       DEBUG LOG
+       Useful for checking exact values in browser console.
+    ===================================================== */
+
+    console.log(
+      "PRIMECART FINAL ORDER CALCULATION:",
+      {
+        finalItems,
+        finalSubtotal,
+        finalProductDiscount,
+        finalCouponDiscount,
+        finalDeliveryCharge,
+        finalTotal,
+      }
+    );
+
+    /* =====================================================
+       STEP 6: RPC ITEMS
+    ===================================================== */
+
     const rpcItems = finalItems.map(
       (entry) => ({
-        product_id: entry.product_id,
-        quantity: entry.quantity,
+        product_id:
+          entry.product_id,
+        quantity:
+          entry.quantity,
       })
     );
 
-    /*
-     * IMPORTANT:
-     * place_order() is the ONLY database operation that creates
-     * the order and decreases stock. It runs inside one database
-     * transaction, so a failed order does not partially decrease stock.
-     */
-    const { data: orderId, error } =
-      await supabase.rpc("place_order", {
+    /* =====================================================
+       STEP 7: PLACE ORDER IN SUPABASE
+    ===================================================== */
+
+    const {
+      data: orderId,
+      error,
+    } = await supabase.rpc(
+      "place_order",
+      {
         p_items: rpcItems,
-        p_subtotal: finalSubtotal,
+
+        /* USE FINAL CALCULATED VALUES */
+        p_subtotal:
+          finalSubtotal,
+
         p_discount:
-          finalProductDiscount + finalCouponDiscount,
-        p_delivery_charge: finalDeliveryCharge,
-        p_total_amount: finalTotal,
-        p_payment_method: getPaymentLabel(),
-        p_shipping_address: selectedAddress,
-      });
+          finalProductDiscount +
+          finalCouponDiscount,
+
+        p_delivery_charge:
+          finalDeliveryCharge,
+
+        p_total_amount:
+          finalTotal,
+
+        p_payment_method:
+          getPaymentLabel(),
+
+        p_shipping_address:
+          selectedAddress,
+      }
+    );
+
+    /* =====================================================
+       RPC ERROR HANDLING
+    ===================================================== */
 
     if (error) {
       console.error(
@@ -1806,23 +1903,35 @@ async function placeOrder() {
         error.message || ""
       ).toLowerCase();
 
-      if (message.includes("insufficient stock")) {
+      if (
+        message.includes(
+          "insufficient stock"
+        )
+      ) {
         throw new Error(
           "One or more products do not have enough stock. Please reduce the quantity and try again."
         );
       }
 
       if (
-  message.includes("product not found") ||
-  message.includes("product not found or inactive")
-) {
-  throw new Error(
-    error.message ||
-      "Unable to find the selected product."
-  );
-}
+        message.includes(
+          "product not found"
+        ) ||
+        message.includes(
+          "product not found or inactive"
+        )
+      ) {
+        throw new Error(
+          error.message ||
+            "Unable to find the selected product."
+        );
+      }
 
-      if (message.includes("not authenticated")) {
+      if (
+        message.includes(
+          "not authenticated"
+        )
+      ) {
         throw new Error(
           "Your session has expired. Please login again."
         );
@@ -1840,32 +1949,56 @@ async function placeOrder() {
       );
     }
 
-    const localOrderId = String(orderId);
+    const localOrderId =
+      String(orderId);
+
+    /* =====================================================
+       STEP 8: LOCAL SUCCESS ORDER
+       Use FINAL VALUES here too.
+    ===================================================== */
 
     const order: OrderRecord = {
       id: localOrderId,
-      createdAt: new Date().toISOString(),
+
+      createdAt:
+        new Date().toISOString(),
+
       status: "placed",
-      paymentMethod: getPaymentLabel(),
-      total: finalTotal,
-      subtotal: finalSubtotal,
-      delivery: finalDeliveryCharge,
+
+      paymentMethod:
+        getPaymentLabel(),
+
+      total:
+        finalTotal,
+
+      subtotal:
+        finalSubtotal,
+
+      delivery:
+        finalDeliveryCharge,
+
       discount:
-        finalProductDiscount + finalCouponDiscount,
-      address: selectedAddress,
-      items: finalItems.map(
-        (entry) => entry.item
-      ),
+        finalProductDiscount +
+        finalCouponDiscount,
+
+      address:
+        selectedAddress,
+
+      items:
+        finalItems.map(
+          (entry) => entry.item
+        ),
     };
 
-    /*
-     * Keep local order information only for compatibility
-     * with the existing order-success page. Supabase remains
-     * the actual source of truth.
-     */
+    /* =====================================================
+       KEEP LOCAL ORDER ONLY FOR SUCCESS PAGE COMPATIBILITY
+    ===================================================== */
+
     const existingOrders =
       safeParse<OrderRecord[]>(
-        localStorage.getItem(ORDERS_KEY),
+        localStorage.getItem(
+          ORDERS_KEY
+        ),
         []
       );
 
@@ -1875,7 +2008,8 @@ async function placeOrder() {
         order,
         ...existingOrders.filter(
           (existing) =>
-            existing.id !== localOrderId
+            existing.id !==
+            localOrderId
         ),
       ])
     );
@@ -1885,56 +2019,92 @@ async function placeOrder() {
       JSON.stringify(order)
     );
 
-    /*
-     * IMPORTANT: Remove ONLY the products that were successfully
-     * ordered from the logged-in user's Supabase cart.
-     * The products table, wishlist, and other users' carts are
-     * never touched. This runs only after place_order() succeeds.
-     */
-    const {
-      data: { user: currentUser },
-      error: currentUserError,
-    } = await supabase.auth.getUser();
+    /* =====================================================
+       STEP 9: GET CURRENT USER
+    ===================================================== */
 
-    if (currentUserError || !currentUser) {
+    const {
+      data: {
+        user: currentUser,
+      },
+      error:
+        currentUserError,
+    } =
+      await supabase.auth.getUser();
+
+    if (
+      currentUserError ||
+      !currentUser
+    ) {
       throw new Error(
         "Order was created, but your session could not be verified to clear the cart. Please refresh the cart page."
       );
     }
 
-    const orderedProductIds = finalItems.map(
-      (entry) => entry.product_id
-    );
+    /* =====================================================
+       STEP 10: CLEAR ONLY CURRENT USER'S ORDERED CART ITEMS
+    ===================================================== */
 
-    if (orderedProductIds.length > 0) {
-      const { error: clearCartError } = await supabase
+    const orderedProductIds =
+      finalItems.map(
+        (entry) =>
+          entry.product_id
+      );
+
+    if (
+      orderedProductIds.length > 0
+    ) {
+      const {
+        error:
+          clearCartError,
+      } = await supabase
         .from("cart_items")
         .delete()
-        .eq("user_id", currentUser.id)
-        .in("product_id", orderedProductIds);
+        .eq(
+          "user_id",
+          currentUser.id
+        )
+        .in(
+          "product_id",
+          orderedProductIds
+        );
 
       if (clearCartError) {
         console.error(
           "Cart cleanup after order failed:",
           clearCartError
         );
+
         throw new Error(
           "Order was placed successfully, but the cart could not be cleared. Please open Cart and refresh once."
         );
       }
     }
 
-    /* Keep the browser cart in sync with the database. */
-    localStorage.removeItem(CART_KEY);
-    window.dispatchEvent(new Event("storage"));
+    /* =====================================================
+       STEP 11: CLEAR LOCAL CART
+    ===================================================== */
+
+    localStorage.removeItem(
+      CART_KEY
+    );
+
+    window.dispatchEvent(
+      new Event("storage")
+    );
+
+    /* =====================================================
+       SUCCESS
+    ===================================================== */
 
     showToast(
       "Order placed successfully!",
       "success"
     );
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, 800)
+    await new Promise(
+      (resolve) =>
+        setTimeout(resolve, 800)
     );
 
     router.push(
@@ -3848,4 +4018,4 @@ async function placeOrder() {
       `}</style>
     </main>
   );
-}
+}checkut
