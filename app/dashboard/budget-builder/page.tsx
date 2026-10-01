@@ -102,224 +102,109 @@ const shoppingGoals = [
  * so these are intelligent UI filters matched against product name,
  * brand, slug and description.
  */
-const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> = {
-  fashion: [
-    { label: "T-Shirts", keywords: ["tshirt", "t-shirt", "tee", "t shirt"] },
-    { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt", "oxford"] },
-    { label: "Tops", keywords: ["top", "crop top", "tank top", "camisole"] },
-    { label: "Jeans", keywords: ["jeans", "denim"] },
-    { label: "Trousers & Pants", keywords: ["trouser", "pants", "chino", "cargo"] },
-    { label: "Dresses", keywords: ["dress", "gown", "maxi dress", "midi"] },
-    { label: "Skirts", keywords: ["skirt", "mini skirt", "midi skirt"] },
-    { label: "Jackets & Coats", keywords: ["jacket", "coat", "blazer", "overcoat"] },
-    { label: "Hoodies & Sweatshirts", keywords: ["hoodie", "sweatshirt", "sweater"] },
-    { label: "Ethnic Wear", keywords: ["kurta", "kurti", "saree", "ethnic", "salwar", "lehenga", "anarkali"] },
-    { label: "Innerwear", keywords: ["innerwear", "inner wear", "bra", "brief", "boxer"] },
-    { label: "Sleepwear", keywords: ["sleepwear", "nightwear", "night suit", "pyjama", "pajama"] },
-    { label: "Sportswear", keywords: ["activewear", "sportswear", "track pants", "gym wear"] },
-    { label: "Fashion Accessories", keywords: ["belt", "cap", "scarf", "tie", "socks", "accessory"] },
-  ],
-  mobile: [
-    { label: "Smartphones", keywords: ["mobile", "phone", "smartphone", "iphone", "android"] },
-    { label: "Cases & Covers", keywords: ["case", "cover", "back cover"] },
-    { label: "Chargers & Adapters", keywords: ["charger", "charging", "adapter", "gan charger"] },
-    { label: "Power Banks", keywords: ["power bank", "powerbank"] },
-    { label: "Screen Protectors", keywords: ["screen protector", "tempered", "glass protector"] },
-    { label: "Cables", keywords: ["cable", "usb cable", "type c", "lightning cable"] },
-    { label: "Mobile Holders", keywords: ["mobile holder", "phone holder", "stand"] },
-    { label: "Mobile Accessories", keywords: ["mobile accessory", "phone accessory"] },
-  ],
-  electronics: [
-    { label: "Headphones & Earbuds", keywords: ["headphone", "headset", "earphone", "earbuds"] },
-    { label: "Speakers", keywords: ["speaker", "soundbar", "bluetooth speaker"] },
-    { label: "Keyboards", keywords: ["keyboard", "mechanical keyboard"] },
-    { label: "Mice", keywords: ["mouse", "mice"] },
-    { label: "Monitors", keywords: ["monitor", "display"] },
-    { label: "Cameras", keywords: ["camera", "dslr", "mirrorless", "action camera"] },
-    { label: "Printers", keywords: ["printer", "printing"] },
-    { label: "Projectors", keywords: ["projector"] },
-    { label: "Networking", keywords: ["router", "wifi", "network", "switch"] },
-    { label: "Computer Accessories", keywords: ["webcam", "hub", "mouse pad", "computer accessory"] },
-  ],
-  "home & kitchen": [
-    { label: "Kitchen Essentials", keywords: ["kitchen", "cookware", "pan", "pot", "utensil"] },
-    { label: "Cookware", keywords: ["cookware", "kadai", "pressure cooker", "tawa"] },
-    { label: "Coffee & Tea", keywords: ["coffee", "tea", "kettle", "mug"] },
-    { label: "Dining & Serveware", keywords: ["dining", "plate", "bowl", "glass", "serveware"] },
-    { label: "Home Decor", keywords: ["decor", "decoration", "wall", "lamp", "cushion", "vase"] },
-    { label: "Storage & Organization", keywords: ["storage", "organizer", "rack", "box", "container"] },
-    { label: "Furniture", keywords: ["furniture", "chair", "table", "sofa", "desk", "shelf"] },
-    { label: "Bedding & Bath", keywords: ["bedsheet", "bedding", "pillow", "towel", "bath"] },
-    { label: "Cleaning", keywords: ["cleaning", "mop", "broom", "cleaner"] },
-  ],
-  appliance: [
-    { label: "Kitchen Appliances", keywords: ["air fryer", "mixer", "oven", "microwave", "kettle", "coffee maker", "toaster"] },
-    { label: "Refrigerators", keywords: ["refrigerator", "fridge"] },
-    { label: "Washing Machines", keywords: ["washing machine", "washer"] },
-    { label: "Air Conditioners", keywords: ["air conditioner", "ac", "split ac"] },
-    { label: "Fans", keywords: ["fan", "ceiling fan", "table fan"] },
-    { label: "Coolers", keywords: ["cooler", "air cooler"] },
-    { label: "Vacuum Cleaners", keywords: ["vacuum", "vacuum cleaner"] },
-    { label: "Geysers & Water Heaters", keywords: ["geyser", "water heater"] },
-    { label: "Irons", keywords: ["iron", "steam iron"] },
-  ],
-  footwear: [
-    { label: "Sneakers", keywords: ["sneaker", "sneakers"] },
-    { label: "Running Shoes", keywords: ["running", "running shoe"] },
-    { label: "Sports Shoes", keywords: ["sports shoe", "training shoe"] },
-    { label: "Casual Shoes", keywords: ["casual shoe", "casual shoes"] },
-    { label: "Formal Shoes", keywords: ["formal shoe", "loafers", "loafer", "oxford shoe"] },
-    { label: "Sandals", keywords: ["sandal", "sandals"] },
-    { label: "Slippers", keywords: ["slipper", "slippers", "flip flop"] },
-    { label: "Boots", keywords: ["boot", "boots"] },
-    { label: "Heels", keywords: ["heel", "heels", "stiletto"] },
-    { label: "Kids Footwear", keywords: ["kids shoe", "kids footwear", "children shoe"] },
-  ],
-  beauty: [
-    { label: "Face Care", keywords: ["face wash", "cleanser", "face cream", "face care"] },
-    { label: "Serums", keywords: ["serum", "face serum"] },
-    { label: "Moisturizers", keywords: ["moisturizer", "moisturiser", "hydrating cream"] },
-    { label: "Sunscreen", keywords: ["sunscreen", "sun screen", "spf"] },
-    { label: "Makeup", keywords: ["makeup", "make up"] },
-    { label: "Lip Makeup", keywords: ["lipstick", "lip gloss", "lip balm", "lip liner"] },
-    { label: "Eye Makeup", keywords: ["mascara", "eyeliner", "kajal", "eyeshadow"] },
-    { label: "Foundation & Concealer", keywords: ["foundation", "concealer", "compact"] },
-    { label: "Hair Care", keywords: ["shampoo", "conditioner", "hair mask", "hair oil", "hair care"] },
-    { label: "Hair Styling", keywords: ["hair dryer", "straightener", "curler", "styling"] },
-    { label: "Fragrance", keywords: ["perfume", "fragrance", "deodorant", "body spray"] },
-    { label: "Bath & Body", keywords: ["body wash", "body lotion", "body scrub", "bath", "body care"] },
-    { label: "Oral Care", keywords: ["toothpaste", "toothbrush", "oral care"] },
-    { label: "Men's Grooming", keywords: ["shaving", "beard", "trimmer", "razor", "mens grooming"] },
-    { label: "Beauty Tools", keywords: ["beauty tool", "makeup brush", "sponge", "facial tool"] },
-    { label: "Nail Care", keywords: ["nail", "nail polish", "manicure"] },
-  ],
-  "toy & baby": [
-    { label: "Toys", keywords: ["toy", "toys", "doll", "car toy"] },
-    { label: "Board Games", keywords: ["board game", "board games"] },
-    { label: "Puzzles", keywords: ["puzzle", "jigsaw"] },
-    { label: "Educational Toys", keywords: ["educational", "learning toy", "stem"] },
-    { label: "Baby Care", keywords: ["baby", "diaper", "feeding", "infant"] },
-    { label: "Baby Clothing", keywords: ["baby clothes", "baby clothing", "newborn"] },
-    { label: "Baby Feeding", keywords: ["feeding bottle", "baby feeding", "bottle"] },
-    { label: "Kids Games", keywords: ["kids game", "game for kids"] },
-    { label: "Remote Control Toys", keywords: ["remote control", "rc car", "rc toy"] },
-    { label: "Outdoor Toys", keywords: ["outdoor toy", "ride on", "scooter"] },
-  ],
-  sports: [
-    { label: "Fitness & Gym", keywords: ["fitness", "gym", "dumbbell", "workout", "gym equipment"] },
-    { label: "Running", keywords: ["running", "jogging"] },
-    { label: "Yoga", keywords: ["yoga", "mat", "meditation"] },
-    { label: "Sportswear", keywords: ["sportswear", "track", "activewear", "jersey"] },
-    { label: "Cricket", keywords: ["cricket", "bat", "ball", "wicket"] },
-    { label: "Football", keywords: ["football", "soccer"] },
-    { label: "Badminton", keywords: ["badminton", "racket", "shuttle"] },
-    { label: "Cycling", keywords: ["cycle", "cycling", "bicycle"] },
-    { label: "Camping & Outdoor", keywords: ["camping", "tent", "hiking", "outdoor"] },
-    { label: "Sports Accessories", keywords: ["sports accessory", "sports accessories"] },
-  ],
-  automotive: [
-    { label: "Car Accessories", keywords: ["car", "car accessory", "car cover", "dashboard"] },
-    { label: "Bike Accessories", keywords: ["bike", "motorcycle", "helmet", "biker"] },
-    { label: "Car Electronics", keywords: ["car audio", "dash cam", "gps", "car charger"] },
-    { label: "Cleaning & Care", keywords: ["cleaning", "polish", "car care", "cleaner"] },
-    { label: "Interior Accessories", keywords: ["seat cover", "floor mat", "car interior"] },
-    { label: "Exterior Accessories", keywords: ["car cover", "exterior", "mirror"] },
-    { label: "Tools & Maintenance", keywords: ["tool", "maintenance", "puncture", "repair"] },
-    { label: "Safety Accessories", keywords: ["safety", "reflector", "first aid", "emergency"] },
-  ],
-  gaming: [
-    { label: "Gaming Keyboards", keywords: ["gaming keyboard", "mechanical keyboard"] },
-    { label: "Gaming Mice", keywords: ["gaming mouse", "gaming mice"] },
-    { label: "Gaming Headsets", keywords: ["gaming headset", "gaming headphone"] },
-    { label: "Controllers", keywords: ["controller", "gamepad"] },
-    { label: "Consoles", keywords: ["console", "playstation", "xbox", "nintendo"] },
-    { label: "Gaming Monitors", keywords: ["gaming monitor"] },
-    { label: "Gaming Chairs", keywords: ["gaming chair"] },
-    { label: "Gaming Accessories", keywords: ["gaming accessory", "mouse pad", "streaming"] },
-    { label: "PC Gaming", keywords: ["gaming pc", "gaming desktop", "graphics card", "gpu"] },
-  ],
-  watch: [
-    { label: "Smartwatches", keywords: ["smartwatch", "smart watch"] },
-    { label: "Analog Watches", keywords: ["analog", "analogue", "wrist watch"] },
-    { label: "Digital Watches", keywords: ["digital watch"] },
-    { label: "Sports Watches", keywords: ["sports watch", "fitness watch"] },
-    { label: "Luxury Watches", keywords: ["luxury watch", "premium watch"] },
-    { label: "Watch Accessories", keywords: ["watch strap", "watch band", "watch accessory"] },
-  ],
-  bag: [
-    { label: "Backpacks", keywords: ["backpack", "backpacks"] },
-    { label: "Handbags", keywords: ["handbag", "hand bag"] },
-    { label: "Sling Bags", keywords: ["sling bag", "crossbody"] },
-    { label: "Travel Bags", keywords: ["travel bag", "luggage", "duffle", "duffel"] },
-    { label: "Laptop Bags", keywords: ["laptop bag", "laptop backpack"] },
-    { label: "School Bags", keywords: ["school bag", "school backpack"] },
-    { label: "Wallets", keywords: ["wallet", "card holder"] },
-    { label: "Clutches", keywords: ["clutch", "clutches"] },
-  ],
-  books: [
-    { label: "Study & Academic", keywords: ["study", "academic", "textbook", "college"] },
-    { label: "Competitive Exams", keywords: ["competitive exam", "entrance", "upsc", "mpsc", "ssc", "bank exam"] },
-    { label: "Fiction", keywords: ["fiction", "novel", "story"] },
-    { label: "Non-Fiction", keywords: ["non fiction", "nonfiction"] },
-    { label: "Self Help", keywords: ["self help", "personal development", "motivation"] },
-    { label: "Business & Finance", keywords: ["business", "finance", "investment", "entrepreneur"] },
-    { label: "Children's Books", keywords: ["children", "kids book", "kids books"] },
-    { label: "Comics & Graphic Novels", keywords: ["comic", "graphic novel", "manga"] },
-  ],
-  eyewear: [
-    { label: "Sunglasses", keywords: ["sunglass", "sunglasses"] },
-    { label: "Eyeglasses", keywords: ["eyeglass", "spectacle", "glasses"] },
-    { label: "Blue Light Glasses", keywords: ["blue light", "computer glasses"] },
-    { label: "Reading Glasses", keywords: ["reading glasses", "reading glass"] },
-    { label: "Kids Eyewear", keywords: ["kids eyewear", "kids glasses"] },
-    { label: "Eyewear Accessories", keywords: ["eyewear accessory", "glasses case", "cleaning cloth"] },
-  ],
+const subcategoryMap: Record<string, string[]> = {
+  mobile: ["Smartphones", "Mobile Accessories", "Audio", "Smartwatches"],
+  electronics: ["Laptops", "Headphones & Audio", "Televisions", "Cameras", "Accessories"],
+  "home-kitchen": ["Kitchen", "Cookware", "Home Decor", "Storage", "Cleaning"],
+  fashion: ["Men's Fashion", "Women's Fashion", "Kids Fashion", "Ethnic Wear"],
+  footwear: ["Men's Footwear", "Women's Footwear", "Sports Shoes", "Casual Shoes"],
+  beauty: ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
+  "beauty-personal-care": ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
+  "toy-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
+  "toys-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
+  "sports-fitness": ["Fitness", "Running", "Sports Equipment", "Outdoor"],
+  appliance: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
+  appliances: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
+  automotive: ["Car Accessories", "Bike Accessories", "Car Care", "Electronics"],
+  eyewear: ["Sunglasses", "Eyeglasses", "Blue Light Glasses"],
+  books: ["Fiction", "Non-Fiction", "Self Help", "Academic"],
+  gaming: ["Gaming Consoles", "Gaming Accessories", "PC Gaming", "Games"],
+  watch: ["Smartwatches", "Analog Watches", "Digital Watches", "Watch Accessories"],
+  bag: ["Backpacks", "Handbags", "Travel Bags", "Laptop Bags"],
 };
 
-const SUBCATEGORY_KEY_ALIASES: Record<string, string> = {
-  "home kitchen": "home & kitchen",
-  "home and kitchen": "home & kitchen",
-  "toy baby": "toy & baby",
-  "toys baby": "toy & baby",
-  "toys and baby": "toy & baby",
-  "sports fitness": "sports",
-  "sports and fitness": "sports",
-  "beauty personal care": "beauty",
-  appliances: "appliance",
+const subcategoryKeywords: Record<string, string[]> = {
+  Smartphones: ["smartphone", "phone", "mobile"],
+  "Mobile Accessories": ["charger", "cable", "case", "cover", "power bank", "adapter"],
+  Audio: ["headphone", "earbud", "earphone", "speaker", "audio"],
+  Smartwatches: ["smartwatch", "smart watch", "fitness band"],
+  Laptops: ["laptop", "notebook", "macbook"],
+  "Headphones & Audio": ["headphone", "earbud", "earphone", "speaker", "soundbar"],
+  Televisions: ["tv", "television", "led tv", "smart tv"],
+  Cameras: ["camera", "dslr", "mirrorless", "action cam"],
+  Accessories: ["mouse", "keyboard", "hub", "adapter", "cable", "stand", "bag"],
+  Kitchen: ["kitchen", "mixer", "coffee", "toaster", "cook", "air fryer"],
+  Cookware: ["pan", "pot", "cookware", "kadhai", "pressure cooker"],
+  "Home Decor": ["decor", "lamp", "cushion", "curtain", "wall"],
+  Storage: ["storage", "organizer", "rack", "box"],
+  Cleaning: ["cleaning", "vacuum", "mop"],
+  "Men's Fashion": ["men", "shirt", "jeans", "jacket", "t-shirt", "kurta"],
+  "Women's Fashion": ["women", "dress", "saree", "top", "kurti", "jeans"],
+  "Kids Fashion": ["kids", "kid", "children", "boy", "girl"],
+  "Ethnic Wear": ["ethnic", "kurta", "kurti", "saree", "lehenga"],
+  "Men's Footwear": ["men", "men's", "formal shoes", "loafers", "sneakers"],
+  "Women's Footwear": ["women", "women's", "heels", "flats", "sandals"],
+  "Sports Shoes": ["running", "sports shoes", "training", "gym", "sneakers"],
+  "Casual Shoes": ["casual", "loafer", "slip-on", "sneaker"],
+  Skincare: ["serum", "face", "skin", "moisturizer", "sunscreen", "cleanser"],
+  Haircare: ["hair", "shampoo", "conditioner", "serum", "trimmer"],
+  Makeup: ["lipstick", "foundation", "makeup", "mascara", "concealer"],
+  Fragrance: ["perfume", "fragrance", "deodorant", "body spray"],
+  "Personal Care": ["trimmer", "shaver", "grooming", "oral", "body"],
+  Toys: ["toy", "puzzle", "doll", "car", "building"],
+  "Baby Care": ["baby", "diaper", "feeding", "newborn"],
+  "Baby Gear": ["stroller", "carrier", "crib", "baby gear"],
+  "Learning & Educational": ["learning", "educational", "book", "stem", "activity"],
+  Fitness: ["fitness", "gym", "dumbbell", "yoga", "workout"],
+  Running: ["running", "jogging", "marathon"],
+  "Sports Equipment": ["cricket", "football", "badminton", "sports"],
+  Outdoor: ["camping", "hiking", "outdoor", "cycling"],
+  "Kitchen Appliances": ["mixer", "grinder", "microwave", "air fryer", "coffee maker"],
+  "Home Appliances": ["washing machine", "refrigerator", "fan", "iron"],
+  Cooling: ["ac", "air conditioner", "cooler", "fan"],
+  "Cleaning Appliances": ["vacuum", "cleaner", "steam"],
+  "Car Accessories": ["car", "dash cam", "car charger", "seat", "car"],
+  "Bike Accessories": ["bike", "motorcycle", "helmet", "riding"],
+  "Car Care": ["car care", "polish", "cleaner", "wax"],
+  Eyewear: ["glasses", "eyewear", "spectacles"],
+  "Sunglasses": ["sunglasses"],
+  "Eyeglasses": ["eyeglasses", "spectacles", "frame"],
+  "Blue Light Glasses": ["blue light"],
+  Fiction: ["fiction", "novel", "story"],
+  "Non-Fiction": ["non-fiction", "biography", "history"],
+  "Self Help": ["self-help", "self help", "motivation", "productivity"],
+  Academic: ["academic", "textbook", "programming", "study"],
+  "Gaming Consoles": ["playstation", "xbox", "nintendo", "console"],
+  "Gaming Accessories": ["gaming mouse", "gaming keyboard", "controller", "headset"],
+  "PC Gaming": ["gaming pc", "graphics card", "gpu", "gaming monitor"],
+  Games: ["game", "gaming"],
+  "Analog Watches": ["analog", "chronograph", "watch"],
+  "Digital Watches": ["digital watch"],
+  "Watch Accessories": ["watch strap", "watch accessory"],
+  Backpacks: ["backpack", "rucksack"],
+  Handbags: ["handbag", "purse"],
+  "Travel Bags": ["travel bag", "duffle", "trolley"],
+  "Laptop Bags": ["laptop bag", "laptop backpack"],
 };
 
 function normalizeText(value: string | null | undefined) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function getSubcategoryKey(category: Category) {
-  const slugKey = normalizeText(category.slug);
-  const nameKey = normalizeText(category.name);
-  return SUBCATEGORY_KEY_ALIASES[slugKey] ||
-    SUBCATEGORY_KEY_ALIASES[nameKey] ||
-    Object.keys(SUBCATEGORY_MAP).find(
-      (key) => normalizeText(key) === slugKey || normalizeText(key) === nameKey
-    ) ||
-    "";
-}
-
 function getSubcategories(category?: Category) {
   if (!category) return [];
-  const key = getSubcategoryKey(category);
-  return SUBCATEGORY_MAP[key]?.map((item) => item.label) || [];
-}
-
-function getSubcategoryKeywords(subcategory: string) {
-  for (const items of Object.values(SUBCATEGORY_MAP)) {
-    const match = items.find((item) => item.label === subcategory);
-    if (match) return match.keywords;
-  }
-  return [];
+  const key = normalizeText(category.slug).replace(/ /g, "-");
+  const bySlug = subcategoryMap[key];
+  if (bySlug) return bySlug;
+  const byName = Object.keys(subcategoryMap).find(
+    (item) => normalizeText(item) === normalizeText(category.name)
+  );
+  return byName ? subcategoryMap[byName] : [];
 }
 
 function matchesSubcategory(product: Product, subcategory: string) {
   if (subcategory === "all") return true;
-  const keywords = getSubcategoryKeywords(subcategory);
+  const keywords = subcategoryKeywords[subcategory] || [];
   const haystack = normalizeText(
     `${product.name} ${product.brand || ""} ${product.slug} ${product.short_description || ""} ${product.description || ""}`
   );
@@ -366,89 +251,61 @@ function discountPercent(
   );
 }
 
-function getValueScore(product: Product, budget: number) {
-  const price = Number(product.price || 0);
+function getProductScore(
+  product: Product,
+  budget: number,
+  goal: string
+) {
+  const price = Number(product.price);
   const rating = Number(product.rating || 0);
   const reviews = Number(product.reviews_count || 0);
-  const originalPrice = Number(product.original_price || price);
-  const discount = discountPercent(price, originalPrice);
-  const priceRatio = budget > 0 ? price / budget : 1;
 
-  // Maximum Value = savings + useful quality at a sensible price.
-  // It deliberately does NOT reward expensive products.
   let score = 0;
-  score += Math.max(0, 34 - priceRatio * 24);
-  score += Math.min(28, rating * 5.6);
-  score += Math.min(14, Math.log10(reviews + 1) * 5.5);
-  score += Math.min(18, discount * 0.9);
-  if (product.is_flash_sale) score += 5;
-  if (product.is_featured) score += 3;
 
-  return score;
-}
+  const budgetUsage = budget > 0 ? price / budget : 1;
 
-function getQualityScore(product: Product) {
-  const rating = Number(product.rating || 0);
-  const reviews = Number(product.reviews_count || 0);
-  const originalPrice = Number(product.original_price || product.price || 0);
-  const price = Number(product.price || 0);
+  if (budgetUsage <= 0.15) score += 18;
+  else if (budgetUsage <= 0.3) score += 25;
+  else if (budgetUsage <= 0.5) score += 28;
+  else if (budgetUsage <= 0.75) score += 24;
+  else if (budgetUsage <= 1) score += 17;
+  else score += 4;
 
-  // Quality First = reliability and product quality signals.
-  // Price is intentionally a secondary factor, so this cannot collapse
-  // into Maximum Value.
-  let score = 0;
-  score += rating * 10.5;
-  score += Math.min(24, Math.log10(reviews + 1) * 8);
-  if (rating >= 4.8) score += 12;
-  else if (rating >= 4.6) score += 8;
-  else if (rating >= 4.4) score += 4;
-  if (reviews >= 500) score += 10;
-  else if (reviews >= 200) score += 7;
-  else if (reviews >= 50) score += 4;
-  if (product.is_featured) score += 7;
-  if (product.stock >= 10) score += 2;
+  score += Math.round((rating / 5) * 28);
+  score += Math.min(15, Math.round(reviews / 15));
 
-  // Small quality/value signal only; never enough to dominate rating.
-  if (originalPrice > price && originalPrice > 0) {
-    const discount = ((originalPrice - price) / originalPrice) * 100;
-    score += Math.min(4, discount / 10);
+  if (product.is_featured) score += 8;
+  if (product.is_flash_sale) score += 8;
+
+  const discount = discountPercent(
+    price,
+    product.original_price
+      ? Number(product.original_price)
+      : null
+  );
+
+  if (goal === "value") {
+    score += Math.min(13, discount);
   }
 
-  return score;
-}
+  if (goal === "quality") {
+    if (rating >= 4.5) score += 12;
+    else if (rating >= 4) score += 7;
+  }
 
-function getPremiumScore(product: Product, budget: number) {
-  const price = Number(product.price || 0);
-  const rating = Number(product.rating || 0);
-  const reviews = Number(product.reviews_count || 0);
-  const originalPrice = Number(product.original_price || price);
-  const pricePosition = budget > 0 ? Math.min(1, price / budget) : 0;
+  if (goal === "premium") {
+    if (price >= budget * 0.4) score += 8;
+    if (rating >= 4.5) score += 7;
+  }
 
-  return (
-    pricePosition * 45 +
-    rating * 8 +
-    Math.min(12, Math.log10(reviews + 1) * 4) +
-    (originalPrice > price ? Math.min(7, ((originalPrice - price) / originalPrice) * 100 / 3) : 0) +
-    (product.is_featured ? 7 : 0)
-  );
-}
+  if (goal === "multiple") {
+    if (price <= budget * 0.25) score += 12;
+    else if (price <= budget * 0.4) score += 7;
+  }
 
-function getProductScore(product: Product, budget: number, goal: string) {
-  if (goal === "value") return getValueScore(product, budget);
-  if (goal === "quality") return getQualityScore(product);
-  if (goal === "premium") return getPremiumScore(product, budget);
+  if (product.stock <= 0) score -= 30;
 
-  const price = Number(product.price || 0);
-  const rating = Number(product.rating || 0);
-  const reviews = Number(product.reviews_count || 0);
-  const ratio = budget > 0 ? price / budget : 1;
-
-  return (
-    Math.max(0, 28 - ratio * 18) +
-    rating * 5 +
-    Math.min(12, Math.log10(reviews + 1) * 4) +
-    (product.is_featured ? 5 : 0)
-  );
+  return Math.max(0, Math.min(99, score));
 }
 
 function ProductImage({
@@ -743,121 +600,159 @@ export default function BudgetBuilderPage() {
   ]);
 
   const autoPlan = useMemo(() => {
-    const limit =
-      goal === "multiple"
-        ? 6
-        : goal === "premium"
-        ? 3
-        : 5;
+    const eligible = rankedProducts.filter(
+      (product) => Number(product.price) <= budget
+    );
 
-    if (!rankedProducts.length || !goal) return [];
-
-    // PREMIUM MODE
-    // Only use products that feel genuinely high-end for the selected
-    // budget. We first target products using at least 40% of the budget,
-    // then fall back gracefully if the catalog has fewer premium items.
-    if (goal === "premium") {
-      const premiumThreshold = budget * 0.4;
-      const premiumPool = rankedProducts.filter(
-        (product) => Number(product.price) >= premiumThreshold
-      );
-
-      const source =
-        premiumPool.length >= Math.min(limit, 2)
-          ? premiumPool
-          : rankedProducts;
-
-      const premiumRanked = [...source].sort((a, b) => {
-        const scoreDiff =
-          getPremiumScore(b, budget) -
-          getPremiumScore(a, budget);
-
-        if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
-
-        // Fresh build tie-breaker: products with equal premium quality
-        // can change order on every Build instead of repeating forever.
-        return (
-          seededOrder(a.id, buildSeed + 101) -
-          seededOrder(b.id, buildSeed + 101)
-        );
-      });
-
-      return premiumRanked.slice(0, limit);
+    if (eligible.length === 0 || budget <= 0) {
+      return [];
     }
 
-    // VALUE and QUALITY use different score models above. We also rotate
-    // a small elite pool on every build so the planner does not show the
-    // exact same products forever when several products are close in score.
+    /*
+     * IMPORTANT BUDGET RULE:
+     * The complete generated plan must ALWAYS stay within the selected
+     * budget. We never treat the budget as a per-product limit.
+     */
     const result: Product[] = [];
     let remaining = budget;
-    const usedCategories = new Set<string>();
 
-    const scored = [...rankedProducts].sort((a, b) => {
-      const scoreDiff = b.score - a.score;
-      if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
-      return seededOrder(a.id, buildSeed + 11) - seededOrder(b.id, buildSeed + 11);
-    });
+    const pushIfFits = (product: Product) => {
+      const price = Number(product.price);
 
-    const eliteSize = goal === "quality" ? 10 : 12;
-    const elite = scored.slice(0, Math.min(eliteSize, scored.length));
-    const rest = scored.slice(elite.length);
-    const rotation = elite.length ? buildSeed % elite.length : 0;
-    const rotatedElite = elite.length
-      ? [...elite.slice(rotation), ...elite.slice(0, rotation)]
-      : [];
-    const candidates = [...rotatedElite, ...rest];
+      if (price <= 0 || price > remaining) return false;
+      if (result.some((item) => item.id === product.id)) return false;
 
-    // Prefer category diversity when all categories are selected.
-    if (categoryId === "all") {
-      for (const product of candidates) {
-        if (result.length >= limit) break;
+      result.push(product);
+      remaining -= price;
+      return true;
+    };
 
-        const price = Number(product.price);
+    if (goal === "premium") {
+      // Premium means higher-end products, but the TOTAL plan still stays
+      // inside the budget. Prefer the most expensive eligible product first.
+      const premiumCandidates = [...eligible].sort((a, b) => {
+        const priceDiff = Number(b.price) - Number(a.price);
+        if (priceDiff !== 0) return priceDiff;
+
+        const scoreDiff = getProductScore(b, budget, goal) - getProductScore(a, budget, goal);
+        if (scoreDiff !== 0) return scoreDiff;
+
+        return seededOrder(a.id, buildSeed + 41) - seededOrder(b.id, buildSeed + 41);
+      });
+
+      // One premium anchor is the default. A second item is added only when
+      // it genuinely fits the remaining budget.
+      if (premiumCandidates[0]) {
+        pushIfFits(premiumCandidates[0]);
+      }
+
+      for (const product of premiumCandidates.slice(1)) {
+        if (result.length >= 2) break;
+        pushIfFits(product);
+      }
+
+      return result;
+    }
+
+    if (goal === "value") {
+      // Maximum Value = discount + price efficiency + solid ratings.
+      const valueCandidates = [...eligible].sort((a, b) => {
+        const discountA = discountPercent(Number(a.price), a.original_price ? Number(a.original_price) : null);
+        const discountB = discountPercent(Number(b.price), b.original_price ? Number(b.original_price) : null);
+        const valueA = getProductScore(a, budget, goal) + discountA * 0.8 - (Number(a.price) / budget) * 10;
+        const valueB = getProductScore(b, budget, goal) + discountB * 0.8 - (Number(b.price) / budget) * 10;
+        return valueB - valueA || seededOrder(a.id, buildSeed + 51) - seededOrder(b.id, buildSeed + 51);
+      });
+
+      const usedCategories = new Set<string>();
+
+      for (const product of valueCandidates) {
+        if (result.length >= 6) break;
         const category = product.category_id || "uncategorized";
-
-        if (price <= remaining && !usedCategories.has(category)) {
-          result.push(product);
-          remaining -= price;
+        if (!usedCategories.has(category) && pushIfFits(product)) {
           usedCategories.add(category);
         }
       }
+
+      for (const product of valueCandidates) {
+        if (result.length >= 6) break;
+        pushIfFits(product);
+      }
+
+      return result;
     }
 
-    // Fill remaining slots while respecting the budget.
-    for (const product of candidates) {
-      if (result.length >= limit) break;
-      if (result.some((item) => item.id === product.id)) continue;
+    if (goal === "quality") {
+      // Quality First = rating/reviews/reliability. Price is only a budget
+      // constraint, not the main ranking factor.
+      const qualityCandidates = [...eligible].sort((a, b) => {
+        const qualityA = Number(a.rating || 0) * 20 + Math.min(20, Number(a.reviews_count || 0) / 25) + (a.is_featured ? 8 : 0);
+        const qualityB = Number(b.rating || 0) * 20 + Math.min(20, Number(b.reviews_count || 0) / 25) + (b.is_featured ? 8 : 0);
+        return qualityB - qualityA || seededOrder(a.id, buildSeed + 61) - seededOrder(b.id, buildSeed + 61);
+      });
 
-      const price = Number(product.price);
-      if (price <= remaining) {
-        result.push(product);
-        remaining -= price;
+      const usedCategories = new Set<string>();
+
+      for (const product of qualityCandidates) {
+        if (result.length >= 5) break;
+        const category = product.category_id || "uncategorized";
+        if (!usedCategories.has(category) && pushIfFits(product)) {
+          usedCategories.add(category);
+        }
       }
+
+      for (const product of qualityCandidates) {
+        if (result.length >= 5) break;
+        pushIfFits(product);
+      }
+
+      return result;
+    }
+
+    // More Products = maximise useful item count while still respecting the
+    // exact total budget. Cheapest suitable items are considered first.
+    const multipleCandidates = [...eligible].sort((a, b) => {
+      const priceDiff = Number(a.price) - Number(b.price);
+      if (priceDiff !== 0) return priceDiff;
+      return seededOrder(a.id, buildSeed + 71) - seededOrder(b.id, buildSeed + 71);
+    });
+
+    for (const product of multipleCandidates) {
+      if (result.length >= 6) break;
+      pushIfFits(product);
     }
 
     return result;
-  }, [
-    rankedProducts,
-    budget,
-    goal,
-    categoryId,
-    buildSeed,
-  ]);
+  }, [rankedProducts, budget, goal, buildSeed]);
 
   const activePlanIds = manualPlanMode
     ? selectedProducts
     : autoPlan.map((product) => product.id);
 
-  // Hard budget guard: a product above the current budget can never appear
-  // in the visible plan, even if it came from an older manual/saved selection.
-  const planProducts = activePlanIds
-    .map((id) => products.find((product) => product.id === id))
-    .filter(
-      (product): product is Product =>
-        product !== undefined &&
-        product.stock > 0 &&
-        Number(product.price) <= budget
-    );
+  /*
+   * Final safety layer. Even if a saved/manual plan contains old products,
+   * the visible plan is rebuilt cumulatively and can NEVER cross the budget.
+   */
+  const planProducts = useMemo(() => {
+    const safe: Product[] = [];
+    let total = 0;
+
+    for (const id of activePlanIds) {
+      const product = products.find((item) => item.id === id);
+      if (!product || product.stock <= 0) continue;
+
+      const price = Number(product.price);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      if (price > budget) continue;
+      if (total + price > budget) continue;
+      if (safe.some((item) => item.id === product.id)) continue;
+
+      safe.push(product);
+      total += price;
+    }
+
+    return safe;
+  }, [activePlanIds, products, budget]);
 
   const plannedSpend = planProducts.reduce(
     (total, product) =>
@@ -1039,17 +934,16 @@ export default function BudgetBuilderPage() {
     setBuilding(true);
     setPlanReady(false);
 
-    // Every Build is a new recommendation run. Clear any previous manual
-    // selection first, then advance the seed so the recommendation order
-    // changes even when the same budget/category/goal is used again.
-    setManualPlanMode(false);
-    setSelectedProducts([]);
+    // A new seed gives every build a fresh, non-repeating recommendation order.
     setBuildSeed((current) => current + 1);
 
     await new Promise((resolve) =>
       setTimeout(resolve, 650)
     );
 
+    if (!manualPlanMode && selectedProducts.length === 0) {
+      setSelectedProducts([]);
+    }
     setPlanReady(true);
     setBuilding(false);
 
@@ -1130,14 +1024,11 @@ export default function BudgetBuilderPage() {
   }
 
   function optimizePlan() {
-    // Optimize is also a fresh planning run, not just a UI reset.
     setSelectedProducts([]);
     setManualPlanMode(false);
-    setBuildSeed((current) => current + 1);
-    setPlanReady(true);
 
     showNotice(
-      "Fresh plan generated with your selected priority."
+      "Your plan has been re-optimized for better budget usage."
     );
   }
 
@@ -1302,22 +1193,32 @@ export default function BudgetBuilderPage() {
         );
       }
 
-      const validIds =
-        Array.isArray(
-          saved.productIds
-        )
-          ? saved.productIds.filter(
-              (id: string) =>
-                products.some(
-                  (product) =>
-                    product.id === id
-                )
-            )
+      const savedIds: string[] =
+        Array.isArray(saved.productIds)
+          ? saved.productIds.filter((id: unknown): id is string => typeof id === "string")
           : [];
 
-      setSelectedProducts(
-        validIds
-      );
+      const savedBudget =
+        typeof saved.budget === "number"
+          ? saved.budget
+          : budget;
+
+      let savedTotal = 0;
+      const validIds: string[] = [];
+
+      for (const id of savedIds) {
+        const product = products.find((item) => item.id === id);
+        if (!product || product.stock <= 0) continue;
+
+        const price = Number(product.price);
+        if (!Number.isFinite(price) || price <= 0) continue;
+        if (price > savedBudget || savedTotal + price > savedBudget) continue;
+
+        validIds.push(id);
+        savedTotal += price;
+      }
+
+      setSelectedProducts(validIds);
 
       setManualPlanMode(
         validIds.length > 0
@@ -2847,9 +2748,11 @@ export default function BudgetBuilderPage() {
                     found
                   </h4>
 
-                  <p className="mt-2 text-sm leading-6 text-gray-500">
-                    No products are available within your selected budget of {formatPrice(budget)}.
-                    Products above this budget are never shown. Try increasing your budget or changing the category/subcategory.
+                  <p className="mt-2 text-sm text-gray-500">
+                    Try increasing
+                    your budget or
+                    changing your
+                    shopping focus.
                   </p>
                 </div>
               ) : (
