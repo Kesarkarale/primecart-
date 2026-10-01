@@ -97,94 +97,183 @@ const shoppingGoals = [
 ];
 
 /*
- * PrimeCart Budget Builder subcategories.
- * The current products table does not expose a subcategory_id field,
- * so these are intelligent UI filters matched against product name,
- * brand, slug and description.
+ * PrimeCart Budget Builder - exact category/subcategory map provided by Kesar.
+ * Products are matched using the supplied keywords against product name,
+ * brand, slug and description because the current products table does not
+ * expose a dedicated subcategory_id field.
  */
-const subcategoryMap: Record<string, string[]> = {
-  mobile: ["Smartphones", "Mobile Accessories", "Audio", "Smartwatches"],
-  electronics: ["Laptops", "Headphones & Audio", "Televisions", "Cameras", "Accessories"],
-  "home-kitchen": ["Kitchen", "Cookware", "Home Decor", "Storage", "Cleaning"],
-  fashion: ["Men's Fashion", "Women's Fashion", "Kids Fashion", "Ethnic Wear"],
-  footwear: ["Men's Footwear", "Women's Footwear", "Sports Shoes", "Casual Shoes"],
-  beauty: ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
-  "beauty-personal-care": ["Skincare", "Haircare", "Makeup", "Fragrance", "Personal Care"],
-  "toy-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
-  "toys-baby": ["Toys", "Baby Care", "Baby Gear", "Learning & Educational"],
-  "sports-fitness": ["Fitness", "Running", "Sports Equipment", "Outdoor"],
-  appliance: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
-  appliances: ["Kitchen Appliances", "Home Appliances", "Cooling", "Cleaning Appliances"],
-  automotive: ["Car Accessories", "Bike Accessories", "Car Care", "Electronics"],
-  eyewear: ["Sunglasses", "Eyeglasses", "Blue Light Glasses"],
-  books: ["Fiction", "Non-Fiction", "Self Help", "Academic"],
-  gaming: ["Gaming Consoles", "Gaming Accessories", "PC Gaming", "Games"],
-  watch: ["Smartwatches", "Analog Watches", "Digital Watches", "Watch Accessories"],
-  bag: ["Backpacks", "Handbags", "Travel Bags", "Laptop Bags"],
-};
-
-const subcategoryKeywords: Record<string, string[]> = {
-  Smartphones: ["smartphone", "phone", "mobile"],
-  "Mobile Accessories": ["charger", "cable", "case", "cover", "power bank", "adapter"],
-  Audio: ["headphone", "earbud", "earphone", "speaker", "audio"],
-  Smartwatches: ["smartwatch", "smart watch", "fitness band"],
-  Laptops: ["laptop", "notebook", "macbook"],
-  "Headphones & Audio": ["headphone", "earbud", "earphone", "speaker", "soundbar"],
-  Televisions: ["tv", "television", "led tv", "smart tv"],
-  Cameras: ["camera", "dslr", "mirrorless", "action cam"],
-  Accessories: ["mouse", "keyboard", "hub", "adapter", "cable", "stand", "bag"],
-  Kitchen: ["kitchen", "mixer", "coffee", "toaster", "cook", "air fryer"],
-  Cookware: ["pan", "pot", "cookware", "kadhai", "pressure cooker"],
-  "Home Decor": ["decor", "lamp", "cushion", "curtain", "wall"],
-  Storage: ["storage", "organizer", "rack", "box"],
-  Cleaning: ["cleaning", "vacuum", "mop"],
-  "Men's Fashion": ["men", "shirt", "jeans", "jacket", "t-shirt", "kurta"],
-  "Women's Fashion": ["women", "dress", "saree", "top", "kurti", "jeans"],
-  "Kids Fashion": ["kids", "kid", "children", "boy", "girl"],
-  "Ethnic Wear": ["ethnic", "kurta", "kurti", "saree", "lehenga"],
-  "Men's Footwear": ["men", "men's", "formal shoes", "loafers", "sneakers"],
-  "Women's Footwear": ["women", "women's", "heels", "flats", "sandals"],
-  "Sports Shoes": ["running", "sports shoes", "training", "gym", "sneakers"],
-  "Casual Shoes": ["casual", "loafer", "slip-on", "sneaker"],
-  Skincare: ["serum", "face", "skin", "moisturizer", "sunscreen", "cleanser"],
-  Haircare: ["hair", "shampoo", "conditioner", "serum", "trimmer"],
-  Makeup: ["lipstick", "foundation", "makeup", "mascara", "concealer"],
-  Fragrance: ["perfume", "fragrance", "deodorant", "body spray"],
-  "Personal Care": ["trimmer", "shaver", "grooming", "oral", "body"],
-  Toys: ["toy", "puzzle", "doll", "car", "building"],
-  "Baby Care": ["baby", "diaper", "feeding", "newborn"],
-  "Baby Gear": ["stroller", "carrier", "crib", "baby gear"],
-  "Learning & Educational": ["learning", "educational", "book", "stem", "activity"],
-  Fitness: ["fitness", "gym", "dumbbell", "yoga", "workout"],
-  Running: ["running", "jogging", "marathon"],
-  "Sports Equipment": ["cricket", "football", "badminton", "sports"],
-  Outdoor: ["camping", "hiking", "outdoor", "cycling"],
-  "Kitchen Appliances": ["mixer", "grinder", "microwave", "air fryer", "coffee maker"],
-  "Home Appliances": ["washing machine", "refrigerator", "fan", "iron"],
-  Cooling: ["ac", "air conditioner", "cooler", "fan"],
-  "Cleaning Appliances": ["vacuum", "cleaner", "steam"],
-  "Car Accessories": ["car", "dash cam", "car charger", "seat", "car"],
-  "Bike Accessories": ["bike", "motorcycle", "helmet", "riding"],
-  "Car Care": ["car care", "polish", "cleaner", "wax"],
-  Eyewear: ["glasses", "eyewear", "spectacles"],
-  "Sunglasses": ["sunglasses"],
-  "Eyeglasses": ["eyeglasses", "spectacles", "frame"],
-  "Blue Light Glasses": ["blue light"],
-  Fiction: ["fiction", "novel", "story"],
-  "Non-Fiction": ["non-fiction", "biography", "history"],
-  "Self Help": ["self-help", "self help", "motivation", "productivity"],
-  Academic: ["academic", "textbook", "programming", "study"],
-  "Gaming Consoles": ["playstation", "xbox", "nintendo", "console"],
-  "Gaming Accessories": ["gaming mouse", "gaming keyboard", "controller", "headset"],
-  "PC Gaming": ["gaming pc", "graphics card", "gpu", "gaming monitor"],
-  Games: ["game", "gaming"],
-  "Analog Watches": ["analog", "chronograph", "watch"],
-  "Digital Watches": ["digital watch"],
-  "Watch Accessories": ["watch strap", "watch accessory"],
-  Backpacks: ["backpack", "rucksack"],
-  Handbags: ["handbag", "purse"],
-  "Travel Bags": ["travel bag", "duffle", "trolley"],
-  "Laptop Bags": ["laptop bag", "laptop backpack"],
+const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> = {
+  fashion: [
+    { label: "T-Shirts", keywords: ["tshirt", "t-shirt", "tee", "t shirt"] },
+    { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt", "oxford"] },
+    { label: "Tops", keywords: ["top", "crop top", "tank top", "camisole"] },
+    { label: "Jeans", keywords: ["jeans", "denim"] },
+    { label: "Trousers & Pants", keywords: ["trouser", "pants", "chino", "cargo"] },
+    { label: "Dresses", keywords: ["dress", "gown", "maxi dress", "midi"] },
+    { label: "Skirts", keywords: ["skirt", "mini skirt", "midi skirt"] },
+    { label: "Jackets & Coats", keywords: ["jacket", "coat", "blazer", "overcoat"] },
+    { label: "Hoodies & Sweatshirts", keywords: ["hoodie", "sweatshirt", "sweater"] },
+    { label: "Ethnic Wear", keywords: ["kurta", "kurti", "saree", "ethnic", "salwar", "lehenga", "anarkali"] },
+    { label: "Innerwear", keywords: ["innerwear", "inner wear", "bra", "brief", "boxer"] },
+    { label: "Sleepwear", keywords: ["sleepwear", "nightwear", "night suit", "pyjama", "pajama"] },
+    { label: "Sportswear", keywords: ["activewear", "sportswear", "track pants", "gym wear"] },
+    { label: "Fashion Accessories", keywords: ["belt", "cap", "scarf", "tie", "socks", "accessory"] },
+  ],
+  mobile: [
+    { label: "Smartphones", keywords: ["mobile", "phone", "smartphone", "iphone", "android"] },
+    { label: "Cases & Covers", keywords: ["case", "cover", "back cover"] },
+    { label: "Chargers & Adapters", keywords: ["charger", "charging", "adapter", "gan charger"] },
+    { label: "Power Banks", keywords: ["power bank", "powerbank"] },
+    { label: "Screen Protectors", keywords: ["screen protector", "tempered", "glass protector"] },
+    { label: "Cables", keywords: ["cable", "usb cable", "type c", "lightning cable"] },
+    { label: "Mobile Holders", keywords: ["mobile holder", "phone holder", "stand"] },
+    { label: "Mobile Accessories", keywords: ["mobile accessory", "phone accessory"] },
+  ],
+  electronics: [
+    { label: "Headphones & Earbuds", keywords: ["headphone", "headset", "earphone", "earbuds"] },
+    { label: "Speakers", keywords: ["speaker", "soundbar", "bluetooth speaker"] },
+    { label: "Keyboards", keywords: ["keyboard", "mechanical keyboard"] },
+    { label: "Mice", keywords: ["mouse", "mice"] },
+    { label: "Monitors", keywords: ["monitor", "display"] },
+    { label: "Cameras", keywords: ["camera", "dslr", "mirrorless", "action camera"] },
+    { label: "Printers", keywords: ["printer", "printing"] },
+    { label: "Projectors", keywords: ["projector"] },
+    { label: "Networking", keywords: ["router", "wifi", "network", "switch"] },
+    { label: "Computer Accessories", keywords: ["webcam", "hub", "mouse pad", "computer accessory"] },
+  ],
+  "home & kitchen": [
+    { label: "Kitchen Essentials", keywords: ["kitchen", "cookware", "pan", "pot", "utensil"] },
+    { label: "Cookware", keywords: ["cookware", "kadai", "pressure cooker", "tawa"] },
+    { label: "Coffee & Tea", keywords: ["coffee", "tea", "kettle", "mug"] },
+    { label: "Dining & Serveware", keywords: ["dining", "plate", "bowl", "glass", "serveware"] },
+    { label: "Home Decor", keywords: ["decor", "decoration", "wall", "lamp", "cushion", "vase"] },
+    { label: "Storage & Organization", keywords: ["storage", "organizer", "rack", "box", "container"] },
+    { label: "Furniture", keywords: ["furniture", "chair", "table", "sofa", "desk", "shelf"] },
+    { label: "Bedding & Bath", keywords: ["bedsheet", "bedding", "pillow", "towel", "bath"] },
+    { label: "Cleaning", keywords: ["cleaning", "mop", "broom", "cleaner"] },
+  ],
+  appliance: [
+    { label: "Kitchen Appliances", keywords: ["air fryer", "mixer", "oven", "microwave", "kettle", "coffee maker", "toaster"] },
+    { label: "Refrigerators", keywords: ["refrigerator", "fridge"] },
+    { label: "Washing Machines", keywords: ["washing machine", "washer"] },
+    { label: "Air Conditioners", keywords: ["air conditioner", "ac", "split ac"] },
+    { label: "Fans", keywords: ["fan", "ceiling fan", "table fan"] },
+    { label: "Coolers", keywords: ["cooler", "air cooler"] },
+    { label: "Vacuum Cleaners", keywords: ["vacuum", "vacuum cleaner"] },
+    { label: "Geysers & Water Heaters", keywords: ["geyser", "water heater"] },
+    { label: "Irons", keywords: ["iron", "steam iron"] },
+  ],
+  footwear: [
+    { label: "Sneakers", keywords: ["sneaker", "sneakers"] },
+    { label: "Running Shoes", keywords: ["running", "running shoe"] },
+    { label: "Sports Shoes", keywords: ["sports shoe", "training shoe"] },
+    { label: "Casual Shoes", keywords: ["casual shoe", "casual shoes"] },
+    { label: "Formal Shoes", keywords: ["formal shoe", "loafers", "loafer", "oxford shoe"] },
+    { label: "Sandals", keywords: ["sandal", "sandals"] },
+    { label: "Slippers", keywords: ["slipper", "slippers", "flip flop"] },
+    { label: "Boots", keywords: ["boot", "boots"] },
+    { label: "Heels", keywords: ["heel", "heels", "stiletto"] },
+    { label: "Kids Footwear", keywords: ["kids shoe", "kids footwear", "children shoe"] },
+  ],
+  beauty: [
+    { label: "Face Care", keywords: ["face wash", "cleanser", "face cream", "face care"] },
+    { label: "Serums", keywords: ["serum", "face serum"] },
+    { label: "Moisturizers", keywords: ["moisturizer", "moisturiser", "hydrating cream"] },
+    { label: "Sunscreen", keywords: ["sunscreen", "sun screen", "spf"] },
+    { label: "Makeup", keywords: ["makeup", "make up"] },
+    { label: "Lip Makeup", keywords: ["lipstick", "lip gloss", "lip balm", "lip liner"] },
+    { label: "Eye Makeup", keywords: ["mascara", "eyeliner", "kajal", "eyeshadow"] },
+    { label: "Foundation & Concealer", keywords: ["foundation", "concealer", "compact"] },
+    { label: "Hair Care", keywords: ["shampoo", "conditioner", "hair mask", "hair oil", "hair care"] },
+    { label: "Hair Styling", keywords: ["hair dryer", "straightener", "curler", "styling"] },
+    { label: "Fragrance", keywords: ["perfume", "fragrance", "deodorant", "body spray"] },
+    { label: "Bath & Body", keywords: ["body wash", "body lotion", "body scrub", "bath", "body care"] },
+    { label: "Oral Care", keywords: ["toothpaste", "toothbrush", "oral care"] },
+    { label: "Men's Grooming", keywords: ["shaving", "beard", "trimmer", "razor", "mens grooming"] },
+    { label: "Beauty Tools", keywords: ["beauty tool", "makeup brush", "sponge", "facial tool"] },
+    { label: "Nail Care", keywords: ["nail", "nail polish", "manicure"] },
+  ],
+  "toy & baby": [
+    { label: "Toys", keywords: ["toy", "toys", "doll", "car toy"] },
+    { label: "Board Games", keywords: ["board game", "board games"] },
+    { label: "Puzzles", keywords: ["puzzle", "jigsaw"] },
+    { label: "Educational Toys", keywords: ["educational", "learning toy", "stem"] },
+    { label: "Baby Care", keywords: ["baby", "diaper", "feeding", "infant"] },
+    { label: "Baby Clothing", keywords: ["baby clothes", "baby clothing", "newborn"] },
+    { label: "Baby Feeding", keywords: ["feeding bottle", "baby feeding", "bottle"] },
+    { label: "Kids Games", keywords: ["kids game", "game for kids"] },
+    { label: "Remote Control Toys", keywords: ["remote control", "rc car", "rc toy"] },
+    { label: "Outdoor Toys", keywords: ["outdoor toy", "ride on", "scooter"] },
+  ],
+  sports: [
+    { label: "Fitness & Gym", keywords: ["fitness", "gym", "dumbbell", "workout", "gym equipment"] },
+    { label: "Running", keywords: ["running", "jogging"] },
+    { label: "Yoga", keywords: ["yoga", "mat", "meditation"] },
+    { label: "Sportswear", keywords: ["sportswear", "track", "activewear", "jersey"] },
+    { label: "Cricket", keywords: ["cricket", "bat", "ball", "wicket"] },
+    { label: "Football", keywords: ["football", "soccer"] },
+    { label: "Badminton", keywords: ["badminton", "racket", "shuttle"] },
+    { label: "Cycling", keywords: ["cycle", "cycling", "bicycle"] },
+    { label: "Camping & Outdoor", keywords: ["camping", "tent", "hiking", "outdoor"] },
+    { label: "Sports Accessories", keywords: ["sports accessory", "sports accessories"] },
+  ],
+  automotive: [
+    { label: "Car Accessories", keywords: ["car", "car accessory", "car cover", "dashboard"] },
+    { label: "Bike Accessories", keywords: ["bike", "motorcycle", "helmet", "biker"] },
+    { label: "Car Electronics", keywords: ["car audio", "dash cam", "gps", "car charger"] },
+    { label: "Cleaning & Care", keywords: ["cleaning", "polish", "car care", "cleaner"] },
+    { label: "Interior Accessories", keywords: ["seat cover", "floor mat", "car interior"] },
+    { label: "Exterior Accessories", keywords: ["car cover", "exterior", "mirror"] },
+    { label: "Tools & Maintenance", keywords: ["tool", "maintenance", "puncture", "repair"] },
+    { label: "Safety Accessories", keywords: ["safety", "reflector", "first aid", "emergency"] },
+  ],
+  gaming: [
+    { label: "Gaming Keyboards", keywords: ["gaming keyboard", "mechanical keyboard"] },
+    { label: "Gaming Mice", keywords: ["gaming mouse", "gaming mice"] },
+    { label: "Gaming Headsets", keywords: ["gaming headset", "gaming headphone"] },
+    { label: "Controllers", keywords: ["controller", "gamepad"] },
+    { label: "Consoles", keywords: ["console", "playstation", "xbox", "nintendo"] },
+    { label: "Gaming Monitors", keywords: ["gaming monitor"] },
+    { label: "Gaming Chairs", keywords: ["gaming chair"] },
+    { label: "Gaming Accessories", keywords: ["gaming accessory", "mouse pad", "streaming"] },
+    { label: "PC Gaming", keywords: ["gaming pc", "gaming desktop", "graphics card", "gpu"] },
+  ],
+  watch: [
+    { label: "Smartwatches", keywords: ["smartwatch", "smart watch"] },
+    { label: "Analog Watches", keywords: ["analog", "analogue", "wrist watch"] },
+    { label: "Digital Watches", keywords: ["digital watch"] },
+    { label: "Sports Watches", keywords: ["sports watch", "fitness watch"] },
+    { label: "Luxury Watches", keywords: ["luxury watch", "premium watch"] },
+    { label: "Watch Accessories", keywords: ["watch strap", "watch band", "watch accessory"] },
+  ],
+  bag: [
+    { label: "Backpacks", keywords: ["backpack", "backpacks"] },
+    { label: "Handbags", keywords: ["handbag", "hand bag"] },
+    { label: "Sling Bags", keywords: ["sling bag", "crossbody"] },
+    { label: "Travel Bags", keywords: ["travel bag", "luggage", "duffle", "duffel"] },
+    { label: "Laptop Bags", keywords: ["laptop bag", "laptop backpack"] },
+    { label: "School Bags", keywords: ["school bag", "school backpack"] },
+    { label: "Wallets", keywords: ["wallet", "card holder"] },
+    { label: "Clutches", keywords: ["clutch", "clutches"] },
+  ],
+  books: [
+    { label: "Study & Academic", keywords: ["study", "academic", "textbook", "college"] },
+    { label: "Competitive Exams", keywords: ["competitive exam", "entrance", "upsc", "mpsc", "ssc", "bank exam"] },
+    { label: "Fiction", keywords: ["fiction", "novel", "story"] },
+    { label: "Non-Fiction", keywords: ["non fiction", "nonfiction"] },
+    { label: "Self Help", keywords: ["self help", "personal development", "motivation"] },
+    { label: "Business & Finance", keywords: ["business", "finance", "investment", "entrepreneur"] },
+    { label: "Children's Books", keywords: ["children", "kids book", "kids books"] },
+    { label: "Comics & Graphic Novels", keywords: ["comic", "graphic novel", "manga"] },
+  ],
+  eyewear: [
+    { label: "Sunglasses", keywords: ["sunglass", "sunglasses"] },
+    { label: "Eyeglasses", keywords: ["eyeglass", "spectacle", "glasses"] },
+    { label: "Blue Light Glasses", keywords: ["blue light", "computer glasses"] },
+    { label: "Reading Glasses", keywords: ["reading glasses", "reading glass"] },
+    { label: "Kids Eyewear", keywords: ["kids eyewear", "kids glasses"] },
+    { label: "Eyewear Accessories", keywords: ["eyewear accessory", "glasses case", "cleaning cloth"] },
+  ],
 };
 
 function normalizeText(value: string | null | undefined) {
@@ -193,22 +282,40 @@ function normalizeText(value: string | null | undefined) {
 
 function getSubcategories(category?: Category) {
   if (!category) return [];
-  const key = normalizeText(category.slug).replace(/ /g, "-");
-  const bySlug = subcategoryMap[key];
-  if (bySlug) return bySlug;
-  const byName = Object.keys(subcategoryMap).find(
-    (item) => normalizeText(item) === normalizeText(category.name)
-  );
-  return byName ? subcategoryMap[byName] : [];
+
+  const rawKeys = [
+    category.slug,
+    category.name,
+    category.slug?.replace(/-/g, " "),
+  ].filter(Boolean) as string[];
+
+  for (const rawKey of rawKeys) {
+    const key = normalizeText(rawKey);
+    const found = Object.entries(SUBCATEGORY_MAP).find(
+      ([mapKey]) => normalizeText(mapKey) === key
+    );
+    if (found) return found[1].map((item) => item.label);
+  }
+
+  return [];
 }
 
 function matchesSubcategory(product: Product, subcategory: string) {
   if (subcategory === "all") return true;
-  const keywords = subcategoryKeywords[subcategory] || [];
+
+  const entry = Object.values(SUBCATEGORY_MAP)
+    .flat()
+    .find((item) => item.label === subcategory);
+
+  if (!entry) return false;
+
   const haystack = normalizeText(
     `${product.name} ${product.brand || ""} ${product.slug} ${product.short_description || ""} ${product.description || ""}`
   );
-  return keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+
+  return entry.keywords.some((keyword) =>
+    haystack.includes(normalizeText(keyword))
+  );
 }
 
 function seededOrder(id: string, seed: number) {
