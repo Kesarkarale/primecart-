@@ -171,72 +171,127 @@ const BUDGETS: Budget[] = [
 const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> = {
   fashion: [
     { label: "T-Shirts", keywords: ["tshirt", "t-shirt", "tee", "t shirt"] },
-    { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt"] },
-    { label: "Tops", keywords: ["top", "crop top", "tank top"] },
-    { label: "Jeans", keywords: ["jeans", "denim jeans"] },
-    { label: "Dresses", keywords: ["dress", "gown"] },
-    { label: "Jackets", keywords: ["jacket", "coat", "blazer"] },
-    { label: "Hoodies", keywords: ["hoodie", "sweatshirt"] },
-    { label: "Ethnic Wear", keywords: ["kurta", "kurti", "saree", "ethnic", "salwar", "lehenga"] },
+    { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt", "oxford"] },
+    { label: "Tops", keywords: ["top", "crop top", "tank top", "camisole"] },
+    { label: "Jeans", keywords: ["jeans", "denim"] },
+    { label: "Trousers & Pants", keywords: ["trouser", "pants", "chino", "cargo"] },
+    { label: "Dresses", keywords: ["dress", "gown", "maxi dress", "midi"] },
+    { label: "Skirts", keywords: ["skirt", "mini skirt", "midi skirt"] },
+    { label: "Jackets & Coats", keywords: ["jacket", "coat", "blazer", "overcoat"] },
+    { label: "Hoodies & Sweatshirts", keywords: ["hoodie", "sweatshirt", "sweater"] },
+    { label: "Ethnic Wear", keywords: ["kurta", "kurti", "saree", "ethnic", "salwar", "lehenga", "anarkali"] },
+    { label: "Innerwear", keywords: ["innerwear", "inner wear", "bra", "brief", "boxer"] },
+    { label: "Sleepwear", keywords: ["sleepwear", "nightwear", "night suit", "pyjama", "pajama"] },
+    { label: "Sportswear", keywords: ["activewear", "sportswear", "track pants", "gym wear"] },
+    { label: "Fashion Accessories", keywords: ["belt", "cap", "scarf", "tie", "socks", "accessory"] },
   ],
   mobile: [
     { label: "Smartphones", keywords: ["mobile", "phone", "smartphone", "iphone", "android"] },
     { label: "Cases & Covers", keywords: ["case", "cover", "back cover"] },
-    { label: "Chargers", keywords: ["charger", "charging", "adapter"] },
+    { label: "Chargers & Adapters", keywords: ["charger", "charging", "adapter", "gan charger"] },
     { label: "Power Banks", keywords: ["power bank", "powerbank"] },
     { label: "Screen Protectors", keywords: ["screen protector", "tempered", "glass protector"] },
+    { label: "Cables", keywords: ["cable", "usb cable", "type c", "lightning cable"] },
+    { label: "Mobile Holders", keywords: ["mobile holder", "phone holder", "stand"] },
+    { label: "Mobile Accessories", keywords: ["mobile accessory", "phone accessory"] },
   ],
   electronics: [
-    { label: "Headphones", keywords: ["headphone", "headset", "earphone", "earbuds"] },
-    { label: "Speakers", keywords: ["speaker", "soundbar"] },
-    { label: "Keyboards", keywords: ["keyboard"] },
-    { label: "Mice", keywords: ["mouse"] },
+    { label: "Headphones & Earbuds", keywords: ["headphone", "headset", "earphone", "earbuds"] },
+    { label: "Speakers", keywords: ["speaker", "soundbar", "bluetooth speaker"] },
+    { label: "Keyboards", keywords: ["keyboard", "mechanical keyboard"] },
+    { label: "Mice", keywords: ["mouse", "mice"] },
     { label: "Monitors", keywords: ["monitor", "display"] },
-    { label: "Cameras", keywords: ["camera", "dslr", "mirrorless"] },
+    { label: "Cameras", keywords: ["camera", "dslr", "mirrorless", "action camera"] },
+    { label: "Printers", keywords: ["printer", "printing"] },
+    { label: "Projectors", keywords: ["projector"] },
+    { label: "Networking", keywords: ["router", "wifi", "network", "switch"] },
+    { label: "Computer Accessories", keywords: ["webcam", "hub", "mouse pad", "computer accessory"] },
   ],
   "home & kitchen": [
-    { label: "Kitchen", keywords: ["kitchen", "cookware", "pan", "pot", "utensil"] },
-    { label: "Coffee & Tea", keywords: ["coffee", "tea", "kettle"] },
-    { label: "Home Decor", keywords: ["decor", "decoration", "wall", "lamp", "cushion"] },
-    { label: "Storage", keywords: ["storage", "organizer", "rack", "box"] },
-    { label: "Furniture", keywords: ["furniture", "chair", "table", "sofa", "desk"] },
+    { label: "Kitchen Essentials", keywords: ["kitchen", "cookware", "pan", "pot", "utensil"] },
+    { label: "Cookware", keywords: ["cookware", "kadai", "pressure cooker", "tawa"] },
+    { label: "Coffee & Tea", keywords: ["coffee", "tea", "kettle", "mug"] },
+    { label: "Dining & Serveware", keywords: ["dining", "plate", "bowl", "glass", "serveware"] },
+    { label: "Home Decor", keywords: ["decor", "decoration", "wall", "lamp", "cushion", "vase"] },
+    { label: "Storage & Organization", keywords: ["storage", "organizer", "rack", "box", "container"] },
+    { label: "Furniture", keywords: ["furniture", "chair", "table", "sofa", "desk", "shelf"] },
+    { label: "Bedding & Bath", keywords: ["bedsheet", "bedding", "pillow", "towel", "bath"] },
+    { label: "Cleaning", keywords: ["cleaning", "mop", "broom", "cleaner"] },
   ],
   appliance: [
-    { label: "Kitchen Appliances", keywords: ["air fryer", "mixer", "oven", "microwave", "kettle", "coffee maker"] },
+    { label: "Kitchen Appliances", keywords: ["air fryer", "mixer", "oven", "microwave", "kettle", "coffee maker", "toaster"] },
     { label: "Refrigerators", keywords: ["refrigerator", "fridge"] },
     { label: "Washing Machines", keywords: ["washing machine", "washer"] },
-    { label: "Air Conditioners", keywords: ["air conditioner", "ac"] },
-    { label: "Fans", keywords: ["fan", "ceiling fan"] },
+    { label: "Air Conditioners", keywords: ["air conditioner", "ac", "split ac"] },
+    { label: "Fans", keywords: ["fan", "ceiling fan", "table fan"] },
+    { label: "Coolers", keywords: ["cooler", "air cooler"] },
+    { label: "Vacuum Cleaners", keywords: ["vacuum", "vacuum cleaner"] },
+    { label: "Geysers & Water Heaters", keywords: ["geyser", "water heater"] },
+    { label: "Irons", keywords: ["iron", "steam iron"] },
   ],
   footwear: [
     { label: "Sneakers", keywords: ["sneaker", "sneakers"] },
     { label: "Running Shoes", keywords: ["running", "running shoe"] },
-    { label: "Sports Shoes", keywords: ["sports shoe", "training shoe", "sportswear"] },
+    { label: "Sports Shoes", keywords: ["sports shoe", "training shoe"] },
+    { label: "Casual Shoes", keywords: ["casual shoe", "casual shoes"] },
+    { label: "Formal Shoes", keywords: ["formal shoe", "loafers", "loafer", "oxford shoe"] },
     { label: "Sandals", keywords: ["sandal", "sandals"] },
-    { label: "Slippers", keywords: ["slipper", "slippers"] },
-    { label: "Formal Shoes", keywords: ["formal shoe", "loafers", "loafer"] },
+    { label: "Slippers", keywords: ["slipper", "slippers", "flip flop"] },
+    { label: "Boots", keywords: ["boot", "boots"] },
+    { label: "Heels", keywords: ["heel", "heels", "stiletto"] },
+    { label: "Kids Footwear", keywords: ["kids shoe", "kids footwear", "children shoe"] },
   ],
   beauty: [
-    { label: "Skincare", keywords: ["serum", "face wash", "moisturizer", "cream", "skincare", "sunscreen"] },
-    { label: "Makeup", keywords: ["makeup", "lipstick", "foundation", "mascara", "eyeliner"] },
-    { label: "Hair Care", keywords: ["shampoo", "conditioner", "hair", "serum"] },
-    { label: "Fragrance", keywords: ["perfume", "fragrance", "deodorant"] },
+    { label: "Face Care", keywords: ["face wash", "cleanser", "face cream", "face care"] },
+    { label: "Serums", keywords: ["serum", "face serum"] },
+    { label: "Moisturizers", keywords: ["moisturizer", "moisturiser", "hydrating cream"] },
+    { label: "Sunscreen", keywords: ["sunscreen", "sun screen", "spf"] },
+    { label: "Makeup", keywords: ["makeup", "make up"] },
+    { label: "Lip Makeup", keywords: ["lipstick", "lip gloss", "lip balm", "lip liner"] },
+    { label: "Eye Makeup", keywords: ["mascara", "eyeliner", "kajal", "eyeshadow"] },
+    { label: "Foundation & Concealer", keywords: ["foundation", "concealer", "compact"] },
+    { label: "Hair Care", keywords: ["shampoo", "conditioner", "hair mask", "hair oil", "hair care"] },
+    { label: "Hair Styling", keywords: ["hair dryer", "straightener", "curler", "styling"] },
+    { label: "Fragrance", keywords: ["perfume", "fragrance", "deodorant", "body spray"] },
+    { label: "Bath & Body", keywords: ["body wash", "body lotion", "body scrub", "bath", "body care"] },
+    { label: "Oral Care", keywords: ["toothpaste", "toothbrush", "oral care"] },
+    { label: "Men's Grooming", keywords: ["shaving", "beard", "trimmer", "razor", "mens grooming"] },
+    { label: "Beauty Tools", keywords: ["beauty tool", "makeup brush", "sponge", "facial tool"] },
+    { label: "Nail Care", keywords: ["nail", "nail polish", "manicure"] },
   ],
   "toy & baby": [
-    { label: "Toys", keywords: ["toy", "toys", "doll", "car toy", "puzzle"] },
+    { label: "Toys", keywords: ["toy", "toys", "doll", "car toy"] },
+    { label: "Board Games", keywords: ["board game", "board games"] },
+    { label: "Puzzles", keywords: ["puzzle", "jigsaw"] },
+    { label: "Educational Toys", keywords: ["educational", "learning toy", "stem"] },
     { label: "Baby Care", keywords: ["baby", "diaper", "feeding", "infant"] },
-    { label: "Games", keywords: ["game", "board game", "educational"] },
+    { label: "Baby Clothing", keywords: ["baby clothes", "baby clothing", "newborn"] },
+    { label: "Baby Feeding", keywords: ["feeding bottle", "baby feeding", "bottle"] },
+    { label: "Kids Games", keywords: ["kids game", "game for kids"] },
+    { label: "Remote Control Toys", keywords: ["remote control", "rc car", "rc toy"] },
+    { label: "Outdoor Toys", keywords: ["outdoor toy", "ride on", "scooter"] },
   ],
   sports: [
-    { label: "Fitness", keywords: ["fitness", "gym", "dumbbell", "workout"] },
+    { label: "Fitness & Gym", keywords: ["fitness", "gym", "dumbbell", "workout", "gym equipment"] },
     { label: "Running", keywords: ["running", "jogging"] },
-    { label: "Yoga", keywords: ["yoga", "mat"] },
-    { label: "Sportswear", keywords: ["sportswear", "track", "activewear"] },
+    { label: "Yoga", keywords: ["yoga", "mat", "meditation"] },
+    { label: "Sportswear", keywords: ["sportswear", "track", "activewear", "jersey"] },
+    { label: "Cricket", keywords: ["cricket", "bat", "ball", "wicket"] },
+    { label: "Football", keywords: ["football", "soccer"] },
+    { label: "Badminton", keywords: ["badminton", "racket", "shuttle"] },
+    { label: "Cycling", keywords: ["cycle", "cycling", "bicycle"] },
+    { label: "Camping & Outdoor", keywords: ["camping", "tent", "hiking", "outdoor"] },
+    { label: "Sports Accessories", keywords: ["sports accessory", "sports accessories"] },
   ],
   automotive: [
-    { label: "Car Accessories", keywords: ["car", "car accessory", "car cover"] },
-    { label: "Bike Accessories", keywords: ["bike", "motorcycle", "helmet"] },
-    { label: "Cleaning & Care", keywords: ["cleaning", "polish", "car care"] },
+    { label: "Car Accessories", keywords: ["car", "car accessory", "car cover", "dashboard"] },
+    { label: "Bike Accessories", keywords: ["bike", "motorcycle", "helmet", "biker"] },
+    { label: "Car Electronics", keywords: ["car audio", "dash cam", "gps", "car charger"] },
+    { label: "Cleaning & Care", keywords: ["cleaning", "polish", "car care", "cleaner"] },
+    { label: "Interior Accessories", keywords: ["seat cover", "floor mat", "car interior"] },
+    { label: "Exterior Accessories", keywords: ["car cover", "exterior", "mirror"] },
+    { label: "Tools & Maintenance", keywords: ["tool", "maintenance", "puncture", "repair"] },
+    { label: "Safety Accessories", keywords: ["safety", "reflector", "first aid", "emergency"] },
   ],
   gaming: [
     { label: "Gaming Keyboards", keywords: ["gaming keyboard", "mechanical keyboard"] },
@@ -244,28 +299,68 @@ const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> =
     { label: "Gaming Headsets", keywords: ["gaming headset", "gaming headphone"] },
     { label: "Controllers", keywords: ["controller", "gamepad"] },
     { label: "Consoles", keywords: ["console", "playstation", "xbox", "nintendo"] },
+    { label: "Gaming Monitors", keywords: ["gaming monitor"] },
+    { label: "Gaming Chairs", keywords: ["gaming chair"] },
+    { label: "Gaming Accessories", keywords: ["gaming accessory", "mouse pad", "streaming"] },
+    { label: "PC Gaming", keywords: ["gaming pc", "gaming desktop", "graphics card", "gpu"] },
   ],
   watch: [
     { label: "Smartwatches", keywords: ["smartwatch", "smart watch"] },
     { label: "Analog Watches", keywords: ["analog", "analogue", "wrist watch"] },
     { label: "Digital Watches", keywords: ["digital watch"] },
+    { label: "Sports Watches", keywords: ["sports watch", "fitness watch"] },
+    { label: "Luxury Watches", keywords: ["luxury watch", "premium watch"] },
+    { label: "Watch Accessories", keywords: ["watch strap", "watch band", "watch accessory"] },
   ],
   bag: [
     { label: "Backpacks", keywords: ["backpack", "backpacks"] },
     { label: "Handbags", keywords: ["handbag", "hand bag"] },
+    { label: "Sling Bags", keywords: ["sling bag", "crossbody"] },
     { label: "Travel Bags", keywords: ["travel bag", "luggage", "duffle", "duffel"] },
+    { label: "Laptop Bags", keywords: ["laptop bag", "laptop backpack"] },
+    { label: "School Bags", keywords: ["school bag", "school backpack"] },
     { label: "Wallets", keywords: ["wallet", "card holder"] },
+    { label: "Clutches", keywords: ["clutch", "clutches"] },
   ],
   books: [
     { label: "Study & Academic", keywords: ["study", "academic", "textbook", "college"] },
+    { label: "Competitive Exams", keywords: ["competitive exam", "entrance", "upsc", "mpsc", "ssc", "bank exam"] },
     { label: "Fiction", keywords: ["fiction", "novel", "story"] },
+    { label: "Non-Fiction", keywords: ["non fiction", "nonfiction"] },
     { label: "Self Help", keywords: ["self help", "personal development", "motivation"] },
+    { label: "Business & Finance", keywords: ["business", "finance", "investment", "entrepreneur"] },
+    { label: "Children's Books", keywords: ["children", "kids book", "kids books"] },
+    { label: "Comics & Graphic Novels", keywords: ["comic", "graphic novel", "manga"] },
   ],
   eyewear: [
     { label: "Sunglasses", keywords: ["sunglass", "sunglasses"] },
     { label: "Eyeglasses", keywords: ["eyeglass", "spectacle", "glasses"] },
+    { label: "Blue Light Glasses", keywords: ["blue light", "computer glasses"] },
+    { label: "Reading Glasses", keywords: ["reading glasses", "reading glass"] },
+    { label: "Kids Eyewear", keywords: ["kids eyewear", "kids glasses"] },
+    { label: "Eyewear Accessories", keywords: ["eyewear accessory", "glasses case", "cleaning cloth"] },
   ],
 };
+
+function getCategoryIcon(categoryName: string) {
+  const name = normalize(categoryName);
+  if (name.includes("mobile")) return "📱";
+  if (name.includes("electronics")) return "🎧";
+  if (name.includes("home") || name.includes("kitchen")) return "🏠";
+  if (name.includes("fashion")) return "👕";
+  if (name.includes("footwear") || name.includes("shoe")) return "👟";
+  if (name.includes("beauty")) return "✨";
+  if (name.includes("toy") || name.includes("baby")) return "🧸";
+  if (name.includes("sport") || name.includes("fitness")) return "🏃";
+  if (name.includes("appliance")) return "⚡";
+  if (name.includes("automotive")) return "🚗";
+  if (name.includes("gaming")) return "🎮";
+  if (name.includes("watch")) return "⌚";
+  if (name.includes("bag")) return "👜";
+  if (name.includes("book")) return "📚";
+  if (name.includes("eyewear")) return "👓";
+  return "•";
+}
 
 function getSubcategoryOptions(categoryName: string) {
   const name = normalize(categoryName);
@@ -2530,52 +2625,28 @@ async function runMatch() {
           HEADER
       ================================================= */}
 
-      <header className="sticky top-0 z-50 border-b border-[#eee5d6] bg-[#fcfbf8]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-2 px-2.5 py-2.5 sm:gap-4 sm:px-6 sm:py-3 lg:px-8">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-xs font-black text-gray-600 transition hover:text-[#a17b2f]"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">
-              Dashboard
-            </span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex min-w-0 items-center gap-2 sm:gap-2.5"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
-              <img
-                src="/logo.png"
-                alt="PrimeCart"
-                className="h-full w-full object-contain p-0.5 sm:p-1"
-              />
+      <header className="sticky top-0 z-50 border-b border-[#eee5d6] bg-white/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#fffaf0] sm:h-11 sm:w-11">
+              <img src="/logo.png" alt="PrimeCart" className="h-full w-full object-contain p-1" />
             </div>
-
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-black tracking-tight text-[#241d14] sm:text-sm">
-                PrimeCart
-              </p>
-              <p className="truncate text-[9px] font-bold uppercase tracking-[0.16em] text-gray-400">
-                PrimeMatch
-              </p>
+              <p className="text-[15px] font-black tracking-tight text-[#241d14] sm:text-base">PrimeCart</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#a17b2f] sm:text-[9px]">PrimeMatch</p>
             </div>
           </Link>
 
-          <Link
-            href="/dashboard/cart"
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#e4dac8] bg-white text-gray-700 transition hover:border-[#c9a24d] hover:text-[#9b762b]"
-          >
-            <ShoppingCart size={18} />
-
-            {cartIds.length > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c9a24d] px-1 text-[9px] font-black text-white">
-                {cartIds.length}
-              </span>
-            )}
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/dashboard" className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e4dac8] bg-white px-3 text-[10px] font-black text-gray-600 transition hover:border-[#c9a24d] hover:text-[#9b762b] sm:px-4 sm:text-xs">
+              <ArrowLeft size={15} />
+              <span className="hidden xs:inline sm:inline">Dashboard</span>
+            </Link>
+            <Link href="/dashboard/cart" className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#e4dac8] bg-white text-gray-700 transition hover:border-[#c9a24d] hover:text-[#9b762b]">
+              <ShoppingCart size={18} />
+              {cartIds.length > 0 && <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c9a24d] px-1 text-[9px] font-black text-white">{cartIds.length}</span>}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -2688,18 +2759,23 @@ async function runMatch() {
 
         <section className="mt-5 sm:mt-8">
           <div className="mb-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-              Step 1
-            </p>
-
-            <h2 className="mt-1 text-2xl font-black">
-              Tell us what you need
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              PrimeMatch uses these choices to
-              personalize your product ranking.
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#ead9ad] bg-[#fff8e8] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-[#946f27]">
+                  <Sparkles size={12} /> Step 1 · Personalize your search
+                </div>
+                <h2 className="mt-3 text-2xl font-black tracking-tight text-[#302617] sm:text-3xl">
+                  Tell us what you need
+                </h2>
+                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-gray-500 sm:text-sm sm:leading-6">
+                  Start with a purpose, choose your budget, pick a category and then narrow it down to the exact product type you want.
+                </p>
+              </div>
+              <div className="hidden rounded-2xl border border-[#eee5d6] bg-white px-4 py-3 text-right sm:block">
+                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-gray-400">PrimeMatch</p>
+                <p className="mt-1 text-xs font-black text-[#9b762b]">Find products that fit you</p>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-[28px] border border-[#e8dfcf] bg-white p-5 shadow-sm sm:p-7">
@@ -2891,46 +2967,32 @@ async function runMatch() {
               </div>
 
               {/* CATEGORY */}
-              <div>
-                <label className="mb-2 block text-xs font-black text-gray-700">
-                  Category
-                </label>
+              <div className="md:col-span-3">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <label className="block text-xs font-black text-gray-700">Choose a category</label>
+                    <p className="mt-1 text-[11px] font-semibold text-gray-400">Pick the shopping category first. We will show its relevant product types next.</p>
+                  </div>
+                  <span className="text-[10px] font-black text-[#a17b2f]">{categories.length} categories</span>
+                </div>
 
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(event) => {
-                      setCategory(event.target.value);
-                      setSubcategory("all");
-                    }}
-                    className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
-                  >
-                    <option value="all">
-                      All Categories
-                    </option>
-
-                    {categories.map(
-                      (item) => (
-                        <option
-                          key={
-                            item.id
-                          }
-                          value={
-                            item.id
-                          }
-                        >
-                          {
-                            item.name
-                          }
-                        </option>
-                      )
-                    )}
-                  </select>
-
-                  <ChevronDown
-                    size={16}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  <button type="button" onClick={() => { setCategory("all"); setSubcategory("all"); }} className={`rounded-2xl border p-3 text-left transition sm:p-4 ${category === "all" ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm" : "border-[#eee5d6] bg-white hover:border-[#dbc58e] hover:bg-[#fffdfa]"}`}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] text-sm font-black text-[#a17b2f]">✦</span>
+                    <p className="mt-2 text-[11px] font-black text-[#3f3525] sm:text-xs">All Categories</p>
+                    <p className="mt-0.5 text-[9px] font-semibold text-gray-400">Explore everything</p>
+                  </button>
+                  {categories.map((item) => {
+                    const selected = category === item.id;
+                    const icon = getCategoryIcon(item.name);
+                    return (
+                      <button key={item.id} type="button" onClick={() => { setCategory(item.id); setSubcategory("all"); setMatched(false); setMatchedResults([]); }} className={`rounded-2xl border p-3 text-left transition sm:p-4 ${selected ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm" : "border-[#eee5d6] bg-white hover:border-[#dbc58e] hover:bg-[#fffdfa]"}`}>
+                        <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${selected ? "bg-[#c9a24d] text-white" : "bg-[#f6f2e9] text-[#a17b2f]"}`}>{icon}</span>
+                        <p className="mt-2 line-clamp-1 text-[11px] font-black text-[#3f3525] sm:text-xs">{item.name}</p>
+                        <p className="mt-0.5 text-[9px] font-semibold text-gray-400">Choose product type</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
