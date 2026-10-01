@@ -366,6 +366,41 @@ function discountPercent(
   );
 }
 
+function getPremiumScore(
+  product: Product,
+  budget: number
+) {
+  const price = Number(product.price || 0);
+  const rating = Number(product.rating || 0);
+  const reviews = Number(product.reviews_count || 0);
+  const originalPrice = Number(product.original_price || price);
+
+  // Premium means higher-end within the selected budget, not simply
+  // the highest price. Rating, review confidence and product signals
+  // are also considered.
+  const pricePosition = budget > 0
+    ? Math.min(1, price / budget)
+    : 0;
+
+  const ratingScore = (rating / 5) * 30;
+  const priceScore = pricePosition * 42;
+  const reviewScore = Math.min(10, reviews / 40);
+  const valueSignal = originalPrice > price
+    ? Math.min(8, ((originalPrice - price) / originalPrice) * 100 / 2)
+    : 0;
+  const featureScore = product.is_featured ? 6 : 0;
+  const flashScore = product.is_flash_sale ? 2 : 0;
+
+  return (
+    priceScore +
+    ratingScore +
+    reviewScore +
+    valueSignal +
+    featureScore +
+    flashScore
+  );
+}
+
 function getProductScore(
   product: Product,
   budget: number,
@@ -715,9 +750,6 @@ export default function BudgetBuilderPage() {
   ]);
 
   const autoPlan = useMemo(() => {
-    const result: Product[] = [];
-    let remaining = budget;
-
     const limit =
       goal === "multiple"
         ? 6
@@ -725,39 +757,75 @@ export default function BudgetBuilderPage() {
         ? 3
         : 5;
 
-    // First pass: different categories whenever the user selected all categories.
+    if (!rankedProducts.length || !goal) return [];
+
+    // PREMIUM MODE
+    // Only use products that feel genuinely high-end for the selected
+    // budget. We first target products using at least 40% of the budget,
+    // then fall back gracefully if the catalog has fewer premium items.
+    if (goal === "premium") {
+      const premiumThreshold = budget * 0.4;
+      const premiumPool = rankedProducts.filter(
+        (product) => Number(product.price) >= premiumThreshold
+      );
+
+      const source =
+        premiumPool.length >= Math.min(limit, 2)
+          ? premiumPool
+          : rankedProducts;
+
+      const premiumRanked = [...source].sort((a, b) => {
+        const scoreDiff =
+          getPremiumScore(b, budget) -
+          getPremiumScore(a, budget);
+
+        if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
+
+        // Fresh build tie-breaker: products with equal premium quality
+        // can change order on every Build instead of repeating forever.
+        return (
+          seededOrder(a.id, buildSeed + 101) -
+          seededOrder(b.id, buildSeed + 101)
+        );
+      });
+
+      return premiumRanked.slice(0, limit);
+    }
+
+    // Other goals keep the smart ranking intact. We use a fresh seed only
+    // for close/tied products so rebuilding can produce a different plan
+    // without destroying the actual score ranking.
+    const result: Product[] = [];
+    let remaining = budget;
     const usedCategories = new Set<string>();
-    const firstPass = [...rankedProducts].sort(
-      (a, b) =>
+
+    const candidates = [...rankedProducts].sort((a, b) => {
+      const scoreDiff = b.score - a.score;
+      if (scoreDiff !== 0) return scoreDiff;
+      return (
         seededOrder(a.id, buildSeed + 11) -
         seededOrder(b.id, buildSeed + 11)
-    );
+      );
+    });
 
-    for (const product of firstPass) {
-      if (result.length >= limit) break;
+    // Prefer category diversity when all categories are selected.
+    if (categoryId === "all") {
+      for (const product of candidates) {
+        if (result.length >= limit) break;
 
-      const price = Number(product.price);
-      const category =
-        product.category_id || "uncategorized";
+        const price = Number(product.price);
+        const category = product.category_id || "uncategorized";
 
-      if (
-        price <= remaining &&
-        !usedCategories.has(category)
-      ) {
-        result.push(product);
-        remaining -= price;
-        usedCategories.add(category);
+        if (price <= remaining && !usedCategories.has(category)) {
+          result.push(product);
+          remaining -= price;
+          usedCategories.add(category);
+        }
       }
     }
 
-    // Second pass: fill the remaining budget with unique products only.
-    const secondPass = [...rankedProducts].sort(
-      (a, b) =>
-        seededOrder(a.id, buildSeed + 29) -
-        seededOrder(b.id, buildSeed + 29)
-    );
-
-    for (const product of secondPass) {
+    // Fill remaining slots while respecting the budget.
+    for (const product of candidates) {
       if (result.length >= limit) break;
       if (result.some((item) => item.id === product.id)) continue;
 
@@ -768,14 +836,14 @@ export default function BudgetBuilderPage() {
       }
     }
 
-    if (goal === "premium") {
-      return [...result].sort(
-        (a, b) => Number(b.price) - Number(a.price)
-      );
-    }
-
     return result;
-  }, [rankedProducts, budget, goal, buildSeed]);
+  }, [
+    rankedProducts,
+    budget,
+    goal,
+    categoryId,
+    buildSeed,
+  ]);
 
   const activePlanIds = manualPlanMode
     ? selectedProducts
