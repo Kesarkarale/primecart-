@@ -1862,74 +1862,75 @@ const [matchStage, setMatchStage] =
 
 
   /* =====================================================
-     CART SYNC
+     CART SYNC — SUPABASE IS THE SOURCE OF TRUTH
   ===================================================== */
 
-  function syncCart() {
+  async function syncCart() {
     try {
-      const stored =
-        localStorage.getItem(
-          "primecart-cart"
-        );
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (!stored) {
+      if (userError) throw userError;
+
+      if (!user) {
         setCartIds([]);
         return;
       }
 
-      const parsed =
-        JSON.parse(stored);
+      const { data, error } = await supabase
+        .from("cart_items")
+        .select("product_id")
+        .eq("user_id", user.id);
 
-      if (!Array.isArray(parsed)) {
-        setCartIds([]);
-        return;
-      }
+      if (error) throw error;
 
-      const ids = parsed
-        .map((item: any) =>
-          String(
-            item?.product_id ??
-              item?.productId ??
-              item?.id ??
-              ""
-          )
-        )
-        .filter(Boolean);
+      const ids = Array.from(
+        new Set(
+          (data ?? [])
+            .map((item) => String(item.product_id))
+            .filter(Boolean),
+        ),
+      );
 
       setCartIds(ids);
-    } catch {
+    } catch (error) {
+      console.error("PrimeMatch cart sync error:", error);
       setCartIds([]);
     }
   }
 
   useEffect(() => {
-    syncCart();
+    void syncCart();
 
-    const handleCartUpdate =
-      () => syncCart();
+    const handleCartUpdate = () => {
+      void syncCart();
+    };
 
-    const handleStorage =
-      () => syncCart();
+    const handleStorage = () => {
+      void syncCart();
+    };
 
     window.addEventListener(
       "cart-updated",
-      handleCartUpdate
+      handleCartUpdate,
     );
 
     window.addEventListener(
       "storage",
-      handleStorage
+      handleStorage,
     );
 
     return () => {
       window.removeEventListener(
         "cart-updated",
-        handleCartUpdate
+        handleCartUpdate,
       );
 
       window.removeEventListener(
         "storage",
-        handleStorage
+        handleStorage,
       );
     };
   }, []);
@@ -2065,7 +2066,7 @@ const [matchStage, setMatchStage] =
         )
       );
 
-      syncCart();
+      await syncCart();
     } catch (err) {
       console.error(
         "PrimeMatch load error:",
@@ -2346,117 +2347,146 @@ const [matchStage, setMatchStage] =
      CART
   ===================================================== */
 
-  function addToCart(
-    product: MatchProduct
+  async function addToCart(
+    product: MatchProduct,
   ) {
     try {
-      if (product.stock <= 0) {
+      if (Number(product.stock) <= 0) {
         setToast("This product is currently out of stock.");
         return;
       }
-      const stored =
-        localStorage.getItem(
-          "primecart-cart"
-        );
 
-      let current: any[] = [];
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (stored) {
-        try {
-          const parsed =
-            JSON.parse(stored);
+      if (userError) throw userError;
 
-          if (Array.isArray(parsed)) {
-            current = parsed;
-          }
-        } catch {
-          current = [];
-        }
+      if (!user) {
+        window.location.href = "/auth/login?redirect=/dashboard/primematch";
+        return;
       }
 
-      const existingIndex =
-        current.findIndex(
-          (item) =>
+      /*
+       * cart_items is the permanent cart used by the Cart page.
+       * First check whether this user already has this product.
+       */
+      const {
+        data: existing,
+        error: existingError,
+      } = await supabase
+        .from("cart_items")
+        .select("id,quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      const currentQuantity = existing
+        ? Math.max(0, Number(existing.quantity) || 0)
+        : 0;
+
+      if (existing && currentQuantity >= Number(product.stock)) {
+        setToast(`Only ${product.stock} available in stock.`);
+        setCartIds((previous) =>
+          previous.includes(product.id)
+            ? previous
+            : [...previous, product.id],
+        );
+        return;
+      }
+
+      const nextQuantity = Math.min(
+        currentQuantity + 1,
+        Number(product.stock),
+      );
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("cart_items")
+          .update({ quantity: nextQuantity })
+          .eq("id", existing.id)
+          .eq("user_id", user.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity: 1,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      /*
+       * Local storage is kept only as a compatibility snapshot.
+       * The database above is the actual source of truth.
+       */
+      try {
+        const stored = localStorage.getItem("primecart-cart");
+        const parsed = stored ? JSON.parse(stored) : [];
+        const current = Array.isArray(parsed) ? parsed : [];
+        const existingIndex = current.findIndex(
+          (item: any) =>
             String(
               item?.product_id ??
                 item?.productId ??
                 item?.id ??
-                ""
-            ) ===
-            String(product.id)
+                "",
+            ) === String(product.id),
         );
 
-      if (
-        existingIndex >= 0
-      ) {
-        const currentQuantity =
-          Number(
-            current[existingIndex]?.quantity
-          ) || 0;
+        const cacheItem = {
+          id: product.id,
+          product_id: product.id,
+          productId: product.id,
+          name: product.name,
+          price: Number(product.price) || 0,
+          image_url: product.image_url,
+          image: product.image_url,
+          quantity: nextQuantity,
+          stock: Number(product.stock) || 0,
+        };
 
-        if (
-          product.stock > 0 &&
-          currentQuantity >= product.stock
-        ) {
-          setToast(`Only ${product.stock} available in stock`);
-          return;
+        if (existingIndex >= 0) {
+          current[existingIndex] = {
+            ...current[existingIndex],
+            ...cacheItem,
+          };
+        } else {
+          current.push(cacheItem);
         }
 
-        current[existingIndex] = {
-          ...current[existingIndex],
-          quantity: currentQuantity + 1,
-        };
-      } else {
-        current.push({
-          id: product.id,
-          product_id:
-            product.id,
-          productId:
-            product.id,
-          name: product.name,
-          price: Number(
-            product.price
-          ),
-          image_url:
-            product.image_url,
-          image:
-            product.image_url,
-          quantity: 1,
-          stock: product.stock,
-        });
+        localStorage.setItem(
+          "primecart-cart",
+          JSON.stringify(current),
+        );
+      } catch {
+        // Cache failures must never break the database cart.
       }
 
-      localStorage.setItem(
-        "primecart-cart",
-        JSON.stringify(current)
-      );
-
       setCartIds((previous) =>
-        previous.includes(
-          product.id
-        )
+        previous.includes(product.id)
           ? previous
-          : [
-              ...previous,
-              product.id,
-            ]
+          : [...previous, product.id],
       );
 
-      window.dispatchEvent(
-        new Event("cart-updated")
-      );
+      window.dispatchEvent(new Event("cart-updated"));
 
       setToast(
-        `${product.name} added to cart`
+        existing
+          ? `${product.name} quantity increased to ${nextQuantity}`
+          : `${product.name} added to cart`,
       );
     } catch (err) {
-      console.error(
-        "Cart error:",
-        err
-      );
-
+      console.error("Cart database error:", err);
       setToast(
-        "Could not add product to cart."
+        "Could not add product to cart. Please try again.",
       );
     }
   }
