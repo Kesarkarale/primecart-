@@ -462,7 +462,7 @@ export default function DashboardPage() {
             )
             .eq("is_active", true)
             .order("created_at", { ascending: false })
-            .limit(100),
+            .limit(500),
           supabase
             .from("categories")
             .select("id,name")
@@ -882,23 +882,71 @@ export default function DashboardPage() {
   }, [products, categories]);
 
   const flashProducts = useMemo(() => {
-    const flash = products.filter(
-      (product) => product.is_flash_sale
-    );
+    /*
+     * Flash Deals intentionally uses different categories so the dashboard
+     * does not become a row of only one type of product.
+     * Supabase remains the single source for product data.
+     */
+    const source = products
+      .filter((product) => product.is_active !== false)
+      .filter((product) => Number(product.stock ?? 0) > 0);
 
-    const discounted = products.filter(
-      (product) =>
-        getDiscount(product.price, product.original_price) >= 10
-    );
+    const categoryName = (product: Product) =>
+      categories.find(
+        (category) =>
+          String(category.id) === String(product.category_id)
+      )?.name?.toLowerCase() || "";
 
-    return (
-      flash.length
-        ? flash
-        : discounted.length
-          ? discounted
-          : products
-    ).slice(0, 5);
-  }, [products]);
+    const categoryAliases: Array<{
+      key: string;
+      match: string[];
+    }> = [
+      { key: "Fashion", match: ["fashion", "clothing", "apparel"] },
+      { key: "Beauty", match: ["beauty", "beauty & personal care", "personal care", "cosmetics"] },
+      { key: "Electronics", match: ["electronics", "electronic", "mobile", "gaming", "computer"] },
+      { key: "Home & Kitchen", match: ["home & kitchen", "home and kitchen", "home", "kitchen", "home & living"] },
+      { key: "Footwear", match: ["footwear", "shoes", "shoe"] },
+      { key: "Watch", match: ["watch", "watches", "wearables"] },
+    ];
+
+    const score = (product: Product) => {
+      const discount = getDiscount(product.price, product.original_price);
+      const rating = Number(product.rating || 0);
+      const reviews = Number(product.reviews_count || 0);
+      const flashBonus = product.is_flash_sale ? 1000 : 0;
+      return flashBonus + discount * 10 + rating * 3 + Math.min(reviews, 500) / 100;
+    };
+
+    const selected: Product[] = [];
+    const used = new Set<string>();
+
+    categoryAliases.forEach(({ match }) => {
+      const product = source
+        .filter((item) => {
+          const name = categoryName(item);
+          return match.some((value) => name.includes(value));
+        })
+        .sort((a, b) => score(b) - score(a))[0];
+
+      if (product && !used.has(String(product.id))) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
+
+    // Fill remaining slots with the strongest real flash/discount products.
+    source
+      .filter((product) => !used.has(String(product.id)))
+      .sort((a, b) => score(b) - score(a))
+      .forEach((product) => {
+        if (selected.length < 6) {
+          selected.push(product);
+          used.add(String(product.id));
+        }
+      });
+
+    return selected.slice(0, 6);
+  }, [products, categories]);
 
   const topDeals = useMemo(() => {
     return [...products]
@@ -2142,9 +2190,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flash-products">
-              {flashProducts
-                .slice(0, 4)
-                .map((product) => (
+              {flashProducts.map((product, index) => (
                   <button
                     key={String(product.id)}
                     type="button"
@@ -2154,6 +2200,7 @@ export default function DashboardPage() {
                     }
                   >
                     <div className="flash-product-image">
+                      <span className="flash-number">0{index + 1}</span>
                       {product.image_url ? (
                         <SafeProductImage
                           src={product.image_url}
@@ -2165,7 +2212,11 @@ export default function DashboardPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div className="flash-product-copy">
+                      <small className="flash-category-label">
+                        {categoryMap.get(String(product.category_id)) || "Deal"}
+                      </small>
+
                       <strong>
                         {product.name}
                       </strong>
@@ -6705,6 +6756,21 @@ body{background:#f7f5ef!important;color:var(--pc-ink)}
 .flash-products{gap:13px!important}
 .flash-product{border:1px solid #eae3d7!important;background:#fff!important;border-radius:15px!important;box-shadow:0 6px 20px rgba(52,39,18,.045)!important;transition:.22s ease!important}
 .flash-product:hover{transform:translateY(-4px)!important;box-shadow:0 15px 30px rgba(52,39,18,.1)!important}
+.flash-section{position:relative!important;isolation:isolate!important;animation:pcSectionIn .65s ease both!important}
+.flash-section:before{content:"";position:absolute;inset:0 auto auto 0;width:180px;height:180px;background:radial-gradient(circle,rgba(215,177,94,.13),transparent 70%);pointer-events:none;z-index:-1}
+.flash-products{grid-template-columns:repeat(6,minmax(0,1fr))!important;overflow:visible!important}
+.flash-product{position:relative!important;min-height:92px!important;overflow:hidden!important;animation:pcFlashIn .55s cubic-bezier(.2,.8,.2,1) both!important}
+.flash-product:nth-child(1){animation-delay:.04s!important}.flash-product:nth-child(2){animation-delay:.09s!important}.flash-product:nth-child(3){animation-delay:.14s!important}.flash-product:nth-child(4){animation-delay:.19s!important}.flash-product:nth-child(5){animation-delay:.24s!important}.flash-product:nth-child(6){animation-delay:.29s!important}
+.flash-product-image{position:relative!important;flex:0 0 58px!important;width:58px!important;height:58px!important;background:#faf8f3!important;border-radius:11px!important;border:1px solid #eee5d7!important;overflow:hidden!important}
+.flash-product-img{width:100%!important;height:100%!important;object-fit:contain!important;padding:5px!important;transition:transform .35s ease!important}
+.flash-product:hover .flash-product-img{transform:scale(1.08)!important}
+.flash-product-copy{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important}
+.flash-product-copy strong{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:11px!important;color:#2f281e!important}
+.flash-product-copy span{font-size:12px!important;font-weight:900!important;color:#a97820!important}
+.flash-category-label{font-size:7px!important;text-transform:uppercase!important;letter-spacing:.09em!important;font-weight:900!important;color:#9b7a43!important}
+.flash-number{position:absolute!important;left:4px!important;top:4px!important;z-index:2!important;width:18px!important;height:18px!important;border-radius:6px!important;display:grid!important;place-items:center!important;background:#c79a3b!important;color:#fff!important;font-size:7px!important;font-weight:900!important;box-shadow:0 4px 9px rgba(137,96,26,.18)!important}
+@keyframes pcFlashIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes pcSectionIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
 /* PROMO CARDS */
 .promo-grid{gap:15px!important;margin-top:25px!important}
@@ -7406,6 +7472,10 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           .price-row strong { font-size: 14px !important; }
           .add-cart-btn { height: 33px !important; font-size: 8.5px !important; }
         }
+
+        @media(max-width:1200px){.flash-products{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+        @media(max-width:900px){.flash-products{grid-template-columns:repeat(2,minmax(0,1fr))!important}.flash-product{min-height:88px!important}}
+        @media(max-width:680px){.flash-section{padding:14px!important}.flash-header{display:grid!important;grid-template-columns:1fr auto!important;gap:10px!important}.flash-header> a{grid-column:1/-1!important;justify-content:center!important}.flash-header p{font-size:8px!important;line-height:1.45!important}.flash-title{font-size:18px!important}.flash-products{display:flex!important;overflow-x:auto!important;scroll-snap-type:x mandatory!important;padding:2px 1px 8px!important;gap:9px!important;scrollbar-width:none!important}.flash-products::-webkit-scrollbar{display:none!important}.flash-product{min-width:220px!important;width:220px!important;flex:0 0 220px!important;scroll-snap-align:start!important}.flash-product-copy strong{font-size:11px!important}.flash-product-copy span{font-size:13px!important}}
  `}
       </style>
     </main>
