@@ -212,11 +212,15 @@ function matchesSubcategory(product: Product, subcategory: string) {
 }
 
 function seededOrder(id: string, seed: number) {
-  let hash = seed * 97 + 17;
+  let hash = (seed + 1) * 97 + 17;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   }
-  return hash;
+  return hash >>> 0;
+}
+
+function seededRank(id: string, seed: number) {
+  return seededOrder(id, seed) / 4294967296;
 }
 
 function getImageUrl(value: string | null) {
@@ -561,11 +565,13 @@ export default function BudgetBuilderPage() {
     [selectedCategory]
   );
 
-  const rankedProducts = useMemo(() => {
+  /* STRICT MATCHING: category/subcategory first, budget second. */
+  const matchingProducts = useMemo(() => {
     let list = products.filter(
       (product) =>
         product.stock > 0 &&
-        Number(product.price) <= budget
+        Number(product.price) > 0 &&
+        Number.isFinite(Number(product.price))
     );
 
     if (categoryId !== "all") {
@@ -580,7 +586,12 @@ export default function BudgetBuilderPage() {
       );
     }
 
-    return list
+    return list;
+  }, [products, categoryId, subcategory]);
+
+  const rankedProducts = useMemo(() => {
+    return matchingProducts
+      .filter((product) => Number(product.price) <= budget)
       .map((product) => ({
         ...product,
         score: getProductScore(product, budget, goal),
@@ -588,142 +599,183 @@ export default function BudgetBuilderPage() {
       .sort((a, b) => {
         const scoreDiff = b.score - a.score;
         if (scoreDiff !== 0) return scoreDiff;
-        return seededOrder(a.id, buildSeed) - seededOrder(b.id, buildSeed);
+        return (
+          seededOrder(a.id, buildSeed + 101) -
+          seededOrder(b.id, buildSeed + 101)
+        );
       });
-  }, [
-    products,
-    budget,
-    goal,
-    categoryId,
-    subcategory,
-    buildSeed,
-  ]);
+  }, [matchingProducts, budget, goal, buildSeed]);
+
+  const affordableMatchingProducts = useMemo(
+    () =>
+      matchingProducts.filter(
+        (product) => Number(product.price) <= budget
+      ),
+    [matchingProducts, budget]
+  );
+
+  const hasExactMatchingProducts = matchingProducts.length > 0;
+  const hasAffordableMatchingProducts =
+    affordableMatchingProducts.length > 0;
+
 
   const autoPlan = useMemo(() => {
-    const eligible = rankedProducts.filter(
-      (product) => Number(product.price) <= budget
-    );
-
-    if (eligible.length === 0 || budget <= 0) {
+    if (
+      budget <= 0 ||
+      affordableMatchingProducts.length === 0
+    ) {
       return [];
     }
 
-    /*
-     * IMPORTANT BUDGET RULE:
-     * The complete generated plan must ALWAYS stay within the selected
-     * budget. We never treat the budget as a per-product limit.
-     */
+    const eligible = [...affordableMatchingProducts];
     const result: Product[] = [];
     let remaining = budget;
 
     const pushIfFits = (product: Product) => {
       const price = Number(product.price);
-
-      if (price <= 0 || price > remaining) return false;
+      if (!Number.isFinite(price) || price <= 0 || price > remaining) {
+        return false;
+      }
       if (result.some((item) => item.id === product.id)) return false;
-
       result.push(product);
       remaining -= price;
       return true;
     };
 
+    const randomTie = (a: Product, b: Product, offset: number) =>
+      seededRank(a.id, buildSeed + offset) -
+      seededRank(b.id, buildSeed + offset);
+
+    /* PREMIUM: higher price band + quality, with seeded variation. */
     if (goal === "premium") {
-      // Premium means higher-end products, but the TOTAL plan still stays
-      // inside the budget. Prefer the most expensive eligible product first.
-      const premiumCandidates = [...eligible].sort((a, b) => {
+      const prices = eligible.map((p) => Number(p.price));
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const premiumFloor =
+        minPrice + (maxPrice - minPrice) * 0.55;
+
+      const premiumOnly = eligible.filter(
+        (p) => Number(p.price) >= premiumFloor
+      );
+
+      const candidates = (
+        premiumOnly.length ? premiumOnly : eligible
+      ).sort((a, b) => {
         const priceDiff = Number(b.price) - Number(a.price);
-        if (priceDiff !== 0) return priceDiff;
-
-        const scoreDiff = getProductScore(b, budget, goal) - getProductScore(a, budget, goal);
-        if (scoreDiff !== 0) return scoreDiff;
-
-        return seededOrder(a.id, buildSeed + 41) - seededOrder(b.id, buildSeed + 41);
-      });
-
-      // One premium anchor is the default. A second item is added only when
-      // it genuinely fits the remaining budget.
-      if (premiumCandidates[0]) {
-        pushIfFits(premiumCandidates[0]);
-      }
-
-      for (const product of premiumCandidates.slice(1)) {
-        if (result.length >= 2) break;
-        pushIfFits(product);
-      }
-
-      return result;
-    }
-
-    if (goal === "value") {
-      // Maximum Value = discount + price efficiency + solid ratings.
-      const valueCandidates = [...eligible].sort((a, b) => {
-        const discountA = discountPercent(Number(a.price), a.original_price ? Number(a.original_price) : null);
-        const discountB = discountPercent(Number(b.price), b.original_price ? Number(b.original_price) : null);
-        const valueA = getProductScore(a, budget, goal) + discountA * 0.8 - (Number(a.price) / budget) * 10;
-        const valueB = getProductScore(b, budget, goal) + discountB * 0.8 - (Number(b.price) / budget) * 10;
-        return valueB - valueA || seededOrder(a.id, buildSeed + 51) - seededOrder(b.id, buildSeed + 51);
-      });
-
-      const usedCategories = new Set<string>();
-
-      for (const product of valueCandidates) {
-        if (result.length >= 6) break;
-        const category = product.category_id || "uncategorized";
-        if (!usedCategories.has(category) && pushIfFits(product)) {
-          usedCategories.add(category);
+        if (priceDiff !== 0) {
+          const bandA = Math.floor(
+            Number(a.price) / Math.max(1, budget * 0.1)
+          );
+          const bandB = Math.floor(
+            Number(b.price) / Math.max(1, budget * 0.1)
+          );
+          if (bandA !== bandB) return bandB - bandA;
         }
+
+        const qa =
+          Number(a.rating || 0) * 18 +
+          Math.min(20, Number(a.reviews_count || 0) / 25) +
+          (a.is_featured ? 6 : 0);
+        const qb =
+          Number(b.rating || 0) * 18 +
+          Math.min(20, Number(b.reviews_count || 0) / 25) +
+          (b.is_featured ? 6 : 0);
+
+        return qb - qa || randomTie(a, b, 41);
+      });
+
+      const top = candidates.slice(0, Math.min(8, candidates.length));
+      if (top.length) {
+        const index = Math.floor(
+          seededRank(top[0].id, buildSeed + 43) * top.length
+        );
+        pushIfFits(top[index]);
       }
 
-      for (const product of valueCandidates) {
-        if (result.length >= 6) break;
+      const companions = [...candidates].sort(
+        (a, b) =>
+          Math.abs(Number(a.price) - remaining * 0.75) -
+          Math.abs(Number(b.price) - remaining * 0.75) ||
+          randomTie(a, b, 47)
+      );
+
+      for (const product of companions) {
+        if (result.length >= 3) break;
         pushIfFits(product);
       }
-
       return result;
     }
 
+    /* QUALITY FIRST: rating + review depth + featured status. */
     if (goal === "quality") {
-      // Quality First = rating/reviews/reliability. Price is only a budget
-      // constraint, not the main ranking factor.
-      const qualityCandidates = [...eligible].sort((a, b) => {
-        const qualityA = Number(a.rating || 0) * 20 + Math.min(20, Number(a.reviews_count || 0) / 25) + (a.is_featured ? 8 : 0);
-        const qualityB = Number(b.rating || 0) * 20 + Math.min(20, Number(b.reviews_count || 0) / 25) + (b.is_featured ? 8 : 0);
-        return qualityB - qualityA || seededOrder(a.id, buildSeed + 61) - seededOrder(b.id, buildSeed + 61);
+      const candidates = [...eligible].sort((a, b) => {
+        const qa =
+          Number(a.rating || 0) * 24 +
+          Math.min(
+            24,
+            Math.log10(Number(a.reviews_count || 0) + 1) * 8
+          ) +
+          (a.is_featured ? 7 : 0);
+        const qb =
+          Number(b.rating || 0) * 24 +
+          Math.min(
+            24,
+            Math.log10(Number(b.reviews_count || 0) + 1) * 8
+          ) +
+          (b.is_featured ? 7 : 0);
+        return qb - qa || randomTie(a, b, 61);
       });
-
-      const usedCategories = new Set<string>();
-
-      for (const product of qualityCandidates) {
-        if (result.length >= 5) break;
-        const category = product.category_id || "uncategorized";
-        if (!usedCategories.has(category) && pushIfFits(product)) {
-          usedCategories.add(category);
-        }
-      }
-
-      for (const product of qualityCandidates) {
+      for (const product of candidates) {
         if (result.length >= 5) break;
         pushIfFits(product);
       }
-
       return result;
     }
 
-    // More Products = maximise useful item count while still respecting the
-    // exact total budget. Cheapest suitable items are considered first.
-    const multipleCandidates = [...eligible].sort((a, b) => {
-      const priceDiff = Number(a.price) - Number(b.price);
-      if (priceDiff !== 0) return priceDiff;
-      return seededOrder(a.id, buildSeed + 71) - seededOrder(b.id, buildSeed + 71);
-    });
+    /* MAXIMUM VALUE: discounts + rating + efficient budget usage. */
+    if (goal === "value") {
+      const candidates = [...eligible].sort((a, b) => {
+        const da = discountPercent(
+          Number(a.price),
+          a.original_price ? Number(a.original_price) : null
+        );
+        const db = discountPercent(
+          Number(b.price),
+          b.original_price ? Number(b.original_price) : null
+        );
+        const va =
+          Number(a.rating || 0) * 8 +
+          Math.min(15, Number(a.reviews_count || 0) / 40) +
+          da * 1.35 +
+          Math.min(18, (Number(a.price) / budget) * 18);
+        const vb =
+          Number(b.rating || 0) * 8 +
+          Math.min(15, Number(b.reviews_count || 0) / 40) +
+          db * 1.35 +
+          Math.min(18, (Number(b.price) / budget) * 18);
+        return vb - va || randomTie(a, b, 51);
+      });
+      for (const product of candidates) {
+        if (result.length >= 6) break;
+        pushIfFits(product);
+      }
+      return result;
+    }
 
-    for (const product of multipleCandidates) {
-      if (result.length >= 6) break;
+    /* MORE PRODUCTS: maximise item count without crossing total budget. */
+    const candidates = [...eligible].sort(
+      (a, b) =>
+        Number(a.price) - Number(b.price) ||
+        randomTie(a, b, 71)
+    );
+
+    for (const product of candidates) {
+      if (result.length >= 8) break;
       pushIfFits(product);
     }
-
     return result;
-  }, [rankedProducts, budget, goal, buildSeed]);
+  }, [affordableMatchingProducts, budget, goal, buildSeed]);
+
 
   const activePlanIds = manualPlanMode
     ? selectedProducts
@@ -744,6 +796,14 @@ export default function BudgetBuilderPage() {
       const price = Number(product.price);
       if (!Number.isFinite(price) || price <= 0) continue;
       if (price > budget) continue;
+      if (
+        categoryId !== "all" &&
+        product.category_id !== categoryId
+      ) continue;
+      if (
+        subcategory !== "all" &&
+        !matchesSubcategory(product, subcategory)
+      ) continue;
       if (total + price > budget) continue;
       if (safe.some((item) => item.id === product.id)) continue;
 
@@ -759,6 +819,9 @@ export default function BudgetBuilderPage() {
       total + Number(product.price),
     0
   );
+
+  const planWithinBudget =
+    budget > 0 && plannedSpend > 0 && plannedSpend <= budget;
 
   const remainingBudget = Math.max(
     0,
@@ -931,19 +994,36 @@ export default function BudgetBuilderPage() {
       return;
     }
 
+    if (!hasExactMatchingProducts) {
+      setPlanReady(false);
+      setSelectedProducts([]);
+      setManualPlanMode(false);
+      showNotice(
+        "No matching product found for your selected category and subcategory."
+      );
+      return;
+    }
+
+    if (!hasAffordableMatchingProducts) {
+      setPlanReady(false);
+      setSelectedProducts([]);
+      setManualPlanMode(false);
+      showNotice(
+        `No matching product found within ${formatPrice(
+          budget
+        )} for your selected category and subcategory.`
+      );
+      return;
+    }
+
     setBuilding(true);
     setPlanReady(false);
-
-    // A new seed gives every build a fresh, non-repeating recommendation order.
+    setManualPlanMode(false);
+    setSelectedProducts([]);
     setBuildSeed((current) => current + 1);
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, 650)
-    );
+    await new Promise((resolve) => setTimeout(resolve, 650));
 
-    if (!manualPlanMode && selectedProducts.length === 0) {
-      setSelectedProducts([]);
-    }
     setPlanReady(true);
     setBuilding(false);
 
@@ -957,6 +1037,7 @@ export default function BudgetBuilderPage() {
     }, 150);
   }
 
+
   function resetBuilder() {
     setBudget(0);
     setCustomBudget("");
@@ -966,6 +1047,7 @@ export default function BudgetBuilderPage() {
     setSelectedProducts([]);
     setManualPlanMode(false);
     setPlanReady(false);
+    setBuildSeed(0);
   }
 
   function togglePlanProduct(productId: string) {
@@ -989,6 +1071,22 @@ export default function BudgetBuilderPage() {
       );
 
       if (!product) return base;
+
+      if (
+        categoryId !== "all" &&
+        product.category_id !== categoryId
+      ) {
+        showNotice("This product is outside your selected category.");
+        return base;
+      }
+
+      if (
+        subcategory !== "all" &&
+        !matchesSubcategory(product, subcategory)
+      ) {
+        showNotice("This product is outside your selected subcategory.");
+        return base;
+      }
 
       const currentSpend = base.reduce(
         (sum, id) => {
@@ -1026,9 +1124,11 @@ export default function BudgetBuilderPage() {
   function optimizePlan() {
     setSelectedProducts([]);
     setManualPlanMode(false);
-
+    setPlanReady(false);
+    setBuildSeed((current) => current + 1);
+    window.setTimeout(() => setPlanReady(true), 100);
     showNotice(
-      "Your plan has been re-optimized for better budget usage."
+      "Your plan has been re-optimized with fresh product choices."
     );
   }
 
@@ -1669,11 +1769,8 @@ export default function BudgetBuilderPage() {
    * ============================================================
    */
   async function addEntirePlanToCart() {
-    if (planProducts.length === 0) {
-      showNotice(
-        "There are no products in this plan."
-      );
-
+    if (planProducts.length === 0 || !planWithinBudget) {
+      showNotice("There is no valid budget-safe plan to add.");
       return;
     }
 
@@ -1725,11 +1822,11 @@ export default function BudgetBuilderPage() {
                 0
             );
 
-          const newQuantity =
-            Math.min(
-              currentQuantity + 1,
-              product.stock
-            );
+          /* Budget Builder adds one unit per recommended product. */
+          const newQuantity = Math.min(
+            Math.max(1, currentQuantity),
+            product.stock
+          );
 
           if (
             newQuantity !==
@@ -2531,7 +2628,8 @@ export default function BudgetBuilderPage() {
                       }
                       disabled={
                         cartLoading ===
-                        "complete-plan"
+                          "complete-plan" ||
+                        !planWithinBudget
                       }
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#c9a24d] px-5 text-[10px] font-black text-white shadow-sm transition hover:bg-[#b48a3d] disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -3279,9 +3377,7 @@ export default function BudgetBuilderPage() {
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
-                Ranked using price,
-                ratings, reviews, deals
-                and your selected goal.
+                Every generated plan is calculated against your exact total budget — never as a per-product limit.
               </p>
             </div>
 
@@ -3301,22 +3397,30 @@ export default function BudgetBuilderPage() {
             </div>
           ) : rankedProducts.length ===
             0 ? (
-            <div className="mt-6 rounded-[24px] border border-[#eadfca] bg-white p-16 text-center">
+            <div className="mt-6 rounded-[24px] border border-[#eadfca] bg-white p-8 text-center sm:p-16">
               <CircleDollarSign
                 size={38}
                 className="mx-auto text-[#c9a24d]"
               />
 
               <h4 className="mt-4 text-lg font-black">
-                Nothing matches this
-                budget
+                No matching products found
               </h4>
 
-              <p className="mt-2 text-sm text-gray-500">
-                Try increasing your
-                budget or selecting
-                another category.
+              <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500">
+                {!hasExactMatchingProducts
+                  ? "No product matches your selected category and subcategory."
+                  : `Products exist for ${categoryName}${
+                      subcategory !== "all" ? ` → ${subcategory}` : ""
+                    }, but none are available within ${formatPrice(
+                      budget
+                    )}. Increase your budget or change the selection.`}
               </p>
+
+              <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-[#eadfca] bg-[#fffaf0] px-4 py-2 text-[10px] font-black text-[#956f27]">
+                <Wallet size={13} />
+                Budget: {formatPrice(budget)}
+              </div>
             </div>
           ) : (
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
