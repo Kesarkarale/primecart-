@@ -523,41 +523,15 @@ export default function OrdersPage() {
         setErrorMessage("");
 
         /* -----------------------------------------------
-           LOCAL ORDERS
-        ------------------------------------------------ */
-
-        let localOrders: Order[] = [];
-
-        try {
-          const stored =
-            localStorage.getItem(
-              "primecart-orders"
-            );
-
-          if (stored) {
-            const parsed =
-              JSON.parse(stored);
-
-            if (Array.isArray(parsed)) {
-              localOrders = parsed
-                .map(
-                  (item: LocalOrder) =>
-                    getLocalOrderAsOrder(
-                      item
-                    )
-                )
-                .filter(Boolean);
-            }
-          }
-        } catch (error) {
-          console.error(
-            "Local orders error:",
-            error
-          );
-        }
-
-        /* -----------------------------------------------
            AUTH
+           Orders are loaded ONLY for the currently
+           authenticated Supabase user.
+
+           IMPORTANT:
+           Do NOT load the old shared "primecart-orders"
+           localStorage array here. That array has no
+           reliable user_id, so it can leak another
+           account's orders into a newly logged-in account.
         ------------------------------------------------ */
 
         const {
@@ -612,15 +586,14 @@ export default function OrdersPage() {
             error
           );
 
-          if (
-            localOrders.length === 0
-          ) {
-            setErrorMessage(
-              "We couldn't load your orders right now. Please try again."
-            );
-          }
+          setErrorMessage(
+            "We couldn't load your orders right now. Please try again."
+          );
 
-          setOrders(localOrders);
+          // Never fall back to shared localStorage orders.
+          // Showing another user's orders is worse than
+          // showing an empty state when the database fails.
+          setOrders([]);
           return;
         }
 
@@ -705,12 +678,18 @@ export default function OrdersPage() {
           );
 
         /* -----------------------------------------------
-           MERGE LOCAL + DATABASE
+           FINAL USER-SCOPED ORDERS
+
+           Supabase has already filtered with:
+           .eq("user_id", user.id)
+
+           Therefore ONLY databaseOrders are allowed here.
+           This guarantees a newly logged-in user starts
+           with an empty order list until they place an order.
         ------------------------------------------------ */
 
         const merged = [
           ...databaseOrders,
-          ...localOrders,
         ];
 
         const unique = new Map<
