@@ -104,7 +104,6 @@ type UserInfo = {
 };
 
 const CART_KEY = "primecart-cart";
-const WISHLIST_KEY = "primecart-wishlist";
 const THEME_KEY = "primecart-theme";
 
 // Supabase tables used for persistent, user-specific cart and wishlist data.
@@ -438,16 +437,6 @@ export default function DashboardPage() {
           }
         };
 
-        const localWishlist = (): Array<string | number> => {
-          try {
-            const value = JSON.parse(
-              localStorage.getItem(WISHLIST_KEY) || "[]"
-            );
-            return Array.isArray(value) ? value : [];
-          } catch {
-            return [];
-          }
-        };
 
         const [
           { data: { user } },
@@ -581,51 +570,17 @@ export default function DashboardPage() {
               }
             }
 
-            /* One-time safe migration from the old localStorage wishlist. */
-            if (!dbWishlist?.length && localWishlist().length) {
-              const rows = Array.from(
-                new Set(
-                  localWishlist()
-                    .filter((id) => id != null)
-                    .map((id) => String(id))
-                )
-              ).map((productId) => ({
-                user_id: user.id,
-                product_id: productId,
-              }));
-
-              if (rows.length) {
-                const { error } = await supabase
-                  .from(WISHLIST_TABLE)
-                  .upsert(rows, { onConflict: "user_id,product_id" });
-
-                if (!error) {
-                  finalWishlist = rows.map((item) => item.product_id);
-                } else {
-                  console.error(
-                    "Wishlist migration failed:",
-                    error.message
-                  );
-                }
-              }
-            }
-
             if (mounted) {
               setCart(finalCart);
               setWishlist(finalWishlist);
               localStorage.setItem(CART_KEY, JSON.stringify(finalCart));
-              localStorage.setItem(
-                WISHLIST_KEY,
-                JSON.stringify(finalWishlist)
-              );
             }
           }
         } else {
-          /* Guest fallback: keep the old localStorage behaviour. */
+          /* Guest fallback: cart may stay local, wishlist is database-only. */
           const guestCart = localCart();
-          const guestWishlist = localWishlist();
           setCart(guestCart);
-          setWishlist(guestWishlist);
+          setWishlist([]);
         }
 
         const savedTheme = localStorage.getItem(THEME_KEY);
@@ -1002,6 +957,17 @@ export default function DashboardPage() {
 
   async function toggleWishlist(id: string | number) {
     const normalizedId = String(id);
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      showToast("Please login to use Wishlist");
+      return;
+    }
+
     const exists = wishlist.some(
       (value) => String(value) === normalizedId
     );
@@ -1012,18 +978,6 @@ export default function DashboardPage() {
       : [...wishlist, id];
 
     setWishlist(next);
-    localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      // Keep the local wishlist working even if the session is unavailable.
-      showToast(exists ? "Removed from Wishlist" : "Added to Wishlist");
-      return;
-    }
 
     if (exists) {
       const { error } = await supabase
@@ -1035,17 +989,15 @@ export default function DashboardPage() {
       if (error) {
         console.error("Wishlist delete failed:", error);
         setWishlist(previous);
-        localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
         showToast(`Couldn't update Wishlist: ${error.message}`);
         return;
       }
 
+      window.dispatchEvent(new Event("wishlist-updated"));
       showToast("Removed from Wishlist");
       return;
     }
 
-    // Insert instead of upsert. This avoids relying on PostgREST's
-    // onConflict metadata and works reliably with the unique constraint.
     const { data: existingRow, error: findError } = await supabase
       .from(WISHLIST_TABLE)
       .select("id")
@@ -1056,7 +1008,6 @@ export default function DashboardPage() {
     if (findError) {
       console.error("Wishlist lookup failed:", findError);
       setWishlist(previous);
-      localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
       showToast(`Couldn't save Wishlist: ${findError.message}`);
       return;
     }
@@ -1070,7 +1021,6 @@ export default function DashboardPage() {
       if (error) {
         console.error("Wishlist insert failed:", error);
         setWishlist(previous);
-        localStorage.setItem(WISHLIST_KEY, JSON.stringify(previous));
         showToast(`Couldn't save Wishlist: ${error.message}`);
         return;
       }
