@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ArrowLeft,
@@ -390,15 +390,37 @@ function productMatchesSubcategory(product: Product, categoryName: string, subca
   const selected = options.find((item) => item.label === subcategory);
   if (!selected) return true;
 
-  const text = normalize([
+  const productText = normalize([
     product.name,
-    product.brand,
     product.short_description,
     product.description,
-    categoryName,
   ].join(" "));
 
-  return selected.keywords.some((keyword) => text.includes(normalize(keyword)));
+  // If another subcategory is a more specific child of the selected label,
+  // do not let the parent keyword accidentally include the child product.
+  const childLabels = options
+    .filter((item) => item.label !== selected.label && normalize(item.label).includes(normalize(selected.label)))
+    .map((item) => normalize(item.label));
+
+  if (childLabels.some((child) => productText.includes(child))) {
+    return false;
+  }
+
+  // Our seeded data writes the exact subcategory at the beginning of the
+  // description (for example: "Lip Makeup beauty product"). Prefer that
+  // explicit marker whenever it exists.
+  const explicitMarker = normalize(`${selected.label} beauty product`);
+  if (explicitMarker && productText.includes(explicitMarker)) return true;
+
+  const exactLabel = normalize(selected.label);
+  const exactPhrase = new RegExp(`(^|\\s)${exactLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s|$)`);
+  if (exactLabel && exactPhrase.test(productText)) return true;
+
+  // The selected label is not necessarily written verbatim (e.g.
+  // "T-Shirts" vs "T-Shirt"), so use the mapped keywords as a fallback.
+  // Brand text is intentionally excluded from subcategory matching so a
+  // brand name cannot accidentally make an unrelated subcategory match.
+  return selected.keywords.some((keyword) => productText.includes(normalize(keyword)));
 }
 
 
@@ -1692,42 +1714,51 @@ function ProductSkeleton() {
    IMPORTANCE SLIDER
 ========================================================= */
 
-function ImportanceSlider({
+function ImportanceChoice({
   label,
   value,
-  onChange,
+  onSelect,
 }: {
   label: string;
   value: number;
-  onChange: (
-    value: number
-  ) => void;
+  onSelect: () => void;
 }) {
-  return (
-    <div className="rounded-2xl border border-[#eee5d6] bg-[#fffdfa] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-black text-gray-700">
-          {label}
-        </span>
+  const selected = value >= 70;
 
-        <span className="rounded-full bg-[#fff4d6] px-2.5 py-1 text-[10px] font-black text-[#956f27]">
-          {value}%
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`group rounded-2xl border p-4 text-left transition-all ${
+        selected
+          ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm ring-2 ring-[#c9a24d]/10"
+          : "border-[#eee5d6] bg-[#fffdfa] hover:border-[#d8bd70] hover:bg-white"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black ${
+              selected
+                ? "bg-[#c9a24d] text-white"
+                : "bg-[#f5f1e8] text-[#9b762b]"
+            }`}
+          >
+            {selected ? "✓" : "○"}
+          </span>
+          <div>
+            <p className="text-xs font-black text-gray-800">{label}</p>
+            <p className="mt-0.5 text-[10px] font-semibold text-gray-400">
+              {selected ? "High priority" : "Normal priority"}
+            </p>
+          </div>
+        </div>
+
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${selected ? "bg-[#fff0c8] text-[#956f27]" : "bg-gray-100 text-gray-500"}`}>
+          {selected ? "Priority" : "Select"}
         </span>
       </div>
-
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={value}
-        onChange={(event) =>
-          onChange(
-            Number(event.target.value)
-          )
-        }
-        className="w-full accent-[#c9a24d]"
-      />
-    </div>
+    </button>
   );
 }
 
@@ -1809,6 +1840,9 @@ const [matchStage, setMatchStage] =
 
   const [surpriseId, setSurpriseId] =
     useState<string | null>(null);
+
+  // Keeps the top recommendation from repeating on consecutive Find Match runs.
+  const shownTopIdsRef = useRef<string[]>([]);
 
   /* =====================================================
      TOAST
@@ -2176,17 +2210,53 @@ const [matchStage, setMatchStage] =
     ]);
 
   const subcategoryResults = useMemo(() => {
-    if (category === "all" || subcategory === "all") {
-      return filteredResults;
+    let pool = filteredResults;
+
+    // Category is already exact in allResults.
+    // Subcategory is also exact: no related/alternative category products.
+    if (category !== "all" && subcategory !== "all") {
+      const selectedCategory = categories.find((item) => item.id === category);
+      if (!selectedCategory) return [];
+      pool = pool.filter((product) =>
+        productMatchesSubcategory(product, selectedCategory.name, subcategory)
+      );
     }
 
-    const selectedCategory = categories.find((item) => item.id === category);
-    if (!selectedCategory) return filteredResults;
+    // Brand selection is strict.
+    if (brand !== "Any Brand" && brand !== "all") {
+      pool = pool.filter((product) =>
+        normalize(product.brand) === normalize(brand)
+      );
+    }
 
-    return filteredResults.filter((product) =>
-      productMatchesSubcategory(product, selectedCategory.name, subcategory)
-    );
-  }, [filteredResults, category, subcategory, categories]);
+    // Budget is strict. Never show an out-of-budget "related" alternative.
+    const selectedBudget = BUDGETS.find((item) => item.id === budget);
+    if (selectedBudget) {
+      pool = pool.filter((product) => {
+        const price = Number(product.price) || 0;
+        return price >= selectedBudget.min &&
+          (selectedBudget.max === Infinity || price <= selectedBudget.max);
+      });
+    }
+
+    // If the user entered a search term, every term must match the selected
+    // product data instead of showing a loosely related result.
+    if (search.trim()) {
+      const terms = normalize(search).split(/\s+/).filter(Boolean);
+      pool = pool.filter((product) => {
+        const text = normalize([
+          product.name,
+          product.brand,
+          product.short_description,
+          product.description,
+          product.categoryName,
+        ].join(" "));
+        return terms.every((term) => text.includes(term));
+      });
+    }
+
+    return pool;
+  }, [filteredResults, category, subcategory, categories, brand, budget, search]);
 
   // Products stay hidden until the user explicitly runs PrimeMatch.
   // After matching, we keep a snapshot so changing controls does not
@@ -2236,11 +2306,14 @@ const [matchStage, setMatchStage] =
     const selected = BUDGETS.find((item) => item.id === budget);
     const available = results.filter((item) => item.stock > 0);
     if (!selected || !available.length) return null;
-    const inRange = available.filter((item) => Number(item.price) >= selected.min && Number(item.price) <= selected.max);
-    const source = inRange.length ? inRange : available;
-    const best = [...source].sort((a, b) => b.matchScore - a.matchScore)[0];
-    const cheapest = [...available].sort((a, b) => Number(a.price) - Number(b.price))[0];
-    const avg = Math.round(source.slice(0, Math.min(10, source.length)).reduce((sum, item) => sum + Number(item.price), 0) / Math.min(10, source.length));
+    const inRange = available.filter((item) => {
+      const price = Number(item.price) || 0;
+      return price >= selected.min && (selected.max === Infinity || price <= selected.max);
+    });
+    if (!inRange.length) return null;
+    const best = [...inRange].sort((a, b) => b.matchScore - a.matchScore)[0];
+    const cheapest = [...inRange].sort((a, b) => Number(a.price) - Number(b.price))[0];
+    const avg = Math.round(inRange.slice(0, Math.min(10, inRange.length)).reduce((sum, item) => sum + Number(item.price), 0) / Math.min(10, inRange.length));
     return { count: inRange.length, best, cheapest, avg, max: selected.max };
   }, [results, budget]);
 
@@ -2528,39 +2601,70 @@ async function runMatch() {
   setMatchStage(0);
   setError("");
 
-  const stages = [
-    900,
-    900,
-    900,
-    900,
-    850,
-  ];
+  const stages = [900, 900, 900, 900, 850];
 
   for (let index = 0; index < stages.length; index++) {
     setMatchStage(index);
-
     await new Promise<void>((resolve) =>
       window.setTimeout(resolve, stages[index])
     );
   }
 
-  // Freeze the exact recommendations generated from the current
-  // preferences. This makes the result screen stable and predictable.
-  setMatchedResults([...subcategoryResults]);
+  // The pool already contains ONLY the selected category/subcategory, brand,
+  // search terms and exact budget range. There is intentionally no fallback
+  // to related products or products outside the selected budget.
+  const ranked = [...subcategoryResults];
+
+  if (!ranked.length) {
+    shownTopIdsRef.current = [];
+    setMatchedResults([]);
+    setMatchStage(5);
+    setMatched(true);
+    setMatching(false);
+    window.setTimeout(() => {
+      document.getElementById("match-results")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+    return;
+  }
+
+  // On repeated Find Match with the same preferences, use a different
+  // top recommendation until all available candidates have been shown.
+  let unseen = ranked.filter(
+    (item) => !shownTopIdsRef.current.includes(item.id)
+  );
+
+  if (!unseen.length) {
+    shownTopIdsRef.current = [];
+    unseen = ranked;
+  }
+
+  const nextTop = unseen[0];
+  const ordered = [
+    nextTop,
+    ...ranked.filter((item) => item.id !== nextTop.id),
+  ];
+
+  shownTopIdsRef.current = [
+    ...shownTopIdsRef.current,
+    nextTop.id,
+  ];
+
+  setMatchedResults(ordered);
   setMatchStage(5);
   setMatched(true);
   setMatching(false);
 
-
   window.setTimeout(() => {
-    document
-      .getElementById("match-results")
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    document.getElementById("match-results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, 150);
 }
+
   /* =====================================================
      RESET
   ===================================================== */
@@ -2851,7 +2955,7 @@ async function runMatch() {
             </div>
 
             {/* SEARCH */}
-            <div className="mt-7">
+            <div className="mt-4 sm:mt-7">
               <label className="mb-2 block text-xs font-black text-gray-700">
                 Search for something specific
               </label>
@@ -3099,89 +3203,37 @@ async function runMatch() {
                 </h3>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  Move the sliders to personalize
-                  your recommendation weights.
+                  Choose one priority. PrimeMatch will rank matching products around it.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <ImportanceSlider
+                <ImportanceChoice
                   label="Budget"
-                  value={
-                    importance.budget
-                  }
-                  onChange={(
-                    value
-                  ) =>
-                    setImportance(
-                      (
-                        previous
-                      ) => ({
-                        ...previous,
-                        budget:
-                          value,
-                      })
-                    )
+                  value={importance.budget}
+                  onSelect={() =>
+                    setImportance({ budget: 100, quality: 45, brand: 45, rating: 45 })
                   }
                 />
-
-                <ImportanceSlider
+                <ImportanceChoice
                   label="Quality"
-                  value={
-                    importance.quality
-                  }
-                  onChange={(
-                    value
-                  ) =>
-                    setImportance(
-                      (
-                        previous
-                      ) => ({
-                        ...previous,
-                        quality:
-                          value,
-                      })
-                    )
+                  value={importance.quality}
+                  onSelect={() =>
+                    setImportance({ budget: 45, quality: 100, brand: 45, rating: 45 })
                   }
                 />
-
-                <ImportanceSlider
+                <ImportanceChoice
                   label="Brand"
-                  value={
-                    importance.brand
-                  }
-                  onChange={(
-                    value
-                  ) =>
-                    setImportance(
-                      (
-                        previous
-                      ) => ({
-                        ...previous,
-                        brand:
-                          value,
-                      })
-                    )
+                  value={importance.brand}
+                  onSelect={() =>
+                    setImportance({ budget: 45, quality: 45, brand: 100, rating: 45 })
                   }
                 />
-
-                <ImportanceSlider
+                <ImportanceChoice
                   label="Rating"
-                  value={
-                    importance.rating
-                  }
-                  onChange={(
-                    value
-                  ) =>
-                    setImportance(
-                      (
-                        previous
-                      ) => ({
-                        ...previous,
-                        rating:
-                          value,
-                      })
-                    )
+                  value={importance.rating}
+                  onSelect={() =>
+                    setImportance({ budget: 45, quality: 45, brand: 45, rating: 100 })
                   }
                 />
               </div>
@@ -3508,9 +3560,9 @@ async function runMatch() {
                 </div>
 
                 <div className="overflow-hidden rounded-[30px] border border-[#dec68b] bg-[#fffaf0] shadow-sm">
-                  <div className="grid lg:grid-cols-[.9fr_1.1fr]">
+                  <div className="grid grid-cols-[118px_minmax(0,1fr)] sm:grid-cols-[.9fr_1.1fr]">
                     {/* IMAGE */}
-                    <div className="relative min-h-[420px] bg-white">
+                    <div className="relative min-h-[190px] bg-white sm:min-h-[420px]">
                       <ProductImage
                         src={getImageUrl(
                           topMatch.image_url
@@ -3518,20 +3570,20 @@ async function runMatch() {
                         alt={
                           topMatch.name
                         }
-                        className="h-full min-h-[420px] w-full object-contain p-10"
+                        className="h-full min-h-[190px] w-full object-contain p-3 sm:min-h-[420px] sm:p-10"
                       />
 
-                      <div className="absolute left-6 top-6 rounded-full bg-[#c9a24d] px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+                      <div className="absolute left-2 top-2 rounded-full bg-[#c9a24d] px-2 py-1 text-[7px] font-black uppercase tracking-wider text-white sm:left-6 sm:top-6 sm:px-4 sm:py-2 sm:text-[10px]">
                         #1 Prime Match
                       </div>
 
-                      <div className="absolute bottom-6 left-6 rounded-full border border-[#eadfca] bg-white/95 px-4 py-2 text-xs font-black text-[#9b762b] shadow-sm">
+                      <div className="absolute bottom-2 left-2 rounded-full border border-[#eadfca] bg-white/95 px-2 py-1 text-[8px] font-black text-[#9b762b] shadow-sm sm:bottom-6 sm:left-6 sm:px-4 sm:py-2 sm:text-xs">
                         {topMatch.matchScore}% Match
                       </div>
                     </div>
 
                     {/* DETAILS */}
-                    <div className="p-6 sm:p-9">
+                    <div className="min-w-0 p-3 sm:p-9">
                       <div className="flex flex-wrap gap-2">
                         <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#9b762b]">
                           {
@@ -3557,21 +3609,21 @@ async function runMatch() {
                         )}
                       </div>
 
-                      <h3 className="mt-4 text-3xl font-black leading-tight">
+                      <h3 className="mt-2 text-base font-black leading-tight sm:mt-4 sm:text-3xl">
                         {
                           topMatch.name
                         }
                       </h3>
 
                       {topMatch.short_description && (
-                        <p className="mt-3 max-w-xl text-sm leading-6 text-gray-500">
+                        <p className="mt-2 max-w-xl text-[10px] leading-4 text-gray-500 sm:mt-3 sm:text-sm sm:leading-6">
                           {
                             topMatch.short_description
                           }
                         </p>
                       )}
 
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-4 sm:gap-3">
                         <span className="flex items-center gap-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-[#956f27]">
                           <Star
                             size={13}
@@ -3600,8 +3652,8 @@ async function runMatch() {
                         </span>
                       </div>
 
-                      <div className="mt-5 flex items-end gap-3">
-                        <span className="text-3xl font-black">
+                      <div className="mt-3 flex items-end gap-2 sm:mt-5 sm:gap-3">
+                        <span className="text-xl font-black sm:text-3xl">
                           {money(
                             Number(
                               topMatch.price
@@ -3899,7 +3951,7 @@ async function runMatch() {
                       <div className="rounded-2xl border border-[#eadfc9] bg-white p-2"><p className="text-[8px] font-bold text-gray-400 sm:text-[10px]">Best match</p><p className="mt-0.5 text-sm font-black sm:mt-1 sm:text-xl">{money(Number(budgetAdvisor.best.price))}</p><p className="text-[10px] text-gray-400">{budgetAdvisor.best.matchScore}% fit</p></div>
                       <div className="rounded-2xl border border-[#eadfc9] bg-white p-2"><p className="text-[8px] font-bold text-gray-400 sm:text-[10px]">Average price</p><p className="mt-0.5 text-sm font-black sm:mt-1 sm:text-xl">{money(budgetAdvisor.avg)}</p><p className="text-[10px] text-gray-400">top available options</p></div>
                     </div>
-                    <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "There are no exact in-budget products, so PrimeMatch is showing the closest alternatives."}</p>
+                    <p className="mt-3 text-[11px] leading-5 text-gray-500 sm:mt-4 sm:text-xs">{budgetAdvisor.count ? "You have several products inside your selected budget. PrimeMatch is prioritising the strongest match instead of simply choosing the cheapest item." : "No products currently match your exact selected budget."}</p>
                   </div>
 
                   {matchAnalytics && (
