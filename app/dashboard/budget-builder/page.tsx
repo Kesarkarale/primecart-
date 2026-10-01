@@ -848,13 +848,16 @@ export default function BudgetBuilderPage() {
     ? selectedProducts
     : autoPlan.map((product) => product.id);
 
+  // Hard budget guard: a product above the current budget can never appear
+  // in the visible plan, even if it came from an older manual/saved selection.
   const planProducts = activePlanIds
-    .map((id) =>
-      products.find(
-        (product) => product.id === id
-      )
-    )
-    .filter(Boolean) as Product[];
+    .map((id) => products.find((product) => product.id === id))
+    .filter(
+      (product): product is Product =>
+        Boolean(product) &&
+        product.stock > 0 &&
+        Number(product.price) <= budget
+    );
 
   const plannedSpend = planProducts.reduce(
     (total, product) =>
@@ -2844,11 +2847,9 @@ export default function BudgetBuilderPage() {
                     found
                   </h4>
 
-                  <p className="mt-2 text-sm text-gray-500">
-                    Try increasing
-                    your budget or
-                    changing your
-                    shopping focus.
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    No products are available within your selected budget of {formatPrice(budget)}.
+                    Products above this budget are never shown. Try increasing your budget or changing the category/subcategory.
                   </p>
                 </div>
               ) : (
