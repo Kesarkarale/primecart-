@@ -506,6 +506,7 @@ export default function BudgetBuilderPage() {
   const [categoryId, setCategoryId] = useState("all");
   const [subcategory, setSubcategory] = useState("all");
   const [buildSeed, setBuildSeed] = useState(0);
+  const [previousPlanIds, setPreviousPlanIds] = useState<string[]>([]);
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [manualPlanMode, setManualPlanMode] = useState(false);
@@ -735,6 +736,14 @@ export default function BudgetBuilderPage() {
     }
 
     const eligible = [...affordableMatchingProducts];
+    const previousSet = new Set(previousPlanIds);
+    const freshEligible = eligible.filter((p) => !previousSet.has(p.id));
+    // On a rebuild, prefer products that were NOT in the previous plan.
+    // If there are not enough alternatives, we safely fall back to the full pool.
+    const pool = freshEligible.length >= Math.min(2, eligible.length)
+      ? freshEligible
+      : eligible;
+
     const result: Product[] = [];
     let remaining = budget;
 
@@ -753,56 +762,62 @@ export default function BudgetBuilderPage() {
       seededRank(a.id, buildSeed + offset) -
       seededRank(b.id, buildSeed + offset);
 
-    /* PREMIUM: higher price band + quality, with seeded variation. */
+    const qualityScore = (product: Product) => {
+      const rating = Math.min(5, Math.max(0, Number(product.rating || 0)));
+      const reviews = Math.max(0, Number(product.reviews_count || 0));
+      const reviewConfidence = Math.min(1, Math.log10(reviews + 1) / 4);
+      const featured = product.is_featured ? 1 : 0;
+      // Quality is primarily rating + review confidence, not price.
+      return rating * 70 + reviewConfidence * 22 + featured * 8;
+    };
+
+    const valueScore = (product: Product) => {
+      const price = Number(product.price);
+      const original = product.original_price
+        ? Number(product.original_price)
+        : price;
+      const discount = discountPercent(price, original);
+      const rating = Number(product.rating || 0);
+      const reviews = Math.min(15, Math.log10(Number(product.reviews_count || 0) + 1) * 5);
+      const priceEfficiency = budget > 0 ? Math.max(0, 1 - price / budget) : 0;
+      // Value = real discount + quality + useful price efficiency.
+      return discount * 1.8 + rating * 8 + reviews + priceEfficiency * 18;
+    };
+
+    /* PREMIUM: genuinely higher-priced products, but still quality-aware and budget-safe. */
     if (goal === "premium") {
       const prices = eligible.map((p) => Number(p.price));
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
-      const premiumFloor =
-        minPrice + (maxPrice - minPrice) * 0.55;
+      const premiumFloor = minPrice + (maxPrice - minPrice) * 0.55;
 
-      const premiumOnly = eligible.filter(
+      const premiumOnly = pool.filter(
         (p) => Number(p.price) >= premiumFloor
       );
-
-      const candidates = (
-        premiumOnly.length ? premiumOnly : eligible
-      ).sort((a, b) => {
-        const priceDiff = Number(b.price) - Number(a.price);
-        if (priceDiff !== 0) {
-          const bandA = Math.floor(
-            Number(a.price) / Math.max(1, budget * 0.1)
-          );
-          const bandB = Math.floor(
-            Number(b.price) / Math.max(1, budget * 0.1)
-          );
-          if (bandA !== bandB) return bandB - bandA;
-        }
-
-        const qa =
-          Number(a.rating || 0) * 18 +
-          Math.min(20, Number(a.reviews_count || 0) / 25) +
-          (a.is_featured ? 6 : 0);
-        const qb =
-          Number(b.rating || 0) * 18 +
-          Math.min(20, Number(b.reviews_count || 0) / 25) +
-          (b.is_featured ? 6 : 0);
-
-        return qb - qa || randomTie(a, b, 41);
+      const candidates = (premiumOnly.length ? premiumOnly : pool).sort((a, b) => {
+        const qa = qualityScore(a);
+        const qb = qualityScore(b);
+        const priceBandA = Number(a.price) / Math.max(1, budget);
+        const priceBandB = Number(b.price) / Math.max(1, budget);
+        return (
+          (priceBandB - priceBandA) * 45 +
+          (qb - qa) +
+          randomTie(a, b, 41) * 8
+        );
       });
 
-      const top = candidates.slice(0, Math.min(8, candidates.length));
+      // Rotate through the strongest premium candidates instead of always taking #1.
+      const topCount = Math.min(8, candidates.length);
+      const top = candidates.slice(0, topCount);
       if (top.length) {
-        const index = Math.floor(
-          seededRank(top[0].id, buildSeed + 43) * top.length
-        );
-        pushIfFits(top[index]);
+        const anchor = top[(buildSeed + top.length) % top.length];
+        pushIfFits(anchor);
       }
 
       const companions = [...candidates].sort(
         (a, b) =>
-          Math.abs(Number(a.price) - remaining * 0.75) -
-          Math.abs(Number(b.price) - remaining * 0.75) ||
+          Math.abs(Number(a.price) - remaining * 0.65) -
+          Math.abs(Number(b.price) - remaining * 0.65) ||
           randomTie(a, b, 47)
       );
 
@@ -813,56 +828,61 @@ export default function BudgetBuilderPage() {
       return result;
     }
 
-    /* QUALITY FIRST: rating + review depth + featured status. */
+    /* QUALITY FIRST: high quality first, with controlled rotation across the top-quality pool. */
     if (goal === "quality") {
-      const candidates = [...eligible].sort((a, b) => {
-        const qa =
-          Number(a.rating || 0) * 24 +
-          Math.min(
-            24,
-            Math.log10(Number(a.reviews_count || 0) + 1) * 8
-          ) +
-          (a.is_featured ? 7 : 0);
-        const qb =
-          Number(b.rating || 0) * 24 +
-          Math.min(
-            24,
-            Math.log10(Number(b.reviews_count || 0) + 1) * 8
-          ) +
-          (b.is_featured ? 7 : 0);
-        return qb - qa || randomTie(a, b, 61);
+      const candidates = [...pool].sort((a, b) => {
+        const diff = qualityScore(b) - qualityScore(a);
+        return diff || randomTie(a, b, 61);
       });
-      for (const product of candidates) {
+
+      const bestScore = candidates.length ? qualityScore(candidates[0]) : 0;
+      // Keep products within 10% of the best quality score so variation never destroys quality.
+      const qualityPool = candidates.filter(
+        (product) => qualityScore(product) >= bestScore * 0.90
+      );
+
+      // Rotate the starting point on every Build/Return Build.
+      const rotation = qualityPool.length
+        ? buildSeed % qualityPool.length
+        : 0;
+      const rotated = qualityPool.length
+        ? qualityPool.slice(rotation).concat(qualityPool.slice(0, rotation))
+        : candidates;
+
+      // First pick is quality-driven; later picks balance quality with the remaining budget.
+      for (const product of rotated) {
         if (result.length >= 5) break;
         pushIfFits(product);
+      }
+
+      // If rotation caused too little budget usage, fill from the strongest remaining quality products.
+      if (result.length === 0 && candidates.length) {
+        pushIfFits(candidates[buildSeed % candidates.length]);
       }
       return result;
     }
 
-    /* MAXIMUM VALUE: discounts + rating + efficient budget usage. */
+    /* MAXIMUM VALUE: rotate through the strongest value pool rather than repeating the same #1. */
     if (goal === "value") {
-      const candidates = [...eligible].sort((a, b) => {
-        const da = discountPercent(
-          Number(a.price),
-          a.original_price ? Number(a.original_price) : null
-        );
-        const db = discountPercent(
-          Number(b.price),
-          b.original_price ? Number(b.original_price) : null
-        );
-        const va =
-          Number(a.rating || 0) * 8 +
-          Math.min(15, Number(a.reviews_count || 0) / 40) +
-          da * 1.35 +
-          Math.min(18, (Number(a.price) / budget) * 18);
-        const vb =
-          Number(b.rating || 0) * 8 +
-          Math.min(15, Number(b.reviews_count || 0) / 40) +
-          db * 1.35 +
-          Math.min(18, (Number(b.price) / budget) * 18);
-        return vb - va || randomTie(a, b, 51);
+      const candidates = [...pool].sort((a, b) => {
+        const diff = valueScore(b) - valueScore(a);
+        return diff || randomTie(a, b, 51);
       });
-      for (const product of candidates) {
+
+      const bestValue = candidates.length ? valueScore(candidates[0]) : 0;
+      // Strong value alternatives remain within 18% of the best value score.
+      const valuePool = candidates.filter(
+        (product) => valueScore(product) >= bestValue * 0.82
+      );
+
+      const rotation = valuePool.length
+        ? buildSeed % valuePool.length
+        : 0;
+      const rotated = valuePool.length
+        ? valuePool.slice(rotation).concat(valuePool.slice(0, rotation))
+        : candidates;
+
+      for (const product of rotated) {
         if (result.length >= 6) break;
         pushIfFits(product);
       }
@@ -870,7 +890,7 @@ export default function BudgetBuilderPage() {
     }
 
     /* MORE PRODUCTS: maximise item count without crossing total budget. */
-    const candidates = [...eligible].sort(
+    const candidates = [...pool].sort(
       (a, b) =>
         Number(a.price) - Number(b.price) ||
         randomTie(a, b, 71)
@@ -881,8 +901,7 @@ export default function BudgetBuilderPage() {
       pushIfFits(product);
     }
     return result;
-  }, [affordableMatchingProducts, budget, goal, buildSeed]);
-
+  }, [affordableMatchingProducts, budget, goal, buildSeed, previousPlanIds]);
 
   const activePlanIds = manualPlanMode
     ? selectedProducts
@@ -1126,6 +1145,8 @@ export default function BudgetBuilderPage() {
     setBuilding(true);
     setPlanReady(false);
     setManualPlanMode(false);
+    // Remember the currently displayed plan so the next build can prefer fresh products.
+    setPreviousPlanIds(autoPlan.map((product) => product.id));
     setSelectedProducts([]);
     setBuildSeed((current) => current + 1);
 
@@ -1155,6 +1176,7 @@ export default function BudgetBuilderPage() {
     setManualPlanMode(false);
     setPlanReady(false);
     setBuildSeed(0);
+    setPreviousPlanIds([]);
   }
 
   function togglePlanProduct(productId: string) {
@@ -1229,6 +1251,7 @@ export default function BudgetBuilderPage() {
   }
 
   function optimizePlan() {
+    setPreviousPlanIds(autoPlan.map((product) => product.id));
     setSelectedProducts([]);
     setManualPlanMode(false);
     setPlanReady(false);
