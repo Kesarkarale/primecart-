@@ -366,96 +366,89 @@ function discountPercent(
   );
 }
 
-function getPremiumScore(
-  product: Product,
-  budget: number
-) {
+function getValueScore(product: Product, budget: number) {
   const price = Number(product.price || 0);
   const rating = Number(product.rating || 0);
   const reviews = Number(product.reviews_count || 0);
   const originalPrice = Number(product.original_price || price);
+  const discount = discountPercent(price, originalPrice);
+  const priceRatio = budget > 0 ? price / budget : 1;
 
-  // Premium means higher-end within the selected budget, not simply
-  // the highest price. Rating, review confidence and product signals
-  // are also considered.
-  const pricePosition = budget > 0
-    ? Math.min(1, price / budget)
-    : 0;
+  // Maximum Value = savings + useful quality at a sensible price.
+  // It deliberately does NOT reward expensive products.
+  let score = 0;
+  score += Math.max(0, 34 - priceRatio * 24);
+  score += Math.min(28, rating * 5.6);
+  score += Math.min(14, Math.log10(reviews + 1) * 5.5);
+  score += Math.min(18, discount * 0.9);
+  if (product.is_flash_sale) score += 5;
+  if (product.is_featured) score += 3;
 
-  const ratingScore = (rating / 5) * 30;
-  const priceScore = pricePosition * 42;
-  const reviewScore = Math.min(10, reviews / 40);
-  const valueSignal = originalPrice > price
-    ? Math.min(8, ((originalPrice - price) / originalPrice) * 100 / 2)
-    : 0;
-  const featureScore = product.is_featured ? 6 : 0;
-  const flashScore = product.is_flash_sale ? 2 : 0;
+  return score;
+}
+
+function getQualityScore(product: Product) {
+  const rating = Number(product.rating || 0);
+  const reviews = Number(product.reviews_count || 0);
+  const originalPrice = Number(product.original_price || product.price || 0);
+  const price = Number(product.price || 0);
+
+  // Quality First = reliability and product quality signals.
+  // Price is intentionally a secondary factor, so this cannot collapse
+  // into Maximum Value.
+  let score = 0;
+  score += rating * 10.5;
+  score += Math.min(24, Math.log10(reviews + 1) * 8);
+  if (rating >= 4.8) score += 12;
+  else if (rating >= 4.6) score += 8;
+  else if (rating >= 4.4) score += 4;
+  if (reviews >= 500) score += 10;
+  else if (reviews >= 200) score += 7;
+  else if (reviews >= 50) score += 4;
+  if (product.is_featured) score += 7;
+  if (product.stock >= 10) score += 2;
+
+  // Small quality/value signal only; never enough to dominate rating.
+  if (originalPrice > price && originalPrice > 0) {
+    const discount = ((originalPrice - price) / originalPrice) * 100;
+    score += Math.min(4, discount / 10);
+  }
+
+  return score;
+}
+
+function getPremiumScore(product: Product, budget: number) {
+  const price = Number(product.price || 0);
+  const rating = Number(product.rating || 0);
+  const reviews = Number(product.reviews_count || 0);
+  const originalPrice = Number(product.original_price || price);
+  const pricePosition = budget > 0 ? Math.min(1, price / budget) : 0;
 
   return (
-    priceScore +
-    ratingScore +
-    reviewScore +
-    valueSignal +
-    featureScore +
-    flashScore
+    pricePosition * 45 +
+    rating * 8 +
+    Math.min(12, Math.log10(reviews + 1) * 4) +
+    (originalPrice > price ? Math.min(7, ((originalPrice - price) / originalPrice) * 100 / 3) : 0) +
+    (product.is_featured ? 7 : 0)
   );
 }
 
-function getProductScore(
-  product: Product,
-  budget: number,
-  goal: string
-) {
-  const price = Number(product.price);
+function getProductScore(product: Product, budget: number, goal: string) {
+  if (goal === "value") return getValueScore(product, budget);
+  if (goal === "quality") return getQualityScore(product);
+  if (goal === "premium") return getPremiumScore(product, budget);
+
+  const price = Number(product.price || 0);
   const rating = Number(product.rating || 0);
   const reviews = Number(product.reviews_count || 0);
+  const ratio = budget > 0 ? price / budget : 1;
 
-  let score = 0;
-
-  const budgetUsage = budget > 0 ? price / budget : 1;
-
-  if (budgetUsage <= 0.15) score += 18;
-  else if (budgetUsage <= 0.3) score += 25;
-  else if (budgetUsage <= 0.5) score += 28;
-  else if (budgetUsage <= 0.75) score += 24;
-  else if (budgetUsage <= 1) score += 17;
-  else score += 4;
-
-  score += Math.round((rating / 5) * 28);
-  score += Math.min(15, Math.round(reviews / 15));
-
-  if (product.is_featured) score += 8;
-  if (product.is_flash_sale) score += 8;
-
-  const discount = discountPercent(
-    price,
-    product.original_price
-      ? Number(product.original_price)
-      : null
+  return (
+    Math.max(0, 28 - ratio * 18) +
+    rating * 5 +
+    Math.min(12, Math.log10(reviews + 1) * 4) +
+    (product.is_featured ? 5 : 0)
   );
-
-  if (goal === "value") {
-    score += Math.min(13, discount);
-  }
-
-  if (goal === "quality") {
-    if (rating >= 4.5) score += 12;
-    else if (rating >= 4) score += 7;
-  }
-
-  if (goal === "premium") {
-    if (price >= budget * 0.4) score += 8;
-    if (rating >= 4.5) score += 7;
-  }
-
-  if (goal === "multiple") {
-    if (price <= budget * 0.25) score += 12;
-    else if (price <= budget * 0.4) score += 7;
-  }
-
-  if (product.stock <= 0) score -= 30;
-
-  return Math.max(0, Math.min(99, score));
 }
 
 function ProductImage({
@@ -792,21 +785,27 @@ export default function BudgetBuilderPage() {
       return premiumRanked.slice(0, limit);
     }
 
-    // Other goals keep the smart ranking intact. We use a fresh seed only
-    // for close/tied products so rebuilding can produce a different plan
-    // without destroying the actual score ranking.
+    // VALUE and QUALITY use different score models above. We also rotate
+    // a small elite pool on every build so the planner does not show the
+    // exact same products forever when several products are close in score.
     const result: Product[] = [];
     let remaining = budget;
     const usedCategories = new Set<string>();
 
-    const candidates = [...rankedProducts].sort((a, b) => {
+    const scored = [...rankedProducts].sort((a, b) => {
       const scoreDiff = b.score - a.score;
-      if (scoreDiff !== 0) return scoreDiff;
-      return (
-        seededOrder(a.id, buildSeed + 11) -
-        seededOrder(b.id, buildSeed + 11)
-      );
+      if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
+      return seededOrder(a.id, buildSeed + 11) - seededOrder(b.id, buildSeed + 11);
     });
+
+    const eliteSize = goal === "quality" ? 10 : 12;
+    const elite = scored.slice(0, Math.min(eliteSize, scored.length));
+    const rest = scored.slice(elite.length);
+    const rotation = elite.length ? buildSeed % elite.length : 0;
+    const rotatedElite = elite.length
+      ? [...elite.slice(rotation), ...elite.slice(0, rotation)]
+      : [];
+    const candidates = [...rotatedElite, ...rest];
 
     // Prefer category diversity when all categories are selected.
     if (categoryId === "all") {
@@ -1037,16 +1036,17 @@ export default function BudgetBuilderPage() {
     setBuilding(true);
     setPlanReady(false);
 
-    // A new seed gives every build a fresh, non-repeating recommendation order.
+    // Every Build is a new recommendation run. Clear any previous manual
+    // selection first, then advance the seed so the recommendation order
+    // changes even when the same budget/category/goal is used again.
+    setManualPlanMode(false);
+    setSelectedProducts([]);
     setBuildSeed((current) => current + 1);
 
     await new Promise((resolve) =>
       setTimeout(resolve, 650)
     );
 
-    if (!manualPlanMode && selectedProducts.length === 0) {
-      setSelectedProducts([]);
-    }
     setPlanReady(true);
     setBuilding(false);
 
@@ -1127,11 +1127,14 @@ export default function BudgetBuilderPage() {
   }
 
   function optimizePlan() {
+    // Optimize is also a fresh planning run, not just a UI reset.
     setSelectedProducts([]);
     setManualPlanMode(false);
+    setBuildSeed((current) => current + 1);
+    setPlanReady(true);
 
     showNotice(
-      "Your plan has been re-optimized for better budget usage."
+      "Fresh plan generated with your selected priority."
     );
   }
 
