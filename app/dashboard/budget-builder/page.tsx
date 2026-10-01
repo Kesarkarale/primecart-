@@ -102,7 +102,7 @@ const shoppingGoals = [
  * so these are intelligent UI filters matched against product name,
  * brand, slug and description.
  */
- const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> = {
+ const subcategoryMap: Record<string, { label: string; keywords: string[] }[]> = {
   fashion: [
     { label: "T-Shirts", keywords: ["tshirt", "t-shirt", "tee", "t shirt"] },
     { label: "Shirts", keywords: ["shirt", "formal shirt", "casual shirt", "oxford"] },
