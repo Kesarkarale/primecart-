@@ -251,9 +251,10 @@ function getImageCandidates(value?: string | null) {
 
   return Array.from(
     new Set([
+      `/products/${clean}`,
+      `/products/${encoded}`,
       `/${clean}`,
       `/${encoded}`,
-      `/products/${clean}`,
       `/product-images/${clean}`,
       `/images/products/${clean}`,
       `/images/${clean}`,
@@ -290,6 +291,7 @@ function SafeCartImage({
       alt={alt}
       className={className}
       loading="lazy"
+      decoding="async"
       onError={() => setIndex((current) => current + 1)}
     />
   );
@@ -430,15 +432,102 @@ export default function CheckoutPage() {
         .filter((item) => item && item.id)
         .map((item) => ({
           ...item,
-          quantity: Math.max(
-            1,
-            Number(item.quantity || 1)
-          ),
+          quantity: Math.max(1, Number(item.quantity || 1)),
           price: Number(item.price || 0),
         }));
 
+      /* Refresh current product price + image from Supabase. */
+      let enrichedCart = normalizedCart;
+
+      try {
+        const productIds = Array.from(
+          new Set(
+            normalizedCart
+              .map((item) => String(item.product_id || "").trim())
+              .filter((value) =>
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+              )
+          )
+        );
+
+        let productRows: Array<{
+          id: string;
+          name: string;
+          price: number;
+          original_price: number | null;
+          image_url: string | null;
+          stock: number | null;
+          is_active: boolean;
+        }> = [];
+
+        if (productIds.length > 0) {
+          const { data, error } = await supabase
+            .from("products")
+            .select("id,name,price,original_price,image_url,stock,is_active")
+            .in("id", productIds)
+            .eq("is_active", true);
+
+          if (error) {
+            console.error("Checkout product refresh failed:", error);
+          } else {
+            productRows = (data || []) as typeof productRows;
+          }
+        }
+
+        for (const item of normalizedCart) {
+          const alreadyFound = productRows.some(
+            (product) =>
+              String(product.id) === String(item.product_id || "") ||
+              product.name?.trim() === item.name?.trim()
+          );
+
+          if (alreadyFound || !item.name?.trim()) continue;
+
+          const { data, error } = await supabase
+            .from("products")
+            .select("id,name,price,original_price,image_url,stock,is_active")
+            .eq("name", item.name.trim())
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+
+          if (!error && data) {
+            productRows.push(data as typeof productRows[number]);
+          }
+        }
+
+        enrichedCart = normalizedCart.map((item) => {
+          const product = productRows.find(
+            (row) =>
+              String(row.id) === String(item.product_id || "") ||
+              row.name?.trim() === item.name?.trim()
+          );
+
+          if (!product) return item;
+
+          return {
+            ...item,
+            product_id: String(product.id),
+            price: Number(product.price ?? item.price ?? 0),
+            original_price:
+              product.original_price != null
+                ? Number(product.original_price)
+                : item.original_price ?? null,
+            image_url: product.image_url || item.image_url || null,
+            stock: Number(product.stock ?? item.stock ?? 0),
+          };
+        });
+      } catch (error) {
+        console.error("Checkout product enrichment error:", error);
+      }
+
       if (!cancelled) {
-        setItems(normalizedCart);
+        setItems(enrichedCart);
+        try {
+          localStorage.setItem(CART_KEY, JSON.stringify(enrichedCart));
+        } catch {
+          // Local cache is optional.
+        }
       }
 
       const localAddresses = safeParse<Address[]>(
@@ -1443,6 +1532,7 @@ async function placeOrder() {
         id: string;
         name: string;
         price: number;
+        original_price: number | null;
         image_url: string | null;
         stock: number | null;
         is_active: boolean;
@@ -1461,7 +1551,7 @@ async function placeOrder() {
         const { data, error } = await supabase
           .from("products")
           .select(
-            "id, name, price, image_url, stock, is_active"
+            "id, name, price, original_price, image_url, stock, is_active"
           )
           .eq("id", candidate)
           .eq("is_active", true)
@@ -1490,7 +1580,7 @@ async function placeOrder() {
         const { data, error } = await supabase
           .from("products")
           .select(
-            "id, name, price, image_url, stock, is_active"
+            "id, name, price, original_price, image_url, stock, is_active"
           )
           .eq("name", item.name.trim())
           .eq("is_active", true)
@@ -1532,6 +1622,10 @@ async function placeOrder() {
           ...item,
           product_id: String(product.id),
           price: Number(product.price ?? item.price ?? 0),
+          original_price:
+            product.original_price != null
+              ? Number(product.original_price)
+              : item.original_price ?? null,
           image_url:
             product.image_url ?? item.image_url ?? null,
           stock: availableStock,
@@ -1579,7 +1673,7 @@ async function placeOrder() {
     for (const entry of finalItems) {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, stock, is_active")
+        .select("id, name, price, original_price, image_url, stock, is_active")
         .eq("id", entry.product_id)
         .eq("is_active", true)
         .maybeSingle();
@@ -1601,7 +1695,81 @@ async function placeOrder() {
           } available. You requested ${entry.quantity}.`
         );
       }
+
+      /* Refresh the final item with the latest DB values. */
+      entry.item = {
+        ...entry.item,
+        product_id: String(data.id),
+        price: Number(data.price ?? entry.item.price ?? 0),
+        original_price:
+          data.original_price != null
+            ? Number(data.original_price)
+            : entry.item.original_price ?? null,
+        image_url:
+          data.image_url ?? entry.item.image_url ?? null,
+        stock: availableStock,
+      };
     }
+
+    /* =====================================================
+       FINAL ORDER TOTALS FROM CURRENT SUPABASE PRODUCTS
+    ===================================================== */
+
+    const finalSubtotal = finalItems.reduce(
+      (sum, entry) =>
+        sum +
+        Number(entry.item.price || 0) *
+        Number(entry.quantity || 0),
+      0
+    );
+
+    const finalMrp = finalItems.reduce(
+      (sum, entry) => {
+        const price = Number(entry.item.price || 0);
+        const original =
+          Number(entry.item.original_price || 0) > 0
+            ? Number(entry.item.original_price)
+            : price;
+
+        return (
+          sum +
+          Math.max(original, price) *
+            Number(entry.quantity || 0)
+        );
+      },
+      0
+    );
+
+    const finalProductDiscount = Math.max(
+      finalMrp - finalSubtotal,
+      0
+    );
+
+    const finalCouponDiscount = couponApplied
+      ? Math.min(
+          Math.round(
+            finalSubtotal *
+              (COUPON_PERCENT / 100)
+          ),
+          COUPON_MAX
+        )
+      : 0;
+
+    const finalAmountAfterDiscount = Math.max(
+      finalSubtotal - finalCouponDiscount,
+      0
+    );
+
+    const finalDeliveryCharge =
+      finalAmountAfterDiscount >= FREE_DELIVERY_LIMIT
+        ? 0
+        : DELIVERY_CHARGE;
+
+    const finalTotal = Math.max(
+      finalAmountAfterDiscount +
+        finalDeliveryCharge,
+      0
+    );
 
     const rpcItems = finalItems.map(
       (entry) => ({
@@ -1619,11 +1787,11 @@ async function placeOrder() {
     const { data: orderId, error } =
       await supabase.rpc("place_order", {
         p_items: rpcItems,
-        p_subtotal: subtotal,
+        p_subtotal: finalSubtotal,
         p_discount:
-          productDiscount + couponDiscount,
-        p_delivery_charge: deliveryCharge,
-        p_total_amount: total,
+          finalProductDiscount + finalCouponDiscount,
+        p_delivery_charge: finalDeliveryCharge,
+        p_total_amount: finalTotal,
         p_payment_method: getPaymentLabel(),
         p_shipping_address: selectedAddress,
       });
@@ -1679,11 +1847,11 @@ async function placeOrder() {
       createdAt: new Date().toISOString(),
       status: "placed",
       paymentMethod: getPaymentLabel(),
-      total,
-      subtotal,
-      delivery: deliveryCharge,
+      total: finalTotal,
+      subtotal: finalSubtotal,
+      delivery: finalDeliveryCharge,
       discount:
-        productDiscount + couponDiscount,
+        finalProductDiscount + finalCouponDiscount,
       address: selectedAddress,
       items: finalItems.map(
         (entry) => entry.item
