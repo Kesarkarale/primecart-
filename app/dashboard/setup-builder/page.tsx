@@ -202,77 +202,97 @@ const budgetPresets = [
   },
 ];
 
-const priorityOptions: {
-  id: PriorityType;
-  title: string;
-  description: string;
-}[] = [
-  {
-    id: "balanced",
-    title: "Balanced",
-    description:
-      "Mid-range prices, dependable quality and a balanced mix",
-  },
-  {
-    id: "value",
-    title: "Best Value",
-    description:
-      "Strong ratings and useful features for each rupee",
-  },
-  {
-    id: "quality",
-    title: "Top Quality",
-    description:
-      "Higher-quality, well-reviewed picks while staying in budget",
-  },
-  {
-    id: "savings",
-    title: "Maximum Savings",
-    description:
-      "Choose the lowest-priced suitable items and save more",
-  },
-];
-
 const setupSpecificKeywords: Record<SetupType, string[]> = {
-  work: ["office", "business", "productivity", "ergonomic", "multitask", "silent"],
-  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "low latency", "controller"],
-  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "lamp"],
-  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "color accuracy", "colour accuracy"],
-  everyday: ["everyday", "daily", "home", "versatile", "comfortable"],
+  work: ["office", "business", "productivity", "ergonomic", "multitask", "silent", "wireless"],
+  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "low latency", "controller", "response time"],
+  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "desk lamp"],
+  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "color accuracy", "colour accuracy", "capture"],
+  everyday: ["everyday", "daily", "home", "versatile", "comfortable", "wireless"],
 };
 
 function getPurposeRelevance(product: Product, setupType: SetupType) {
-  // Product name is the strongest signal; descriptions are used only as supporting text.
-  const text = `${product.name} ${product.brand || ""} ${product.short_description || ""}`.toLowerCase();
-  const matches = setupSpecificKeywords[setupType].filter((keyword) =>
-    new RegExp(`(^|[^a-z0-9])${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i").test(text)
-  ).length;
-  return matches;
+  // Only the product title and brand identify its purpose. Long descriptions often
+  // contain unrelated words and must never turn skincare/home products into tech gear.
+  const text = `${product.name} ${product.brand || ""}`.toLowerCase();
+  return setupSpecificKeywords[setupType].filter((keyword) => hasWholePhrase(text, keyword)).length;
 }
 
-const setupKeywords: Record<
-  SetupType,
-  string[]
-> = {
+const setupKeywords: Record<SetupType, string[]> = {
+  work: ["office", "business", "productivity", "ergonomic", "silent", "wireless", "keyboard", "mouse", "monitor"],
+  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "response time", "low latency", "controller", "keyboard", "mouse", "headset", "monitor"],
+  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "desk lamp", "keyboard", "mouse", "monitor"],
+  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "audio", "webcam", "color accuracy", "colour accuracy", "monitor"],
+  everyday: ["wireless", "smart", "everyday", "daily", "home", "keyboard", "mouse", "speaker", "headphone", "comfortable"],
+};
+
+const purposeComponentLabels: Record<SetupType, Record<ComponentType, { title: string; description: string }>> = {
+  work: {
+    display: { title: "Office Display", description: "Monitor for daily work" },
+    keyboard: { title: "Work Keyboard", description: "Comfortable typing" },
+    mouse: { title: "Productivity Mouse", description: "Precise everyday control" },
+    audio: { title: "Work Audio", description: "Headphones, headset or speaker" },
+    accessories: { title: "Desk Accessories", description: "Useful workspace gear" },
+  },
+  gaming: {
+    display: { title: "Gaming Monitor", description: "A display for immersive play" },
+    keyboard: { title: "Gaming Keyboard", description: "Mechanical or gaming-focused keys" },
+    mouse: { title: "Gaming Mouse", description: "Responsive gaming control" },
+    audio: { title: "Gaming Headset & Audio", description: "Headset, headphones or microphone" },
+    accessories: { title: "Gaming Gear", description: "Controllers, mouse pads and tech accessories" },
+  },
+  study: {
+    display: { title: "Study Display", description: "A screen for lessons and reading" },
+    keyboard: { title: "Study Keyboard", description: "Comfortable notes and assignments" },
+    mouse: { title: "Study Mouse", description: "Easy navigation for classes" },
+    audio: { title: "Class Audio", description: "Headphones or audio for online lessons" },
+    accessories: { title: "Study Accessories", description: "Webcams, stands and desk essentials" },
+  },
+  creator: {
+    display: { title: "Creator Display", description: "Monitor for editing and detail" },
+    keyboard: { title: "Editing Keyboard", description: "Reliable creative-work input" },
+    mouse: { title: "Precision Mouse", description: "Accurate editing and design control" },
+    audio: { title: "Creator Audio", description: "Microphones, headphones and sound" },
+    accessories: { title: "Creator Gear", description: "Webcams, hubs and creator accessories" },
+  },
+  everyday: {
+    display: { title: "Everyday Display", description: "Screen for daily use" },
+    keyboard: { title: "Everyday Keyboard", description: "Typing at home or on the go" },
+    mouse: { title: "Everyday Mouse", description: "Simple, reliable navigation" },
+    audio: { title: "Everyday Audio", description: "Headphones, earbuds or speakers" },
+    accessories: { title: "Everyday Tech", description: "Useful computer accessories" },
+  },
+};
+
+const purposePriorityOptions: Record<SetupType, { id: PriorityType; title: string; description: string }[]> = {
   work: [
-    "office", "work", "business", "productivity", "wireless",
-    "ergonomic", "silent", "multitask", "keyboard", "mouse", "monitor",
+    { id: "balanced", title: "Balanced Workspace", description: "Mid-range gear with comfort and reliability" },
+    { id: "value", title: "Productivity Value", description: "Useful work features for every rupee" },
+    { id: "quality", title: "Professional Quality", description: "Well-rated work gear within your budget" },
+    { id: "savings", title: "Spend Less", description: "Keep costs low with suitable essentials" },
   ],
   gaming: [
-    "gaming", "game", "rgb", "mechanical", "gaming mouse", "high refresh",
-    "response time", "low latency", "headphone", "monitor", "controller",
+    { id: "balanced", title: "Balanced Gaming", description: "Balance display, controls and audio" },
+    { id: "value", title: "Performance for Price", description: "Gaming features and ratings for the money" },
+    { id: "quality", title: "Premium Gaming Gear", description: "Prioritize higher-rated gaming equipment" },
+    { id: "savings", title: "Budget Gaming", description: "Choose lower-cost gaming-compatible gear" },
   ],
   study: [
-    "study", "student", "learning", "online class", "lecture", "reading",
-    "comfortable", "keyboard", "mouse", "headphone", "lamp", "webcam",
+    { id: "balanced", title: "Balanced Study Setup", description: "Comfortable essentials at mid-range prices" },
+    { id: "value", title: "Study Value", description: "Practical tools for classes and assignments" },
+    { id: "quality", title: "Comfort & Quality", description: "Well-rated products for regular study" },
+    { id: "savings", title: "Student Savings", description: "Cover essentials while spending less" },
   ],
   creator: [
-    "creator", "content", "studio", "editing", "streaming", "microphone",
-    "audio", "monitor", "headphone", "webcam", "colour", "color accuracy",
+    { id: "balanced", title: "Balanced Creator Setup", description: "Balance display, input and audio tools" },
+    { id: "value", title: "Creator Value", description: "Useful creative features for the price" },
+    { id: "quality", title: "Creator Quality", description: "Prioritize well-rated editing and audio gear" },
+    { id: "savings", title: "Lean Creator Setup", description: "Choose affordable gear that fits the purpose" },
   ],
   everyday: [
-    "wireless", "smart", "everyday", "daily", "home", "keyboard", "mouse",
-    "speaker", "headphone", "comfortable", "versatile",
+    { id: "balanced", title: "Everyday Balance", description: "A sensible mix for daily use" },
+    { id: "value", title: "Everyday Value", description: "Useful features without overspending" },
+    { id: "quality", title: "Reliable Quality", description: "Prioritize well-rated everyday gear" },
+    { id: "savings", title: "Maximum Savings", description: "Pick suitable lower-cost essentials" },
   ],
 };
 
@@ -386,43 +406,51 @@ function hasWholePhrase(text: string, keyword: string) {
 }
 
 function detectComponent(product: Product): ComponentType | null {
-  // Do not scan the full long description: unrelated words there can misclassify
-  // skincare, clothing, or household products as computer accessories.
-  const name = `${product.name} ${product.brand || ""}`.toLowerCase();
-  const supportingText = (product.short_description || "").toLowerCase();
+  // The product title is the source of truth. Do not classify from descriptions:
+  // e.g. a sunscreen description mentioning a "screen" must not become a monitor.
+  const name = (product.name || "").toLowerCase();
+  const nonTechTerms = [
+    "sunscreen", "sun screen", "screen protector", "tempered glass", "moisturizer",
+    "moisturiser", "serum", "face wash", "lipstick", "foundation", "shampoo",
+    "conditioner", "saree", "kurta", "dress", "t-shirt", "jeans", "detergent",
+    "cooking oil", "snack", "biscuit", "beauty", "skincare", "skin care",
+  ];
+  if (nonTechTerms.some((term) => hasWholePhrase(name, term))) return null;
 
-  // Match the product title first. Supporting copy is considered only if the title
-  // does not identify a component, and only with explicit tech-product phrases.
-  for (const component of components) {
-    if (component.keywords.some((keyword) => hasWholePhrase(name, keyword))) {
-      return component.id;
-    }
-  }
-  for (const component of components) {
-    if (component.keywords.some((keyword) => hasWholePhrase(supportingText, keyword))) {
-      return component.id;
-    }
+  // More specific component terms are checked first to avoid vague matches.
+  const ordered: ComponentType[] = ["keyboard", "mouse", "audio", "accessories", "display"];
+  for (const id of ordered) {
+    const component = components.find((item) => item.id === id);
+    if (component?.keywords.some((keyword) => hasWholePhrase(name, keyword))) return id;
   }
   return null;
 }
 
 function isPurposeSuitable(product: Product, setupType: SetupType) {
-  const name = `${product.name} ${product.brand || ""}`.toLowerCase();
-  const shortDescription = (product.short_description || "").toLowerCase();
-  const text = `${name} ${shortDescription}`;
+  const name = (product.name || "").toLowerCase();
+  const component = detectComponent(product);
+  if (!component) return false;
 
-  // A setup builder must only recommend actual tech gear, never general-store items.
-  if (!detectComponent(product)) return false;
-
-  const forbidden = ["sunscreen", "sun screen", "moisturizer", "moisturiser", "serum", "face wash", "lipstick", "foundation", "shampoo", "conditioner", "saree", "kurta", "dress", "t-shirt", "jeans", "detergent", "cooking oil", "snack", "biscuit"];
-  if (forbidden.some((term) => hasWholePhrase(name, term) || hasWholePhrase(shortDescription, term))) return false;
-
-  // For gaming, accept core PC/peripheral gear and gaming-specific accessories.
-  // The component matcher above guarantees that generic unrelated products are excluded.
-  if (setupType === "gaming") {
-    const gamingTerms = ["gaming", "game", "mechanical keyboard", "high refresh", "low latency", "gaming mouse", "gaming headset", "controller", "monitor", "keyboard", "mouse", "headphone", "headset", "speaker", "webcam", "mouse pad", "mousepad", "usb hub", "hdmi cable", "gaming desk"];
-    return gamingTerms.some((term) => hasWholePhrase(text, term));
+  // Purpose exclusions prevent gaming-only gear being suggested for study/work,
+  // and stop unrelated tech categories being treated as creator equipment.
+  const gamingOnly = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "rgb gaming"];
+  if (["study", "work", "everyday"].includes(setupType) && gamingOnly.some((term) => hasWholePhrase(name, term))) {
+    // Generic hardware can still be suitable, but explicitly gaming-labelled items are not.
+    return false;
   }
+
+  if (setupType === "gaming") {
+    const gamingSuitable = ["display", "keyboard", "mouse", "audio", "accessories"];
+    const excluded = ["webcam cover", "usb cable", "hdmi cable"];
+    if (!gamingSuitable.includes(component)) return false;
+    if (excluded.some((term) => hasWholePhrase(name, term)) && !/gaming|game/i.test(name)) return false;
+  }
+
+  if (setupType === "creator" && component === "accessories") {
+    const creatorAccessoryTerms = ["webcam", "capture", "usb hub", "laptop stand", "monitor stand", "microphone", "mic", "desk mat"];
+    if (!creatorAccessoryTerms.some((term) => hasWholePhrase(name, term))) return false;
+  }
+
   return true;
 }
 
@@ -458,13 +486,7 @@ function calculateMatch(
   score += Math.min(8, Math.round(reviews / 25));
 
   // Setup purpose
-  const productText =
-    `${product.name} ${
-      product.short_description ||
-      ""
-    } ${
-      product.description || ""
-    }`.toLowerCase();
+  const productText = `${product.name} ${product.brand || ""}`.toLowerCase();
 
   const purposeMatches =
     setupKeywords[
@@ -590,6 +612,10 @@ export default function SetupBuilderPage() {
     setSetupBuilt,
   ] = useState(false);
 
+  // Each build gets a new seed so equally suitable products rotate instead of
+  // showing the exact same setup every time.
+  const [buildSeed, setBuildSeed] = useState(0);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -692,6 +718,12 @@ export default function SetupBuilderPage() {
     }
   }
 
+  const currentPriorityOptions = purposePriorityOptions[setupType];
+  const currentComponentOptions = components.map((component) => ({
+    ...component,
+    ...purposeComponentLabels[setupType][component.id],
+  }));
+
   const matchedProducts =
     useMemo<SetupProduct[]>(() => {
       return products
@@ -791,14 +823,20 @@ export default function SetupBuilderPage() {
         return aMidRangeFit - bMidRangeFit || bRating - aRating || b.matchScore - a.matchScore;
       });
 
-      const chosen = ranked[0];
+      // Rotate among the top few purpose/priority-matched candidates. This keeps
+      // the chosen priority meaningful while making repeated builds feel fresh.
+      const varietyCount = priority === "savings" ? Math.min(2, ranked.length) : Math.min(3, ranked.length);
+      const varietyPool = ranked.slice(0, varietyCount);
+      const chosen = varietyPool.length
+        ? varietyPool[buildSeed % varietyPool.length]
+        : undefined;
       if (!chosen || Number(chosen.price) > remaining) continue;
       result.push(chosen);
       remaining -= Number(chosen.price);
     }
 
     return result;
-  }, [matchedProducts, selectedComponents, budget, priority, setupType]);
+  }, [matchedProducts, selectedComponents, budget, priority, setupType, buildSeed]);
 
   const finalProducts =
     selectedProducts.length
@@ -1016,9 +1054,10 @@ export default function SetupBuilderPage() {
   }
 
   async function buildSetup() {
-    setBuilding(
-      true
-    );
+    setBuilding(true);
+    setNotice(null);
+    setSelectedProducts([]);
+    setBuildSeed((current) => current + 1);
 
     await new Promise(
       (resolve) =>
@@ -1070,12 +1109,9 @@ export default function SetupBuilderPage() {
           item.id
       )
     );
-    setSelectedProducts(
-      []
-    );
-    setSetupBuilt(
-      false
-    );
+    setSelectedProducts([]);
+    setBuildSeed((current) => current + 1);
+    setSetupBuilt(false);
   }
 
   async function addToCart(
@@ -1643,6 +1679,7 @@ export default function SetupBuilderPage() {
                         onClick={() => {
                           setSetupType(item.id);
                           setSelectedProducts([]);
+                          setSelectedComponents(components.map((component) => component.id));
                           setNotice(null);
                           setSetupBuilt(false);
                         }}
@@ -1970,7 +2007,7 @@ export default function SetupBuilderPage() {
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    {components.map(
+                    {currentComponentOptions.map(
                       (component) => {
                         const Icon =
                           component.icon;
@@ -2058,7 +2095,7 @@ export default function SetupBuilderPage() {
                   </div>
 
                   <div className="mt-5 space-y-3">
-                    {priorityOptions.map(
+                    {currentPriorityOptions.map(
                       (option) => {
                         const active =
                           priority ===
@@ -2183,10 +2220,8 @@ export default function SetupBuilderPage() {
                       budget and{" "}
                       <strong>
                         {
-                          priorityOptions.find(
-                            (item) =>
-                              item.id ===
-                              priority
+                          currentPriorityOptions.find(
+                            (item) => item.id === priority
                           )?.title
                         }
                       </strong>{" "}
