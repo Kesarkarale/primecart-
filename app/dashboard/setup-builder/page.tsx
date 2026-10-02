@@ -51,6 +51,7 @@ type Product = {
   is_featured: boolean;
   is_flash_sale: boolean;
   is_active: boolean;
+  category_name?: string | null;
 };
 
 type CartItem = {
@@ -73,6 +74,9 @@ type ComponentType =
   | "keyboard"
   | "mouse"
   | "audio"
+  | "webcam"
+  | "microphone"
+  | "controller"
   | "accessories";
 
 type PriorityType =
@@ -142,42 +146,25 @@ const components: {
   icon: typeof Monitor;
   keywords: string[];
 }[] = [
-  {
-    id: "display",
-    title: "Display",
-    description: "Monitor & screen",
-    icon: Monitor,
-    keywords: ["monitor", "computer monitor", "gaming monitor", "display", "screen", "led monitor", "tv", "television"],
-  },
-  {
-    id: "keyboard",
-    title: "Keyboard",
-    description: "Typing & control",
-    icon: Keyboard,
-    keywords: ["keyboard", "mechanical keyboard", "gaming keyboard", "wireless keyboard"],
-  },
-  {
-    id: "mouse",
-    title: "Mouse",
-    description: "Precision & navigation",
-    icon: Mouse,
-    keywords: ["mouse", "gaming mouse", "computer mouse", "wireless mouse", "mouse pad", "mousepad"],
-  },
-  {
-    id: "audio",
-    title: "Audio",
-    description: "Headphones & sound",
-    icon: Headphones,
-    keywords: ["headphone", "headphones", "gaming headset", "headset", "earbuds", "earphone", "speaker", "microphone", "mic"],
-  },
-  {
-    id: "accessories",
-    title: "Accessories",
-    description: "Useful tech accessories",
-    icon: Package,
-    keywords: ["webcam", "game controller", "controller", "usb hub", "laptop stand", "monitor stand", "headphone stand", "desk mat", "mouse pad", "mousepad", "usb cable", "hdmi cable", "gaming desk", "desk lamp"],
-  },
+  { id: "display", title: "Display", description: "Computer and gaming monitors", icon: Monitor, keywords: ["computer monitor", "gaming monitor", "desktop monitor", "led monitor", "monitor", "display monitor", "television", "tv"] },
+  { id: "keyboard", title: "Keyboard", description: "Typing and control", icon: Keyboard, keywords: ["mechanical keyboard", "gaming keyboard", "wireless keyboard", "computer keyboard", "keyboard"] },
+  { id: "mouse", title: "Mouse", description: "Computer navigation", icon: Mouse, keywords: ["gaming mouse", "computer mouse", "wireless mouse", "optical mouse", "mouse"] },
+  { id: "audio", title: "Audio", description: "Headphones, headsets and speakers", icon: Headphones, keywords: ["gaming headset", "headphones", "headphone", "earphones", "earbuds", "earphone", "computer speaker", "bluetooth speaker", "speaker"] },
+  { id: "webcam", title: "Webcam", description: "Web cameras for classes and streaming", icon: Laptop, keywords: ["webcam", "web camera", "streaming camera", "conference camera"] },
+  { id: "microphone", title: "Microphone", description: "Recording and streaming audio", icon: Headphones, keywords: ["condenser microphone", "usb microphone", "studio microphone", "lavalier microphone", "microphone", "usb mic", "studio mic", "mic"] },
+  { id: "controller", title: "Controller", description: "Gamepads and gaming controllers", icon: Gamepad2, keywords: ["gaming controller", "game controller", "wireless controller", "gamepad", "game pad", "joystick"] },
+  { id: "accessories", title: "Accessories", description: "Purpose-specific computer accessories", icon: Package, keywords: ["mouse pad", "mousepad", "desk mat", "laptop stand", "monitor stand", "headphone stand", "usb hub", "capture card", "hdmi cable", "usb cable", "usb adapter", "gaming desk", "desk lamp", "laptop cooling pad", "cooling pad"] },
 ];
+
+const componentsByPurpose: Record<SetupType, ComponentType[]> = {
+  work: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
+  gaming: ["display", "keyboard", "mouse", "audio", "controller", "accessories"],
+  study: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
+  creator: ["display", "keyboard", "mouse", "audio", "webcam", "microphone", "accessories"],
+  everyday: ["keyboard", "mouse", "audio", "display", "accessories"],
+};
+
+const defaultComponentsFor = (purpose: SetupType) => componentsByPurpose[purpose];
 
 const budgetPresets = [
   {
@@ -227,39 +214,54 @@ const setupKeywords: Record<SetupType, string[]> = {
 
 const purposeComponentLabels: Record<SetupType, Record<ComponentType, { title: string; description: string }>> = {
   work: {
-    display: { title: "Office Display", description: "Monitor for daily work" },
-    keyboard: { title: "Work Keyboard", description: "Comfortable typing" },
-    mouse: { title: "Productivity Mouse", description: "Precise everyday control" },
-    audio: { title: "Work Audio", description: "Headphones, headset or speaker" },
-    accessories: { title: "Desk Accessories", description: "Useful workspace gear" },
+    display: { title: "Office Monitor", description: "A monitor for documents and multitasking" },
+    keyboard: { title: "Work Keyboard", description: "Comfortable typing for long sessions" },
+    mouse: { title: "Productivity Mouse", description: "Reliable everyday navigation" },
+    audio: { title: "Meeting Audio", description: "Headphones or speakers for calls" },
+    webcam: { title: "Meeting Webcam", description: "Camera for online meetings" },
+    microphone: { title: "Work Microphone", description: "For clear voice calls and recording" },
+    controller: { title: "Controller", description: "Not usually needed for a work setup" },
+    accessories: { title: "Desk Essentials", description: "Stands, hubs and computer accessories" },
   },
   gaming: {
-    display: { title: "Gaming Monitor", description: "A display for immersive play" },
-    keyboard: { title: "Gaming Keyboard", description: "Mechanical or gaming-focused keys" },
-    mouse: { title: "Gaming Mouse", description: "Responsive gaming control" },
-    audio: { title: "Gaming Headset & Audio", description: "Headset, headphones or microphone" },
-    accessories: { title: "Gaming Gear", description: "Controllers, mouse pads and tech accessories" },
+    display: { title: "Gaming Monitor", description: "Monitor for responsive gameplay" },
+    keyboard: { title: "Gaming Keyboard", description: "Gaming or mechanical keyboard" },
+    mouse: { title: "Gaming Mouse", description: "Precise mouse for gameplay" },
+    audio: { title: "Gaming Headset & Audio", description: "Headsets and speakers for game audio" },
+    webcam: { title: "Streaming Webcam", description: "Optional camera for streaming" },
+    microphone: { title: "Streaming Microphone", description: "Optional mic for team chat and streams" },
+    controller: { title: "Game Controller", description: "Gamepads and controllers" },
+    accessories: { title: "Gaming Accessories", description: "Mouse pads, cooling pads and gaming gear" },
   },
   study: {
-    display: { title: "Study Display", description: "A screen for lessons and reading" },
-    keyboard: { title: "Study Keyboard", description: "Comfortable notes and assignments" },
-    mouse: { title: "Study Mouse", description: "Easy navigation for classes" },
-    audio: { title: "Class Audio", description: "Headphones or audio for online lessons" },
-    accessories: { title: "Study Accessories", description: "Webcams, stands and desk essentials" },
+    display: { title: "Study Monitor", description: "Monitor for lessons and reading" },
+    keyboard: { title: "Study Keyboard", description: "Typing notes and assignments" },
+    mouse: { title: "Study Mouse", description: "Easy navigation for learning" },
+    audio: { title: "Class Headphones", description: "Audio for lectures and online classes" },
+    webcam: { title: "Online Class Webcam", description: "Camera for virtual lessons" },
+    microphone: { title: "Study Microphone", description: "For presentations and online classes" },
+    controller: { title: "Game Controller", description: "Optional and not part of a study setup" },
+    accessories: { title: "Study Accessories", description: "Laptop stands, desk lamps and computer hubs" },
   },
   creator: {
-    display: { title: "Creator Display", description: "Monitor for editing and detail" },
-    keyboard: { title: "Editing Keyboard", description: "Reliable creative-work input" },
-    mouse: { title: "Precision Mouse", description: "Accurate editing and design control" },
-    audio: { title: "Creator Audio", description: "Microphones, headphones and sound" },
-    accessories: { title: "Creator Gear", description: "Webcams, hubs and creator accessories" },
+    display: { title: "Creator Monitor", description: "Display for editing and design" },
+    keyboard: { title: "Creative Keyboard", description: "Comfortable input for editing work" },
+    mouse: { title: "Precision Mouse", description: "Accurate control for editing and design" },
+    audio: { title: "Creator Headphones", description: "Monitor sound while editing" },
+    webcam: { title: "Creator Webcam", description: "Camera for streaming and calls" },
+    microphone: { title: "Recording Microphone", description: "Dedicated audio capture for content" },
+    controller: { title: "Controller", description: "Only if your creative workflow needs one" },
+    accessories: { title: "Creator Accessories", description: "Capture cards, stands and USB hubs" },
   },
   everyday: {
-    display: { title: "Everyday Display", description: "Screen for daily use" },
-    keyboard: { title: "Everyday Keyboard", description: "Typing at home or on the go" },
-    mouse: { title: "Everyday Mouse", description: "Simple, reliable navigation" },
+    display: { title: "Everyday Monitor", description: "Display for general computer use" },
+    keyboard: { title: "Everyday Keyboard", description: "Simple daily typing" },
+    mouse: { title: "Everyday Mouse", description: "Reliable navigation" },
     audio: { title: "Everyday Audio", description: "Headphones, earbuds or speakers" },
-    accessories: { title: "Everyday Tech", description: "Useful computer accessories" },
+    webcam: { title: "Everyday Webcam", description: "Camera for calls" },
+    microphone: { title: "Microphone", description: "For voice recording and calls" },
+    controller: { title: "Game Controller", description: "Optional gaming control" },
+    accessories: { title: "Tech Accessories", description: "Useful computer accessories" },
   },
 };
 
@@ -406,22 +408,36 @@ function hasWholePhrase(text: string, keyword: string) {
 }
 
 function detectComponent(product: Product): ComponentType | null {
-  // The product title is the source of truth. Do not classify from descriptions:
-  // e.g. a sunscreen description mentioning a "screen" must not become a monitor.
-  const name = (product.name || "").toLowerCase();
-  const nonTechTerms = [
+  // Match only the product title. Descriptions are deliberately ignored because
+  // they can mention unrelated terms such as “screen” in sunscreen descriptions.
+  const name = (product.name || "").toLowerCase().replace(/[_-]+/g, " ").trim();
+  if (!name) return null;
+
+  const blockedNameTerms = [
     "sunscreen", "sun screen", "screen protector", "tempered glass", "moisturizer",
     "moisturiser", "serum", "face wash", "lipstick", "foundation", "shampoo",
-    "conditioner", "saree", "kurta", "dress", "t-shirt", "jeans", "detergent",
-    "cooking oil", "snack", "biscuit", "beauty", "skincare", "skin care",
+    "conditioner", "saree", "kurta", "dress", "t shirt", "jeans", "detergent",
+    "cooking oil", "snack", "biscuit", "beauty", "skincare", "skin care", "cosmetic",
+    "face cream", "body lotion", "perfume", "toothpaste", "food", "toy",
   ];
-  if (nonTechTerms.some((term) => hasWholePhrase(name, term))) return null;
+  if (blockedNameTerms.some((term) => hasWholePhrase(name, term))) return null;
 
-  // More specific component terms are checked first to avoid vague matches.
-  const ordered: ComponentType[] = ["keyboard", "mouse", "audio", "accessories", "display"];
+  // Exclude clearly non-technology catalogue categories when the category label exists.
+  const category = (product.category_name || "").toLowerCase();
+  const blockedCategoryTerms = ["beauty", "skincare", "skin care", "personal care", "fashion", "clothing", "footwear", "grocery", "groceries", "food", "beverage", "toys", "baby", "jewellery", "jewelry", "automotive"];
+  if (category && blockedCategoryTerms.some((term) => hasWholePhrase(category, term))) return null;
+
+  // Most specific types first: mouse pads must not be misclassified as mice,
+  // and microphones/controllers/webcams must not become generic audio/accessories.
+  const ordered: ComponentType[] = ["controller", "webcam", "microphone", "accessories", "keyboard", "mouse", "audio", "display"];
   for (const id of ordered) {
     const component = components.find((item) => item.id === id);
-    if (component?.keywords.some((keyword) => hasWholePhrase(name, keyword))) return id;
+    if (!component) continue;
+    const matchingKeyword = component.keywords.find((keyword) => hasWholePhrase(name, keyword));
+    if (!matchingKeyword) continue;
+    if (id === "mouse" && ["mouse pad", "mousepad"].some((term) => hasWholePhrase(name, term))) continue;
+    if (id === "microphone" && ["microphone stand", "mic stand"].some((term) => hasWholePhrase(name, term))) return "accessories";
+    return id;
   }
   return null;
 }
@@ -429,25 +445,22 @@ function detectComponent(product: Product): ComponentType | null {
 function isPurposeSuitable(product: Product, setupType: SetupType) {
   const name = (product.name || "").toLowerCase();
   const component = detectComponent(product);
-  if (!component) return false;
+  if (!component || !componentsByPurpose[setupType].includes(component)) return false;
 
-  // Purpose exclusions prevent gaming-only gear being suggested for study/work,
-  // and stop unrelated tech categories being treated as creator equipment.
-  const gamingOnly = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "rgb gaming"];
-  if (["study", "work", "everyday"].includes(setupType) && gamingOnly.some((term) => hasWholePhrase(name, term))) {
-    // Generic hardware can still be suitable, but explicitly gaming-labelled items are not.
-    return false;
-  }
+  const explicitlyGaming = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "gaming monitor", "gaming mouse pad", "rgb gaming"].some((term) => hasWholePhrase(name, term));
+  if (["study", "work", "everyday"].includes(setupType) && explicitlyGaming) return false;
 
+  // Gaming recommendations must be gaming gear or a recognized general computer
+  // peripheral. Skincare/fashion categories and vague “screen” matches never qualify.
   if (setupType === "gaming") {
-    const gamingSuitable = ["display", "keyboard", "mouse", "audio", "accessories"];
-    const excluded = ["webcam cover", "usb cable", "hdmi cable"];
-    if (!gamingSuitable.includes(component)) return false;
-    if (excluded.some((term) => hasWholePhrase(name, term)) && !/gaming|game/i.test(name)) return false;
+    const gamingOnlyNames = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "gaming monitor", "game controller", "gamepad", "game pad", "gaming mouse pad", "gaming desk", "gaming headphones"];
+    const genericComputerGear = ["keyboard", "mouse", "headphone", "headphones", "headset", "monitor", "speaker", "controller", "gamepad", "game pad", "mouse pad", "mousepad", "cooling pad", "usb hub", "webcam", "microphone", "mic"];
+    if (![...gamingOnlyNames, ...genericComputerGear].some((term) => hasWholePhrase(name, term))) return false;
+    if (component === "accessories" && !["mouse pad", "mousepad", "cooling pad", "usb hub", "gaming desk", "laptop stand", "monitor stand", "headphone stand", "usb cable", "hdmi cable", "usb adapter"].some((term) => hasWholePhrase(name, term))) return false;
   }
 
   if (setupType === "creator" && component === "accessories") {
-    const creatorAccessoryTerms = ["webcam", "capture", "usb hub", "laptop stand", "monitor stand", "microphone", "mic", "desk mat"];
+    const creatorAccessoryTerms = ["webcam", "capture card", "usb hub", "laptop stand", "monitor stand", "desk mat", "usb cable", "hdmi cable", "usb adapter"];
     if (!creatorAccessoryTerms.some((term) => hasWholePhrase(name, term))) return false;
   }
 
@@ -595,12 +608,7 @@ export default function SetupBuilderPage() {
   const [
     selectedComponents,
     setSelectedComponents,
-  ] = useState<ComponentType[]>(
-    components.map(
-      (component) =>
-        component.id
-    )
-  );
+  ] = useState<ComponentType[]>(defaultComponentsFor("work"));
 
   const [
     selectedProducts,
@@ -639,6 +647,7 @@ export default function SetupBuilderPage() {
         productResponse,
         wishlistResponse,
         cartResponse,
+        categoryResponse,
       ] = await Promise.all([
         supabase
           .from("products")
@@ -686,11 +695,21 @@ export default function SetupBuilderPage() {
             "user_id",
             user.id
           ),
+
+        supabase
+          .from("categories")
+          .select("id, name"),
       ]);
 
+      const categoryNames = new Map<string, string>(
+        (categoryResponse.data || []).map((category: { id: string; name: string }) => [category.id, category.name])
+      );
+
       setProducts(
-        (productResponse.data ||
-          []) as Product[]
+        ((productResponse.data || []) as Product[]).map((product) => ({
+          ...product,
+          category_name: product.category_id ? categoryNames.get(product.category_id) || null : null,
+        }))
       );
 
       setWishlist(
@@ -719,10 +738,12 @@ export default function SetupBuilderPage() {
   }
 
   const currentPriorityOptions = purposePriorityOptions[setupType];
-  const currentComponentOptions = components.map((component) => ({
-    ...component,
-    ...purposeComponentLabels[setupType][component.id],
-  }));
+  const currentComponentOptions = components
+    .filter((component) => componentsByPurpose[setupType].includes(component.id))
+    .map((component) => ({
+      ...component,
+      ...purposeComponentLabels[setupType][component.id],
+    }));
 
   const matchedProducts =
     useMemo<SetupProduct[]>(() => {
@@ -825,10 +846,11 @@ export default function SetupBuilderPage() {
 
       // Rotate among the top few purpose/priority-matched candidates. This keeps
       // the chosen priority meaningful while making repeated builds feel fresh.
-      const varietyCount = priority === "savings" ? Math.min(2, ranked.length) : Math.min(3, ranked.length);
+      const varietyCount = Math.min(priority === "quality" ? 4 : 5, ranked.length);
       const varietyPool = ranked.slice(0, varietyCount);
+      const componentOffset = componentsByPurpose[setupType].indexOf(component);
       const chosen = varietyPool.length
-        ? varietyPool[buildSeed % varietyPool.length]
+        ? varietyPool[(buildSeed + Math.max(0, componentOffset)) % varietyPool.length]
         : undefined;
       if (!chosen || Number(chosen.price) > remaining) continue;
       result.push(chosen);
@@ -1103,12 +1125,7 @@ export default function SetupBuilderPage() {
     setPriority(
       "balanced"
     );
-    setSelectedComponents(
-      components.map(
-        (item) =>
-          item.id
-      )
-    );
+    setSelectedComponents(defaultComponentsFor("work"));
     setSelectedProducts([]);
     setBuildSeed((current) => current + 1);
     setSetupBuilt(false);
@@ -1679,7 +1696,7 @@ export default function SetupBuilderPage() {
                         onClick={() => {
                           setSetupType(item.id);
                           setSelectedProducts([]);
-                          setSelectedComponents(components.map((component) => component.id));
+                          setSelectedComponents(defaultComponentsFor(item.id));
                           setNotice(null);
                           setSetupBuilt(false);
                         }}
@@ -2998,7 +3015,7 @@ export default function SetupBuilderPage() {
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {components.map(
+            {currentComponentOptions.map(
               (component) => {
                 const Icon =
                   component.icon;
