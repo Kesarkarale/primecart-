@@ -844,14 +844,17 @@ export default function SetupBuilderPage() {
         return aMidRangeFit - bMidRangeFit || bRating - aRating || b.matchScore - a.matchScore;
       });
 
-      // Rotate among the top few purpose/priority-matched candidates. This keeps
-      // the chosen priority meaningful while making repeated builds feel fresh.
-      const varietyCount = Math.min(priority === "quality" ? 4 : 5, ranked.length);
+      // Use a wider shortlist so repeated builds can rotate through more of the
+      // real catalogue instead of repeatedly choosing only the first 4-5 items.
+      // Priority still determines the ranking; buildSeed changes the selection
+      // within that ranked shortlist on each new build.
+      const varietyCount = Math.min(priority === "quality" ? 8 : 10, ranked.length);
       const varietyPool = ranked.slice(0, varietyCount);
-      const componentOffset = componentsByPurpose[setupType].indexOf(component);
-      const chosen = varietyPool.length
-        ? varietyPool[(buildSeed + Math.max(0, componentOffset)) % varietyPool.length]
-        : undefined;
+      const componentOffset = Math.max(0, componentsByPurpose[setupType].indexOf(component));
+      const rotation = varietyPool.length
+        ? (buildSeed + componentOffset * 2) % varietyPool.length
+        : 0;
+      const chosen = varietyPool.length ? varietyPool[rotation] : undefined;
       if (!chosen || Number(chosen.price) > remaining) continue;
       result.push(chosen);
       remaining -= Number(chosen.price);
