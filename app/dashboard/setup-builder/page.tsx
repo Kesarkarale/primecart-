@@ -1,9 +1,8 @@
+
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,7 +17,6 @@ import {
   Keyboard,
   Laptop,
   Monitor,
-  Mouse,
   Package,
   Plus,
   RefreshCw,
@@ -30,9 +28,24 @@ import {
   Trophy,
   WalletCards,
   Zap,
+  Mouse,
+  Webcam,
+  Mic,
+  X,
 } from "lucide-react";
-
 import { createClient } from "@/lib/supabase/client";
+
+type SetupType = "work" | "gaming" | "study" | "creator" | "everyday";
+type PriorityType = "balanced" | "value" | "quality" | "savings";
+type ComponentType =
+  | "display"
+  | "keyboard"
+  | "mouse"
+  | "audio"
+  | "webcam"
+  | "microphone"
+  | "controller"
+  | "accessories";
 
 type Product = {
   id: string;
@@ -54,40 +67,14 @@ type Product = {
   category_name?: string | null;
 };
 
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  quantity: number;
+type SetupProduct = Product & {
+  component: ComponentType;
+  matchScore: number;
 };
 
-type SetupType =
-  | "work"
-  | "gaming"
-  | "study"
-  | "creator"
-  | "everyday";
-
-type ComponentType =
-  | "display"
-  | "keyboard"
-  | "mouse"
-  | "audio"
-  | "webcam"
-  | "microphone"
-  | "controller"
-  | "accessories";
-
-type PriorityType =
-  | "balanced"
-  | "value"
-  | "quality"
-  | "savings";
-
-type SetupProduct = Product & {
-  matchScore: number;
-  component: ComponentType;
+type Notice = {
+  type: "success" | "error" | "info";
+  message: string;
 };
 
 const setupTypes: {
@@ -101,40 +88,35 @@ const setupTypes: {
     id: "work",
     title: "Work",
     subtitle: "Productivity",
-    description:
-      "A clean and productive workspace for everyday work.",
+    description: "A productive workspace for everyday work.",
     icon: BriefcaseBusiness,
   },
   {
     id: "gaming",
     title: "Gaming",
     subtitle: "Performance",
-    description:
-      "Immersive gear focused on gaming and performance.",
+    description: "Gaming peripherals focused on performance.",
     icon: Gamepad2,
   },
   {
     id: "study",
     title: "Study",
     subtitle: "Focus",
-    description:
-      "A comfortable setup for learning and deep focus.",
+    description: "Comfortable essentials for learning.",
     icon: Laptop,
   },
   {
     id: "creator",
     title: "Creator",
     subtitle: "Creative",
-    description:
-      "A versatile workspace for content and creative work.",
+    description: "Gear for recording, streaming and editing.",
     icon: Monitor,
   },
   {
     id: "everyday",
     title: "Everyday",
     subtitle: "Balanced",
-    description:
-      "A flexible setup for work, entertainment and daily use.",
+    description: "Flexible gear for everyday computer use.",
     icon: Home,
   },
 ];
@@ -146,500 +128,459 @@ const components: {
   icon: typeof Monitor;
   keywords: string[];
 }[] = [
-  { id: "display", title: "Display", description: "Computer and gaming monitors", icon: Monitor, keywords: ["computer monitor", "gaming monitor", "desktop monitor", "led monitor", "monitor", "display monitor", "television", "tv"] },
-  { id: "keyboard", title: "Keyboard", description: "Typing and control", icon: Keyboard, keywords: ["mechanical keyboard", "gaming keyboard", "wireless keyboard", "computer keyboard", "keyboard"] },
-  { id: "mouse", title: "Mouse", description: "Computer navigation", icon: Mouse, keywords: ["gaming mouse", "computer mouse", "wireless mouse", "optical mouse", "mouse"] },
-  { id: "audio", title: "Audio", description: "Headphones, headsets and speakers", icon: Headphones, keywords: ["gaming headset", "headphones", "headphone", "earphones", "earbuds", "earphone", "computer speaker", "bluetooth speaker", "speaker"] },
-  { id: "webcam", title: "Webcam", description: "Web cameras for classes and streaming", icon: Laptop, keywords: ["webcam", "web camera", "streaming camera", "conference camera"] },
-  { id: "microphone", title: "Microphone", description: "Recording and streaming audio", icon: Headphones, keywords: ["condenser microphone", "usb microphone", "studio microphone", "lavalier microphone", "microphone", "usb mic", "studio mic", "mic"] },
-  { id: "controller", title: "Controller", description: "Gamepads and gaming controllers", icon: Gamepad2, keywords: ["gaming controller", "game controller", "wireless controller", "gamepad", "game pad", "joystick"] },
-  { id: "accessories", title: "Accessories", description: "Purpose-specific computer accessories", icon: Package, keywords: ["mouse pad", "mousepad", "desk mat", "laptop stand", "monitor stand", "headphone stand", "usb hub", "capture card", "hdmi cable", "usb cable", "usb adapter", "gaming desk", "desk lamp", "laptop cooling pad", "cooling pad"] },
+  {
+    id: "display",
+    title: "Display",
+    description: "Computer monitors and displays",
+    icon: Monitor,
+    keywords: [
+      "gaming monitor", "computer monitor", "desktop monitor",
+      "led monitor", "monitor", "display monitor",
+    ],
+  },
+  {
+    id: "keyboard",
+    title: "Keyboard",
+    description: "Typing and gaming controls",
+    icon: Keyboard,
+    keywords: [
+      "mechanical keyboard", "gaming keyboard",
+      "wireless keyboard", "computer keyboard", "keyboard",
+    ],
+  },
+  {
+    id: "mouse",
+    title: "Mouse",
+    description: "Navigation and precision control",
+    icon: Mouse,
+    keywords: [
+      "gaming mouse", "computer mouse",
+      "wireless mouse", "optical mouse", "mouse",
+    ],
+  },
+  {
+    id: "audio",
+    title: "Audio",
+    description: "Headphones, headsets and speakers",
+    icon: Headphones,
+    keywords: [
+      "gaming headset", "gaming headphones", "headphones",
+      "headphone", "headset", "earphones", "earbuds",
+      "bluetooth speaker", "computer speaker", "speaker",
+    ],
+  },
+  {
+    id: "webcam",
+    title: "Webcam",
+    description: "Cameras for calls and streaming",
+    icon: Laptop,
+    keywords: ["webcam", "web camera", "streaming camera", "conference camera"],
+  },
+  {
+    id: "microphone",
+    title: "Microphone",
+    description: "Voice recording and streaming",
+    icon: Mic,
+    keywords: [
+      "condenser microphone", "usb microphone",
+      "studio microphone", "lavalier microphone",
+      "microphone", "usb mic", "studio mic", "mic",
+    ],
+  },
+  {
+    id: "controller",
+    title: "Controller",
+    description: "Gamepads and gaming controllers",
+    icon: Gamepad2,
+    keywords: [
+      "gaming controller", "game controller",
+      "wireless controller", "gamepad", "game pad", "joystick",
+    ],
+  },
+  {
+    id: "accessories",
+    title: "Accessories",
+    description: "Useful computer and desk accessories",
+    icon: Package,
+    keywords: [
+      "mouse pad", "mousepad", "desk mat",
+      "laptop stand", "monitor stand", "headphone stand",
+      "usb hub", "capture card", "hdmi cable", "usb cable",
+      "usb adapter", "gaming desk", "desk lamp",
+      "laptop cooling pad", "cooling pad",
+    ],
+  },
 ];
 
 const componentsByPurpose: Record<SetupType, ComponentType[]> = {
   work: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
   gaming: ["display", "keyboard", "mouse", "audio", "controller", "accessories"],
   study: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
-  creator: ["display", "keyboard", "mouse", "audio", "webcam", "microphone", "accessories"],
-  everyday: ["keyboard", "mouse", "audio", "display", "accessories"],
+  creator: [
+    "display", "keyboard", "mouse", "audio",
+    "webcam", "microphone", "accessories",
+  ],
+  everyday: ["display", "keyboard", "mouse", "audio", "accessories"],
 };
 
-const defaultComponentsFor = (purpose: SetupType) => componentsByPurpose[purpose];
-
-const budgetPresets = [
-  {
-    label: "Starter",
-    amount: 5000,
-  },
-  {
-    label: "Balanced",
-    amount: 10000,
-  },
-  {
-    label: "Pro",
-    amount: 20000,
-  },
-  {
-    label: "Premium",
-    amount: 35000,
-  },
-  {
-    label: "Ultimate",
-    amount: 50000,
-  },
-];
-
-const setupSpecificKeywords: Record<SetupType, string[]> = {
-  work: ["office", "business", "productivity", "ergonomic", "multitask", "silent", "wireless"],
-  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "low latency", "controller", "response time"],
-  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "desk lamp"],
-  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "color accuracy", "colour accuracy", "capture"],
-  everyday: ["everyday", "daily", "home", "versatile", "comfortable", "wireless"],
-};
-
-function getPurposeRelevance(product: Product, setupType: SetupType) {
-  // Only the product title and brand identify its purpose. Long descriptions often
-  // contain unrelated words and must never turn skincare/home products into tech gear.
-  const text = `${product.name} ${product.brand || ""}`.toLowerCase();
-  return setupSpecificKeywords[setupType].filter((keyword) => hasWholePhrase(text, keyword)).length;
-}
-
-const setupKeywords: Record<SetupType, string[]> = {
-  work: ["office", "business", "productivity", "ergonomic", "silent", "wireless", "keyboard", "mouse", "monitor"],
-  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "response time", "low latency", "controller", "keyboard", "mouse", "headset", "monitor"],
-  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "desk lamp", "keyboard", "mouse", "monitor"],
-  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "audio", "webcam", "color accuracy", "colour accuracy", "monitor"],
-  everyday: ["wireless", "smart", "everyday", "daily", "home", "keyboard", "mouse", "speaker", "headphone", "comfortable"],
-};
-
-const purposeComponentLabels: Record<SetupType, Record<ComponentType, { title: string; description: string }>> = {
+const purposeLabels: Record<
+  SetupType,
+  Partial<Record<ComponentType, { title: string; description: string }>>
+> = {
   work: {
-    display: { title: "Office Monitor", description: "A monitor for documents and multitasking" },
-    keyboard: { title: "Work Keyboard", description: "Comfortable typing for long sessions" },
-    mouse: { title: "Productivity Mouse", description: "Reliable everyday navigation" },
-    audio: { title: "Meeting Audio", description: "Headphones or speakers for calls" },
-    webcam: { title: "Meeting Webcam", description: "Camera for online meetings" },
-    microphone: { title: "Work Microphone", description: "For clear voice calls and recording" },
-    controller: { title: "Controller", description: "Not usually needed for a work setup" },
-    accessories: { title: "Desk Essentials", description: "Stands, hubs and computer accessories" },
+    display: { title: "Office Monitor", description: "For documents and multitasking" },
+    keyboard: { title: "Work Keyboard", description: "For comfortable typing" },
+    mouse: { title: "Productivity Mouse", description: "For daily navigation" },
+    audio: { title: "Meeting Audio", description: "For calls and meetings" },
+    webcam: { title: "Meeting Webcam", description: "For video meetings" },
+    accessories: { title: "Desk Essentials", description: "Stands, hubs and accessories" },
   },
   gaming: {
-    display: { title: "Gaming Monitor", description: "Monitor for responsive gameplay" },
-    keyboard: { title: "Gaming Keyboard", description: "Gaming or mechanical keyboard" },
-    mouse: { title: "Gaming Mouse", description: "Precise mouse for gameplay" },
-    audio: { title: "Gaming Headset & Audio", description: "Headsets and speakers for game audio" },
-    webcam: { title: "Streaming Webcam", description: "Optional camera for streaming" },
-    microphone: { title: "Streaming Microphone", description: "Optional mic for team chat and streams" },
-    controller: { title: "Game Controller", description: "Gamepads and controllers" },
-    accessories: { title: "Gaming Accessories", description: "Mouse pads, cooling pads and gaming gear" },
+    display: { title: "Gaming Monitor", description: "For responsive gameplay" },
+    keyboard: { title: "Gaming Keyboard", description: "For gaming and control" },
+    mouse: { title: "Gaming Mouse", description: "For precise movements" },
+    audio: { title: "Gaming Audio", description: "For immersive sound" },
+    controller: { title: "Game Controller", description: "For supported games" },
+    accessories: { title: "Gaming Accessories", description: "Mats, stands and gaming gear" },
   },
   study: {
-    display: { title: "Study Monitor", description: "Monitor for lessons and reading" },
-    keyboard: { title: "Study Keyboard", description: "Typing notes and assignments" },
-    mouse: { title: "Study Mouse", description: "Easy navigation for learning" },
-    audio: { title: "Class Headphones", description: "Audio for lectures and online classes" },
-    webcam: { title: "Online Class Webcam", description: "Camera for virtual lessons" },
-    microphone: { title: "Study Microphone", description: "For presentations and online classes" },
-    controller: { title: "Game Controller", description: "Optional and not part of a study setup" },
-    accessories: { title: "Study Accessories", description: "Laptop stands, desk lamps and computer hubs" },
+    display: { title: "Study Monitor", description: "For lessons and reading" },
+    keyboard: { title: "Study Keyboard", description: "For notes and assignments" },
+    mouse: { title: "Study Mouse", description: "For everyday learning" },
+    audio: { title: "Class Audio", description: "For lectures and classes" },
+    webcam: { title: "Online Class Webcam", description: "For virtual lessons" },
+    accessories: { title: "Study Accessories", description: "Stands, lamps and hubs" },
   },
   creator: {
-    display: { title: "Creator Monitor", description: "Display for editing and design" },
-    keyboard: { title: "Creative Keyboard", description: "Comfortable input for editing work" },
-    mouse: { title: "Precision Mouse", description: "Accurate control for editing and design" },
-    audio: { title: "Creator Headphones", description: "Monitor sound while editing" },
-    webcam: { title: "Creator Webcam", description: "Camera for streaming and calls" },
-    microphone: { title: "Recording Microphone", description: "Dedicated audio capture for content" },
-    controller: { title: "Controller", description: "Only if your creative workflow needs one" },
-    accessories: { title: "Creator Accessories", description: "Capture cards, stands and USB hubs" },
+    display: { title: "Creator Monitor", description: "For editing and design" },
+    keyboard: { title: "Creative Keyboard", description: "For creative workflows" },
+    mouse: { title: "Precision Mouse", description: "For editing and design" },
+    audio: { title: "Creator Audio", description: "For editing and monitoring" },
+    webcam: { title: "Creator Webcam", description: "For recording and streaming" },
+    microphone: { title: "Recording Microphone", description: "For voice capture" },
+    accessories: { title: "Creator Accessories", description: "Capture cards, stands and hubs" },
   },
   everyday: {
-    display: { title: "Everyday Monitor", description: "Display for general computer use" },
-    keyboard: { title: "Everyday Keyboard", description: "Simple daily typing" },
-    mouse: { title: "Everyday Mouse", description: "Reliable navigation" },
-    audio: { title: "Everyday Audio", description: "Headphones, earbuds or speakers" },
-    webcam: { title: "Everyday Webcam", description: "Camera for calls" },
-    microphone: { title: "Microphone", description: "For voice recording and calls" },
-    controller: { title: "Game Controller", description: "Optional gaming control" },
+    display: { title: "Everyday Monitor", description: "For general computer use" },
+    keyboard: { title: "Everyday Keyboard", description: "For daily typing" },
+    mouse: { title: "Everyday Mouse", description: "For reliable navigation" },
+    audio: { title: "Everyday Audio", description: "For music and entertainment" },
     accessories: { title: "Tech Accessories", description: "Useful computer accessories" },
   },
 };
 
-const purposePriorityOptions: Record<SetupType, { id: PriorityType; title: string; description: string }[]> = {
-  work: [
-    { id: "balanced", title: "Balanced Workspace", description: "Mid-range gear with comfort and reliability" },
-    { id: "value", title: "Productivity Value", description: "Useful work features for every rupee" },
-    { id: "quality", title: "Professional Quality", description: "Well-rated work gear within your budget" },
-    { id: "savings", title: "Spend Less", description: "Keep costs low with suitable essentials" },
-  ],
-  gaming: [
-    { id: "balanced", title: "Balanced Gaming", description: "Balance display, controls and audio" },
-    { id: "value", title: "Performance for Price", description: "Gaming features and ratings for the money" },
-    { id: "quality", title: "Premium Gaming Gear", description: "Prioritize higher-rated gaming equipment" },
-    { id: "savings", title: "Budget Gaming", description: "Choose lower-cost gaming-compatible gear" },
-  ],
-  study: [
-    { id: "balanced", title: "Balanced Study Setup", description: "Comfortable essentials at mid-range prices" },
-    { id: "value", title: "Study Value", description: "Practical tools for classes and assignments" },
-    { id: "quality", title: "Comfort & Quality", description: "Well-rated products for regular study" },
-    { id: "savings", title: "Student Savings", description: "Cover essentials while spending less" },
-  ],
-  creator: [
-    { id: "balanced", title: "Balanced Creator Setup", description: "Balance display, input and audio tools" },
-    { id: "value", title: "Creator Value", description: "Useful creative features for the price" },
-    { id: "quality", title: "Creator Quality", description: "Prioritize well-rated editing and audio gear" },
-    { id: "savings", title: "Lean Creator Setup", description: "Choose affordable gear that fits the purpose" },
-  ],
-  everyday: [
-    { id: "balanced", title: "Everyday Balance", description: "A sensible mix for daily use" },
-    { id: "value", title: "Everyday Value", description: "Useful features without overspending" },
-    { id: "quality", title: "Reliable Quality", description: "Prioritize well-rated everyday gear" },
-    { id: "savings", title: "Maximum Savings", description: "Pick suitable lower-cost essentials" },
-  ],
+const priorityOptions: {
+  id: PriorityType;
+  title: string;
+  description: string;
+}[] = [
+  {
+    id: "balanced",
+    title: "Balanced",
+    description: "Balance price, ratings and usefulness.",
+  },
+  {
+    id: "value",
+    title: "Best Value",
+    description: "Prioritize useful features for the price.",
+  },
+  {
+    id: "quality",
+    title: "Quality First",
+    description: "Prioritize ratings and review confidence.",
+  },
+  {
+    id: "savings",
+    title: "Maximum Savings",
+    description: "Prefer suitable lower-priced products.",
+  },
+];
+
+const budgetPresets = [
+  { label: "Starter", amount: 5000 },
+  { label: "Balanced", amount: 10000 },
+  { label: "Pro", amount: 20000 },
+  { label: "Premium", amount: 35000 },
+  { label: "Ultimate", amount: 50000 },
+];
+
+const purposeKeywords: Record<SetupType, string[]> = {
+  work: ["office", "business", "productivity", "ergonomic", "silent", "wireless"],
+  gaming: ["gaming", "game", "rgb", "mechanical", "low latency", "controller"],
+  study: ["study", "student", "learning", "online class", "lecture", "reading"],
+  creator: ["creator", "content", "studio", "editing", "streaming", "microphone"],
+  everyday: ["everyday", "daily", "home", "versatile", "comfortable", "wireless"],
 };
 
-function getImageCandidates(value: string | null) {
-  if (!value) return [];
+const blockedNames = [
+  "sunscreen", "screen protector", "tempered glass", "moisturizer",
+  "moisturiser", "serum", "face wash", "lipstick", "foundation",
+  "shampoo", "conditioner", "saree", "kurta", "dress", "t shirt",
+  "jeans", "detergent", "cooking oil", "snack", "biscuit",
+  "beauty", "skincare", "skin care", "cosmetic", "face cream",
+  "body lotion", "perfume", "toothpaste", "food", "toy",
+];
 
-  const image = value.trim();
-  if (!image) return [];
-
-  if (image.startsWith("http://") || image.startsWith("https://")) {
-    return [image];
-  }
-
-  const clean = image.replace(/^\/+/, "");
-
-  if (image.startsWith("/")) {
-    return [
-      image,
-      `/products/${clean}`,
-      `/product-images/${clean}`,
-      `/images/${clean}`,
-      `/images/products/${clean}`,
-    ];
-  }
-
-  return [
-    `/${clean}`,
-    `/products/${clean}`,
-    `/product-images/${clean}`,
-    `/images/${clean}`,
-    `/images/products/${clean}`,
-  ];
-}
-
-function getImageUrl(value: string | null) {
-  return getImageCandidates(value)[0] || null;
-}
-
-function ProductImage({
-  src,
-  alt,
-  className,
-  sizes,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-  sizes?: string;
-}) {
-  const candidates = getImageCandidates(src);
-  const [index, setIndex] = useState(0);
-
-  const current = candidates[index];
-
-  if (!current) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-gray-300">
-        <Package size={32} />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={current}
-      alt={alt}
-      className={className}
-      sizes={sizes}
-      loading="lazy"
-      onError={() => {
-        if (index < candidates.length - 1) {
-          setIndex((currentIndex) => currentIndex + 1);
-        }
-      }}
-    />
-  );
-}
-
-function formatPrice(value: number) {
-  return new Intl.NumberFormat(
-    "en-IN",
-    {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }
-  ).format(value);
-}
-
-function discountPercent(
-  price: number,
-  original: number | null
-) {
-  if (
-    !original ||
-    original <= price
-  ) {
-    return 0;
-  }
-
-  return Math.round(
-    ((original - price) /
-      original) *
-      100
-  );
-}
+const blockedCategories = [
+  "beauty", "skincare", "skin care", "personal care", "fashion",
+  "clothing", "footwear", "grocery", "groceries", "food",
+  "beverage", "toys", "baby", "jewellery", "jewelry", "automotive",
+];
 
 function hasWholePhrase(text: string, keyword: string) {
   const escaped = keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
 }
 
-function detectComponent(product: Product): ComponentType | null {
-  // Match only the product title. Descriptions are deliberately ignored because
-  // they can mention unrelated terms such as “screen” in sunscreen descriptions.
-  const name = (product.name || "").toLowerCase().replace(/[_-]+/g, " ").trim();
-  if (!name) return null;
+function formatPrice(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-  const blockedNameTerms = [
-    "sunscreen", "sun screen", "screen protector", "tempered glass", "moisturizer",
-    "moisturiser", "serum", "face wash", "lipstick", "foundation", "shampoo",
-    "conditioner", "saree", "kurta", "dress", "t shirt", "jeans", "detergent",
-    "cooking oil", "snack", "biscuit", "beauty", "skincare", "skin care", "cosmetic",
-    "face cream", "body lotion", "perfume", "toothpaste", "food", "toy",
+function discountPercent(price: number, original: number | null) {
+  if (!original || original <= price) return 0;
+  return Math.round(((original - price) / original) * 100);
+}
+
+function imageCandidates(value: string | null) {
+  if (!value?.trim()) return [];
+
+  const raw = value.trim();
+
+  if (/^https?:\/\//i.test(raw)) return [raw];
+
+  const clean = raw
+    .replace(/^public\//i, "")
+    .replace(/^\/+/, "");
+
+  const paths = [
+    `/${clean}`,
+    `/products/${clean}`,
+    `/product-images/${clean}`,
+    `/images/${clean}`,
+    `/images/products/${clean}`,
   ];
-  if (blockedNameTerms.some((term) => hasWholePhrase(name, term))) return null;
 
-  // Exclude clearly non-technology catalogue categories when the category label exists.
+  return [...new Set(paths)];
+}
+
+function ProductImage({
+  value,
+  alt,
+  className,
+}: {
+  value: string | null;
+  alt: string;
+  className?: string;
+}) {
+  const candidates = imageCandidates(value);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => setIndex(0), [value]);
+
+  const src = candidates[index];
+
+  if (!src) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-[#c9a24d]">
+        <Package size={34} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className={className}
+      onError={() => setIndex((old) => old + 1)}
+    />
+  );
+}
+
+function detectComponent(product: Product): ComponentType | null {
+  const name = (product.name || "").toLowerCase().replace(/[_-]+/g, " ").trim();
   const category = (product.category_name || "").toLowerCase();
-  const blockedCategoryTerms = ["beauty", "skincare", "skin care", "personal care", "fashion", "clothing", "footwear", "grocery", "groceries", "food", "beverage", "toys", "baby", "jewellery", "jewelry", "automotive"];
-  if (category && blockedCategoryTerms.some((term) => hasWholePhrase(category, term))) return null;
 
-  // Most specific types first: mouse pads must not be misclassified as mice,
-  // and microphones/controllers/webcams must not become generic audio/accessories.
-  const ordered: ComponentType[] = ["controller", "webcam", "microphone", "accessories", "keyboard", "mouse", "audio", "display"];
+  if (!name) return null;
+  if (blockedNames.some((term) => hasWholePhrase(name, term))) return null;
+  if (
+    category &&
+    blockedCategories.some((term) => hasWholePhrase(category, term))
+  ) {
+    return null;
+  }
+
+  // Most specific types must be checked before general accessories/audio.
+  const ordered: ComponentType[] = [
+    "controller",
+    "webcam",
+    "microphone",
+    "accessories",
+    "keyboard",
+    "mouse",
+    "audio",
+    "display",
+  ];
+
   for (const id of ordered) {
-    const component = components.find((item) => item.id === id);
-    if (!component) continue;
-    const matchingKeyword = component.keywords.find((keyword) => hasWholePhrase(name, keyword));
-    if (!matchingKeyword) continue;
-    if (id === "mouse" && ["mouse pad", "mousepad"].some((term) => hasWholePhrase(name, term))) continue;
-    if (id === "microphone" && ["microphone stand", "mic stand"].some((term) => hasWholePhrase(name, term))) return "accessories";
+    const config = components.find((item) => item.id === id);
+    if (!config) continue;
+
+    if (!config.keywords.some((keyword) => hasWholePhrase(name, keyword))) {
+      continue;
+    }
+
+    if (id === "mouse" && /mouse[\s-]*pad|mousepad/i.test(name)) continue;
+
+    if (
+      id === "microphone" &&
+      hasWholePhrase(name, "microphone stand")
+    ) {
+      return "accessories";
+    }
+
     return id;
   }
+
   return null;
 }
 
-function isPurposeSuitable(product: Product, setupType: SetupType) {
-  const name = (product.name || "").toLowerCase();
+function isPurposeSuitable(product: Product, purpose: SetupType) {
   const component = detectComponent(product);
-  if (!component || !componentsByPurpose[setupType].includes(component)) return false;
+  const name = product.name.toLowerCase();
 
-  const explicitlyGaming = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "gaming monitor", "gaming mouse pad", "rgb gaming"].some((term) => hasWholePhrase(name, term));
-  if (["study", "work", "everyday"].includes(setupType) && explicitlyGaming) return false;
-
-  // Gaming recommendations must be gaming gear or a recognized general computer
-  // peripheral. Skincare/fashion categories and vague “screen” matches never qualify.
-  if (setupType === "gaming") {
-    const gamingOnlyNames = ["gaming keyboard", "gaming mouse", "gaming headset", "gaming controller", "gaming monitor", "game controller", "gamepad", "game pad", "gaming mouse pad", "gaming desk", "gaming headphones"];
-    const genericComputerGear = ["keyboard", "mouse", "headphone", "headphones", "headset", "monitor", "speaker", "controller", "gamepad", "game pad", "mouse pad", "mousepad", "cooling pad", "usb hub", "webcam", "microphone", "mic"];
-    if (![...gamingOnlyNames, ...genericComputerGear].some((term) => hasWholePhrase(name, term))) return false;
-    if (component === "accessories" && !["mouse pad", "mousepad", "cooling pad", "usb hub", "gaming desk", "laptop stand", "monitor stand", "headphone stand", "usb cable", "hdmi cable", "usb adapter"].some((term) => hasWholePhrase(name, term))) return false;
+  if (!component || !componentsByPurpose[purpose].includes(component)) {
+    return false;
   }
 
-  if (setupType === "creator" && component === "accessories") {
-    const creatorAccessoryTerms = ["webcam", "capture card", "usb hub", "laptop stand", "monitor stand", "desk mat", "usb cable", "hdmi cable", "usb adapter"];
-    if (!creatorAccessoryTerms.some((term) => hasWholePhrase(name, term))) return false;
+  const gamingSpecific = [
+    "gaming keyboard", "gaming mouse", "gaming headset",
+    "gaming controller", "gaming monitor", "gaming mouse pad",
+    "rgb gaming",
+  ].some((term) => hasWholePhrase(name, term));
+
+  if (["work", "study", "everyday"].includes(purpose) && gamingSpecific) {
+    return false;
+  }
+
+  if (purpose === "gaming" && component === "accessories") {
+    const allowed = [
+      "mouse pad", "mousepad", "cooling pad", "usb hub",
+      "gaming desk", "laptop stand", "monitor stand",
+      "headphone stand", "usb cable", "hdmi cable", "usb adapter",
+    ];
+    if (!allowed.some((term) => hasWholePhrase(name, term))) return false;
+  }
+
+  if (purpose === "creator" && component === "accessories") {
+    const allowed = [
+      "capture card", "usb hub", "laptop stand",
+      "monitor stand", "desk mat", "usb cable",
+      "hdmi cable", "usb adapter",
+    ];
+    if (!allowed.some((term) => hasWholePhrase(name, term))) return false;
   }
 
   return true;
 }
 
-function calculateMatch(
+function purposeRelevance(product: Product, purpose: SetupType) {
+  const text = `${product.name} ${product.brand || ""}`.toLowerCase();
+  return purposeKeywords[purpose].filter((keyword) =>
+    hasWholePhrase(text, keyword)
+  ).length;
+}
+
+function scoreProduct(
   product: Product,
-  setupType: SetupType,
+  purpose: SetupType,
   budget: number,
   priority: PriorityType
 ) {
-  const price = Number(
-    product.price || 0
-  );
+  const price = Number(product.price);
+  const rating = Number(product.rating || 0);
+  const reviews = Number(product.reviews_count || 0);
+  const discount = discountPercent(price, product.original_price);
 
-  const rating = Number(
-    product.rating || 0
-  );
-
-  const reviews = Number(
-    product.reviews_count || 0
-  );
-
-  let score = 0;
-
-  // Budget fit: keep the base score modest so purpose and priority matter.
-  if (price <= budget * 0.15) score += 15;
-  else if (price <= budget * 0.3) score += 14;
-  else if (price <= budget * 0.5) score += 12;
-  else if (price <= budget * 0.75) score += 9;
-  else if (price <= budget) score += 6;
-
-  // Rating and review confidence.
+  let score = purposeRelevance(product, purpose) * 8;
   score += Math.round((rating / 5) * 20);
   score += Math.min(8, Math.round(reviews / 25));
 
-  // Setup purpose
-  const productText = `${product.name} ${product.brand || ""}`.toLowerCase();
+  const share = price / Math.max(1, budget);
 
-  const purposeMatches =
-    setupKeywords[
-      setupType
-    ].filter((keyword) =>
-      productText.includes(
-        keyword
-      )
-    ).length;
+  if (share <= 0.15) score += 12;
+  else if (share <= 0.3) score += 14;
+  else if (share <= 0.5) score += 12;
+  else if (share <= 0.75) score += 8;
+  else score += 5;
 
-  score += Math.min(28, purposeMatches * 5);
-
-  // Small catalogue badges must not overpower purpose/quality.
   if (product.is_featured) score += 2;
   if (product.is_flash_sale) score += 2;
 
-  // Priority
-  const discount =
-    discountPercent(
-      price,
-      product.original_price
-        ? Number(
-            product.original_price
-          )
-        : null
-    );
-
   if (priority === "quality") {
-    // Quality-first favours reliable ratings/reviews and a sensible premium tier.
-    score += Math.round(rating * 3.5);
-    score += Math.min(10, Math.round(reviews / 15));
+    score += rating * 4;
+    score += Math.min(10, reviews / 15);
     if (rating >= 4.5) score += 5;
-    if (price >= budget * 0.12) score += 3;
+  } else if (priority === "savings") {
+    score += Math.min(18, discount * 0.25);
+    score += Math.max(0, 20 - share * 100) / 2;
+  } else if (priority === "value") {
+    score += rating * 2;
+    score += Math.min(8, discount * 0.25);
+    score += Math.min(6, reviews / 25);
+  } else {
+    score += rating * 1.5;
+    if (share >= 0.12 && share <= 0.45) score += 7;
   }
 
-  if (priority === "savings") {
-    // Actual lower price matters more than a large advertised discount.
-    score += Math.min(18, Math.round(discount * 0.25));
-    score += Math.round(Math.max(0, 20 - (price / Math.max(1, budget)) * 100) / 2);
-  }
-
-  if (priority === "value") {
-    // Good ratings and real savings, without rewarding price alone.
-    score += Math.round(rating * 2.2);
-    score += Math.min(8, Math.round(discount * 0.25));
-    score += Math.min(6, Math.round(reviews / 25));
-    if (price <= budget * 0.35) score += 4;
-  }
-
-  if (priority === "balanced") {
-    // A reliable mid-range choice, not automatically the cheapest or most expensive.
-    score += Math.round(rating * 1.5);
-    score += Math.min(5, Math.round(reviews / 35));
-    const priceShare = price / Math.max(1, budget);
-    if (priceShare >= 0.12 && priceShare <= 0.45) score += 7;
-    else if (priceShare > 0.45 && priceShare <= 0.65) score += 3;
-  }
-
-  if (product.stock <= 0) {
-    score -= 30;
-  }
-
-  return Math.max(0, Math.min(100, score));
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 export default function SetupBuilderPage() {
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
-  const [products, setProducts] =
-    useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cartIds, setCartIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [building, setBuilding] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
-  const [wishlist, setWishlist] =
-    useState<string[]>([]);
+  const [step, setStep] = useState(1);
+  const [setupType, setSetupType] = useState<SetupType>("work");
+  const [budget, setBudget] = useState(20000);
+  const [customBudget, setCustomBudget] = useState("20000");
+  const [priority, setPriority] = useState<PriorityType>("balanced");
+  const [selectedComponents, setSelectedComponents] =
+    useState<ComponentType[]>(componentsByPurpose.work);
 
-  const [cartIds, setCartIds] =
-    useState<string[]>([]);
+  // A component can have one custom product, or null if intentionally removed.
+  const [manualChoices, setManualChoices] = useState<
+    Partial<Record<ComponentType, string | null>>
+  >({});
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [building, setBuilding] =
-    useState(false);
-
-  const [notice, setNotice] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-
-  const [step, setStep] =
-    useState(1);
-
-  const [setupType, setSetupType] =
-    useState<SetupType>("work");
-
-  const [budget, setBudget] =
-    useState(20000);
-
-  const [customBudget, setCustomBudget] =
-    useState("20000");
-
-  const [priority, setPriority] =
-    useState<PriorityType>(
-      "balanced"
-    );
-
-  const [
-    selectedComponents,
-    setSelectedComponents,
-  ] = useState<ComponentType[]>(defaultComponentsFor("work"));
-
-  const [
-    selectedProducts,
-    setSelectedProducts,
-  ] = useState<string[]>([]);
-
-  const [
-    setupBuilt,
-    setSetupBuilt,
-  ] = useState(false);
-
-  // Each build gets a new seed so equally suitable products rotate instead of
-  // showing the exact same setup every time.
+  const [setupBuilt, setSetupBuilt] = useState(false);
   const [buildSeed, setBuildSeed] = useState(0);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setNotice(null);
 
-  async function loadData() {
     try {
-      setLoading(true);
-
       const {
         data: { user },
-      } =
-        await supabase.auth.getUser();
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) throw authError;
 
       if (!user) {
-        window.location.href =
-          "/auth/login";
+        window.location.assign("/auth/login");
         return;
       }
 
@@ -652,492 +593,325 @@ export default function SetupBuilderPage() {
         supabase
           .from("products")
           .select(
-            `
-            id,
-            category_id,
-            name,
-            slug,
-            short_description,
-            description,
-            price,
-            original_price,
-            stock,
-            image_url,
-            brand,
-            rating,
-            reviews_count,
-            is_featured,
-            is_flash_sale,
-            is_active
-          `
+            "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active"
           )
-          .eq(
-            "is_active",
-            true
-          ),
+          .eq("is_active", true)
+          .gt("stock", 0),
 
         supabase
           .from("wishlist_items")
-          .select(
-            "product_id"
-          )
-          .eq(
-            "user_id",
-            user.id
-          ),
+          .select("product_id")
+          .eq("user_id", user.id),
 
         supabase
           .from("cart_items")
-          .select(
-            "product_id"
-          )
-          .eq(
-            "user_id",
-            user.id
-          ),
+          .select("product_id")
+          .eq("user_id", user.id),
 
-        supabase
-          .from("categories")
-          .select("id, name"),
+        supabase.from("categories").select("id,name"),
       ]);
 
+      if (productResponse.error) throw productResponse.error;
+      if (wishlistResponse.error) throw wishlistResponse.error;
+      if (cartResponse.error) throw cartResponse.error;
+
       const categoryNames = new Map<string, string>(
-        (categoryResponse.data || []).map((category: { id: string; name: string }) => [category.id, category.name])
+        (categoryResponse.data || []).map(
+          (category: { id: string; name: string }) => [
+            category.id,
+            category.name,
+          ]
+        )
       );
 
+      const rows = (productResponse.data || []) as Product[];
+
       setProducts(
-        ((productResponse.data || []) as Product[]).map((product) => ({
+        rows.map((product) => ({
           ...product,
-          category_name: product.category_id ? categoryNames.get(product.category_id) || null : null,
+          price: Number(product.price || 0),
+          original_price:
+            product.original_price == null
+              ? null
+              : Number(product.original_price),
+          stock: Number(product.stock || 0),
+          rating: Number(product.rating || 0),
+          reviews_count: Number(product.reviews_count || 0),
+          category_name: product.category_id
+            ? categoryNames.get(product.category_id) || null
+            : null,
         }))
       );
 
-      setWishlist(
-        (
-          wishlistResponse.data ||
-          []
-        ).map(
-          (item) =>
-            item.product_id
-        )
-      );
-
-      setCartIds(
-        (cartResponse.data || []).map(
-          (item) => item.product_id
-        )
-      );
+      setWishlist((wishlistResponse.data || []).map((item) => item.product_id));
+      setCartIds((cartResponse.data || []).map((item) => item.product_id));
     } catch (error) {
-      console.error(
-        "Setup Builder:",
-        error
-      );
+      console.error("Setup Builder load error:", error);
+      setNotice({
+        type: "error",
+        message:
+          "Products could not be loaded. Check your Supabase tables, permissions and connection.",
+      });
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
 
-  const currentPriorityOptions = purposePriorityOptions[setupType];
-  const currentComponentOptions = components
-    .filter((component) => componentsByPurpose[setupType].includes(component.id))
-    .map((component) => ({
-      ...component,
-      ...purposeComponentLabels[setupType][component.id],
-    }));
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
-  const matchedProducts =
-    useMemo<SetupProduct[]>(() => {
-      return products
-        .filter(
-          (product) =>
-            product.stock > 0 &&
-            Number(product.price) > 0 &&
-            Number(product.price) <= budget &&
-            isPurposeSuitable(product, setupType) &&
-            detectComponent(product) !== null
-        )
-        .map((product) => {
-          const component = detectComponent(product)!;
-          return {
-            ...product,
-            component,
-            matchScore: calculateMatch(product, setupType, budget, priority),
-          };
-        })
-        .filter((product) =>
-          selectedComponents.includes(
-            product.component
-          )
-        )
-        .sort(
-          (a, b) =>
-            b.matchScore -
-            a.matchScore
-        );
-    }, [
-      products,
-      budget,
-      setupType,
-      priority,
-      selectedComponents,
-    ]);
+  const currentComponentOptions = useMemo(
+    () =>
+      components
+        .filter((item) => componentsByPurpose[setupType].includes(item.id))
+        .map((item) => ({
+          ...item,
+          ...(purposeLabels[setupType][item.id] || {}),
+        })),
+    [setupType]
+  );
 
-  // Build a purpose-relevant setup: at most one product per selected component.
-  // Reserve the cheapest available option for each remaining component before choosing
-  // a premium item, so Top Quality cannot consume the whole budget on one product.
-  const recommendedProducts = useMemo(() => {
+  const matchedProducts = useMemo<SetupProduct[]>(() => {
+    return products
+      .filter(
+        (product) =>
+          product.is_active &&
+          product.stock > 0 &&
+          product.price > 0 &&
+          product.price <= budget &&
+          selectedComponents.includes(detectComponent(product) as ComponentType) &&
+          isPurposeSuitable(product, setupType)
+      )
+      .map((product) => {
+        const component = detectComponent(product)!;
+        return {
+          ...product,
+          component,
+          matchScore: scoreProduct(product, setupType, budget, priority),
+        };
+      });
+  }, [products, budget, setupType, priority, selectedComponents]);
+
+  const recommendedProducts = useMemo<SetupProduct[]>(() => {
     const result: SetupProduct[] = [];
-    let remaining = Math.max(0, Number(budget));
-    const selected = selectedComponents.slice(0, 6);
+    let remaining = budget;
+    const selected = selectedComponents.slice(0, 8);
 
     const candidatesFor = (component: ComponentType) =>
-      matchedProducts.filter((product) => product.component === component && Number(product.price) > 0);
-
-    const minimumCostFor = (component: ComponentType) => {
-      const prices = candidatesFor(component)
-        .map((product) => Number(product.price))
-        .filter((price) => price <= remaining);
-      return prices.length ? Math.min(...prices) : null;
-    };
+      matchedProducts.filter((item) => item.component === component);
 
     for (let index = 0; index < selected.length; index += 1) {
       const component = selected[index];
-      const laterComponents = selected.slice(index + 1);
-      const reserve = laterComponents.reduce((sum, nextComponent) => {
-        const minimum = minimumCostFor(nextComponent);
-        return sum + (minimum ?? 0);
+      const later = selected.slice(index + 1);
+
+      // Reserve the cheapest suitable option for later components first.
+      const reserve = later.reduce((sum, next) => {
+        const options = candidatesFor(next);
+        return sum + (options.length ? Math.min(...options.map((p) => p.price)) : 0);
       }, 0);
-      const availableForThis = Math.max(0, remaining - reserve);
+
+      const maxForThisComponent = Math.max(0, remaining - reserve);
       const candidates = candidatesFor(component).filter(
-        (product) => Number(product.price) <= availableForThis
+        (item) => item.price <= maxForThisComponent
       );
+
       if (!candidates.length) continue;
 
-      const componentTarget = budget / Math.max(1, selected.length);
       const ranked = [...candidates].sort((a, b) => {
-        const aPrice = Number(a.price);
-        const bPrice = Number(b.price);
-        const aPurposeFit = getPurposeRelevance(a, setupType);
-        const bPurposeFit = getPurposeRelevance(b, setupType);
-        if (aPurposeFit !== bPurposeFit) return bPurposeFit - aPurposeFit;
-        const aRating = Number(a.rating || 0);
-        const bRating = Number(b.rating || 0);
-        const aReviews = Number(a.reviews_count || 0);
-        const bReviews = Number(b.reviews_count || 0);
-        const aDiscount = discountPercent(aPrice, a.original_price == null ? null : Number(a.original_price));
-        const bDiscount = discountPercent(bPrice, b.original_price == null ? null : Number(b.original_price));
+        if (priority === "quality") {
+          return (
+            b.rating - a.rating ||
+            b.reviews_count - a.reviews_count ||
+            b.matchScore - a.matchScore
+          );
+        }
 
         if (priority === "savings") {
-          return aPrice - bPrice || bRating - aRating || b.matchScore - a.matchScore;
-        }
-        if (priority === "quality") {
-          return bRating - aRating || bReviews - aReviews || bPrice - aPrice || b.matchScore - a.matchScore;
-        }
-        if (priority === "value") {
-          const aValue = (aRating * 2 + Math.min(5, Math.log10(aReviews + 1))) / Math.max(1, aPrice) + aDiscount / 10000;
-          const bValue = (bRating * 2 + Math.min(5, Math.log10(bReviews + 1))) / Math.max(1, bPrice) + bDiscount / 10000;
-          return bValue - aValue || b.matchScore - a.matchScore;
+          return a.price - b.price || b.rating - a.rating;
         }
 
-        const aMidRangeFit = Math.abs(aPrice - componentTarget * 0.72);
-        const bMidRangeFit = Math.abs(bPrice - componentTarget * 0.72);
-        return aMidRangeFit - bMidRangeFit || bRating - aRating || b.matchScore - a.matchScore;
+        if (priority === "value") {
+          const valueA =
+            (a.rating * 2 + Math.log10(a.reviews_count + 1)) /
+            Math.max(1, a.price);
+          const valueB =
+            (b.rating * 2 + Math.log10(b.reviews_count + 1)) /
+            Math.max(1, b.price);
+          return valueB - valueA || b.matchScore - a.matchScore;
+        }
+
+        const target = budget / Math.max(1, selected.length);
+        return (
+          Math.abs(a.price - target * 0.72) -
+            Math.abs(b.price - target * 0.72) ||
+          b.rating - a.rating ||
+          b.matchScore - a.matchScore
+        );
       });
 
-      // Use a wider shortlist so repeated builds can rotate through more of the
-      // real catalogue instead of repeatedly choosing only the first 4-5 items.
-      // Priority still determines the ranking; buildSeed changes the selection
-      // within that ranked shortlist on each new build.
-      const varietyCount = Math.min(priority === "quality" ? 8 : 10, ranked.length);
-      const varietyPool = ranked.slice(0, varietyCount);
-      const componentOffset = Math.max(0, componentsByPurpose[setupType].indexOf(component));
-      const rotation = varietyPool.length
-        ? (buildSeed + componentOffset * 2) % varietyPool.length
+      // Rotate within the best-ranked shortlist for variety, while preserving budget.
+      const pool = ranked.slice(0, Math.min(8, ranked.length));
+      const componentIndex = componentsByPurpose[setupType].indexOf(component);
+      const offset = pool.length
+        ? (buildSeed + componentIndex * 2) % pool.length
         : 0;
-      const chosen = varietyPool.length ? varietyPool[rotation] : undefined;
-      if (!chosen || Number(chosen.price) > remaining) continue;
-      result.push(chosen);
-      remaining -= Number(chosen.price);
+      const chosen = pool[offset];
+
+      if (chosen && chosen.price <= remaining) {
+        result.push(chosen);
+        remaining -= chosen.price;
+      }
     }
 
     return result;
   }, [matchedProducts, selectedComponents, budget, priority, setupType, buildSeed]);
 
-  const finalProducts =
-    selectedProducts.length
-      ? selectedProducts
-          .map((id) =>
-            matchedProducts.find(
-              (product) =>
-                product.id === id
-            )
-          )
-          .filter(
-            Boolean
-          ) as SetupProduct[]
-      : recommendedProducts;
+  const finalProducts = useMemo<SetupProduct[]>(() => {
+    return selectedComponents.flatMap((component) => {
+      if (Object.prototype.hasOwnProperty.call(manualChoices, component)) {
+        const id = manualChoices[component];
+        if (!id) return [];
+        const chosen = matchedProducts.find((item) => item.id === id);
+        return chosen ? [chosen] : [];
+      }
 
-  const setupTotal =
-    finalProducts.reduce(
-      (sum, product) =>
-        sum +
-        Number(
-          product.price
-        ),
-      0
-    );
-
-  const setupSavings =
-    finalProducts.reduce(
-      (sum, product) => {
-        const original =
-          product.original_price
-            ? Number(
-                product.original_price
-              )
-            : Number(
-                product.price
-              );
-
-        return (
-          sum +
-          Math.max(
-            0,
-            original -
-              Number(
-                product.price
-              )
-          )
-        );
-      },
-      0
-    );
-
-  const remainingBudget =
-    Math.max(
-      0,
-      budget -
-        setupTotal
-    );
-
-  const budgetUsage =
-    budget > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (setupTotal /
-              budget) *
-              100
-          )
-        )
-      : 0;
-
-  const averageRating =
-    finalProducts.length
-      ? finalProducts.reduce(
-          (sum, product) =>
-            sum +
-            Number(
-              product.rating || 0
-            ),
-          0
-        ) /
-        finalProducts.length
-      : 0;
-
-  const setupScore =
-    finalProducts.length
-      ? Math.min(
-          99,
-          Math.round(
-            finalProducts.reduce(
-              (sum, product) =>
-                sum +
-                product.matchScore,
-              0
-            ) /
-              finalProducts.length
-          )
-        )
-      : 0;
-
-  function setNewBudget(
-    value: number
-  ) {
-    const safeValue =
-      Math.max(
-        2000,
-        Math.min(
-          100000,
-          Math.round(value)
-        )
+      const recommended = recommendedProducts.find(
+        (item) => item.component === component
       );
+      return recommended ? [recommended] : [];
+    });
+  }, [selectedComponents, manualChoices, matchedProducts, recommendedProducts]);
 
-    setBudget(
-      safeValue
-    );
+  const setupTotal = finalProducts.reduce((sum, product) => sum + product.price, 0);
+  const setupSavings = finalProducts.reduce(
+    (sum, product) =>
+      sum + Math.max(0, Number(product.original_price || product.price) - product.price),
+    0
+  );
+  const remainingBudget = Math.max(0, budget - setupTotal);
+  const budgetUsage = budget > 0 ? Math.min(100, Math.round((setupTotal / budget) * 100)) : 0;
+  const averageRating = finalProducts.length
+    ? finalProducts.reduce((sum, item) => sum + item.rating, 0) / finalProducts.length
+    : 0;
+  const setupScore = finalProducts.length
+    ? Math.round(
+        finalProducts.reduce((sum, item) => sum + item.matchScore, 0) /
+          finalProducts.length
+      )
+    : 0;
 
-    setCustomBudget(
-      String(safeValue)
-    );
-
-    setSetupBuilt(
-      false
-    );
-
-    setSelectedProducts(
-      []
-    );
+  function setNewBudget(value: number) {
+    const safe = Math.max(2000, Math.min(100000, Math.round(value)));
+    setBudget(safe);
+    setCustomBudget(String(safe));
+    setManualChoices({});
+    setSetupBuilt(false);
+    setNotice(null);
   }
 
-  function toggleComponent(
-    id: ComponentType
-  ) {
-    setSelectedComponents(
-      (current) => {
-        if (
-          current.includes(id)
-        ) {
-          if (
-            current.length ===
-            1
-          ) {
-            return current;
-          }
+  function changePurpose(value: SetupType) {
+    setSetupType(value);
+    setSelectedComponents(componentsByPurpose[value]);
+    setManualChoices({});
+    setSetupBuilt(false);
+    setNotice(null);
+  }
 
-          return current.filter(
-            (item) =>
-              item !== id
-          );
-        }
-
-        return [
-          ...current,
-          id,
-        ];
+  function toggleComponent(id: ComponentType) {
+    setSelectedComponents((current) => {
+      if (current.includes(id)) {
+        if (current.length <= 1) return current;
+        return current.filter((item) => item !== id);
       }
-    );
+      return [...current, id];
+    });
 
-    setSetupBuilt(
-      false
-    );
+    setManualChoices({});
+    setSetupBuilt(false);
+    setNotice(null);
   }
 
   function toggleProduct(productId: string) {
     const product = matchedProducts.find((item) => item.id === productId);
     if (!product) return;
 
-    if (selectedProducts.includes(productId)) {
-      setSelectedProducts((current) => current.filter((id) => id !== productId));
-      setNotice(null);
-      setSetupBuilt(false);
+    const currentChoice = manualChoices[product.component];
+
+    // Clicking the already-customized product restores the recommendation.
+    if (currentChoice === productId) {
+      setManualChoices((current) => {
+        const next = { ...current };
+        delete next[product.component];
+        return next;
+      });
+      setNotice({ type: "success", message: "Default recommendation restored." });
       return;
     }
 
-    // A setup can contain only one chosen product per component. Choosing an
-    // alternative replaces that component's previous item instead of duplicating it.
-    const otherSelectedIds = selectedProducts.filter((id) => {
-      const item = matchedProducts.find((candidate) => candidate.id === id);
-      return item && item.component !== product.component;
-    });
-    const currentTotal = otherSelectedIds.reduce((sum, id) => {
-      const item = matchedProducts.find((candidate) => candidate.id === id);
-      return sum + Number(item?.price || 0);
-    }, 0);
+    const otherTotal = finalProducts
+      .filter((item) => item.component !== product.component)
+      .reduce((sum, item) => sum + item.price, 0);
 
-    if (currentTotal + Number(product.price) > budget) {
+    if (otherTotal + product.price > budget) {
       setNotice({
         type: "error",
-        message: `Adding this item would exceed your ${formatPrice(budget)} budget. Remove another item or choose a lower-priced product.`,
+        message: `This selection exceeds your ${formatPrice(budget)} budget. Choose a less expensive option or remove another component.`,
       });
       return;
     }
 
-    setNotice(null);
-    setSelectedProducts([...otherSelectedIds, productId]);
-    setSetupBuilt(false);
-  }
+    setManualChoices((current) => ({
+      ...current,
+      [product.component]: product.id,
+    }));
 
-  function nextStep() {
-    setStep(
-      (current) =>
-        Math.min(
-          4,
-          current + 1
-        )
-    );
-  }
-
-  function previousStep() {
-    setStep(
-      (current) =>
-        Math.max(
-          1,
-          current - 1
-        )
-    );
+    setNotice({
+      type: "success",
+      message: `${product.name} selected for your setup.`,
+    });
   }
 
   async function buildSetup() {
+    if (!selectedComponents.length) {
+      setNotice({ type: "error", message: "Select at least one component." });
+      return;
+    }
+
     setBuilding(true);
     setNotice(null);
-    setSelectedProducts([]);
+    setManualChoices({});
     setBuildSeed((current) => current + 1);
 
-    await new Promise(
-      (resolve) =>
-        setTimeout(
-          resolve,
-          1200
-        )
-    );
+    // Keep the loading state visible without delaying the database query.
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
-    setSetupBuilt(
-      true
-    );
-
-    setBuilding(
-      false
-    );
-
+    setSetupBuilt(true);
     setStep(4);
+    setBuilding(false);
 
-    setTimeout(() => {
-      document
-        .getElementById(
-          "setup-results"
-        )
-        ?.scrollIntoView({
-          behavior:
-            "smooth",
-          block: "start",
-        });
-    }, 200);
+    window.setTimeout(() => {
+      document.getElementById("setup-results")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
   }
 
   function resetAll() {
-    setNotice(null);
     setStep(1);
-    setSetupType(
-      "work"
-    );
+    setSetupType("work");
     setBudget(20000);
-    setCustomBudget(
-      "20000"
-    );
-    setPriority(
-      "balanced"
-    );
-    setSelectedComponents(defaultComponentsFor("work"));
-    setSelectedProducts([]);
+    setCustomBudget("20000");
+    setPriority("balanced");
+    setSelectedComponents(componentsByPurpose.work);
+    setManualChoices({});
     setBuildSeed((current) => current + 1);
     setSetupBuilt(false);
+    setNotice(null);
   }
 
-  async function addToCart(
-    product: Product,
-    options: { silent?: boolean } = {}
-  ): Promise<boolean> {
+  async function addToCart(product: Product, silent = false): Promise<boolean> {
     try {
       const {
         data: { user },
@@ -1147,57 +921,55 @@ export default function SetupBuilderPage() {
       if (authError) throw authError;
 
       if (!user) {
-        window.location.href = "/auth/login";
+        window.location.assign("/auth/login");
         return false;
       }
 
-      const { data: existingItem, error: lookupError } = await supabase
+      if (product.stock < 1) {
+        if (!silent) {
+          setNotice({ type: "error", message: "This product is out of stock." });
+        }
+        return false;
+      }
+
+      const { data: existing, error: lookupError } = await supabase
         .from("cart_items")
-        .select("id, quantity")
+        .select("id,quantity")
         .eq("user_id", user.id)
         .eq("product_id", product.id)
         .maybeSingle();
 
       if (lookupError) throw lookupError;
 
-      if (existingItem) {
-        const currentQuantity = Number(existingItem.quantity || 0);
+      const quantity = Number(existing?.quantity || 0);
 
-        if (currentQuantity >= Number(product.stock || 0)) {
-          if (!options.silent) {
-            setNotice({
-              type: "error",
-              message: `Only ${product.stock} unit(s) are available for ${product.name}.`,
-            });
-          }
-          return false;
+      if (quantity >= product.stock) {
+        if (!silent) {
+          setNotice({
+            type: "error",
+            message: `Only ${product.stock} unit(s) are available for ${product.name}.`,
+          });
         }
+        return false;
+      }
 
+      if (existing) {
         const { error } = await supabase
           .from("cart_items")
           .update({
-            quantity: currentQuantity + 1,
+            quantity: quantity + 1,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", existingItem.id)
+          .eq("id", existing.id)
           .eq("user_id", user.id);
 
         if (error) throw error;
       } else {
-        if (Number(product.stock || 0) < 1) {
-          if (!options.silent) {
-            setNotice({ type: "error", message: "This product is currently out of stock." });
-          }
-          return false;
-        }
-
-        const { error } = await supabase
-          .from("cart_items")
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity: 1,
-          });
+        const { error } = await supabase.from("cart_items").insert({
+          user_id: user.id,
+          product_id: product.id,
+          quantity: 1,
+        });
 
         if (error) throw error;
       }
@@ -1207,19 +979,17 @@ export default function SetupBuilderPage() {
       );
       window.dispatchEvent(new Event("cart-updated"));
 
-      if (!options.silent) {
-        setNotice({
-          type: "success",
-          message: `${product.name} added to your cart.`,
-        });
+      if (!silent) {
+        setNotice({ type: "success", message: `${product.name} added to cart.` });
       }
+
       return true;
     } catch (error) {
-      console.error("Add to cart:", error);
-      if (!options.silent) {
+      console.error("Setup Builder cart error:", error);
+      if (!silent) {
         setNotice({
           type: "error",
-          message: "Could not update your cart. Please check your connection and try again.",
+          message: "Could not update your cart. Check your cart table and permissions.",
         });
       }
       return false;
@@ -1228,174 +998,131 @@ export default function SetupBuilderPage() {
 
   async function addCompleteSetup() {
     if (!finalProducts.length) {
-      setNotice({ type: "info", message: "Build a setup with at least one product first." });
+      setNotice({
+        type: "info",
+        message: "No products are available for this setup. Try changing your budget or components.",
+      });
       return;
     }
 
-    let addedCount = 0;
-    for (const product of finalProducts) {
-      if (await addToCart(product, { silent: true })) addedCount += 1;
+    // Final safety check before writing anything to the cart.
+    if (setupTotal > budget) {
+      setNotice({
+        type: "error",
+        message: "Your setup exceeds the budget. Remove or replace a product first.",
+      });
+      return;
     }
 
-    setNotice(
-      addedCount > 0
-        ? {
-            type: "success",
-            message: `${addedCount} of ${finalProducts.length} setup product(s) added to your cart.`,
-          }
-        : {
-            type: "error",
-            message: "No setup products were added. Please check stock and try again.",
-          }
-    );
+    let added = 0;
+    for (const product of finalProducts) {
+      if (await addToCart(product, true)) added += 1;
+    }
+
+    setNotice({
+      type: added ? "success" : "error",
+      message: added
+        ? `${added} of ${finalProducts.length} products added to your cart.`
+        : "No products were added. Check stock and try again.",
+    });
   }
 
-  async function toggleWishlist(
-    productId: string
-  ) {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+  async function toggleWishlist(productId: string) {
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-    if (authError) {
-      console.error("Wishlist auth:", authError);
-      setNotice({ type: "error", message: "Could not verify your session. Please sign in again." });
-      return;
-    }
+      if (authError) throw authError;
 
-    if (!user) {
-      window.location.href = "/auth/login";
-      return;
-    }
+      if (!user) {
+        window.location.assign("/auth/login");
+        return;
+      }
 
-    const exists =
-      wishlist.includes(
-        productId
-      );
-
-    if (exists) {
-      const { error } =
-        await supabase
+      if (wishlist.includes(productId)) {
+        const { error } = await supabase
           .from("wishlist_items")
           .delete()
-          .eq(
-            "user_id",
-            user.id
-          )
-          .eq(
-            "product_id",
-            productId
-          );
+          .eq("user_id", user.id)
+          .eq("product_id", productId);
 
-      if (error) {
-        console.error(
-          error
+        if (error) throw error;
+
+        setWishlist((current) => current.filter((id) => id !== productId));
+        setNotice({ type: "success", message: "Removed from wishlist." });
+      } else {
+        const { error } = await supabase.from("wishlist_items").insert({
+          user_id: user.id,
+          product_id: productId,
+        });
+
+        if (error) throw error;
+
+        setWishlist((current) =>
+          current.includes(productId) ? current : [...current, productId]
         );
-        return;
+        setNotice({ type: "success", message: "Added to wishlist." });
       }
-
-      setWishlist(
-        (current) =>
-          current.filter(
-            (id) =>
-              id !==
-              productId
-          )
-      );
-    } else {
-      const { error } =
-        await supabase
-          .from("wishlist_items")
-          .insert({
-            user_id:
-              user.id,
-            product_id:
-              productId,
-          });
-
-      if (error) {
-        console.error(
-          error
-        );
-        return;
-      }
-
-      setWishlist(
-        (current) => [
-          ...current,
-          productId,
-        ]
-      );
+    } catch (error) {
+      console.error("Setup Builder wishlist error:", error);
+      setNotice({
+        type: "error",
+        message: "Could not update wishlist. Check wishlist_items and its permissions.",
+      });
     }
   }
 
   return (
     <div className="min-h-screen bg-[#faf8f3] text-[#181818]">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-[#e8dfcf] bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-[66px] max-w-[1500px] items-center justify-between px-3 sm:h-[72px] sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <header className="sticky top-0 z-40 border-b border-[#e8dfcf] bg-white/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-[66px] max-w-[1500px] items-center justify-between gap-3 px-3 sm:h-[72px] sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/dashboard"
-              aria-label="Back to Dashboard"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-gray-500 transition hover:border-[#c9a24d] hover:text-[#a17b2f] sm:h-10 sm:w-10"
+              aria-label="Back to dashboard"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e7dfd0] text-gray-600 hover:border-[#c9a24d]"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={17} />
             </Link>
-
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#e8dfcf] bg-white shadow-sm sm:h-11 sm:w-11">
-                <Image
-                  src="/logo.png"
-                  alt="PrimeCart"
-                  width={44}
-                  height={44}
-                  className="h-full w-full object-contain p-1"
-                  priority
-                />
-              </div>
-
-              <div className="min-w-0">
-                <h1 className="truncate text-[13px] font-black sm:text-base">
-                  PrimeCart <span className="text-[#b58a32]">Setup Studio</span>
-                </h1>
-                <p className="hidden text-[10px] font-medium text-gray-400 sm:block">
-                  Build My Setup · Smart Studio
-                </p>
-              </div>
+            <Link href="/dashboard" className="min-w-0">
+              <p className="truncate text-sm font-black sm:text-base">
+                PrimeCart <span className="text-[#b58a32]">Setup Studio</span>
+              </p>
+              <p className="hidden text-[10px] text-gray-400 sm:block">
+                Build a setup that fits your budget
+              </p>
             </Link>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 gap-2">
             <Link
               href="/dashboard/wishlist"
               aria-label="Wishlist"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-gray-500 transition hover:border-[#c9a24d] hover:text-[#a17b2f] sm:h-10 sm:w-10"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] text-gray-600 hover:border-[#c9a24d]"
             >
-              <Heart size={16} />
+              <Heart size={17} />
             </Link>
-
             <Link
               href="/dashboard/cart"
               aria-label="Cart"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7dfd0] bg-white text-gray-500 transition hover:border-[#c9a24d] hover:text-[#a17b2f] sm:h-10 sm:w-10"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e7dfd0] text-gray-600 hover:border-[#c9a24d]"
             >
-              <ShoppingCart size={16} />
+              <ShoppingCart size={17} />
             </Link>
-
             <Link
               href="/dashboard"
-              className="flex h-9 items-center gap-1.5 rounded-xl bg-[#fff4d7] px-2.5 text-[9px] font-black text-[#956f27] sm:h-10 sm:gap-2 sm:px-4 sm:text-[10px]"
+              className="flex h-10 items-center gap-2 rounded-xl bg-[#fff2d1] px-3 text-[10px] font-black text-[#956f27] sm:px-4"
             >
               <span className="hidden sm:inline">Dashboard</span>
-              <ArrowRight size={13} />
+              <ArrowRight size={14} />
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1500px] px-3 py-5 sm:px-6 sm:py-7 lg:px-8">
         {notice && (
           <div
             role="status"
@@ -1408,57 +1135,40 @@ export default function SetupBuilderPage() {
                   : "border-[#e8dfd0] bg-white text-gray-700"
             }`}
           >
-            <p className="font-semibold">{notice.message}</p>
+            <p>{notice.message}</p>
             <button
               type="button"
               onClick={() => setNotice(null)}
-              className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold opacity-75 hover:opacity-100"
               aria-label="Dismiss notification"
+              className="rounded-lg p-1"
             >
-              Dismiss
+              <X size={16} />
             </button>
           </div>
         )}
-        {/* HERO */}
-        <section className="relative overflow-hidden rounded-[32px] border border-[#e5d8bd] bg-white">
-          <div className="absolute -right-32 -top-40 h-[550px] w-[550px] rounded-full bg-[#f1dca7]/30 blur-3xl" />
 
-          <div className="relative grid grid-cols-[1.12fr_0.88fr] items-center gap-3 px-4 py-5 sm:gap-10 sm:px-10 sm:py-10 lg:grid-cols-[1.15fr_0.85fr] lg:px-16 lg:py-14">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#e8dcc3] bg-[#fffaf0] px-4 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                <Sparkles size={12} />
-                PrimeCart Smart Studio
-              </div>
-
-              <h2 className="mt-3 max-w-3xl text-[25px] font-black leading-[1.02] tracking-[-0.045em] sm:mt-6 sm:text-5xl lg:text-[64px]">
-                Build your
-                <span className="block text-[#b58a32]">
-                  perfect setup.
-                </span>
-              </h2>
-
-              <p className="mt-3 max-w-2xl text-[10px] leading-4 text-gray-500 sm:mt-6 sm:text-base sm:leading-7">
-                Tell us what you need, set your budget and
-                choose what matters most. PrimeCart will turn
-                your preferences into a personalized setup.
+        <section className="relative overflow-hidden rounded-[28px] border border-[#e5d8bd] bg-white">
+          <div className="pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#f1dca7]/40 blur-3xl" />
+          <div className="relative grid items-center gap-7 p-5 sm:p-9 lg:grid-cols-[1.15fr_.85fr] lg:p-14">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#e8dcc3] bg-[#fffaf0] px-3 py-2 text-[9px] font-black uppercase tracking-[.18em] text-[#a17b2f]">
+                <Sparkles size={13} /> PrimeCart Smart Studio
+              </span>
+              <h1 className="mt-5 text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
+                Build your <span className="text-[#b58a32]">perfect setup.</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base sm:leading-7">
+                Choose your purpose, set your maximum budget and let PrimeCart
+                find relevant products from your real catalogue.
               </p>
-
-              <div className="mt-4 flex max-w-full flex-wrap gap-1.5 sm:mt-7 sm:gap-2">
-                {[
-                  "Smart matching",
-                  "Real catalogue",
-                  "Budget aware",
-                  "Personalized",
-                ].map(
+              <div className="mt-5 flex flex-wrap gap-2">
+                {["Real catalogue", "Budget-aware", "Custom components", "Wishlist & cart"].map(
                   (item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#e9e1d4] bg-[#fffdf9] px-2 py-1.5 text-[7px] font-black text-gray-600 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[9px]"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[#e9e1d4] bg-[#fffdf9] px-3 py-2 text-[10px] font-bold text-gray-600"
                     >
-                      <Check
-                        size={11}
-                        className="text-[#b58a32]"
-                      />
+                      <Check size={12} className="text-[#b58a32]" />
                       {item}
                     </span>
                   )
@@ -1466,1638 +1176,574 @@ export default function SetupBuilderPage() {
               </div>
             </div>
 
-            {/* HERO PREVIEW */}
-            <div className="mx-auto w-full min-w-0 max-w-[420px]">
-              <div className="rounded-[20px] border border-[#e8dcc3] bg-[#fffaf0] p-2.5 shadow-[0_15px_45px_rgba(120,90,30,0.08)] sm:rounded-[30px] sm:p-5 shadow-[0_25px_70px_rgba(120,90,30,0.08)]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                      Current plan
-                    </p>
-
-                    <p className="mt-1 text-[11px] font-black sm:text-xl">
-                      {
-                        setupTypes.find(
-                          (item) =>
-                            item.id ===
-                            setupType
-                        )?.title
-                      }{" "}
-                      Setup
-                    </p>
-                  </div>
-
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#c9a24d] text-white sm:h-11 sm:w-11 sm:rounded-2xl">
-                    <Target size={20} />
-                  </div>
+            <div className="mx-auto w-full max-w-[440px] rounded-[25px] border border-[#e8dcc3] bg-[#fffaf0] p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#a17b2f]">
+                    Current plan
+                  </p>
+                  <p className="mt-1 text-xl font-black">
+                    {setupTypes.find((item) => item.id === setupType)?.title} Setup
+                  </p>
                 </div>
-
-                <div className="mt-5 rounded-2xl bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Budget
-                    </span>
-
-                    <span className="text-lg font-black">
-                      {formatPrice(
-                        budget
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee6d7]">
-                    <div
-                      className="h-full rounded-full bg-[#c9a24d] transition-all"
-                      style={{
-                        width: `${Math.max(
-                          4,
-                          Math.min(
-                            100,
-                            budgetUsage
-                          )
-                        )}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-2 flex justify-between text-[9px] text-gray-400">
-                    <span>
-                      Allocated
-                    </span>
-                    <span>
-                      {budgetUsage}%
-                    </span>
-                  </div>
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#c9a24d] text-white">
+                  <Target size={20} />
+                </span>
+              </div>
+              <div className="mt-5 rounded-2xl bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-500">Maximum budget</span>
+                  <strong className="text-lg">{formatPrice(budget)}</strong>
                 </div>
-
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div className="rounded-2xl bg-white p-3">
-                    <Monitor
-                      size={16}
-                      className="text-[#b58a32]"
-                    />
-                    <p className="mt-2 text-[9px] font-black">
-                      Display
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white p-3">
-                    <Keyboard
-                      size={16}
-                      className="text-[#b58a32]"
-                    />
-                    <p className="mt-2 text-[9px] font-black">
-                      Keyboard
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white p-3">
-                    <Headphones
-                      size={16}
-                      className="text-[#b58a32]"
-                    />
-                    <p className="mt-2 text-[9px] font-black">
-                      Audio
-                    </p>
-                  </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee6d7]">
+                  <div
+                    className="h-full rounded-full bg-[#c9a24d] transition-all"
+                    style={{ width: `${budgetUsage}%` }}
+                  />
                 </div>
+                <div className="mt-2 flex justify-between text-[10px] text-gray-400">
+                  <span>{finalProducts.length} components</span>
+                  <span>{budgetUsage}% allocated</span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {[
+                  { label: "Display", icon: Monitor },
+                  { label: "Keyboard", icon: Keyboard },
+                  { label: "Audio", icon: Headphones },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-xl bg-white p-3">
+                      <Icon size={17} className="text-[#b58a32]" />
+                      <p className="mt-2 text-[10px] font-black">{item.label}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </section>
 
-        {/* PROGRESS */}
-        <section className="mt-6 rounded-[24px] border border-[#e8dfd0] bg-white px-5 py-5 sm:px-8">
-          <div className="flex items-center justify-between gap-3">
-            {[
-              {
-                number: 1,
-                title: "Purpose",
-              },
-              {
-                number: 2,
-                title: "Budget",
-              },
-              {
-                number: 3,
-                title: "Preferences",
-              },
-              {
-                number: 4,
-                title: "Your Setup",
-              },
-            ].map(
-              (item, index) => (
-                <div
-                  key={
-                    item.number
-                  }
-                  className="flex flex-1 items-center"
+        <section className="mt-5 rounded-2xl border border-[#e8dfd0] bg-white p-4 sm:p-6">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4].map((number, index) => (
+              <div key={number} className="flex min-w-0 flex-1 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => number <= step && setStep(number)}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                    step >= number
+                      ? "bg-[#c9a24d] text-white"
+                      : "bg-[#f2eee6] text-gray-400"
+                  }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      item.number <=
-                        step &&
-                      setStep(
-                        item.number
-                      )
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
-                        step >=
-                        item.number
-                          ? "bg-[#c9a24d] text-white"
-                          : "bg-[#f2eee6] text-gray-400"
-                      }`}
-                    >
-                      {step >
-                      item.number ? (
-                        <Check
-                          size={
-                            13
-                          }
-                        />
-                      ) : (
-                        item.number
-                      )}
-                    </span>
-
-                    <span
-                      className={`hidden text-[10px] font-black sm:block ${
-                        step >=
-                        item.number
-                          ? "text-[#956f27]"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {
-                        item.title
-                      }
-                    </span>
-                  </button>
-
-                  {index <
-                    3 && (
-                    <div className="mx-2 h-px flex-1 bg-[#e8e0d2] sm:mx-5">
-                      <div
-                        className="h-full bg-[#c9a24d] transition-all"
-                        style={{
-                          width:
-                            step >
-                            item.number
-                              ? "100%"
-                              : "0%",
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            )}
+                  {step > number ? <Check size={14} /> : number}
+                </button>
+                <span className={`hidden text-[10px] font-black sm:block ${step >= number ? "text-[#956f27]" : "text-gray-400"}`}>
+                  {["Purpose", "Budget", "Preferences", "Your Setup"][index]}
+                </span>
+                {index < 3 && <div className="h-px flex-1 bg-[#e8e0d2]" />}
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* BUILDER */}
-        <section className="mt-6 rounded-[30px] border border-[#e8dfd0] bg-white shadow-sm">
-          {/* STEP 1 */}
+        <section className="mt-5 rounded-[28px] border border-[#e8dfd0] bg-white">
           {step === 1 && (
             <div className="p-5 sm:p-8 lg:p-10">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#b58a32]">
-                  Step 01 · Purpose
-                </p>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 01 · Purpose</p>
+              <h2 className="mt-2 text-2xl font-black sm:text-3xl">What are you building?</h2>
+              <p className="mt-2 text-sm text-gray-500">Choose the setup that matches how you use your computer.</p>
 
-                <h3 className="mt-2 text-2xl font-black sm:text-3xl">
-                  What are you building?
-                </h3>
-
-                <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">
-                  Choose the environment that best describes
-                  how you plan to use your setup.
-                </p>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {setupTypes.map((item) => {
+                  const Icon = item.icon;
+                  const active = setupType === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => changePurpose(item.id)}
+                      className={`relative rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${
+                        active ? "border-[#c9a24d] bg-[#fffaf0] shadow-sm" : "border-[#e8e0d2] hover:border-[#d2b66e]"
+                      }`}
+                    >
+                      {active && <Check size={16} className="absolute right-4 top-4 text-[#a17b2f]" />}
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${active ? "bg-[#c9a24d] text-white" : "bg-[#fff5dd] text-[#a17b2f]"}`}>
+                        <Icon size={20} />
+                      </span>
+                      <p className="mt-4 font-black">{item.title}</p>
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#a17b2f]">{item.subtitle}</p>
+                      <p className="mt-3 text-xs leading-5 text-gray-500">{item.description}</p>
+                    </button>
+                  );
+                })}
               </div>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                {setupTypes.map(
-                  (item) => {
-                    const Icon =
-                      item.icon;
-
-                    const active =
-                      setupType ===
-                      item.id;
-
-                    return (
-                      <button
-                        key={
-                          item.id
-                        }
-                        type="button"
-                        onClick={() => {
-                          setSetupType(item.id);
-                          setSelectedProducts([]);
-                          setSelectedComponents(defaultComponentsFor(item.id));
-                          setNotice(null);
-                          setSetupBuilt(false);
-                        }}
-                        className={`relative rounded-[24px] border p-5 text-left transition duration-200 ${
-                          active
-                            ? "border-[#c9a24d] bg-[#fffaf0] shadow-[0_12px_35px_rgba(150,110,35,0.08)]"
-                            : "border-[#e8e0d2] bg-white hover:-translate-y-1 hover:border-[#d2b66e] hover:shadow-md"
-                        }`}
-                      >
-                        {active && (
-                          <span className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-[#c9a24d] text-white">
-                            <Check
-                              size={
-                                12
-                              }
-                            />
-                          </span>
-                        )}
-
-                        <span
-                          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-                            active
-                              ? "bg-[#c9a24d] text-white"
-                              : "bg-[#fff5dd] text-[#a17b2f]"
-                          }`}
-                        >
-                          <Icon
-                            size={
-                              21
-                            }
-                          />
-                        </span>
-
-                        <p className="mt-5 text-base font-black">
-                          {
-                            item.title
-                          }
-                        </p>
-
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#a17b2f]">
-                          {
-                            item.subtitle
-                          }
-                        </p>
-
-                        <p className="mt-3 text-[10px] leading-5 text-gray-400">
-                          {
-                            item.description
-                          }
-                        </p>
-                      </button>
-                    );
-                  }
-                )}
-              </div>
-
-              <div className="mt-8 flex justify-end border-t border-[#eee8dd] pt-6">
-                <button
-                  type="button"
-                  onClick={
-                    nextStep
-                  }
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#c9a24d] px-7 text-xs font-black text-white shadow-lg shadow-[#c9a24d]/10 hover:bg-[#b58a3d]"
-                >
-                  Continue
-                  <ArrowRight
-                    size={15}
-                  />
+              <div className="mt-7 flex justify-end border-t border-[#eee8dd] pt-5">
+                <button onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">
+                  Continue <ArrowRight size={15} />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 2 */}
           {step === 2 && (
             <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#b58a32]">
-                    Step 02 · Budget
-                  </p>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 02 · Budget</p>
+              <h2 className="mt-2 text-2xl font-black sm:text-3xl">Set your maximum budget.</h2>
+              <p className="mt-2 text-sm text-gray-500">Recommendations and manual selections must stay within this amount.</p>
 
-                  <h3 className="mt-2 text-2xl font-black sm:text-3xl">
-                    How much do you want to spend?
-                  </h3>
-
-                  <p className="mt-2 text-sm text-gray-500">
-                    We will keep your recommendations within
-                    this budget.
-                  </p>
+              <div className="mt-7 rounded-3xl border border-[#e8dfd0] bg-[#fffdf9] p-5 sm:p-8">
+                <div className="text-center">
+                  <WalletCards size={27} className="mx-auto text-[#b58a32]" />
+                  <p className="mt-3 text-xs text-gray-500">Your maximum budget</p>
+                  <p className="mt-1 text-3xl font-black text-[#956f27]">{formatPrice(budget)}</p>
                 </div>
 
-                <div className="rounded-2xl border border-[#e8dcc3] bg-[#fffaf0] px-5 py-4 text-right">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                    Your budget
-                  </p>
-
-                  <p className="mt-1 text-2xl font-black text-[#956f27]">
-                    {formatPrice(
-                      budget
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 rounded-[26px] border border-[#e8dfd0] bg-[#fffdf9] p-5 sm:p-8">
-                <div className="flex flex-col items-center justify-center">
-                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-[8px] border-[#c9a24d]/20 bg-[#fffaf0]">
-                    <div className="text-center">
-                      <WalletCards
-                        size={21}
-                        className="mx-auto text-[#b58a32]"
-                      />
-
-                      <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-gray-400">
-                        Budget
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="mt-5 text-3xl font-black">
-                    {formatPrice(
-                      budget
-                    )}
-                  </p>
-
-                  <p className="mt-1 text-xs text-gray-400">
-                    Flexible setup budget
-                  </p>
+                <div className="mt-7 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {budgetPresets.map((preset) => (
+                    <button
+                      key={preset.amount}
+                      type="button"
+                      onClick={() => setNewBudget(preset.amount)}
+                      className={`rounded-xl border px-3 py-3 text-center ${
+                        budget === preset.amount
+                          ? "border-[#c9a24d] bg-[#fff5dc] text-[#956f27]"
+                          : "border-[#e5ddcf] hover:border-[#d0b46c]"
+                      }`}
+                    >
+                      <p className="text-[9px] font-black uppercase">{preset.label}</p>
+                      <p className="mt-1 text-sm font-black">{formatPrice(preset.amount)}</p>
+                    </button>
+                  ))}
                 </div>
 
-                <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                  {budgetPresets.map(
-                    (preset) => {
-                      const active =
-                        budget ===
-                        preset.amount;
-
-                      return (
-                        <button
-                          key={
-                            preset.amount
-                          }
-                          type="button"
-                          onClick={() =>
-                            setNewBudget(
-                              preset.amount
-                            )
-                          }
-                          className={`rounded-xl border px-3 py-3 text-center transition ${
-                            active
-                              ? "border-[#c9a24d] bg-[#fff5dc] text-[#956f27]"
-                              : "border-[#e5ddcf] hover:border-[#d0b46c]"
-                          }`}
-                        >
-                          <p className="text-[9px] font-black uppercase">
-                            {
-                              preset.label
-                            }
-                          </p>
-
-                          <p className="mt-1 text-sm font-black">
-                            {formatPrice(
-                              preset.amount
-                            )}
-                          </p>
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
-
-                <div className="mt-8">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Custom budget
-                    </span>
-
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-[#a17b2f]">
-                        ₹
-                      </span>
-
-                      <input
-                        value={
-                          customBudget
+                <div className="mt-7">
+                  <label htmlFor="custom-budget" className="text-xs font-bold text-gray-500">Custom budget (₹2,000–₹1,00,000)</label>
+                  <div className="mt-2 flex gap-3">
+                    <input
+                      id="custom-budget"
+                      type="number"
+                      min={2000}
+                      max={100000}
+                      step={500}
+                      value={customBudget}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setCustomBudget(value);
+                        const amount = Number(value);
+                        if (amount >= 2000 && amount <= 100000) {
+                          setBudget(amount);
+                          setManualChoices({});
+                          setSetupBuilt(false);
                         }
-                        inputMode="numeric"
-                        onChange={(
-                          event
-                        ) => {
-                          const value =
-                            event.target.value.replace(
-                              /[^0-9]/g,
-                              ""
-                            );
-
-                          setCustomBudget(
-                            value
-                          );
-
-                          const number =
-                            Number(
-                              value
-                            );
-
-                          if (
-                            number >=
-                              2000 &&
-                            number <=
-                              100000
-                          ) {
-                            setBudget(
-                              number
-                            );
-                            setSetupBuilt(
-                              false
-                            );
-                          }
-                        }}
-                        className="h-10 w-32 rounded-xl border border-[#ddd4c3] bg-white pl-7 pr-3 text-right text-sm font-black outline-none focus:border-[#c9a24d]"
-                      />
-                    </div>
+                      }}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-[#ddd4c3] bg-white px-4 text-sm font-bold outline-none focus:border-[#c9a24d]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const amount = Number(customBudget);
+                        if (amount < 2000 || amount > 100000 || !Number.isFinite(amount)) {
+                          setNotice({ type: "error", message: "Enter a budget between ₹2,000 and ₹1,00,000." });
+                          return;
+                        }
+                        setNewBudget(amount);
+                      }}
+                      className="rounded-xl bg-[#c9a24d] px-5 text-xs font-black text-white"
+                    >
+                      Apply
+                    </button>
                   </div>
-
                   <input
+                    aria-label="Adjust budget"
                     type="range"
-                    min="2000"
-                    max="50000"
-                    step="500"
-                    value={Math.min(
-                      budget,
-                      50000
-                    )}
-                    onChange={(event) =>
-                      setNewBudget(
-                        Number(
-                          event.target
-                            .value
-                        )
-                      )
-                    }
-                    className="mt-5 h-2 w-full cursor-pointer appearance-none rounded-full bg-[#e8dfcf] accent-[#c9a24d]"
+                    min={2000}
+                    max={50000}
+                    step={500}
+                    value={Math.min(budget, 50000)}
+                    onChange={(event) => setNewBudget(Number(event.target.value))}
+                    className="mt-5 w-full accent-[#c9a24d]"
                   />
-
-                  <div className="mt-2 flex justify-between text-[9px] font-bold text-gray-400">
-                    <span>
-                      ₹2,000
-                    </span>
-                    <span>
-                      ₹50,000+
-                    </span>
+                  <div className="flex justify-between text-[10px] text-gray-400">
+                    <span>₹2,000</span><span>₹50,000</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-between border-t border-[#eee8dd] pt-6">
-                <button
-                  type="button"
-                  onClick={
-                    previousStep
-                  }
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black text-gray-600"
-                >
-                  <ArrowLeft
-                    size={15}
-                  />
-                  Back
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    nextStep
-                  }
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#c9a24d] px-7 text-xs font-black text-white"
-                >
-                  Continue
-                  <ArrowRight
-                    size={15}
-                  />
-                </button>
+              <div className="mt-7 flex justify-between border-t border-[#eee8dd] pt-5">
+                <button onClick={() => setStep(1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black"><ArrowLeft size={15} /> Back</button>
+                <button onClick={() => setStep(3)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">Continue <ArrowRight size={15} /></button>
               </div>
             </div>
           )}
 
-          {/* STEP 3 */}
           {step === 3 && (
             <div className="p-5 sm:p-8 lg:p-10">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#b58a32]">
-                  Step 03 · Preferences
-                </p>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 03 · Preferences</p>
+              <h2 className="mt-2 text-2xl font-black sm:text-3xl">Choose your components.</h2>
+              <p className="mt-2 text-sm text-gray-500">Select the components you want and how you want them ranked.</p>
 
-                <h3 className="mt-2 text-2xl font-black sm:text-3xl">
-                  Make it yours.
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  Tell us which components and shopping style
-                  matter most.
-                </p>
-              </div>
-
-              <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.8fr]">
-                {/* COMPONENTS */}
+              <div className="mt-7 grid gap-8 lg:grid-cols-[1fr_.8fr]">
                 <div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-base font-black">
-                        Components
-                      </h4>
-
-                      <p className="mt-1 text-[10px] text-gray-400">
-                        Select what you want in your setup.
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-[#fff5dc] px-3 py-1.5 text-[9px] font-black text-[#956f27]">
-                      {
-                        selectedComponents.length
-                      }{" "}
-                      selected
-                    </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-black">Components</h3>
+                    <span className="rounded-full bg-[#fff5dc] px-3 py-1.5 text-[10px] font-black text-[#956f27]">{selectedComponents.length} selected</span>
                   </div>
-
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    {currentComponentOptions.map(
-                      (component) => {
-                        const Icon =
-                          component.icon;
-
-                        const active =
-                          selectedComponents.includes(
-                            component.id
-                          );
-
-                        return (
-                          <button
-                            key={
-                              component.id
-                            }
-                            type="button"
-                            onClick={() =>
-                              toggleComponent(
-                                component.id
-                              )
-                            }
-                            className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
-                              active
-                                ? "border-[#c9a24d] bg-[#fffaf0]"
-                                : "border-[#e8e0d2] hover:border-[#d2b66e]"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                                active
-                                  ? "bg-[#c9a24d] text-white"
-                                  : "bg-[#f7f3eb] text-[#a17b2f]"
-                              }`}
-                            >
-                              <Icon
-                                size={
-                                  18
-                                }
-                              />
-                            </span>
-
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-xs font-black">
-                                {
-                                  component.title
-                                }
-                              </span>
-
-                              <span className="mt-1 block text-[9px] text-gray-400">
-                                {
-                                  component.description
-                                }
-                              </span>
-                            </span>
-
-                            <span
-                              className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-                                active
-                                  ? "border-[#c9a24d] bg-[#c9a24d] text-white"
-                                  : "border-[#ddd5c7] text-transparent"
-                              }`}
-                            >
-                              <Check
-                                size={
-                                  12
-                                }
-                              />
-                            </span>
-                          </button>
-                        );
-                      }
-                    )}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {currentComponentOptions.map((item) => {
+                      const Icon = item.icon;
+                      const active = selectedComponents.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleComponent(item.id)}
+                          className={`flex items-center gap-3 rounded-2xl border p-4 text-left ${
+                            active ? "border-[#c9a24d] bg-[#fffaf0]" : "border-[#e8e0d2]"
+                          }`}
+                        >
+                          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-[#c9a24d] text-white" : "bg-[#f7f3eb] text-[#a17b2f]"}`}>
+                            <Icon size={18} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-xs font-black">{item.title}</span>
+                            <span className="mt-1 block text-[10px] text-gray-500">{item.description}</span>
+                          </span>
+                          <Check size={15} className={active ? "text-[#b58a32]" : "text-transparent"} />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* PRIORITY */}
                 <div>
-                  <div>
-                    <h4 className="text-base font-black">
-                      What matters most?
-                    </h4>
-
-                    <p className="mt-1 text-[10px] text-gray-400">
-                      We use this to rank products.
-                    </p>
-                  </div>
-
-                  <div className="mt-5 space-y-3">
-                    {currentPriorityOptions.map(
-                      (option) => {
-                        const active =
-                          priority ===
-                          option.id;
-
-                        return (
-                          <button
-                            key={
-                              option.id
-                            }
-                            type="button"
-                            onClick={() => {
-                              setPriority(
-                                option.id
-                              );
-                              setSetupBuilt(
-                                false
-                              );
-                            }}
-                            className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left ${
-                              active
-                                ? "border-[#c9a24d] bg-[#fffaf0]"
-                                : "border-[#e8e0d2]"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                active
-                                  ? "bg-[#c9a24d] text-white"
-                                  : "bg-[#f7f3eb] text-[#a17b2f]"
-                              }`}
-                            >
-                              {option.id ===
-                              "balanced" ? (
-                                <Target
-                                  size={
-                                    17
-                                  }
-                                />
-                              ) : option.id ===
-                                "value" ? (
-                                <CircleDollarSign
-                                  size={
-                                    17
-                                  }
-                                />
-                              ) : option.id ===
-                                "quality" ? (
-                                <Trophy
-                                  size={
-                                    17
-                                  }
-                                />
-                              ) : (
-                                <Zap
-                                  size={
-                                    17
-                                  }
-                                />
-                              )}
-                            </span>
-
-                            <span className="flex-1">
-                              <span className="block text-xs font-black">
-                                {
-                                  option.title
-                                }
-                              </span>
-
-                              <span className="mt-1 block text-[9px] text-gray-400">
-                                {
-                                  option.description
-                                }
-                              </span>
-                            </span>
-
-                            {active && (
-                              <Check
-                                size={
-                                  16
-                                }
-                                className="text-[#b58a32]"
-                              />
-                            )}
-                          </button>
-                        );
-                      }
-                    )}
+                  <h3 className="font-black">What matters most?</h3>
+                  <p className="mt-1 text-xs text-gray-500">This changes how products are ranked.</p>
+                  <div className="mt-4 space-y-3">
+                    {priorityOptions.map((item) => {
+                      const active = priority === item.id;
+                      const Icon =
+                        item.id === "balanced" ? Target :
+                        item.id === "value" ? CircleDollarSign :
+                        item.id === "quality" ? Trophy : Zap;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setPriority(item.id);
+                            setManualChoices({});
+                            setSetupBuilt(false);
+                          }}
+                          className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left ${
+                            active ? "border-[#c9a24d] bg-[#fffaf0]" : "border-[#e8e0d2]"
+                          }`}
+                        >
+                          <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? "bg-[#c9a24d] text-white" : "bg-[#f7f3eb] text-[#a17b2f]"}`}>
+                            <Icon size={18} />
+                          </span>
+                          <span className="flex-1">
+                            <span className="block text-xs font-black">{item.title}</span>
+                            <span className="mt-1 block text-[10px] text-gray-500">{item.description}</span>
+                          </span>
+                          {active && <Check size={16} className="text-[#b58a32]" />}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 rounded-2xl border border-[#eadfca] bg-[#fffaf0] p-4">
-                <div className="flex items-start gap-3">
-                  <Sparkles
-                    size={18}
-                    className="mt-0.5 shrink-0 text-[#b58a32]"
-                  />
-
+              <div className="mt-7 rounded-2xl border border-[#eadfca] bg-[#fffaf0] p-4">
+                <div className="flex gap-3">
+                  <Sparkles size={18} className="mt-0.5 shrink-0 text-[#b58a32]" />
                   <div>
-                    <p className="text-xs font-black">
-                      Smart matching is ready
-                    </p>
-
-                    <p className="mt-1 text-[10px] leading-5 text-gray-500">
-                      PrimeCart will combine your{" "}
-                      <strong>
-                        {
-                          setupTypes.find(
-                            (item) =>
-                              item.id ===
-                              setupType
-                          )?.title
-                        }
-                      </strong>{" "}
-                      preference,{" "}
-                      <strong>
-                        {formatPrice(
-                          budget
-                        )}
-                      </strong>{" "}
-                      budget and{" "}
-                      <strong>
-                        {
-                          currentPriorityOptions.find(
-                            (item) => item.id === priority
-                          )?.title
-                        }
-                      </strong>{" "}
-                      priority.
+                    <p className="text-xs font-black">Your selection</p>
+                    <p className="mt-1 text-xs leading-5 text-gray-500">
+                      {setupTypes.find((item) => item.id === setupType)?.title} · {formatPrice(budget)} · {priorityOptions.find((item) => item.id === priority)?.title} · {selectedComponents.length} components
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-between border-t border-[#eee8dd] pt-6">
+              <div className="mt-7 flex justify-between border-t border-[#eee8dd] pt-5">
+                <button onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black"><ArrowLeft size={15} /> Back</button>
                 <button
-                  type="button"
-                  onClick={
-                    previousStep
-                  }
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black text-gray-600"
+                  onClick={buildSetup}
+                  disabled={building || loading || selectedComponents.length === 0}
+                  className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white disabled:opacity-50"
                 >
-                  <ArrowLeft
-                    size={15}
-                  />
-                  Back
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    buildSetup
-                  }
-                  disabled={
-                    building ||
-                    loading
-                  }
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#c9a24d] px-7 text-xs font-black text-white shadow-lg shadow-[#c9a24d]/15 disabled:opacity-60"
-                >
-                  {building ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Building...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles
-                        size={
-                          15
-                        }
-                      />
-                      Build My Setup
-                    </>
-                  )}
+                  {building ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                  {building ? "Building..." : "Build My Setup"}
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 4 PREVIEW */}
           {step === 4 && (
             <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#b58a32]">
-                    Step 04 · Setup
-                  </p>
-
-                  <h3 className="mt-2 text-2xl font-black sm:text-3xl">
-                    Your setup is ready.
-                  </h3>
-
-                  <p className="mt-2 text-sm text-gray-500">
-                    Review your recommended components below.
-                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 04 · Your Setup</p>
+                  <h2 className="mt-2 text-2xl font-black sm:text-3xl">Your setup is ready.</h2>
+                  <p className="mt-2 text-sm text-gray-500">Review the recommended products and customize any component.</p>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={
-                    resetAll
-                  }
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e4dccd] px-4 text-[10px] font-black text-gray-600"
-                >
-                  <RefreshCw
-                    size={13}
-                  />
-                  Start Over
+                <button onClick={resetAll} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e4dccd] px-4 text-xs font-black">
+                  <RefreshCw size={14} /> Start Over
                 </button>
               </div>
 
-              {/* QUICK SCORE */}
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-2xl border border-[#e8dfd0] bg-[#fffaf0] p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Setup Score
-                    </span>
-
-                    <Trophy
-                      size={16}
-                      className="text-[#b58a32]"
-                    />
-                  </div>
-
-                  <p className="mt-3 text-3xl font-black">
-                    {setupScore}
-                    <span className="text-sm text-gray-400">
-                      /100
-                    </span>
-                  </p>
-
-                  <div className="mt-3 h-1.5 rounded-full bg-[#e8dfcf]">
-                    <div
-                      className="h-full rounded-full bg-[#c9a24d]"
-                      style={{
-                        width: `${setupScore}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-[#e8dfd0] bg-white p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Products
-                    </span>
-
-                    <Package
-                      size={16}
-                      className="text-[#b58a32]"
-                    />
-                  </div>
-
-                  <p className="mt-3 text-3xl font-black">
-                    {
-                      finalProducts.length
-                    }
-                  </p>
-
-                  <p className="mt-1 text-[9px] text-gray-400">
-                    Components selected
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-[#e8dfd0] bg-white p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Rating
-                    </span>
-
-                    <Star
-                      size={16}
-                      className="fill-[#c9a24d] text-[#c9a24d]"
-                    />
-                  </div>
-
-                  <p className="mt-3 text-3xl font-black">
-                    {averageRating.toFixed(
-                      1
-                    )}
-                  </p>
-
-                  <p className="mt-1 text-[9px] text-gray-400">
-                    Average product rating
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-[#e8dfd0] bg-white p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-                      Savings
-                    </span>
-
-                    <Zap
-                      size={16}
-                      className="text-emerald-600"
-                    />
-                  </div>
-
-                  <p className="mt-3 text-3xl font-black text-emerald-600">
-                    {formatPrice(
-                      setupSavings
-                    )}
-                  </p>
-
-                  <p className="mt-1 text-[9px] text-gray-400">
-                    Estimated catalogue savings
-                  </p>
-                </div>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  { title: "Setup score", value: `${setupScore}/100`, icon: Trophy },
+                  { title: "Selected products", value: String(finalProducts.length), icon: Package },
+                  { title: "Average rating", value: averageRating.toFixed(1), icon: Star },
+                  { title: "Estimated savings", value: formatPrice(setupSavings), icon: Zap },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.title} className="rounded-2xl border border-[#e8dfd0] bg-[#fffaf0] p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">{item.title}</span>
+                        <Icon size={16} className="text-[#b58a32]" />
+                      </div>
+                      <p className="mt-3 break-words text-2xl font-black">{item.value}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
         </section>
 
-        {/* RESULTS */}
-        {setupBuilt && (
-          <section
-            id="setup-results"
-            className="mt-7 scroll-mt-24"
-          >
-            <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-              {/* PRODUCTS */}
-              <div>
-                <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#b58a32]">
-                      Smart Recommendations
-                    </p>
-
-                    <h3 className="mt-1 text-2xl font-black">
-                      Your curated setup
-                    </h3>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      Products selected using your purpose,
-                      budget and priorities.
-                    </p>
-                  </div>
-
-                  <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#fff4d8] px-3 py-1.5 text-[9px] font-black text-[#956f27]">
-                    <BadgeCheck
-                      size={11}
-                    />
-                    {setupScore}% setup match
-                  </span>
+        {setupBuilt && step === 4 && (
+          <section id="setup-results" className="mt-7 scroll-mt-24">
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="min-w-0">
+                <div className="mb-5">
+                  <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Smart recommendations</p>
+                  <h2 className="mt-2 text-2xl font-black">Customize your setup</h2>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Each component shows matching alternatives. Selecting another product replaces that component's current selection.
+                  </p>
                 </div>
 
-                {finalProducts.length ===
-                0 ? (
-                  <div className="rounded-[26px] border border-[#e8dfd0] bg-white p-16 text-center">
-                    <Search
-                      size={38}
-                      className="mx-auto text-[#c9a24d]"
-                    />
-
-                    <h4 className="mt-4 text-lg font-black">
-                      No suitable products found
-                    </h4>
-
-                    <p className="mt-2 text-sm text-gray-500">
-                      No in-stock products fit this exact component mix within your budget. Try enabling another component or increasing the budget slightly. The builder will never go over your budget.
+                {loading ? (
+                  <div className="rounded-2xl border border-[#e8dfd0] bg-white p-10 text-center">
+                    <RefreshCw size={24} className="mx-auto animate-spin text-[#b58a32]" />
+                    <p className="mt-3 text-sm font-bold">Loading catalogue...</p>
+                  </div>
+                ) : selectedComponents.every((component) => !matchedProducts.some((item) => item.component === component)) ? (
+                  <div className="rounded-2xl border border-[#e8dfd0] bg-white p-10 text-center">
+                    <Search size={34} className="mx-auto text-[#c9a24d]" />
+                    <h3 className="mt-4 text-lg font-black">No suitable products found</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-500">
+                      Your current filters did not find in-stock products in this budget. Try increasing your budget or changing the selected components.
                     </p>
+                    <button onClick={() => setStep(2)} className="mt-5 rounded-xl bg-[#c9a24d] px-5 py-3 text-xs font-black text-white">Change budget</button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {finalProducts.map(
-                      (
-                        product,
-                        index
-                      ) => {
-                        const image =
-                          getImageUrl(
-                            product.image_url
-                          );
+                  <div className="space-y-5">
+                    {selectedComponents.map((component) => {
+                      const config = components.find((item) => item.id === component)!;
+                      const Icon = config.icon;
+                      const choices = matchedProducts
+                        .filter((item) => item.component === component)
+                        .sort((a, b) => b.matchScore - a.matchScore)
+                        .slice(0, 5);
+                      const current = finalProducts.find((item) => item.component === component);
 
-                        const wished =
-                          wishlist.includes(
-                            product.id
-                          );
-
-                        const added =
-                          cartIds.includes(
-                            product.id
-                          );
-
-                        const discount =
-                          discountPercent(
-                            Number(
-                              product.price
-                            ),
-                            product.original_price
-                              ? Number(
-                                  product.original_price
-                                )
-                              : null
-                          );
-
-                        const ComponentIcon =
-                          components.find(
-                            (item) =>
-                              item.id ===
-                              product.component
-                          )?.icon ||
-                          Package;
-
-                        return (
-                          <article
-                            key={
-                              product.id
-                            }
-                            className="group overflow-hidden rounded-[26px] border border-[#e8dfd0] bg-white transition hover:border-[#d3b76e] hover:shadow-lg"
-                          >
-                            <div className="flex flex-col sm:flex-row">
-                              <div className="relative h-56 w-full shrink-0 bg-[#faf9f6] sm:h-48 sm:w-48">
-                                {image ? (
-                                  <ProductImage
-                                    src={image}
-                                    alt={product.name}
-                                    className="h-full w-full object-contain p-5 transition duration-500 group-hover:scale-105"
-                                    sizes="192px"
-                                  />
-                                ) : (
-                                  <div className="flex h-full items-center justify-center text-gray-300">
-                                    <Package
-                                      size={
-                                        38
-                                      }
-                                    />
-                                  </div>
-                                )}
-
-                                <span className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#181818] text-[9px] font-black text-white">
-                                  {index +
-                                    1}
-                                </span>
-
-                                {discount >
-                                  0 && (
-                                  <span className="absolute bottom-3 left-3 rounded-full bg-emerald-500 px-2.5 py-1 text-[9px] font-black text-white">
-                                    {
-                                      discount
-                                    }
-                                    % OFF
-                                  </span>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleWishlist(
-                                      product.id
-                                    )
-                                  }
-                                  className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border bg-white/95 ${
-                                    wished
-                                      ? "border-red-200 text-red-500"
-                                      : "border-[#e6ddce] text-gray-500"
-                                  }`}
-                                >
-                                  <Heart
-                                    size={
-                                      16
-                                    }
-                                    fill={
-                                      wished
-                                        ? "currentColor"
-                                        : "none"
-                                    }
-                                  />
-                                </button>
-                              </div>
-
-                              <div className="flex min-w-0 flex-1 flex-col justify-between p-5">
-                                <div>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#fff5dc] px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#956f27]">
-                                      <ComponentIcon
-                                        size={
-                                          11
-                                        }
-                                      />
-                                      {
-                                        components.find(
-                                          (
-                                            item
-                                          ) =>
-                                            item.id ===
-                                            product.component
-                                        )?.title
-                                      }
-                                    </span>
-
-                                    <span className="text-[9px] font-black text-[#b58a32]">
-                                      {
-                                        product.matchScore
-                                      }
-                                      % MATCH
-                                    </span>
-                                  </div>
-
-                                  <Link
-                                    href={`/dashboard/products/${product.id}`}
-                                  >
-                                    <h4 className="mt-3 text-lg font-black group-hover:text-[#a17b2f]">
-                                      {
-                                        product.name
-                                      }
-                                    </h4>
-                                  </Link>
-
-                                  {product.brand && (
-                                    <p className="mt-1 text-[10px] font-bold text-gray-400">
-                                      {
-                                        product.brand
-                                      }
-                                    </p>
-                                  )}
-
-                                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">
-                                    {
-                                      product.short_description
-                                    }
-                                  </p>
-
-                                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-[#fff4d8] px-2 py-1 text-[10px] font-black text-[#956f27]">
-                                      <Star
-                                        size={
-                                          10
-                                        }
-                                        fill="currentColor"
-                                      />
-                                      {Number(
-                                        product.rating ||
-                                          0
-                                      ).toFixed(
-                                        1
-                                      )}
-                                    </span>
-
-                                    <span className="text-[10px] text-gray-400">
-                                      {
-                                        product.reviews_count
-                                      }{" "}
-                                      reviews
-                                    </span>
-
-                                    {product.is_flash_sale && (
-                                      <span className="inline-flex items-center gap-1 text-[9px] font-black text-red-500">
-                                        <Zap
-                                          size={
-                                            10
-                                          }
-                                        />
-                                        Flash Deal
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                                  <div>
-                                    <div className="flex items-end gap-2">
-                                      <span className="text-2xl font-black">
-                                        {formatPrice(
-                                          Number(
-                                            product.price
-                                          )
-                                        )}
-                                      </span>
-
-                                      {product.original_price &&
-                                        Number(
-                                          product.original_price
-                                        ) >
-                                          Number(
-                                            product.price
-                                          ) && (
-                                          <span className="mb-0.5 text-[10px] text-gray-400 line-through">
-                                            {formatPrice(
-                                              Number(
-                                                product.original_price
-                                              )
-                                            )}
-                                          </span>
-                                        )}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        toggleProduct(
-                                          product.id
-                                        )
-                                      }
-                                      className={`flex h-10 items-center gap-2 rounded-xl px-4 text-[10px] font-black ${
-                                        selectedProducts.includes(
-                                          product.id
-                                        )
-                                          ? "bg-[#c9a24d] text-white"
-                                          : "border border-[#e3dacb] text-gray-600"
-                                      }`}
-                                    >
-                                      {selectedProducts.includes(
-                                        product.id
-                                      ) ? (
-                                        <>
-                                          <Check
-                                            size={
-                                              13
-                                            }
-                                          />
-                                          Selected
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Plus
-                                            size={
-                                              13
-                                            }
-                                          />
-                                          Customize
-                                        </>
-                                      )}
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        addToCart(
-                                          product
-                                        )
-                                      }
-                                      className={`flex h-10 items-center gap-2 rounded-xl px-4 text-[10px] font-black ${
-                                        added
-                                          ? "bg-emerald-600 text-white"
-                                          : "bg-[#fff3d4] text-[#956f27]"
-                                      }`}
-                                    >
-                                      {added ? (
-                                        <Check
-                                          size={
-                                            13
-                                          }
-                                        />
-                                      ) : (
-                                        <ShoppingCart
-                                          size={
-                                            13
-                                          }
-                                        />
-                                      )}
-
-                                      {added
-                                        ? "Added"
-                                        : "Add"}
-                                    </button>
-                                  </div>
-                                </div>
+                      return (
+                        <div key={component} className="overflow-hidden rounded-2xl border border-[#e8dfd0] bg-white">
+                          <div className="flex items-center justify-between gap-3 border-b border-[#eee8dd] bg-[#fffaf0] px-4 py-3 sm:px-5">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#c9a24d] text-white"><Icon size={17} /></span>
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-black">{purposeLabels[setupType][component]?.title || config.title}</h3>
+                                <p className="text-[10px] text-gray-500">{choices.length} matching option(s) shown</p>
                               </div>
                             </div>
-                          </article>
-                        );
-                      }
-                    )}
+                            <span className={`shrink-0 rounded-full px-3 py-1 text-[9px] font-black ${current ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                              {current ? "Selected" : "Not selected"}
+                            </span>
+                          </div>
+
+                          {choices.length === 0 ? (
+                            <p className="p-5 text-xs text-gray-500">No matching in-stock product is available for this component within your maximum budget.</p>
+                          ) : (
+                            <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                              {choices.map((product) => {
+                                const chosen = current?.id === product.id;
+                                const wished = wishlist.includes(product.id);
+                                const added = cartIds.includes(product.id);
+                                const discount = discountPercent(product.price, product.original_price);
+
+                                return (
+                                  <article key={product.id} className={`flex min-w-0 flex-col overflow-hidden rounded-xl border transition ${chosen ? "border-[#c9a24d] bg-[#fffaf0]" : "border-[#eee6d7] bg-white hover:border-[#d7bf7d]"}`}>
+                                    <div className="relative h-40 bg-[#faf9f6]">
+                                      <ProductImage value={product.image_url} alt={product.name} className="h-full w-full object-contain p-4" />
+                                      {discount > 0 && (
+                                        <span className="absolute bottom-2 left-2 rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">{discount}% OFF</span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => void toggleWishlist(product.id)}
+                                        aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+                                        className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border bg-white ${wished ? "border-red-200 text-red-500" : "border-[#e6ddce] text-gray-500"}`}
+                                      >
+                                        <Heart size={15} fill={wished ? "currentColor" : "none"} />
+                                      </button>
+                                    </div>
+
+                                    <div className="flex flex-1 flex-col p-3">
+                                      {product.brand && <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">{product.brand}</p>}
+                                      <Link href={`/dashboard/products/${product.id}`} className="mt-1">
+                                        <h4 className="line-clamp-2 text-xs font-black leading-5 hover:text-[#a17b2f]">{product.name}</h4>
+                                      </Link>
+                                      <div className="mt-2 flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-[#fff4d8] px-2 py-1 text-[9px] font-black text-[#956f27]">
+                                          <Star size={10} fill="currentColor" /> {product.rating.toFixed(1)}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400">{product.reviews_count} reviews</span>
+                                      </div>
+
+                                      <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                                        <span className="text-lg font-black">{formatPrice(product.price)}</span>
+                                        {product.original_price && product.original_price > product.price && (
+                                          <span className="text-[10px] text-gray-400 line-through">{formatPrice(product.original_price)}</span>
+                                        )}
+                                      </div>
+
+                                      <p className="mt-1 text-[10px] text-gray-500">
+                                        {product.stock} in stock · {product.matchScore}% match
+                                      </p>
+
+                                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleProduct(product.id)}
+                                          className={`flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-black ${chosen ? "bg-[#c9a24d] text-white" : "border border-[#e4dccd] text-gray-600"}`}
+                                        >
+                                          {chosen ? <Check size={13} /> : <Plus size={13} />}
+                                          {chosen ? "Selected" : "Choose"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => void addToCart(product)}
+                                          className={`flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-black ${added ? "bg-emerald-600 text-white" : "bg-[#fff3d4] text-[#956f27]"}`}
+                                        >
+                                          {added ? <Check size={13} /> : <ShoppingCart size={13} />}
+                                          {added ? "In cart" : "Add"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* STICKY SUMMARY */}
-              <aside className="lg:sticky lg:top-24 lg:self-start">
-                <div className="overflow-hidden rounded-[28px] border border-[#dfc98e] bg-white shadow-sm">
+              <aside className="lg:sticky lg:top-24">
+                <div className="overflow-hidden rounded-[25px] border border-[#dfc98e] bg-white shadow-sm">
                   <div className="bg-[#fff7e3] p-5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a17b2f]">
-                          Setup Summary
-                        </p>
-
-                        <h4 className="mt-1 text-lg font-black">
-                          {
-                            setupTypes.find(
-                              (item) =>
-                                item.id ===
-                                setupType
-                            )?.title
-                          }{" "}
-                          Setup
-                        </h4>
+                        <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#a17b2f]">Setup summary</p>
+                        <h3 className="mt-1 text-lg font-black">{setupTypes.find((item) => item.id === setupType)?.title} Setup</h3>
                       </div>
-
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#c9a24d] text-white">
-                        <Sparkles
-                          size={18}
-                        />
-                      </div>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#c9a24d] text-white"><Sparkles size={19} /></span>
                     </div>
                   </div>
 
                   <div className="p-5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-gray-400">
-                        Setup value
-                      </span>
-
-                      <span className="text-lg font-black">
-                        {formatPrice(
-                          setupTotal
-                        )}
-                      </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-gray-500">Setup total</span>
+                      <span className="text-xl font-black">{formatPrice(setupTotal)}</span>
                     </div>
 
-                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#eee6d7]">
-                      <div
-                        className="h-full rounded-full bg-[#c9a24d] transition-all"
-                        style={{
-                          width: `${Math.max(
-                            2,
-                            budgetUsage
-                          )}%`,
-                        }}
-                      />
+                    <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#eee6d7]">
+                      <div className="h-full rounded-full bg-[#c9a24d] transition-all" style={{ width: `${budgetUsage}%` }} />
                     </div>
 
-                    <div className="mt-2 flex justify-between text-[9px] text-gray-400">
-                      <span>
-                        {budgetUsage}% used
-                      </span>
-
-                      <span>
-                        {formatPrice(
-                          remainingBudget
-                        )}{" "}
-                        left
-                      </span>
+                    <div className="mt-2 flex justify-between gap-2 text-[10px] text-gray-400">
+                      <span>{budgetUsage}% used</span>
+                      <span>{formatPrice(remainingBudget)} left</span>
                     </div>
 
                     <div className="my-5 h-px bg-[#eee8dd]" />
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-[10px] text-gray-500">
-                          Budget
-                        </span>
-
-                        <span className="text-[10px] font-black">
-                          {formatPrice(
-                            budget
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-[10px] text-gray-500">
-                          Products
-                        </span>
-
-                        <span className="text-[10px] font-black">
-                          {
-                            finalProducts.length
-                          }
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-[10px] text-gray-500">
-                          Savings
-                        </span>
-
-                        <span className="text-[10px] font-black text-emerald-600">
-                          {formatPrice(
-                            setupSavings
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-[10px] text-gray-500">
-                          Match score
-                        </span>
-
-                        <span className="text-[10px] font-black text-[#a17b2f]">
-                          {
-                            setupScore
-                          }
-                          %
-                        </span>
-                      </div>
+                    <div className="space-y-3 text-xs">
+                      <div className="flex justify-between gap-3"><span className="text-gray-500">Maximum budget</span><strong>{formatPrice(budget)}</strong></div>
+                      <div className="flex justify-between gap-3"><span className="text-gray-500">Selected products</span><strong>{finalProducts.length}</strong></div>
+                      <div className="flex justify-between gap-3"><span className="text-gray-500">Estimated savings</span><strong className="text-emerald-600">{formatPrice(setupSavings)}</strong></div>
+                      <div className="flex justify-between gap-3"><span className="text-gray-500">Setup score</span><strong className="text-[#a17b2f]">{setupScore}%</strong></div>
                     </div>
+
+                    {setupTotal > budget && (
+                      <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">Your selection exceeds the budget. Replace a product before adding the setup.</p>
+                    )}
 
                     <button
                       type="button"
-                      onClick={
-                        addCompleteSetup
-                      }
-                      disabled={
-                        finalProducts.length ===
-                        0
-                      }
-                      className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c9a24d] text-xs font-black text-white shadow-lg shadow-[#c9a24d]/15 disabled:opacity-50"
+                      onClick={() => void addCompleteSetup()}
+                      disabled={!finalProducts.length || setupTotal > budget}
+                      className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#c9a24d] text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <ShoppingCart
-                        size={15}
-                      />
-                      Add Complete Setup
+                      <ShoppingCart size={15} /> Add Complete Setup
                     </button>
 
-                    <Link
-                      href="/dashboard/products"
-                      className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e4dccd] text-[10px] font-black text-gray-600"
-                    >
-                      Browse More Products
-                      <ArrowRight
-                        size={13}
-                      />
+                    <Link href="/dashboard/products" className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e4dccd] text-xs font-black text-gray-600">
+                      Browse More Products <ArrowRight size={13} />
                     </Link>
                   </div>
                 </div>
 
-                {/* WHY THIS SETUP */}
-                <div className="mt-4 rounded-[24px] border border-[#e8dfd0] bg-white p-5">
+                <div className="mt-4 rounded-2xl border border-[#e8dfd0] bg-white p-5">
                   <div className="flex items-center gap-2">
-                    <BadgeCheck
-                      size={17}
-                      className="text-[#b58a32]"
-                    />
-
-                    <h4 className="text-sm font-black">
-                      Why this setup?
-                    </h4>
+                    <BadgeCheck size={17} className="text-[#b58a32]" />
+                    <h3 className="text-sm font-black">How matching works</h3>
                   </div>
-
-                  <div className="mt-4 space-y-3">
-                    <div className="flex gap-3">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#c9a24d]" />
-
-                      <p className="text-[10px] leading-5 text-gray-500">
-                        Products are matched to your{" "}
-                        <strong className="text-gray-700">
-                          {
-                            setupTypes.find(
-                              (item) =>
-                                item.id ===
-                                setupType
-                            )?.title
-                          }
-                        </strong>{" "}
-                        purpose.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#c9a24d]" />
-
-                      <p className="text-[10px] leading-5 text-gray-500">
-                        Recommendations stay within your{" "}
-                        <strong className="text-gray-700">
-                          {formatPrice(
-                            budget
-                          )}
-                        </strong>{" "}
-                        budget.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#c9a24d]" />
-
-                      <p className="text-[10px] leading-5 text-gray-500">
-                        Ranking considers ratings, reviews,
-                        pricing and your priority.
-                      </p>
-                    </div>
+                  <div className="mt-4 space-y-3 text-xs leading-5 text-gray-500">
+                    <p>• Product names are matched to the selected component.</p>
+                    <p>• Only active, in-stock products within your item budget are considered.</p>
+                    <p>• Quality First uses ratings and review counts to rank matching options.</p>
+                    <p>• Each component can have only one selected product.</p>
                   </div>
                 </div>
               </aside>
             </div>
-          </section>
-        )}
-
-        {/* EXPLORE COMPONENTS */}
-        <section className="mt-14">
-          <div className="text-center">
-            <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#b58a32]">
-              Setup Components
-            </p>
-
-            <h3 className="mt-2 text-2xl font-black">
-              Everything starts here
-            </h3>
-
-            <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500">
-              Choose the essentials that make your workspace
-              feel complete.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {currentComponentOptions.map(
-              (component) => {
-                const Icon =
-                  component.icon;
-
-                return (
-                  <button
-                    key={
-                      component.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      toggleComponent(
-                        component.id
-                      )
-                    }
-                    className="rounded-[22px] border border-[#e8dfd0] bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-[#d2b66e] hover:shadow-md"
-                  >
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58a32]">
-                      <Icon size={20} />
-                    </div>
-
-                    <h4 className="mt-4 text-sm font-black">
-                      {
-                        component.title
-                      }
-                    </h4>
-
-                    <p className="mt-1 text-[9px] text-gray-400">
-                      {
-                        component.description
-                      }
-                    </p>
-                  </button>
-                );
-              }
-            )}
-          </div>
+          )}
         </section>
 
-        {/* FINAL CTA */}
-        <section className="mt-10 overflow-hidden rounded-[30px] border border-[#dfc98e] bg-[#fff6df]">
-          <div className="relative flex flex-col items-center justify-between gap-6 px-6 py-10 text-center md:flex-row md:px-10 md:text-left">
+        <section className="mt-10 rounded-[25px] border border-[#dfc98e] bg-[#fff6df] p-6 sm:p-9">
+          <div className="flex flex-col items-center justify-between gap-5 text-center sm:flex-row sm:text-left">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#956f27]">
-                PrimeCart Setup Studio
-              </p>
-
-              <h3 className="mt-2 text-2xl font-black">
-                Build less. Choose smarter.
-              </h3>
-
-              <p className="mt-2 max-w-2xl text-sm text-gray-500">
-                Your setup should fit your workflow, your
-                budget and your style.
-              </p>
+              <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#956f27]">PrimeCart Setup Studio</p>
+              <h2 className="mt-2 text-2xl font-black">Build less. Choose smarter.</h2>
+              <p className="mt-2 max-w-xl text-sm text-gray-500">A setup that fits your workflow, your budget and your style.</p>
             </div>
-
             <button
               type="button"
               onClick={() => {
                 resetAll();
-
-                window.scrollTo({
-                  top: 0,
-                  behavior:
-                    "smooth",
-                });
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white"
+              className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#c9a24d] px-5 text-xs font-black text-white"
             >
-              <RefreshCw
-                size={15}
-              />
-              Build Again
+              <RefreshCw size={14} /> Build Again
             </button>
           </div>
         </section>
 
-        <div className="h-12" />
+        <div className="h-10" />
       </main>
     </div>
   );
