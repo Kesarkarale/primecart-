@@ -239,76 +239,67 @@ const priorityOptions: {
     id: "balanced",
     title: "Balanced",
     description:
-      "Best overall combination",
+      "Mid-range prices, dependable quality and a balanced mix",
   },
   {
     id: "value",
     title: "Best Value",
     description:
-      "More features for your money",
+      "Strong ratings and useful features for each rupee",
   },
   {
     id: "quality",
     title: "Top Quality",
     description:
-      "Prioritize ratings & reviews",
+      "Higher-quality, well-reviewed picks while staying in budget",
   },
   {
     id: "savings",
     title: "Maximum Savings",
     description:
-      "Prioritize discounts",
+      "Choose the lowest-priced suitable items and save more",
   },
 ];
+
+const setupSpecificKeywords: Record<SetupType, string[]> = {
+  work: ["office", "business", "productivity", "ergonomic", "multitask", "silent"],
+  gaming: ["gaming", "game", "rgb", "mechanical", "high refresh", "low latency", "controller"],
+  study: ["study", "student", "learning", "online class", "lecture", "reading", "webcam", "lamp"],
+  creator: ["creator", "content", "studio", "editing", "streaming", "microphone", "color accuracy", "colour accuracy"],
+  everyday: ["everyday", "daily", "home", "versatile", "comfortable"],
+};
+
+function getPurposeRelevance(product: Product, setupType: SetupType) {
+  const text = `${product.name} ${product.short_description || ""} ${product.description || ""} ${product.brand || ""}`.toLowerCase();
+  return setupSpecificKeywords[setupType].reduce(
+    (score, keyword) => score + (text.includes(keyword) ? 1 : 0),
+    0
+  );
+}
 
 const setupKeywords: Record<
   SetupType,
   string[]
 > = {
   work: [
-    "office",
-    "work",
-    "business",
-    "productivity",
-    "wireless",
-    "keyboard",
-    "mouse",
-    "monitor",
+    "office", "work", "business", "productivity", "wireless",
+    "ergonomic", "silent", "multitask", "keyboard", "mouse", "monitor",
   ],
   gaming: [
-    "gaming",
-    "game",
-    "rgb",
-    "mechanical",
-    "gaming mouse",
-    "headphone",
-    "monitor",
+    "gaming", "game", "rgb", "mechanical", "gaming mouse", "high refresh",
+    "response time", "low latency", "headphone", "monitor", "controller",
   ],
   study: [
-    "study",
-    "student",
-    "learning",
-    "keyboard",
-    "mouse",
-    "headphone",
-    "lamp",
+    "study", "student", "learning", "online class", "lecture", "reading",
+    "comfortable", "keyboard", "mouse", "headphone", "lamp", "webcam",
   ],
   creator: [
-    "creator",
-    "content",
-    "studio",
-    "audio",
-    "monitor",
-    "headphone",
-    "microphone",
+    "creator", "content", "studio", "editing", "streaming", "microphone",
+    "audio", "monitor", "headphone", "webcam", "colour", "color accuracy",
   ],
   everyday: [
-    "wireless",
-    "smart",
-    "keyboard",
-    "mouse",
-    "speaker",
-    "headphone",
+    "wireless", "smart", "everyday", "daily", "home", "keyboard", "mouse",
+    "speaker", "headphone", "comfortable", "versatile",
   ],
 };
 
@@ -464,40 +455,16 @@ function calculateMatch(
 
   let score = 0;
 
-  // Budget fit
-  if (price <= budget * 0.15) {
-    score += 25;
-  } else if (
-    price <=
-    budget * 0.3
-  ) {
-    score += 23;
-  } else if (
-    price <=
-    budget * 0.5
-  ) {
-    score += 20;
-  } else if (
-    price <=
-    budget * 0.75
-  ) {
-    score += 15;
-  } else if (
-    price <= budget
-  ) {
-    score += 10;
-  }
+  // Budget fit: keep the base score modest so purpose and priority matter.
+  if (price <= budget * 0.15) score += 15;
+  else if (price <= budget * 0.3) score += 14;
+  else if (price <= budget * 0.5) score += 12;
+  else if (price <= budget * 0.75) score += 9;
+  else if (price <= budget) score += 6;
 
-  // Rating
-  score += Math.round(
-    (rating / 5) * 25
-  );
-
-  // Reviews
-  score += Math.min(
-    12,
-    Math.round(reviews / 20)
-  );
+  // Rating and review confidence.
+  score += Math.round((rating / 5) * 20);
+  score += Math.min(8, Math.round(reviews / 25));
 
   // Setup purpose
   const productText =
@@ -517,20 +484,11 @@ function calculateMatch(
       )
     ).length;
 
-  score += Math.min(
-    18,
-    purposeMatches * 4
-  );
+  score += Math.min(28, purposeMatches * 5);
 
-  // Featured
-  if (product.is_featured) {
-    score += 5;
-  }
-
-  // Flash sale
-  if (product.is_flash_sale) {
-    score += 4;
-  }
+  // Small catalogue badges must not overpower purpose/quality.
+  if (product.is_featured) score += 2;
+  if (product.is_flash_sale) score += 2;
 
   // Priority
   const discount =
@@ -544,31 +502,41 @@ function calculateMatch(
     );
 
   if (priority === "quality") {
-    // Quality-first gives ratings and review volume more influence.
-    score += Math.round(rating * 1.5);
-    score += Math.min(5, Math.round(reviews / 40));
+    // Quality-first favours reliable ratings/reviews and a sensible premium tier.
+    score += Math.round(rating * 3.5);
+    score += Math.min(10, Math.round(reviews / 15));
+    if (rating >= 4.5) score += 5;
+    if (price >= budget * 0.12) score += 3;
   }
 
   if (priority === "savings") {
-    // Savings-first rewards the actual discount, not just the sale flag.
-    score += Math.min(12, Math.round(discount * 0.4));
+    // Actual lower price matters more than a large advertised discount.
+    score += Math.min(18, Math.round(discount * 0.25));
+    score += Math.round(Math.max(0, 20 - (price / Math.max(1, budget)) * 100) / 2);
   }
 
   if (priority === "value") {
-    // Value balances rating, review evidence and discount.
-    score += Math.min(7, Math.round(rating * 1.4));
-    score += Math.min(7, Math.round(discount * 0.25));
-    score += Math.min(4, Math.round(reviews / 50));
+    // Good ratings and real savings, without rewarding price alone.
+    score += Math.round(rating * 2.2);
+    score += Math.min(8, Math.round(discount * 0.25));
+    score += Math.min(6, Math.round(reviews / 25));
+    if (price <= budget * 0.35) score += 4;
+  }
+
+  if (priority === "balanced") {
+    // A reliable mid-range choice, not automatically the cheapest or most expensive.
+    score += Math.round(rating * 1.5);
+    score += Math.min(5, Math.round(reviews / 35));
+    const priceShare = price / Math.max(1, budget);
+    if (priceShare >= 0.12 && priceShare <= 0.45) score += 7;
+    else if (priceShare > 0.45 && priceShare <= 0.65) score += 3;
   }
 
   if (product.stock <= 0) {
     score -= 30;
   }
 
-  return Math.max(
-    0,
-    Math.min(99, score)
-  );
+  return Math.max(0, Math.min(100, score));
 }
 
 export default function SetupBuilderPage() {
@@ -739,28 +707,16 @@ export default function SetupBuilderPage() {
         .filter(
           (product) =>
             product.stock > 0 &&
-            Number(
-              product.price
-            ) <= budget
+            Number(product.price) > 0 &&
+            Number(product.price) <= budget &&
+            detectComponent(product) !== null
         )
         .map((product) => {
-          const component =
-            detectComponent(
-              product
-            );
-
+          const component = detectComponent(product)!;
           return {
             ...product,
-            component:
-              component ||
-              "accessories",
-            matchScore:
-              calculateMatch(
-                product,
-                setupType,
-                budget,
-                priority
-              ),
+            component,
+            matchScore: calculateMatch(product, setupType, budget, priority),
           };
         })
         .filter((product) =>
@@ -781,33 +737,76 @@ export default function SetupBuilderPage() {
       selectedComponents,
     ]);
 
-  // Build a useful mix of components without ever exceeding the selected budget.
-  // First try one product from each selected component, then fill remaining slots
-  // with the highest-ranked products that still fit.
+  // Build a purpose-relevant setup: at most one product per selected component.
+  // Reserve the cheapest available option for each remaining component before choosing
+  // a premium item, so Top Quality cannot consume the whole budget on one product.
   const recommendedProducts = useMemo(() => {
     const result: SetupProduct[] = [];
-    let runningTotal = 0;
+    let remaining = Math.max(0, Number(budget));
+    const selected = selectedComponents.slice(0, 6);
 
-    const addIfAffordable = (product: SetupProduct) => {
-      if (result.length >= 6 || result.some((item) => item.id === product.id)) return;
-      const price = Number(product.price || 0);
-      if (price <= 0 || runningTotal + price > budget) return;
-      result.push(product);
-      runningTotal += price;
+    const candidatesFor = (component: ComponentType) =>
+      matchedProducts.filter((product) => product.component === component && Number(product.price) > 0);
+
+    const minimumCostFor = (component: ComponentType) => {
+      const prices = candidatesFor(component)
+        .map((product) => Number(product.price))
+        .filter((price) => price <= remaining);
+      return prices.length ? Math.min(...prices) : null;
     };
 
-    for (const component of selectedComponents) {
-      const match = matchedProducts.find((item) => item.component === component);
-      if (match) addIfAffordable(match);
-    }
+    for (let index = 0; index < selected.length; index += 1) {
+      const component = selected[index];
+      const laterComponents = selected.slice(index + 1);
+      const reserve = laterComponents.reduce((sum, nextComponent) => {
+        const minimum = minimumCostFor(nextComponent);
+        return sum + (minimum ?? 0);
+      }, 0);
+      const availableForThis = Math.max(0, remaining - reserve);
+      const candidates = candidatesFor(component).filter(
+        (product) => Number(product.price) <= availableForThis
+      );
+      if (!candidates.length) continue;
 
-    for (const product of matchedProducts) {
-      if (result.length >= 6) break;
-      addIfAffordable(product);
+      const componentTarget = budget / Math.max(1, selected.length);
+      const ranked = [...candidates].sort((a, b) => {
+        const aPrice = Number(a.price);
+        const bPrice = Number(b.price);
+        const aPurposeFit = getPurposeRelevance(a, setupType);
+        const bPurposeFit = getPurposeRelevance(b, setupType);
+        if (aPurposeFit !== bPurposeFit) return bPurposeFit - aPurposeFit;
+        const aRating = Number(a.rating || 0);
+        const bRating = Number(b.rating || 0);
+        const aReviews = Number(a.reviews_count || 0);
+        const bReviews = Number(b.reviews_count || 0);
+        const aDiscount = discountPercent(aPrice, a.original_price == null ? null : Number(a.original_price));
+        const bDiscount = discountPercent(bPrice, b.original_price == null ? null : Number(b.original_price));
+
+        if (priority === "savings") {
+          return aPrice - bPrice || bRating - aRating || b.matchScore - a.matchScore;
+        }
+        if (priority === "quality") {
+          return bRating - aRating || bReviews - aReviews || bPrice - aPrice || b.matchScore - a.matchScore;
+        }
+        if (priority === "value") {
+          const aValue = (aRating * 2 + Math.min(5, Math.log10(aReviews + 1))) / Math.max(1, aPrice) + aDiscount / 10000;
+          const bValue = (bRating * 2 + Math.min(5, Math.log10(bReviews + 1))) / Math.max(1, bPrice) + bDiscount / 10000;
+          return bValue - aValue || b.matchScore - a.matchScore;
+        }
+
+        const aMidRangeFit = Math.abs(aPrice - componentTarget * 0.72);
+        const bMidRangeFit = Math.abs(bPrice - componentTarget * 0.72);
+        return aMidRangeFit - bMidRangeFit || bRating - aRating || b.matchScore - a.matchScore;
+      });
+
+      const chosen = ranked[0];
+      if (!chosen || Number(chosen.price) > remaining) continue;
+      result.push(chosen);
+      remaining -= Number(chosen.price);
     }
 
     return result;
-  }, [matchedProducts, selectedComponents, budget]);
+  }, [matchedProducts, selectedComponents, budget, priority, setupType]);
 
   const finalProducts =
     selectedProducts.length
@@ -969,74 +968,39 @@ export default function SetupBuilderPage() {
     );
   }
 
-  function toggleProduct(
-    productId: string
-  ) {
-    const product =
-      matchedProducts.find(
-        (item) =>
-          item.id ===
-          productId
-      );
+  function toggleProduct(productId: string) {
+    const product = matchedProducts.find((item) => item.id === productId);
+    if (!product) return;
 
-    if (!product) {
+    if (selectedProducts.includes(productId)) {
+      setSelectedProducts((current) => current.filter((id) => id !== productId));
+      setNotice(null);
+      setSetupBuilt(false);
       return;
     }
 
-    setSelectedProducts(
-      (current) => {
-        if (
-          current.includes(
-            productId
-          )
-        ) {
-          return current.filter(
-            (id) =>
-              id !== productId
-          );
-        }
+    // A setup can contain only one chosen product per component. Choosing an
+    // alternative replaces that component's previous item instead of duplicating it.
+    const otherSelectedIds = selectedProducts.filter((id) => {
+      const item = matchedProducts.find((candidate) => candidate.id === id);
+      return item && item.component !== product.component;
+    });
+    const currentTotal = otherSelectedIds.reduce((sum, id) => {
+      const item = matchedProducts.find((candidate) => candidate.id === id);
+      return sum + Number(item?.price || 0);
+    }, 0);
 
-        const currentTotal =
-          current.reduce(
-            (sum, id) => {
-              const item =
-                matchedProducts.find(
-                  (productItem) =>
-                    productItem.id ===
-                    id
-                );
+    if (currentTotal + Number(product.price) > budget) {
+      setNotice({
+        type: "error",
+        message: `Adding this item would exceed your ${formatPrice(budget)} budget. Remove another item or choose a lower-priced product.`,
+      });
+      return;
+    }
 
-              return (
-                sum +
-                Number(
-                  item?.price ||
-                    0
-                )
-              );
-            },
-            0
-          );
-
-        if (
-          currentTotal +
-            Number(
-              product.price
-            ) >
-          budget
-        ) {
-          return current;
-        }
-
-        return [
-          ...current,
-          productId,
-        ];
-      }
-    );
-
-    setSetupBuilt(
-      false
-    );
+    setNotice(null);
+    setSelectedProducts([...otherSelectedIds, productId]);
+    setSetupBuilt(false);
   }
 
   function nextStep() {
@@ -1685,12 +1649,10 @@ export default function SetupBuilderPage() {
                         }
                         type="button"
                         onClick={() => {
-                          setSetupType(
-                            item.id
-                          );
-                          setSetupBuilt(
-                            false
-                          );
+                          setSetupType(item.id);
+                          setSelectedProducts([]);
+                          setNotice(null);
+                          setSetupBuilt(false);
                         }}
                         className={`relative rounded-[24px] border p-5 text-left transition duration-200 ${
                           active
@@ -2469,7 +2431,7 @@ export default function SetupBuilderPage() {
                     </h4>
 
                     <p className="mt-2 text-sm text-gray-500">
-                      No in-stock catalogue products matched the selected components and budget. Try a different setup type, enable more components, or adjust your budget.
+                      No in-stock products fit this exact component mix within your budget. Try enabling another component or increasing the budget slightly. The builder will never go over your budget.
                     </p>
                   </div>
                 ) : (
