@@ -10,7 +10,6 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   Check,
-  ChevronDown,
   CircleDollarSign,
   Gamepad2,
   Headphones,
@@ -28,7 +27,6 @@ import {
   Sparkles,
   Star,
   Target,
-  Trash2,
   Trophy,
   WalletCards,
   Zap,
@@ -53,12 +51,6 @@ type Product = {
   is_featured: boolean;
   is_flash_sale: boolean;
   is_active: boolean;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
 };
 
 type CartItem = {
@@ -552,27 +544,21 @@ function calculateMatch(
     );
 
   if (priority === "quality") {
-    score += Math.round(
-      rating * 2
-    );
+    // Quality-first gives ratings and review volume more influence.
+    score += Math.round(rating * 1.5);
+    score += Math.min(5, Math.round(reviews / 40));
   }
 
   if (priority === "savings") {
-    score += Math.min(
-      10,
-      discount
-    );
+    // Savings-first rewards the actual discount, not just the sale flag.
+    score += Math.min(12, Math.round(discount * 0.4));
   }
 
   if (priority === "value") {
-    score += Math.min(
-      8,
-      Math.round(
-        (rating * 2 +
-          discount) /
-          2
-      )
-    );
+    // Value balances rating, review evidence and discount.
+    score += Math.min(7, Math.round(rating * 1.4));
+    score += Math.min(7, Math.round(discount * 0.25));
+    score += Math.min(4, Math.round(reviews / 50));
   }
 
   if (product.stock <= 0) {
@@ -591,9 +577,6 @@ export default function SetupBuilderPage() {
   const [products, setProducts] =
     useState<Product[]>([]);
 
-  const [categories, setCategories] =
-    useState<Category[]>([]);
-
   const [wishlist, setWishlist] =
     useState<string[]>([]);
 
@@ -605,6 +588,11 @@ export default function SetupBuilderPage() {
 
   const [building, setBuilding] =
     useState(false);
+
+  const [notice, setNotice] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
 
   const [step, setStep] =
     useState(1);
@@ -664,7 +652,6 @@ export default function SetupBuilderPage() {
 
       const [
         productResponse,
-        categoryResponse,
         wishlistResponse,
         cartResponse,
       ] = await Promise.all([
@@ -696,13 +683,6 @@ export default function SetupBuilderPage() {
           ),
 
         supabase
-          .from("categories")
-          .select(
-            "id, name, slug"
-          )
-          .order("name"),
-
-        supabase
           .from("wishlist_items")
           .select(
             "product_id"
@@ -726,11 +706,6 @@ export default function SetupBuilderPage() {
       setProducts(
         (productResponse.data ||
           []) as Product[]
-      );
-
-      setCategories(
-        (categoryResponse.data ||
-          []) as Category[]
       );
 
       setWishlist(
@@ -806,62 +781,33 @@ export default function SetupBuilderPage() {
       selectedComponents,
     ]);
 
-  const recommendedProducts =
-    useMemo(() => {
-      const result: SetupProduct[] =
-        [];
+  // Build a useful mix of components without ever exceeding the selected budget.
+  // First try one product from each selected component, then fill remaining slots
+  // with the highest-ranked products that still fit.
+  const recommendedProducts = useMemo(() => {
+    const result: SetupProduct[] = [];
+    let runningTotal = 0;
 
-      for (const component of selectedComponents) {
-        if (
-          result.some(
-            (item) =>
-              item.component ===
-              component
-          )
-        ) {
-          continue;
-        }
+    const addIfAffordable = (product: SetupProduct) => {
+      if (result.length >= 6 || result.some((item) => item.id === product.id)) return;
+      const price = Number(product.price || 0);
+      if (price <= 0 || runningTotal + price > budget) return;
+      result.push(product);
+      runningTotal += price;
+    };
 
-        const match =
-          matchedProducts.find(
-            (item) =>
-              item.component ===
-              component
-          );
+    for (const component of selectedComponents) {
+      const match = matchedProducts.find((item) => item.component === component);
+      if (match) addIfAffordable(match);
+    }
 
-        if (match) {
-          result.push(match);
-        }
-      }
+    for (const product of matchedProducts) {
+      if (result.length >= 6) break;
+      addIfAffordable(product);
+    }
 
-      for (const product of matchedProducts) {
-        if (
-          result.length >= 6
-        ) {
-          break;
-        }
-
-        if (
-          !result.some(
-            (item) =>
-              item.id ===
-              product.id
-          )
-        ) {
-          result.push(
-            product
-          );
-        }
-      }
-
-      return result.slice(
-        0,
-        6
-      );
-    }, [
-      matchedProducts,
-      selectedComponents,
-    ]);
+    return result;
+  }, [matchedProducts, selectedComponents, budget]);
 
   const finalProducts =
     selectedProducts.length
@@ -1150,6 +1096,7 @@ export default function SetupBuilderPage() {
   }
 
   function resetAll() {
+    setNotice(null);
     setStep(1);
     setSetupType(
       "work"
@@ -1176,36 +1123,42 @@ export default function SetupBuilderPage() {
   }
 
   async function addToCart(
-    product: Product
-  ) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/auth/login";
-      return;
-    }
-
+    product: Product,
+    options: { silent?: boolean } = {}
+  ): Promise<boolean> {
     try {
-      const { data: existingItem, error: lookupError } =
-        await supabase
-          .from("cart_items")
-          .select("id, quantity")
-          .eq("user_id", user.id)
-          .eq("product_id", product.id)
-          .maybeSingle();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-      if (lookupError) {
-        console.error("Cart lookup:", lookupError);
-        return;
+      if (authError) throw authError;
+
+      if (!user) {
+        window.location.href = "/auth/login";
+        return false;
       }
+
+      const { data: existingItem, error: lookupError } = await supabase
+        .from("cart_items")
+        .select("id, quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
 
       if (existingItem) {
         const currentQuantity = Number(existingItem.quantity || 0);
 
-        if (currentQuantity >= product.stock) {
-          return;
+        if (currentQuantity >= Number(product.stock || 0)) {
+          if (!options.silent) {
+            setNotice({
+              type: "error",
+              message: `Only ${product.stock} unit(s) are available for ${product.name}.`,
+            });
+          }
+          return false;
         }
 
         const { error } = await supabase
@@ -1217,11 +1170,15 @@ export default function SetupBuilderPage() {
           .eq("id", existingItem.id)
           .eq("user_id", user.id);
 
-        if (error) {
-          console.error("Cart update:", error);
-          return;
-        }
+        if (error) throw error;
       } else {
+        if (Number(product.stock || 0) < 1) {
+          if (!options.silent) {
+            setNotice({ type: "error", message: "This product is currently out of stock." });
+          }
+          return false;
+        }
+
         const { error } = await supabase
           .from("cart_items")
           .insert({
@@ -1230,28 +1187,55 @@ export default function SetupBuilderPage() {
             quantity: 1,
           });
 
-        if (error) {
-          console.error("Cart insert:", error);
-          return;
-        }
+        if (error) throw error;
       }
 
       setCartIds((current) =>
-        current.includes(product.id)
-          ? current
-          : [...current, product.id]
+        current.includes(product.id) ? current : [...current, product.id]
       );
-
       window.dispatchEvent(new Event("cart-updated"));
+
+      if (!options.silent) {
+        setNotice({
+          type: "success",
+          message: `${product.name} added to your cart.`,
+        });
+      }
+      return true;
     } catch (error) {
       console.error("Add to cart:", error);
+      if (!options.silent) {
+        setNotice({
+          type: "error",
+          message: "Could not update your cart. Please check your connection and try again.",
+        });
+      }
+      return false;
     }
   }
 
   async function addCompleteSetup() {
-    for (const product of finalProducts) {
-      await addToCart(product);
+    if (!finalProducts.length) {
+      setNotice({ type: "info", message: "Build a setup with at least one product first." });
+      return;
     }
+
+    let addedCount = 0;
+    for (const product of finalProducts) {
+      if (await addToCart(product, { silent: true })) addedCount += 1;
+    }
+
+    setNotice(
+      addedCount > 0
+        ? {
+            type: "success",
+            message: `${addedCount} of ${finalProducts.length} setup product(s) added to your cart.`,
+          }
+        : {
+            type: "error",
+            message: "No setup products were added. Please check stock and try again.",
+          }
+    );
   }
 
   async function toggleWishlist(
@@ -1259,12 +1243,17 @@ export default function SetupBuilderPage() {
   ) {
     const {
       data: { user },
-    } =
-      await supabase.auth.getUser();
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error("Wishlist auth:", authError);
+      setNotice({ type: "error", message: "Could not verify your session. Please sign in again." });
+      return;
+    }
 
     if (!user) {
-      window.location.href =
-        "/auth/login";
+      window.location.href = "/auth/login";
       return;
     }
 
@@ -1395,6 +1384,29 @@ export default function SetupBuilderPage() {
       </header>
 
       <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+        {notice && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm ${
+              notice.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : notice.type === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-[#e8dfd0] bg-white text-gray-700"
+            }`}
+          >
+            <p className="font-semibold">{notice.message}</p>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold opacity-75 hover:opacity-100"
+              aria-label="Dismiss notification"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {/* HERO */}
         <section className="relative overflow-hidden rounded-[32px] border border-[#e5d8bd] bg-white">
           <div className="absolute -right-32 -top-40 h-[550px] w-[550px] rounded-full bg-[#f1dca7]/30 blur-3xl" />
@@ -2457,8 +2469,7 @@ export default function SetupBuilderPage() {
                     </h4>
 
                     <p className="mt-2 text-sm text-gray-500">
-                      Try increasing your budget or selecting
-                      more components.
+                      No in-stock catalogue products matched the selected components and budget. Try a different setup type, enable more components, or adjust your budget.
                     </p>
                   </div>
                 ) : (
