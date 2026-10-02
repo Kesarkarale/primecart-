@@ -827,8 +827,8 @@ export default function BudgetBuilderPage() {
       return result;
     }
 
-    /* QUALITY FIRST: high quality first, with controlled rotation across the top-quality pool. */
-    if (goal === "quality") {
+    /* MAXIMUM VALUE: use the former Quality First algorithm, with quality-driven picks and controlled rotation. */
+    if (goal === "value") {
       const candidates = [...pool].sort((a, b) => {
         const diff = qualityScore(b) - qualityScore(a);
         return diff || randomTie(a, b, 61);
@@ -861,9 +861,8 @@ export default function BudgetBuilderPage() {
       return result;
     }
 
-    /* MAXIMUM VALUE: select the highest-priced matching product that fits the budget.
-       Price is the primary rule here; quality is only used to break price ties. */
-    if (goal === "value") {
+    /* QUALITY FIRST: use the former Maximum Value algorithm, selecting the highest-priced matching product within budget. */
+    if (goal === "quality") {
       const candidates = [...pool].sort((a, b) => {
         const priceDiff = Number(b.price) - Number(a.price);
         if (priceDiff !== 0) return priceDiff;
