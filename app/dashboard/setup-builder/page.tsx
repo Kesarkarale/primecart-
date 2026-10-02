@@ -1720,9 +1720,9 @@ export default function SetupBuilderPage() {
                 </div>
               </aside>
             </div>
-          )}
         </section>
-
+ )}
+        
         <section className="mt-10 rounded-[25px] border border-[#dfc98e] bg-[#fff6df] p-6 sm:p-9">
           <div className="flex flex-col items-center justify-between gap-5 text-center sm:flex-row sm:text-left">
             <div>
