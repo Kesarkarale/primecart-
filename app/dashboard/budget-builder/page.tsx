@@ -738,11 +738,10 @@ export default function BudgetBuilderPage() {
     const eligible = [...affordableMatchingProducts];
     const previousSet = new Set(previousPlanIds);
     const freshEligible = eligible.filter((p) => !previousSet.has(p.id));
-    // On a rebuild, prefer products that were NOT in the previous plan.
-    // If there are not enough alternatives, we safely fall back to the full pool.
-    const pool = freshEligible.length >= Math.min(2, eligible.length)
-      ? freshEligible
-      : eligible;
+    // On every rebuild, use fresh products whenever any eligible alternatives exist.
+    // Fall back to the full eligible pool only when every eligible product was
+    // already used in the previous plan.
+    const pool = freshEligible.length > 0 ? freshEligible : eligible;
 
     const result: Product[] = [];
     let remaining = budget;
@@ -862,29 +861,19 @@ export default function BudgetBuilderPage() {
       return result;
     }
 
-    /* MAXIMUM VALUE: rotate through the strongest value pool rather than repeating the same #1. */
+    /* MAXIMUM VALUE: select the highest-priced matching product that fits the budget.
+       Price is the primary rule here; quality is only used to break price ties. */
     if (goal === "value") {
       const candidates = [...pool].sort((a, b) => {
-        const diff = valueScore(b) - valueScore(a);
-        return diff || randomTie(a, b, 51);
+        const priceDiff = Number(b.price) - Number(a.price);
+        if (priceDiff !== 0) return priceDiff;
+        const qualityDiff = qualityScore(b) - qualityScore(a);
+        return qualityDiff || randomTie(a, b, 51);
       });
 
-      const bestValue = candidates.length ? valueScore(candidates[0]) : 0;
-      // Strong value alternatives remain within 18% of the best value score.
-      const valuePool = candidates.filter(
-        (product) => valueScore(product) >= bestValue * 0.82
-      );
-
-      const rotation = valuePool.length
-        ? buildSeed % valuePool.length
-        : 0;
-      const rotated = valuePool.length
-        ? valuePool.slice(rotation).concat(valuePool.slice(0, rotation))
-        : candidates;
-
-      for (const product of rotated) {
-        if (result.length >= 6) break;
-        pushIfFits(product);
+      // One clear maximum-value pick: the most expensive eligible item under budget.
+      for (const product of candidates) {
+        if (pushIfFits(product)) break;
       }
       return result;
     }
@@ -938,7 +927,7 @@ export default function BudgetBuilderPage() {
     }
 
     return safe;
-  }, [activePlanIds, products, budget]);
+  }, [activePlanIds, products, budget, categoryId, subcategory]);
 
   const plannedSpend = planProducts.reduce(
     (total, product) =>
@@ -1145,8 +1134,11 @@ export default function BudgetBuilderPage() {
     setBuilding(true);
     setPlanReady(false);
     setManualPlanMode(false);
-    // Remember the currently displayed plan so the next build can prefer fresh products.
-    setPreviousPlanIds(autoPlan.map((product) => product.id));
+    // Exclude only products the user has actually seen in a completed plan.
+    // On the first build, do not exclude the hidden precomputed autoPlan.
+    setPreviousPlanIds(
+      planReady ? planProducts.map((product) => product.id) : []
+    );
     setSelectedProducts([]);
     setBuildSeed((current) => current + 1);
 
@@ -1251,7 +1243,7 @@ export default function BudgetBuilderPage() {
   }
 
   function optimizePlan() {
-    setPreviousPlanIds(autoPlan.map((product) => product.id));
+    setPreviousPlanIds(planProducts.map((product) => product.id));
     setSelectedProducts([]);
     setManualPlanMode(false);
     setPlanReady(false);
