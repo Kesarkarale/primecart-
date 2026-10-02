@@ -147,63 +147,35 @@ const components: {
     title: "Display",
     description: "Monitor & screen",
     icon: Monitor,
-    keywords: [
-      "monitor",
-      "display",
-      "screen",
-      "led",
-      "tv",
-    ],
+    keywords: ["monitor", "computer monitor", "gaming monitor", "display", "screen", "led monitor", "tv", "television"],
   },
   {
     id: "keyboard",
     title: "Keyboard",
     description: "Typing & control",
     icon: Keyboard,
-    keywords: [
-      "keyboard",
-      "mechanical",
-    ],
+    keywords: ["keyboard", "mechanical keyboard", "gaming keyboard", "wireless keyboard"],
   },
   {
     id: "mouse",
     title: "Mouse",
     description: "Precision & navigation",
     icon: Mouse,
-    keywords: [
-      "mouse",
-    ],
+    keywords: ["mouse", "gaming mouse", "computer mouse", "wireless mouse", "mouse pad", "mousepad"],
   },
   {
     id: "audio",
     title: "Audio",
     description: "Headphones & sound",
     icon: Headphones,
-    keywords: [
-      "headphone",
-      "headphones",
-      "earbuds",
-      "earphone",
-      "speaker",
-      "audio",
-    ],
+    keywords: ["headphone", "headphones", "gaming headset", "headset", "earbuds", "earphone", "speaker", "microphone", "mic"],
   },
   {
     id: "accessories",
     title: "Accessories",
-    description: "Workspace extras",
+    description: "Useful tech accessories",
     icon: Package,
-    keywords: [
-      "webcam",
-      "stand",
-      "hub",
-      "cable",
-      "lamp",
-      "mouse pad",
-      "accessory",
-      "desk",
-      "bag",
-    ],
+    keywords: ["webcam", "game controller", "controller", "usb hub", "laptop stand", "monitor stand", "headphone stand", "desk mat", "mouse pad", "mousepad", "usb cable", "hdmi cable", "gaming desk", "desk lamp"],
   },
 ];
 
@@ -270,11 +242,12 @@ const setupSpecificKeywords: Record<SetupType, string[]> = {
 };
 
 function getPurposeRelevance(product: Product, setupType: SetupType) {
-  const text = `${product.name} ${product.short_description || ""} ${product.description || ""} ${product.brand || ""}`.toLowerCase();
-  return setupSpecificKeywords[setupType].reduce(
-    (score, keyword) => score + (text.includes(keyword) ? 1 : 0),
-    0
-  );
+  // Product name is the strongest signal; descriptions are used only as supporting text.
+  const text = `${product.name} ${product.brand || ""} ${product.short_description || ""}`.toLowerCase();
+  const matches = setupSpecificKeywords[setupType].filter((keyword) =>
+    new RegExp(`(^|[^a-z0-9])${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i").test(text)
+  ).length;
+  return matches;
 }
 
 const setupKeywords: Record<
@@ -407,32 +380,50 @@ function discountPercent(
   );
 }
 
-function detectComponent(
-  product: Product
-): ComponentType | null {
-  const text =
-    `${product.name} ${
-      product.short_description || ""
-    } ${
-      product.description || ""
-    } ${
-      product.brand || ""
-    }`.toLowerCase();
+function hasWholePhrase(text: string, keyword: string) {
+  const escaped = keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
+}
 
+function detectComponent(product: Product): ComponentType | null {
+  // Do not scan the full long description: unrelated words there can misclassify
+  // skincare, clothing, or household products as computer accessories.
+  const name = `${product.name} ${product.brand || ""}`.toLowerCase();
+  const supportingText = (product.short_description || "").toLowerCase();
+
+  // Match the product title first. Supporting copy is considered only if the title
+  // does not identify a component, and only with explicit tech-product phrases.
   for (const component of components) {
-    if (
-      component.keywords.some(
-        (keyword) =>
-          text.includes(
-            keyword.toLowerCase()
-          )
-      )
-    ) {
+    if (component.keywords.some((keyword) => hasWholePhrase(name, keyword))) {
       return component.id;
     }
   }
-
+  for (const component of components) {
+    if (component.keywords.some((keyword) => hasWholePhrase(supportingText, keyword))) {
+      return component.id;
+    }
+  }
   return null;
+}
+
+function isPurposeSuitable(product: Product, setupType: SetupType) {
+  const name = `${product.name} ${product.brand || ""}`.toLowerCase();
+  const shortDescription = (product.short_description || "").toLowerCase();
+  const text = `${name} ${shortDescription}`;
+
+  // A setup builder must only recommend actual tech gear, never general-store items.
+  if (!detectComponent(product)) return false;
+
+  const forbidden = ["sunscreen", "sun screen", "moisturizer", "moisturiser", "serum", "face wash", "lipstick", "foundation", "shampoo", "conditioner", "saree", "kurta", "dress", "t-shirt", "jeans", "detergent", "cooking oil", "snack", "biscuit"];
+  if (forbidden.some((term) => hasWholePhrase(name, term) || hasWholePhrase(shortDescription, term))) return false;
+
+  // For gaming, accept core PC/peripheral gear and gaming-specific accessories.
+  // The component matcher above guarantees that generic unrelated products are excluded.
+  if (setupType === "gaming") {
+    const gamingTerms = ["gaming", "game", "mechanical keyboard", "high refresh", "low latency", "gaming mouse", "gaming headset", "controller", "monitor", "keyboard", "mouse", "headphone", "headset", "speaker", "webcam", "mouse pad", "mousepad", "usb hub", "hdmi cable", "gaming desk"];
+    return gamingTerms.some((term) => hasWholePhrase(text, term));
+  }
+  return true;
 }
 
 function calculateMatch(
@@ -709,6 +700,7 @@ export default function SetupBuilderPage() {
             product.stock > 0 &&
             Number(product.price) > 0 &&
             Number(product.price) <= budget &&
+            isPurposeSuitable(product, setupType) &&
             detectComponent(product) !== null
         )
         .map((product) => {
