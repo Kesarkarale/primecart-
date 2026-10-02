@@ -8,15 +8,11 @@ import {
   CalendarCheck,
   ChevronRight,
   CircleDollarSign,
-  Clock3,
   Gift,
   HelpCircle,
   Info,
   Lock,
   Medal,
-  Package,
-  Percent,
-  Plus,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
@@ -31,7 +27,8 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type Tier = {
   name: string;
@@ -93,48 +90,14 @@ const tiers: Tier[] = [
   },
 ];
 
-const activities = [
-  {
-    title: "Welcome bonus",
-    description: "PrimeCart membership bonus",
-    points: 500,
-    date: "Today",
-    type: "bonus",
-    icon: Gift,
-  },
-  {
-    title: "Product purchase",
-    description: "Order #PC-10482",
-    points: 240,
-    date: "Yesterday",
-    type: "purchase",
-    icon: ShoppingBag,
-  },
-  {
-    title: "Product review",
-    description: "Reviewed Wireless Headphones",
-    points: 100,
-    date: "12 Sep",
-    type: "review",
-    icon: Star,
-  },
-  {
-    title: "Daily login",
-    description: "7-day activity streak",
-    points: 50,
-    date: "10 Sep",
-    type: "login",
-    icon: CalendarCheck,
-  },
-  {
-    title: "Reward redeemed",
-    description: "₹100 PrimeCart reward",
-    points: -1000,
-    date: "08 Sep",
-    type: "redeem",
-    icon: Ticket,
-  },
-];
+type PrimePointsActivity = {
+  id: string;
+  title: string;
+  description: string;
+  points_delta: number;
+  created_at: string;
+  event_type: string;
+};
 
 const earningMethods = [
   {
@@ -189,7 +152,11 @@ const rewards = [
 ];
 
 export default function PrimePointsPage() {
-  const [points, setPoints] = useState(1840);
+  const supabase = useMemo(() => createClient(), []);
+  const [points, setPoints] = useState(0);
+  const [activities, setActivities] = useState<PrimePointsActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<{
     title: string;
@@ -198,6 +165,42 @@ export default function PrimePointsPage() {
     icon: React.ElementType;
   } | null>(null);
   const [message, setMessage] = useState("");
+
+  const loadPrimePoints = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) {
+        setPoints(0);
+        setActivities([]);
+        window.location.href = "/auth/login";
+        return;
+      }
+
+      const [balanceResult, activityResult] = await Promise.all([
+        supabase.from("prime_points_transactions").select("points_delta").eq("user_id", user.id),
+        supabase.from("prime_points_transactions")
+          .select("id, title, description, points_delta, created_at, event_type")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+      ]);
+      if (balanceResult.error) throw balanceResult.error;
+      if (activityResult.error) throw activityResult.error;
+
+      const rows = (activityResult.data || []) as PrimePointsActivity[];
+      setActivities(rows);
+      setPoints((balanceResult.data || []).reduce((sum, row) => sum + Number(row.points_delta || 0), 0));
+    } catch (error) {
+      console.error("PrimePoints load error:", error);
+      setMessage("Could not load your PrimePoints. Please refresh and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadPrimePoints();
+  }, [loadPrimePoints]);
 
   const currentTier = useMemo(() => {
     return (
@@ -226,19 +229,36 @@ export default function PrimePointsPage() {
 
   const rewardValue = Math.floor(points / 100) * 10;
 
-  const redeemReward = () => {
-    if (!selectedReward) return;
-
+  const redeemReward = async () => {
+    if (!selectedReward || redeeming) return;
     if (points < selectedReward.points) {
-      setMessage(
-        `You need ${selectedReward.points - points} more PrimePoints for this reward.`
-      );
+      setMessage(`You need ${selectedReward.points - points} more PrimePoints for this reward.`);
       return;
     }
 
-    setPoints((current) => current - selectedReward.points);
-    setMessage(`${selectedReward.title} redeemed successfully!`);
-    setRedeemOpen(false);
+    setRedeeming(true);
+    setMessage("");
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) {
+        window.location.href = "/auth/login";
+        return;
+      }
+      const { error } = await supabase.rpc("redeem_prime_points", {
+        p_points: selectedReward.points,
+        p_reward_title: selectedReward.title,
+      });
+      if (error) throw error;
+      setRedeemOpen(false);
+      setMessage(`${selectedReward.title} redeemed successfully!`);
+      await loadPrimePoints();
+    } catch (error) {
+      console.error("PrimePoints redemption error:", error);
+      setMessage(error instanceof Error ? error.message : "Reward redemption failed. Please try again.");
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   const openReward = (reward: (typeof rewards)[number]) => {
@@ -297,7 +317,7 @@ export default function PrimePointsPage() {
             <div className="ml-2 flex items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 shadow-sm">
               <Sparkles className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-black">
-                {points.toLocaleString()}
+                {(loading ? points : points).toLocaleString()}
               </span>
               <span className="text-xs font-medium text-stone-500">
                 points
@@ -308,6 +328,7 @@ export default function PrimePointsPage() {
       </header>
 
       <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        {message && !redeemOpen && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{message}</div>}
         {/* BREADCRUMB */}
         <div className="mb-6 flex items-center gap-2 text-sm text-stone-500">
           <Link
@@ -397,7 +418,7 @@ export default function PrimePointsPage() {
 
                     <div className="mt-2 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight text-stone-950">
-                        {points.toLocaleString()}
+                        {(loading ? points : points).toLocaleString()}
                       </span>
                       <span className="mb-1 text-sm font-bold text-amber-600">
                         PP
@@ -475,7 +496,7 @@ export default function PrimePointsPage() {
           <StatCard
             icon={Sparkles}
             title="Available Points"
-            value={points.toLocaleString()}
+            value={(loading ? points : points).toLocaleString()}
             subtitle="Ready to redeem"
           />
 
@@ -640,7 +661,7 @@ export default function PrimePointsPage() {
             <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
               <Sparkles className="h-4 w-4 text-amber-600" />
               <span className="text-sm font-bold text-amber-800">
-                {points.toLocaleString()} PP available
+                {(loading ? points : points).toLocaleString()} PP available
               </span>
             </div>
           </div>
@@ -725,20 +746,30 @@ export default function PrimePointsPage() {
                 </p>
               </div>
 
-              <button className="hidden items-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-xs font-bold text-stone-600 transition hover:bg-stone-50 sm:flex">
-                <RefreshCw className="h-3.5 w-3.5" />
+              <button onClick={() => void loadPrimePoints()} disabled={loading} className="hidden items-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-xs font-bold text-stone-600 transition hover:bg-stone-50 disabled:opacity-50 sm:flex">
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
                 Refresh
               </button>
             </div>
 
             <div className="mt-7 divide-y divide-stone-100">
-              {activities.map((activity) => {
-                const Icon = activity.icon;
-                const positive = activity.points > 0;
+              {loading && activities.length === 0 ? (
+                <div className="py-10 text-center text-sm font-medium text-stone-500">Loading your PrimePoints activity…</div>
+              ) : activities.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/50 px-5 py-10 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-amber-600 shadow-sm"><Sparkles className="h-6 w-6" /></div>
+                  <p className="mt-3 font-bold text-stone-800">Your rewards journey starts here</p>
+                  <p className="mt-1 text-sm text-stone-500">Complete an eligible order to start earning PrimePoints.</p>
+                  <Link href="/dashboard/products" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#c79a3b] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#ad812b]">Explore products <ArrowRight className="h-4 w-4" /></Link>
+                </div>
+              ) : activities.map((activity) => {
+                const positive = Number(activity.points_delta) > 0;
+                const Icon = activity.event_type === "order_earned" ? ShoppingBag : activity.event_type === "reward_redeemed" ? Ticket : activity.event_type === "order_reversed" ? RefreshCw : Sparkles;
+                const activityDate = new Date(activity.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
                 return (
                   <div
-                    key={`${activity.title}-${activity.date}`}
+                    key={activity.id}
                     className="flex items-center gap-4 py-4 first:pt-0 last:pb-0"
                   >
                     <div
@@ -769,12 +800,12 @@ export default function PrimePointsPage() {
                             : "text-stone-600"
                         }`}
                       >
-                        {positive ? "+" : ""}
-                        {activity.points.toLocaleString()} PP
+                        {positive ? "+" : "−"}
+                        {Math.abs(Number(activity.points_delta)).toLocaleString()} PP
                       </p>
 
                       <p className="mt-1 text-[11px] text-stone-400">
-                        {activity.date}
+                        {activityDate}
                       </p>
                     </div>
                   </div>
@@ -1069,7 +1100,7 @@ export default function PrimePointsPage() {
                   </p>
 
                   <p className="mt-1 text-lg font-black">
-                    {points.toLocaleString()} PP
+                    {(loading ? points : points).toLocaleString()} PP
                   </p>
                 </div>
 
@@ -1096,7 +1127,7 @@ export default function PrimePointsPage() {
 
               <button
                 onClick={redeemReward}
-                disabled={points < selectedReward.points}
+                disabled={points < selectedReward.points || redeeming}
                 className={`mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-black transition ${
                   points >= selectedReward.points
                     ? "bg-stone-950 text-white hover:bg-stone-800"
@@ -1105,7 +1136,7 @@ export default function PrimePointsPage() {
               >
                 {points >= selectedReward.points ? (
                   <>
-                    Confirm Redemption
+                    {redeeming ? "Processing…" : "Confirm Redemption"}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 ) : (
