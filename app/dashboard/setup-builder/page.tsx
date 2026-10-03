@@ -38,7 +38,14 @@ import { createClient } from "@/lib/supabase/client";
 type SetupType = "work" | "gaming" | "study" | "creator" | "everyday";
 type PriorityType = "balanced" | "value" | "quality" | "savings";
 type ComponentType =
+  | "computer"
   | "display"
+  | "cpu"
+  | "motherboard"
+  | "gpu"
+  | "ram"
+  | "storage"
+  | "power"
   | "keyboard"
   | "mouse"
   | "audio"
@@ -46,7 +53,6 @@ type ComponentType =
   | "microphone"
   | "controller"
   | "accessories";
-
 type Product = {
   id: string;
   category_id: string | null;
@@ -198,60 +204,61 @@ const components: {
 ];
 
 const componentsByPurpose: Record<SetupType, ComponentType[]> = {
-  work: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
-  gaming: ["display", "keyboard", "mouse", "audio", "controller", "accessories"],
-  study: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
-  creator: [
-    "display", "keyboard", "mouse", "audio",
-    "webcam", "microphone", "accessories",
+  work: [
+    "computer",
+    "display",
+    "keyboard",
+    "mouse",
+    "audio",
+    "webcam",
+    "accessories",
   ],
-  everyday: ["display", "keyboard", "mouse", "audio", "accessories"],
-};
-
-const purposeLabels: Record<
-  SetupType,
-  Partial<Record<ComponentType, { title: string; description: string }>>
-> = {
-  work: {
-    display: { title: "Office Monitor", description: "Documents and multitasking" },
-    keyboard: { title: "Work Keyboard", description: "Comfortable typing" },
-    mouse: { title: "Productivity Mouse", description: "Daily navigation" },
-    audio: { title: "Meeting Audio", description: "Calls and meetings" },
-    webcam: { title: "Meeting Webcam", description: "Video meetings" },
-    accessories: { title: "Desk Essentials", description: "Stands, hubs and accessories" },
-  },
-  gaming: {
-    display: { title: "Gaming Monitor", description: "Responsive gameplay" },
-    keyboard: { title: "Gaming Keyboard", description: "Gaming controls" },
-    mouse: { title: "Gaming Mouse", description: "Precise movements" },
-    audio: { title: "Gaming Audio", description: "Immersive sound" },
-    controller: { title: "Game Controller", description: "Supported games" },
-    accessories: { title: "Gaming Accessories", description: "Mats, stands and gear" },
-  },
-  study: {
-    display: { title: "Study Monitor", description: "Lessons and reading" },
-    keyboard: { title: "Study Keyboard", description: "Notes and assignments" },
-    mouse: { title: "Study Mouse", description: "Everyday learning" },
-    audio: { title: "Class Audio", description: "Lectures and classes" },
-    webcam: { title: "Online Class Webcam", description: "Virtual lessons" },
-    accessories: { title: "Study Accessories", description: "Stands, lamps and hubs" },
-  },
-  creator: {
-    display: { title: "Creator Monitor", description: "Editing and design" },
-    keyboard: { title: "Creative Keyboard", description: "Creative workflows" },
-    mouse: { title: "Precision Mouse", description: "Editing and design" },
-    audio: { title: "Creator Audio", description: "Monitoring and playback" },
-    webcam: { title: "Creator Webcam", description: "Recording and streaming" },
-    microphone: { title: "Recording Microphone", description: "Voice capture" },
-    accessories: { title: "Creator Accessories", description: "Capture cards, stands and hubs" },
-  },
-  everyday: {
-    display: { title: "Everyday Monitor", description: "General computer use" },
-    keyboard: { title: "Everyday Keyboard", description: "Daily typing" },
-    mouse: { title: "Everyday Mouse", description: "Reliable navigation" },
-    audio: { title: "Everyday Audio", description: "Music and entertainment" },
-    accessories: { title: "Tech Accessories", description: "Useful computer accessories" },
-  },
+  gaming: [
+    "computer",
+    "display",
+    "cpu",
+    "motherboard",
+    "gpu",
+    "ram",
+    "storage",
+    "power",
+    "keyboard",
+    "mouse",
+    "audio",
+    "controller",
+    "accessories",
+  ],
+  study: [
+    "computer",
+    "display",
+    "keyboard",
+    "mouse",
+    "audio",
+    "webcam",
+    "accessories",
+  ],
+  creator: [
+    "computer",
+    "display",
+    "cpu",
+    "gpu",
+    "ram",
+    "storage",
+    "keyboard",
+    "mouse",
+    "audio",
+    "webcam",
+    "microphone",
+    "accessories",
+  ],
+  everyday: [
+    "computer",
+    "display",
+    "keyboard",
+    "mouse",
+    "audio",
+    "accessories",
+  ],
 };
 
 const priorityOptions: {
