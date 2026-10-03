@@ -11,6 +11,7 @@ import {
   Check,
   CircleDollarSign,
   Gamepad2,
+  Headphones,
   Heart,
   Home,
   Keyboard,
@@ -31,21 +32,13 @@ import {
   Webcam,
   Mic,
   X,
-  Headphones,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type SetupType = "work" | "gaming" | "study" | "creator" | "everyday";
 type PriorityType = "balanced" | "value" | "quality" | "savings";
 type ComponentType =
-  | "computer"
   | "display"
-  | "cpu"
-  | "motherboard"
-  | "gpu"
-  | "ram"
-  | "storage"
-  | "power"
   | "keyboard"
   | "mouse"
   | "audio"
@@ -53,6 +46,7 @@ type ComponentType =
   | "microphone"
   | "controller"
   | "accessories";
+
 type Product = {
   id: string;
   category_id: string | null;
@@ -140,8 +134,8 @@ const components: {
     description: "Computer monitors and displays",
     icon: Monitor,
     keywords: [
-      "monitor", "computer display", "desktop display",
-      "gaming display", "led display",
+      "gaming monitor", "computer monitor", "desktop monitor",
+      "led monitor", "monitor", "display monitor",
     ],
   },
   {
@@ -149,14 +143,20 @@ const components: {
     title: "Keyboard",
     description: "Typing and gaming controls",
     icon: Keyboard,
-    keywords: ["keyboard", "keypad"],
+    keywords: [
+      "mechanical keyboard", "gaming keyboard",
+      "wireless keyboard", "computer keyboard", "keyboard",
+    ],
   },
   {
     id: "mouse",
     title: "Mouse",
     description: "Navigation and precision control",
     icon: Mouse,
-    keywords: ["mouse", "trackball"],
+    keywords: [
+      "gaming mouse", "computer mouse",
+      "wireless mouse", "optical mouse", "mouse",
+    ],
   },
   {
     id: "audio",
@@ -164,30 +164,38 @@ const components: {
     description: "Headphones, headsets and speakers",
     icon: Headphones,
     keywords: [
-      "headphones", "headphone", "headset", "earphones",
-      "earbuds", "speaker", "computer audio",
+      "gaming headset", "gaming headphones", "headphones",
+      "headphone", "headset", "earphones", "earbuds",
+      "bluetooth speaker", "computer speaker", "speaker",
     ],
   },
   {
     id: "webcam",
     title: "Webcam",
     description: "Cameras for calls and streaming",
-    icon: Webcam,
-    keywords: ["webcam", "web camera", "conference camera"],
+    icon: Laptop,
+    keywords: ["webcam", "web camera", "streaming camera", "conference camera"],
   },
   {
     id: "microphone",
     title: "Microphone",
     description: "Voice recording and streaming",
     icon: Mic,
-    keywords: ["microphone", "usb mic", "studio mic"],
+    keywords: [
+      "condenser microphone", "usb microphone",
+      "studio microphone", "lavalier microphone",
+      "microphone", "usb mic", "studio mic", "mic",
+    ],
   },
   {
     id: "controller",
     title: "Controller",
     description: "Gamepads and gaming controllers",
     icon: Gamepad2,
-    keywords: ["game controller", "gamepad", "game pad", "joystick"],
+    keywords: [
+      "gaming controller", "game controller",
+      "wireless controller", "gamepad", "game pad", "joystick",
+    ],
   },
   {
     id: "accessories",
@@ -195,70 +203,70 @@ const components: {
     description: "Useful computer and desk accessories",
     icon: Package,
     keywords: [
-      "mouse pad", "mousepad", "desk mat", "laptop stand",
-      "monitor stand", "headphone stand", "usb hub",
-      "capture card", "hdmi cable", "usb cable", "usb adapter",
-      "desk lamp", "cooling pad", "laptop cooler",
+      "mouse pad", "mousepad", "desk mat",
+      "laptop stand", "monitor stand", "headphone stand",
+      "usb hub", "capture card", "hdmi cable", "usb cable",
+      "usb adapter", "gaming desk", "desk lamp",
+      "laptop cooling pad", "cooling pad",
     ],
   },
 ];
 
 const componentsByPurpose: Record<SetupType, ComponentType[]> = {
-  work: [
-    "computer",
-    "display",
-    "keyboard",
-    "mouse",
-    "audio",
-    "webcam",
-    "accessories",
-  ],
-  gaming: [
-    "computer",
-    "display",
-    "cpu",
-    "motherboard",
-    "gpu",
-    "ram",
-    "storage",
-    "power",
-    "keyboard",
-    "mouse",
-    "audio",
-    "controller",
-    "accessories",
-  ],
-  study: [
-    "computer",
-    "display",
-    "keyboard",
-    "mouse",
-    "audio",
-    "webcam",
-    "accessories",
-  ],
+  work: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
+  gaming: ["display", "keyboard", "mouse", "audio", "controller", "accessories"],
+  study: ["display", "keyboard", "mouse", "audio", "webcam", "accessories"],
   creator: [
-    "computer",
-    "display",
-    "cpu",
-    "gpu",
-    "ram",
-    "storage",
-    "keyboard",
-    "mouse",
-    "audio",
-    "webcam",
-    "microphone",
-    "accessories",
+    "display", "keyboard", "mouse", "audio",
+    "webcam", "microphone", "accessories",
   ],
-  everyday: [
-    "computer",
-    "display",
-    "keyboard",
-    "mouse",
-    "audio",
-    "accessories",
-  ],
+  everyday: ["display", "keyboard", "mouse", "audio", "accessories"],
+};
+
+const purposeLabels: Record<
+  SetupType,
+  Partial<Record<ComponentType, { title: string; description: string }>>
+> = {
+  work: {
+    display: { title: "Office Monitor", description: "For documents and multitasking" },
+    keyboard: { title: "Work Keyboard", description: "For comfortable typing" },
+    mouse: { title: "Productivity Mouse", description: "For daily navigation" },
+    audio: { title: "Meeting Audio", description: "For calls and meetings" },
+    webcam: { title: "Meeting Webcam", description: "For video meetings" },
+    accessories: { title: "Desk Essentials", description: "Stands, hubs and accessories" },
+  },
+  gaming: {
+    display: { title: "Gaming Monitor", description: "For responsive gameplay" },
+    keyboard: { title: "Gaming Keyboard", description: "For gaming and control" },
+    mouse: { title: "Gaming Mouse", description: "For precise movements" },
+    audio: { title: "Gaming Audio", description: "For immersive sound" },
+    controller: { title: "Game Controller", description: "For supported games" },
+    accessories: { title: "Gaming Accessories", description: "Mats, stands and gaming gear" },
+  },
+  study: {
+    display: { title: "Study Monitor", description: "For lessons and reading" },
+    keyboard: { title: "Study Keyboard", description: "For notes and assignments" },
+    mouse: { title: "Study Mouse", description: "For everyday learning" },
+    audio: { title: "Class Audio", description: "For lectures and classes" },
+    webcam: { title: "Online Class Webcam", description: "For virtual lessons" },
+    accessories: { title: "Study Accessories", description: "Stands, lamps and hubs" },
+  },
+  creator: {
+    display: { title: "Creator Monitor", description: "For editing and design" },
+    keyboard: { title: "Creative Keyboard", description: "For creative workflows" },
+    mouse: { title: "Precision Mouse", description: "For editing and design" },
+    audio: { title: "Creator Audio", description: "For editing and monitoring" },
+    webcam: { title: "Creator Webcam", description: "For recording and streaming" },
+    microphone: { title: "Recording Microphone", description: "For voice capture" },
+    accessories: { title: "Creator Accessories", description: "Capture cards, stands and hubs" },
+  },
+  everyday: {
+    display: { title: "Everyday Monitor", description: "For general computer use" },
+    keyboard: { title: "Everyday Keyboard", description: "For daily typing" },
+    mouse: { title: "Everyday Mouse", description: "For reliable navigation" },
+    audio: { title: "Everyday Audio", description: "For music and entertainment" },
+    accessories: { title: "Tech Accessories", description: "Useful computer accessories" },
+  },
 };
 
 const priorityOptions: {
@@ -266,10 +274,26 @@ const priorityOptions: {
   title: string;
   description: string;
 }[] = [
-  { id: "balanced", title: "Balanced", description: "Balance quality and price." },
-  { id: "value", title: "Best Value", description: "Prioritize quality per rupee." },
-  { id: "quality", title: "Quality First", description: "Prioritize ratings and review confidence." },
-  { id: "savings", title: "Maximum Savings", description: "Prefer suitable lower-priced products." },
+  {
+    id: "balanced",
+    title: "Balanced",
+    description: "Balance price, ratings and usefulness.",
+  },
+  {
+    id: "value",
+    title: "Best Value",
+    description: "Prioritize useful features for the price.",
+  },
+  {
+    id: "quality",
+    title: "Quality First",
+    description: "Prioritize ratings and review confidence.",
+  },
+  {
+    id: "savings",
+    title: "Maximum Savings",
+    description: "Prefer suitable lower-priced products.",
+  },
 ];
 
 const budgetPresets = [
@@ -280,15 +304,21 @@ const budgetPresets = [
   { label: "Ultimate", amount: 50000 },
 ];
 
+const purposeKeywords: Record<SetupType, string[]> = {
+  work: ["office", "business", "productivity", "ergonomic", "silent", "wireless"],
+  gaming: ["gaming", "game", "rgb", "mechanical", "low latency", "controller"],
+  study: ["study", "student", "learning", "online class", "lecture", "reading"],
+  creator: ["creator", "content", "studio", "editing", "streaming", "microphone"],
+  everyday: ["everyday", "daily", "home", "versatile", "comfortable", "wireless"],
+};
+
 const blockedNames = [
-  "screen protector", "tempered glass", "sunscreen", "moisturizer",
+  "sunscreen", "screen protector", "tempered glass", "moisturizer",
   "moisturiser", "serum", "face wash", "lipstick", "foundation",
   "shampoo", "conditioner", "saree", "kurta", "dress", "t shirt",
   "jeans", "detergent", "cooking oil", "snack", "biscuit",
   "beauty", "skincare", "skin care", "cosmetic", "face cream",
   "body lotion", "perfume", "toothpaste", "food", "toy",
-  "mobile phone", "smartphone", "tablet", "refrigerator",
-  "washing machine", "television", "smart tv",
 ];
 
 const blockedCategories = [
@@ -297,45 +327,9 @@ const blockedCategories = [
   "beverage", "toys", "baby", "jewellery", "jewelry", "automotive",
 ];
 
-const allowedAccessories: Record<SetupType, string[]> = {
-  work: [
-    "mouse pad", "mousepad", "desk mat", "laptop stand",
-    "monitor stand", "headphone stand", "usb hub", "usb cable",
-    "hdmi cable", "usb adapter", "desk lamp",
-  ],
-  study: [
-    "mouse pad", "mousepad", "desk mat", "laptop stand",
-    "monitor stand", "headphone stand", "usb hub", "usb cable",
-    "hdmi cable", "usb adapter", "desk lamp",
-  ],
-  everyday: [
-    "mouse pad", "mousepad", "desk mat", "laptop stand",
-    "monitor stand", "headphone stand", "usb hub", "usb cable",
-    "hdmi cable", "usb adapter",
-  ],
-  gaming: [
-    "mouse pad", "mousepad", "desk mat", "cooling pad",
-    "laptop cooler", "usb hub", "gaming desk", "laptop stand",
-    "monitor stand", "headphone stand", "usb cable", "hdmi cable",
-    "usb adapter",
-  ],
-  creator: [
-    "capture card", "usb hub", "laptop stand", "monitor stand",
-    "desk mat", "usb cable", "hdmi cable", "usb adapter",
-  ],
-};
-
-function normalize(value: string | null | undefined) {
-  return (value || "")
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function hasWholePhrase(text: string, phrase: string) {
-  return (` ${normalize(text)} `).includes(` ${normalize(phrase)} `);
+function hasWholePhrase(text: string, keyword: string) {
+  const escaped = keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
 }
 
 function formatPrice(value: number) {
@@ -353,6 +347,7 @@ function discountPercent(price: number, original: number | null) {
 
 function imageCandidates(value: string | null) {
   if (!value?.trim()) return [];
+
   const raw = value.trim();
 
   if (/^https?:\/\//i.test(raw)) return [raw];
@@ -361,13 +356,15 @@ function imageCandidates(value: string | null) {
     .replace(/^public\//i, "")
     .replace(/^\/+/, "");
 
-  return [...new Set([
+  const paths = [
     `/${clean}`,
     `/products/${clean}`,
     `/product-images/${clean}`,
     `/images/${clean}`,
     `/images/products/${clean}`,
-  ])];
+  ];
+
+  return [...new Set(paths)];
 }
 
 function ProductImage({
@@ -384,7 +381,9 @@ function ProductImage({
 
   useEffect(() => setIndex(0), [value]);
 
-  if (!candidates[index]) {
+  const src = candidates[index];
+
+  if (!src) {
     return (
       <div className="flex h-full w-full items-center justify-center text-[#c9a24d]">
         <Package size={34} />
@@ -394,7 +393,7 @@ function ProductImage({
 
   return (
     <img
-      src={candidates[index]}
+      src={src}
       alt={alt}
       loading="lazy"
       className={className}
@@ -404,13 +403,11 @@ function ProductImage({
 }
 
 function detectComponent(product: Product): ComponentType | null {
-  const name = normalize(product.name);
-  const category = normalize(product.category_name);
+  const name = (product.name || "").toLowerCase().replace(/[_-]+/g, " ").trim();
+  const category = (product.category_name || "").toLowerCase();
 
   if (!name) return null;
-
   if (blockedNames.some((term) => hasWholePhrase(name, term))) return null;
-
   if (
     category &&
     blockedCategories.some((term) => hasWholePhrase(category, term))
@@ -418,66 +415,36 @@ function detectComponent(product: Product): ComponentType | null {
     return null;
   }
 
-  // Never mistake a mouse pad for a mouse or a stand for a microphone.
-  if (
-    hasWholePhrase(name, "mouse pad") ||
-    hasWholePhrase(name, "mousepad") ||
-    hasWholePhrase(name, "desk mat")
-  ) {
-    return "accessories";
-  }
+  // Most specific types must be checked before general accessories/audio.
+  const ordered: ComponentType[] = [
+    "controller",
+    "webcam",
+    "microphone",
+    "accessories",
+    "keyboard",
+    "mouse",
+    "audio",
+    "display",
+  ];
 
-  if (
-    hasWholePhrase(name, "microphone stand") ||
-    hasWholePhrase(name, "webcam stand") ||
-    hasWholePhrase(name, "headphone stand") ||
-    hasWholePhrase(name, "monitor stand") ||
-    hasWholePhrase(name, "laptop stand")
-  ) {
-    return "accessories";
-  }
+  for (const id of ordered) {
+    const config = components.find((item) => item.id === id);
+    if (!config) continue;
 
-  if (components.find((c) => c.id === "controller")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "controller";
-  }
+    if (!config.keywords.some((keyword) => hasWholePhrase(name, keyword))) {
+      continue;
+    }
 
-  if (components.find((c) => c.id === "webcam")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "webcam";
-  }
+    if (id === "mouse" && /mouse[\s-]*pad|mousepad/i.test(name)) continue;
 
-  if (components.find((c) => c.id === "microphone")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "microphone";
-  }
+    if (
+      id === "microphone" &&
+      hasWholePhrase(name, "microphone stand")
+    ) {
+      return "accessories";
+    }
 
-  if (components.find((c) => c.id === "accessories")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "accessories";
-  }
-
-  if (components.find((c) => c.id === "keyboard")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "keyboard";
-  }
-
-  if (
-    hasWholePhrase(name, "gaming mouse") ||
-    hasWholePhrase(name, "computer mouse") ||
-    hasWholePhrase(name, "wireless mouse") ||
-    hasWholePhrase(name, "optical mouse") ||
-    name === "mouse"
-  ) {
-    return "mouse";
-  }
-
-  if (components.find((c) => c.id === "audio")!.keywords.some((k) => hasWholePhrase(name, k))) {
-    return "audio";
-  }
-
-  if (
-    hasWholePhrase(name, "monitor") ||
-    hasWholePhrase(name, "computer display") ||
-    hasWholePhrase(name, "desktop display") ||
-    hasWholePhrase(name, "gaming display")
-  ) {
-    return "display";
+    return id;
   }
 
   return null;
@@ -485,44 +452,48 @@ function detectComponent(product: Product): ComponentType | null {
 
 function isPurposeSuitable(product: Product, purpose: SetupType) {
   const component = detectComponent(product);
-  const name = normalize(product.name);
+  const name = product.name.toLowerCase();
 
   if (!component || !componentsByPurpose[purpose].includes(component)) {
     return false;
   }
 
-  // A display must be a computer monitor, not a phone screen protector,
-  // television, or unrelated display accessory.
-  if (
-    component === "display" &&
-    (
-      hasWholePhrase(name, "screen protector") ||
-      hasWholePhrase(name, "smart tv") ||
-      hasWholePhrase(name, "television")
-    )
-  ) {
-    return false;
-  }
-
   const gamingSpecific = [
     "gaming keyboard", "gaming mouse", "gaming headset",
-    "gaming controller", "gaming monitor", "rgb gaming",
+    "gaming controller", "gaming monitor", "gaming mouse pad",
+    "rgb gaming",
   ].some((term) => hasWholePhrase(name, term));
 
   if (["work", "study", "everyday"].includes(purpose) && gamingSpecific) {
     return false;
   }
 
-  if (
-    component === "accessories" &&
-    !allowedAccessories[purpose].some((term) => hasWholePhrase(name, term))
-  ) {
-    return false;
+  if (purpose === "gaming" && component === "accessories") {
+    const allowed = [
+      "mouse pad", "mousepad", "cooling pad", "usb hub",
+      "gaming desk", "laptop stand", "monitor stand",
+      "headphone stand", "usb cable", "hdmi cable", "usb adapter",
+    ];
+    if (!allowed.some((term) => hasWholePhrase(name, term))) return false;
   }
 
-  if (purpose === "creator" && component === "controller") return false;
+  if (purpose === "creator" && component === "accessories") {
+    const allowed = [
+      "capture card", "usb hub", "laptop stand",
+      "monitor stand", "desk mat", "usb cable",
+      "hdmi cable", "usb adapter",
+    ];
+    if (!allowed.some((term) => hasWholePhrase(name, term))) return false;
+  }
 
   return true;
+}
+
+function purposeRelevance(product: Product, purpose: SetupType) {
+  const text = `${product.name} ${product.brand || ""}`.toLowerCase();
+  return purposeKeywords[purpose].filter((keyword) =>
+    hasWholePhrase(text, keyword)
+  ).length;
 }
 
 function scoreProduct(
@@ -532,81 +503,42 @@ function scoreProduct(
   priority: PriorityType
 ) {
   const price = Number(product.price);
-  const rating = Math.max(0, Math.min(5, Number(product.rating || 0)));
-  const reviews = Math.max(0, Number(product.reviews_count || 0));
+  const rating = Number(product.rating || 0);
+  const reviews = Number(product.reviews_count || 0);
   const discount = discountPercent(price, product.original_price);
+
+  let score = purposeRelevance(product, purpose) * 8;
+  score += Math.round((rating / 5) * 20);
+  score += Math.min(8, Math.round(reviews / 25));
+
   const share = price / Math.max(1, budget);
 
-  let score = rating * 8;
-  score += Math.min(10, Math.log10(reviews + 1) * 4);
-
-  if (share <= 0.15) score += 6;
-  else if (share <= 0.35) score += 10;
-  else if (share <= 0.6) score += 8;
-  else score += 3;
+  if (share <= 0.15) score += 12;
+  else if (share <= 0.3) score += 14;
+  else if (share <= 0.5) score += 12;
+  else if (share <= 0.75) score += 8;
+  else score += 5;
 
   if (product.is_featured) score += 2;
   if (product.is_flash_sale) score += 2;
 
   if (priority === "quality") {
-    score = rating * 14 + Math.min(25, Math.log10(reviews + 1) * 10);
-    if (rating >= 4.5) score += 8;
-    if (reviews < 5) score -= 5;
+    score += rating * 4;
+    score += Math.min(10, reviews / 15);
+    if (rating >= 4.5) score += 5;
   } else if (priority === "savings") {
-    score = 60 - share * 35 + Math.min(20, discount * 0.4) + rating * 2;
+    score += Math.min(18, discount * 0.25);
+    score += Math.max(0, 20 - share * 100) / 2;
   } else if (priority === "value") {
-    score = (rating * 12 + Math.min(20, Math.log10(reviews + 1) * 8)) /
-      Math.max(0.2, share);
-    score += Math.min(10, discount * 0.2);
-  }
-
-  if (purpose === "gaming" && /gaming|mechanical|rgb|low latency/i.test(product.name)) {
-    score += 4;
+    score += rating * 2;
+    score += Math.min(8, discount * 0.25);
+    score += Math.min(6, reviews / 25);
+  } else {
+    score += rating * 1.5;
+    if (share >= 0.12 && share <= 0.45) score += 7;
   }
 
   return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function rankProducts(
-  list: SetupProduct[],
-  priority: PriorityType,
-  budget: number
-) {
-  return [...list].sort((a, b) => {
-    if (priority === "quality") {
-      return (
-        b.rating - a.rating ||
-        b.reviews_count - a.reviews_count ||
-        a.price - b.price
-      );
-    }
-
-    if (priority === "savings") {
-      return (
-        a.price - b.price ||
-        b.rating - a.rating ||
-        b.reviews_count - a.reviews_count
-      );
-    }
-
-    if (priority === "value") {
-      const valueA =
-        (a.rating * 2 + Math.log10(a.reviews_count + 1)) /
-        Math.max(1, a.price);
-      const valueB =
-        (b.rating * 2 + Math.log10(b.reviews_count + 1)) /
-        Math.max(1, b.price);
-
-      return valueB - valueA || b.matchScore - a.matchScore;
-    }
-
-    const target = budget * 0.28;
-    return (
-      Math.abs(a.price - target) - Math.abs(b.price - target) ||
-      b.matchScore - a.matchScore ||
-      a.price - b.price
-    );
-  });
 }
 
 export default function SetupBuilderPage() {
@@ -627,7 +559,7 @@ export default function SetupBuilderPage() {
   const [selectedComponents, setSelectedComponents] =
     useState<ComponentType[]>(componentsByPurpose.work);
 
-  // null means the user deliberately removed this component.
+  // A component can have one custom product, or null if intentionally removed.
   const [manualChoices, setManualChoices] = useState<
     Partial<Record<ComponentType, string | null>>
   >({});
@@ -664,9 +596,7 @@ export default function SetupBuilderPage() {
             "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active"
           )
           .eq("is_active", true)
-          .gt("stock", 0)
-          .order("name", { ascending: true })
-          .limit(2000),
+          .gt("stock", 0),
 
         supabase
           .from("wishlist_items")
@@ -720,7 +650,7 @@ export default function SetupBuilderPage() {
       setNotice({
         type: "error",
         message:
-          "Products could not be loaded. Check Supabase tables, RLS policies and connection.",
+          "Products could not be loaded. Check your Supabase tables, permissions and connection.",
       });
     } finally {
       setLoading(false);
@@ -744,28 +674,17 @@ export default function SetupBuilderPage() {
 
   const matchedProducts = useMemo<SetupProduct[]>(() => {
     return products
-      .filter((product) => {
-        if (
-          !product.is_active ||
-          product.stock <= 0 ||
-          !Number.isFinite(product.price) ||
-          product.price <= 0 ||
-          product.price > budget
-        ) {
-          return false;
-        }
-
-        const component = detectComponent(product);
-
-        return (
-          component !== null &&
-          selectedComponents.includes(component) &&
+      .filter(
+        (product) =>
+          product.is_active &&
+          product.stock > 0 &&
+          product.price > 0 &&
+          product.price <= budget &&
+          selectedComponents.includes(detectComponent(product) as ComponentType) &&
           isPurposeSuitable(product, setupType)
-        );
-      })
+      )
       .map((product) => {
         const component = detectComponent(product)!;
-
         return {
           ...product,
           component,
@@ -774,125 +693,107 @@ export default function SetupBuilderPage() {
       });
   }, [products, budget, setupType, priority, selectedComponents]);
 
-  // Build a complete set by reserving the cheapest available product
-  // for each remaining component before selecting a more expensive one.
   const recommendedProducts = useMemo<SetupProduct[]>(() => {
-    const chosen: SetupProduct[] = [];
+    const result: SetupProduct[] = [];
     let remaining = budget;
+    const selected = selectedComponents.slice(0, 8);
 
-    const lists = new Map<ComponentType, SetupProduct[]>();
+    const candidatesFor = (component: ComponentType) =>
+      matchedProducts.filter((item) => item.component === component);
 
-    for (const component of selectedComponents) {
-      lists.set(
-        component,
-        rankProducts(
-          matchedProducts.filter((product) => product.component === component),
-          priority,
-          budget
-        )
-      );
-    }
+    for (let index = 0; index < selected.length; index += 1) {
+      const component = selected[index];
+      const later = selected.slice(index + 1);
 
-    for (let index = 0; index < selectedComponents.length; index += 1) {
-      const component = selectedComponents[index];
-      const candidates = lists.get(component) || [];
-      const laterComponents = selectedComponents.slice(index + 1);
-
-      const reserve = laterComponents.reduce((sum, later) => {
-        const list = lists.get(later) || [];
-        return sum + (list.length ? Math.min(...list.map((p) => p.price)) : 0);
+      // Reserve the cheapest suitable option for later components first.
+      const reserve = later.reduce((sum, next) => {
+        const options = candidatesFor(next);
+        return sum + (options.length ? Math.min(...options.map((p) => p.price)) : 0);
       }, 0);
 
-      const affordable = candidates.filter(
-        (product) => product.price <= remaining - reserve
+      const maxForThisComponent = Math.max(0, remaining - reserve);
+      const candidates = candidatesFor(component).filter(
+        (item) => item.price <= maxForThisComponent
       );
 
-      if (!affordable.length) continue;
+      if (!candidates.length) continue;
 
-      // Rotate only among the top-ranked options; all remain budget-safe.
-      const pool = affordable.slice(0, Math.min(5, affordable.length));
+      const ranked = [...candidates].sort((a, b) => {
+        if (priority === "quality") {
+          return (
+            b.rating - a.rating ||
+            b.reviews_count - a.reviews_count ||
+            b.matchScore - a.matchScore
+          );
+        }
+
+        if (priority === "savings") {
+          return a.price - b.price || b.rating - a.rating;
+        }
+
+        if (priority === "value") {
+          const valueA =
+            (a.rating * 2 + Math.log10(a.reviews_count + 1)) /
+            Math.max(1, a.price);
+          const valueB =
+            (b.rating * 2 + Math.log10(b.reviews_count + 1)) /
+            Math.max(1, b.price);
+          return valueB - valueA || b.matchScore - a.matchScore;
+        }
+
+        const target = budget / Math.max(1, selected.length);
+        return (
+          Math.abs(a.price - target * 0.72) -
+            Math.abs(b.price - target * 0.72) ||
+          b.rating - a.rating ||
+          b.matchScore - a.matchScore
+        );
+      });
+
+      // Rotate within the best-ranked shortlist for variety, while preserving budget.
+      const pool = ranked.slice(0, Math.min(8, ranked.length));
+      const componentIndex = componentsByPurpose[setupType].indexOf(component);
       const offset = pool.length
-        ? (buildSeed + index * 2) % pool.length
+        ? (buildSeed + componentIndex * 2) % pool.length
         : 0;
+      const chosen = pool[offset];
 
-      const selected = pool[offset];
-
-      if (selected && selected.price <= remaining) {
-        chosen.push(selected);
-        remaining -= selected.price;
+      if (chosen && chosen.price <= remaining) {
+        result.push(chosen);
+        remaining -= chosen.price;
       }
     }
 
-    return chosen;
-  }, [matchedProducts, selectedComponents, budget, priority, buildSeed]);
+    return result;
+  }, [matchedProducts, selectedComponents, budget, priority, setupType, buildSeed]);
 
   const finalProducts = useMemo<SetupProduct[]>(() => {
-    const selected: SetupProduct[] = [];
-    let runningTotal = 0;
-
-    // Explicit choices are respected first. Any choice that no longer exists
-    // under the current filters is not included.
-    for (const component of selectedComponents) {
-      if (!Object.prototype.hasOwnProperty.call(manualChoices, component)) {
-        continue;
-      }
-
-      const id = manualChoices[component];
-      if (!id) continue;
-
-      const product = matchedProducts.find(
-        (item) => item.id === id && item.component === component
-      );
-
-      if (!product || runningTotal + product.price > budget) continue;
-
-      selected.push(product);
-      runningTotal += product.price;
-    }
-
-    for (const component of selectedComponents) {
+    return selectedComponents.flatMap((component) => {
       if (Object.prototype.hasOwnProperty.call(manualChoices, component)) {
-        continue;
+        const id = manualChoices[component];
+        if (!id) return [];
+        const chosen = matchedProducts.find((item) => item.id === id);
+        return chosen ? [chosen] : [];
       }
 
-      const product = recommendedProducts.find(
+      const recommended = recommendedProducts.find(
         (item) => item.component === component
       );
+      return recommended ? [recommended] : [];
+    });
+  }, [selectedComponents, manualChoices, matchedProducts, recommendedProducts]);
 
-      if (!product || selected.some((item) => item.component === component)) {
-        continue;
-      }
-
-      if (runningTotal + product.price > budget) continue;
-
-      selected.push(product);
-      runningTotal += product.price;
-    }
-
-    return selected;
-  }, [
-    selectedComponents,
-    manualChoices,
-    matchedProducts,
-    recommendedProducts,
-    budget,
-  ]);
-
-  const setupTotal = finalProducts.reduce((sum, item) => sum + item.price, 0);
+  const setupTotal = finalProducts.reduce((sum, product) => sum + product.price, 0);
   const setupSavings = finalProducts.reduce(
-    (sum, item) =>
-      sum + Math.max(0, Number(item.original_price || item.price) - item.price),
+    (sum, product) =>
+      sum + Math.max(0, Number(product.original_price || product.price) - product.price),
     0
   );
   const remainingBudget = Math.max(0, budget - setupTotal);
-  const budgetUsage =
-    budget > 0 ? Math.min(100, Math.round((setupTotal / budget) * 100)) : 0;
-
+  const budgetUsage = budget > 0 ? Math.min(100, Math.round((setupTotal / budget) * 100)) : 0;
   const averageRating = finalProducts.length
-    ? finalProducts.reduce((sum, item) => sum + item.rating, 0) /
-      finalProducts.length
+    ? finalProducts.reduce((sum, item) => sum + item.rating, 0) / finalProducts.length
     : 0;
-
   const setupScore = finalProducts.length
     ? Math.round(
         finalProducts.reduce((sum, item) => sum + item.matchScore, 0) /
@@ -902,7 +803,6 @@ export default function SetupBuilderPage() {
 
   function setNewBudget(value: number) {
     const safe = Math.max(2000, Math.min(100000, Math.round(value)));
-
     setBudget(safe);
     setCustomBudget(String(safe));
     setManualChoices({});
@@ -921,17 +821,9 @@ export default function SetupBuilderPage() {
   function toggleComponent(id: ComponentType) {
     setSelectedComponents((current) => {
       if (current.includes(id)) {
-        if (current.length <= 1) {
-          setNotice({
-            type: "info",
-            message: "Select at least one component for your setup.",
-          });
-          return current;
-        }
-
+        if (current.length <= 1) return current;
         return current.filter((item) => item !== id);
       }
-
       return [...current, id];
     });
 
@@ -946,17 +838,14 @@ export default function SetupBuilderPage() {
 
     const currentChoice = manualChoices[product.component];
 
+    // Clicking the already-customized product restores the recommendation.
     if (currentChoice === productId) {
       setManualChoices((current) => {
         const next = { ...current };
         delete next[product.component];
         return next;
       });
-
-      setNotice({
-        type: "success",
-        message: "Default recommendation restored.",
-      });
+      setNotice({ type: "success", message: "Default recommendation restored." });
       return;
     }
 
@@ -967,7 +856,7 @@ export default function SetupBuilderPage() {
     if (otherTotal + product.price > budget) {
       setNotice({
         type: "error",
-        message: `This selection exceeds your ${formatPrice(budget)} budget. Choose a cheaper product or remove another component.`,
+        message: `This selection exceeds your ${formatPrice(budget)} budget. Choose a less expensive option or remove another component.`,
       });
       return;
     }
@@ -984,8 +873,6 @@ export default function SetupBuilderPage() {
   }
 
   async function buildSetup() {
-    if (loading) return;
-
     if (!selectedComponents.length) {
       setNotice({ type: "error", message: "Select at least one component." });
       return;
@@ -996,8 +883,8 @@ export default function SetupBuilderPage() {
     setManualChoices({});
     setBuildSeed((current) => current + 1);
 
-    // Yield one frame so the building state is visible.
-    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    // Keep the loading state visible without delaying the database query.
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     setSetupBuilt(true);
     setStep(4);
@@ -1093,23 +980,18 @@ export default function SetupBuilderPage() {
       window.dispatchEvent(new Event("cart-updated"));
 
       if (!silent) {
-        setNotice({
-          type: "success",
-          message: `${product.name} added to cart.`,
-        });
+        setNotice({ type: "success", message: `${product.name} added to cart.` });
       }
 
       return true;
     } catch (error) {
       console.error("Setup Builder cart error:", error);
-
       if (!silent) {
         setNotice({
           type: "error",
-          message: "Could not update your cart. Check cart_items and its permissions.",
+          message: "Could not update your cart. Check your cart table and permissions.",
         });
       }
-
       return false;
     }
   }
@@ -1118,21 +1000,21 @@ export default function SetupBuilderPage() {
     if (!finalProducts.length) {
       setNotice({
         type: "info",
-        message: "No products are available. Try increasing your budget or changing components.",
+        message: "No products are available for this setup. Try changing your budget or components.",
       });
       return;
     }
 
+    // Final safety check before writing anything to the cart.
     if (setupTotal > budget) {
       setNotice({
         type: "error",
-        message: "Your setup exceeds the budget. Replace a product first.",
+        message: "Your setup exceeds the budget. Remove or replace a product first.",
       });
       return;
     }
 
     let added = 0;
-
     for (const product of finalProducts) {
       if (await addToCart(product, true)) added += 1;
     }
@@ -1276,26 +1158,30 @@ export default function SetupBuilderPage() {
                 Build your <span className="text-[#b58a32]">perfect setup.</span>
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base sm:leading-7">
-                Choose your purpose, set your maximum budget and find relevant
-                products from your real catalogue.
+                Choose your purpose, set your maximum budget and let PrimeCart
+                find relevant products from your real catalogue.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
-                {["Real catalogue", "Budget-aware", "Custom components", "Wishlist & cart"].map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#e9e1d4] bg-[#fffdf9] px-3 py-2 text-[10px] font-bold text-gray-600"
-                  >
-                    <Check size={12} className="text-[#b58a32]" />
-                    {item}
-                  </span>
-                ))}
+                {["Real catalogue", "Budget-aware", "Custom components", "Wishlist & cart"].map(
+                  (item) => (
+                    <span
+                      key={item}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[#e9e1d4] bg-[#fffdf9] px-3 py-2 text-[10px] font-bold text-gray-600"
+                    >
+                      <Check size={12} className="text-[#b58a32]" />
+                      {item}
+                    </span>
+                  )
+                )}
               </div>
             </div>
 
             <div className="mx-auto w-full max-w-[440px] rounded-[25px] border border-[#e8dcc3] bg-[#fffaf0] p-4 sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#a17b2f]">Current plan</p>
+                  <p className="text-[9px] font-black uppercase tracking-[.18em] text-[#a17b2f]">
+                    Current plan
+                  </p>
                   <p className="mt-1 text-xl font-black">
                     {setupTypes.find((item) => item.id === setupType)?.title} Setup
                   </p>
@@ -1310,7 +1196,10 @@ export default function SetupBuilderPage() {
                   <strong className="text-lg">{formatPrice(budget)}</strong>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eee6d7]">
-                  <div className="h-full rounded-full bg-[#c9a24d] transition-all" style={{ width: `${budgetUsage}%` }} />
+                  <div
+                    className="h-full rounded-full bg-[#c9a24d] transition-all"
+                    style={{ width: `${budgetUsage}%` }}
+                  />
                 </div>
                 <div className="mt-2 flex justify-between text-[10px] text-gray-400">
                   <span>{finalProducts.length} components</span>
@@ -1344,7 +1233,9 @@ export default function SetupBuilderPage() {
                   type="button"
                   onClick={() => number <= step && setStep(number)}
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                    step >= number ? "bg-[#c9a24d] text-white" : "bg-[#f2eee6] text-gray-400"
+                    step >= number
+                      ? "bg-[#c9a24d] text-white"
+                      : "bg-[#f2eee6] text-gray-400"
                   }`}
                 >
                   {step > number ? <Check size={14} /> : number}
@@ -1369,7 +1260,6 @@ export default function SetupBuilderPage() {
                 {setupTypes.map((item) => {
                   const Icon = item.icon;
                   const active = setupType === item.id;
-
                   return (
                     <button
                       key={item.id}
@@ -1391,7 +1281,7 @@ export default function SetupBuilderPage() {
                 })}
               </div>
               <div className="mt-7 flex justify-end border-t border-[#eee8dd] pt-5">
-                <button type="button" onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">
+                <button onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">
                   Continue <ArrowRight size={15} />
                 </button>
               </div>
@@ -1402,7 +1292,7 @@ export default function SetupBuilderPage() {
             <div className="p-5 sm:p-8 lg:p-10">
               <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 02 · Budget</p>
               <h2 className="mt-2 text-2xl font-black sm:text-3xl">Set your maximum budget.</h2>
-              <p className="mt-2 text-sm text-gray-500">The combined total of selected products must stay within this amount.</p>
+              <p className="mt-2 text-sm text-gray-500">Recommendations and manual selections must stay within this amount.</p>
 
               <div className="mt-7 rounded-3xl border border-[#e8dfd0] bg-[#fffdf9] p-5 sm:p-8">
                 <div className="text-center">
@@ -1418,7 +1308,9 @@ export default function SetupBuilderPage() {
                       type="button"
                       onClick={() => setNewBudget(preset.amount)}
                       className={`rounded-xl border px-3 py-3 text-center ${
-                        budget === preset.amount ? "border-[#c9a24d] bg-[#fff5dc] text-[#956f27]" : "border-[#e5ddcf] hover:border-[#d0b46c]"
+                        budget === preset.amount
+                          ? "border-[#c9a24d] bg-[#fff5dc] text-[#956f27]"
+                          : "border-[#e5ddcf] hover:border-[#d0b46c]"
                       }`}
                     >
                       <p className="text-[9px] font-black uppercase">{preset.label}</p>
@@ -1437,19 +1329,26 @@ export default function SetupBuilderPage() {
                       max={100000}
                       step={500}
                       value={customBudget}
-                      onChange={(event) => setCustomBudget(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setCustomBudget(value);
+                        const amount = Number(value);
+                        if (amount >= 2000 && amount <= 100000) {
+                          setBudget(amount);
+                          setManualChoices({});
+                          setSetupBuilt(false);
+                        }
+                      }}
                       className="h-11 min-w-0 flex-1 rounded-xl border border-[#ddd4c3] bg-white px-4 text-sm font-bold outline-none focus:border-[#c9a24d]"
                     />
                     <button
                       type="button"
                       onClick={() => {
                         const amount = Number(customBudget);
-
-                        if (!Number.isFinite(amount) || amount < 2000 || amount > 100000) {
+                        if (amount < 2000 || amount > 100000 || !Number.isFinite(amount)) {
                           setNotice({ type: "error", message: "Enter a budget between ₹2,000 and ₹1,00,000." });
                           return;
                         }
-
                         setNewBudget(amount);
                       }}
                       className="rounded-xl bg-[#c9a24d] px-5 text-xs font-black text-white"
@@ -1474,12 +1373,8 @@ export default function SetupBuilderPage() {
               </div>
 
               <div className="mt-7 flex justify-between border-t border-[#eee8dd] pt-5">
-                <button type="button" onClick={() => setStep(1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black">
-                  <ArrowLeft size={15} /> Back
-                </button>
-                <button type="button" onClick={() => setStep(3)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">
-                  Continue <ArrowRight size={15} />
-                </button>
+                <button onClick={() => setStep(1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black"><ArrowLeft size={15} /> Back</button>
+                <button onClick={() => setStep(3)} className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white">Continue <ArrowRight size={15} /></button>
               </div>
             </div>
           )}
@@ -1488,7 +1383,7 @@ export default function SetupBuilderPage() {
             <div className="p-5 sm:p-8 lg:p-10">
               <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 03 · Preferences</p>
               <h2 className="mt-2 text-2xl font-black sm:text-3xl">Choose your components.</h2>
-              <p className="mt-2 text-sm text-gray-500">Select components and decide how products should be ranked.</p>
+              <p className="mt-2 text-sm text-gray-500">Select the components you want and how you want them ranked.</p>
 
               <div className="mt-7 grid gap-8 lg:grid-cols-[1fr_.8fr]">
                 <div>
@@ -1500,7 +1395,6 @@ export default function SetupBuilderPage() {
                     {currentComponentOptions.map((item) => {
                       const Icon = item.icon;
                       const active = selectedComponents.includes(item.id);
-
                       return (
                         <button
                           key={item.id}
@@ -1526,7 +1420,7 @@ export default function SetupBuilderPage() {
 
                 <div>
                   <h3 className="font-black">What matters most?</h3>
-                  <p className="mt-1 text-xs text-gray-500">This changes product ranking.</p>
+                  <p className="mt-1 text-xs text-gray-500">This changes how products are ranked.</p>
                   <div className="mt-4 space-y-3">
                     {priorityOptions.map((item) => {
                       const active = priority === item.id;
@@ -1534,7 +1428,6 @@ export default function SetupBuilderPage() {
                         item.id === "balanced" ? Target :
                         item.id === "value" ? CircleDollarSign :
                         item.id === "quality" ? Trophy : Zap;
-
                       return (
                         <button
                           key={item.id}
@@ -1576,12 +1469,9 @@ export default function SetupBuilderPage() {
               </div>
 
               <div className="mt-7 flex justify-between border-t border-[#eee8dd] pt-5">
-                <button type="button" onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black">
-                  <ArrowLeft size={15} /> Back
-                </button>
+                <button onClick={() => setStep(2)} className="flex h-11 items-center gap-2 rounded-xl border border-[#e4dccd] px-5 text-xs font-black"><ArrowLeft size={15} /> Back</button>
                 <button
-                  type="button"
-                  onClick={() => void buildSetup()}
+                  onClick={buildSetup}
                   disabled={building || loading || selectedComponents.length === 0}
                   className="flex h-11 items-center gap-2 rounded-xl bg-[#c9a24d] px-6 text-xs font-black text-white disabled:opacity-50"
                 >
@@ -1598,9 +1488,9 @@ export default function SetupBuilderPage() {
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Step 04 · Your Setup</p>
                   <h2 className="mt-2 text-2xl font-black sm:text-3xl">Your setup is ready.</h2>
-                  <p className="mt-2 text-sm text-gray-500">Review recommended products and customize components.</p>
+                  <p className="mt-2 text-sm text-gray-500">Review the recommended products and customize any component.</p>
                 </div>
-                <button type="button" onClick={resetAll} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e4dccd] px-4 text-xs font-black">
+                <button onClick={resetAll} className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[#e4dccd] px-4 text-xs font-black">
                   <RefreshCw size={14} /> Start Over
                 </button>
               </div>
@@ -1613,7 +1503,6 @@ export default function SetupBuilderPage() {
                   { title: "Estimated savings", value: formatPrice(setupSavings), icon: Zap },
                 ].map((item) => {
                   const Icon = item.icon;
-
                   return (
                     <div key={item.title} className="rounded-2xl border border-[#e8dfd0] bg-[#fffaf0] p-4">
                       <div className="flex items-center justify-between gap-2">
@@ -1637,7 +1526,7 @@ export default function SetupBuilderPage() {
                   <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#b58a32]">Smart recommendations</p>
                   <h2 className="mt-2 text-2xl font-black">Customize your setup</h2>
                   <p className="mt-2 text-sm text-gray-500">
-                    Each component shows matching alternatives. Choosing another product replaces that component.
+                    Each component shows matching alternatives. Selecting another product replaces that component's current selection.
                   </p>
                 </div>
 
@@ -1646,18 +1535,24 @@ export default function SetupBuilderPage() {
                     <RefreshCw size={24} className="mx-auto animate-spin text-[#b58a32]" />
                     <p className="mt-3 text-sm font-bold">Loading catalogue...</p>
                   </div>
+                ) : selectedComponents.every((component) => !matchedProducts.some((item) => item.component === component)) ? (
+                  <div className="rounded-2xl border border-[#e8dfd0] bg-white p-10 text-center">
+                    <Search size={34} className="mx-auto text-[#c9a24d]" />
+                    <h3 className="mt-4 text-lg font-black">No suitable products found</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-500">
+                      Your current filters did not find in-stock products in this budget. Try increasing your budget or changing the selected components.
+                    </p>
+                    <button onClick={() => setStep(2)} className="mt-5 rounded-xl bg-[#c9a24d] px-5 py-3 text-xs font-black text-white">Change budget</button>
+                  </div>
                 ) : (
                   <div className="space-y-5">
                     {selectedComponents.map((component) => {
                       const config = components.find((item) => item.id === component)!;
                       const Icon = config.icon;
-
-                      const choices = rankProducts(
-                        matchedProducts.filter((item) => item.component === component),
-                        priority,
-                        budget
-                      ).slice(0, 5);
-
+                      const choices = matchedProducts
+                        .filter((item) => item.component === component)
+                        .sort((a, b) => b.matchScore - a.matchScore)
+                        .slice(0, 5);
                       const current = finalProducts.find((item) => item.component === component);
 
                       return (
@@ -1676,10 +1571,7 @@ export default function SetupBuilderPage() {
                           </div>
 
                           {choices.length === 0 ? (
-                            <div className="p-5">
-                              <p className="text-xs text-gray-500">No matching in-stock product is available for this component within your budget.</p>
-                              <button type="button" onClick={() => setStep(2)} className="mt-3 text-xs font-black text-[#956f27] underline">Change budget</button>
-                            </div>
+                            <p className="p-5 text-xs text-gray-500">No matching in-stock product is available for this component within your maximum budget.</p>
                           ) : (
                             <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
                               {choices.map((product) => {
@@ -1725,7 +1617,7 @@ export default function SetupBuilderPage() {
                                       </div>
 
                                       <p className="mt-1 text-[10px] text-gray-500">
-                                        {product.stock} in stock · {product.matchScore}% score
+                                        {product.stock} in stock · {product.matchScore}% match
                                       </p>
 
                                       <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
@@ -1795,10 +1687,8 @@ export default function SetupBuilderPage() {
                       <div className="flex justify-between gap-3"><span className="text-gray-500">Setup score</span><strong className="text-[#a17b2f]">{setupScore}%</strong></div>
                     </div>
 
-                    {finalProducts.length < selectedComponents.length && (
-                      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">
-                        Some components have no affordable match. Try a larger budget or select fewer components.
-                      </p>
+                    {setupTotal > budget && (
+                      <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">Your selection exceeds the budget. Replace a product before adding the setup.</p>
                     )}
 
                     <button
@@ -1822,19 +1712,17 @@ export default function SetupBuilderPage() {
                     <h3 className="text-sm font-black">How matching works</h3>
                   </div>
                   <div className="mt-4 space-y-3 text-xs leading-5 text-gray-500">
-                    <p>• Product names are checked against component-specific keywords.</p>
-                    <p>• Active, in-stock products within the maximum budget are considered.</p>
-                    <p>• Quality First prioritizes ratings and review counts.</p>
-                    <p>• Best Value considers ratings relative to price.</p>
-                    <p>• Maximum Savings ranks lower-priced matching products first.</p>
-                    <p>• Each component can have one selected product.</p>
+                    <p>• Product names are matched to the selected component.</p>
+                    <p>• Only active, in-stock products within your item budget are considered.</p>
+                    <p>• Quality First uses ratings and review counts to rank matching options.</p>
+                    <p>• Each component can have only one selected product.</p>
                   </div>
                 </div>
               </aside>
             </div>
-          </section>
-        )}
-
+        </section>
+ )}
+        
         <section className="mt-10 rounded-[25px] border border-[#dfc98e] bg-[#fff6df] p-6 sm:p-9">
           <div className="flex flex-col items-center justify-between gap-5 text-center sm:flex-row sm:text-left">
             <div>
