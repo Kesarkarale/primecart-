@@ -169,7 +169,7 @@ const categories: Category[] = [
     description:
       "Sunglasses, eyeglasses and stylish eyewear for everyday comfort and protection.",
     icon: Eye,
-    image: "/eyewear.png",
+    image: "/eyeware.png",
     keywords: [
       "eyewear",
       "glasses",
