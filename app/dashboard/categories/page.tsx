@@ -163,6 +163,26 @@ const categories: Category[] = [
     image: "/gaming.png",
     keywords: ["gaming", "game", "console", "accessories"],
   },
+  {
+  name: "Sports & Outdoor",
+  slug: "sports-outdoor",
+  description:
+    "Sports equipment, fitness gear, outdoor adventure and active lifestyle essentials.",
+  icon: Footprints,
+  image: "/sports-outdoor.png",
+  keywords: [
+    "sports",
+    "outdoor",
+    "fitness",
+    "gym",
+    "cricket",
+    "football",
+    "badminton",
+    "cycling",
+    "camping",
+    "exercise",
+  ],
+},
     {
     name: "Eyewear",
     slug: "eyewear",
