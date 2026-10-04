@@ -44,6 +44,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  Fragment,
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -95,6 +96,7 @@ type CartItem = {
 const CART_KEY = "primecart-cart";
 const WISHLIST_KEY = "primecart-wishlist";
 const RECENT_KEY = "primecart-recently-viewed";
+const COMPARE_KEY = "primecart-compare-products";
 const SIDEBAR_KEY = "primecart-sidebar-collapsed";
 
 const INR = new Intl.NumberFormat("en-IN", {
@@ -1069,11 +1071,16 @@ function QuickView({
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [onClose]);
 
   const wishlisted = wishlistIds.includes(product.id);
 
@@ -1280,10 +1287,12 @@ function CompareBar({
   products,
   onRemove,
   onClear,
+  onCompare,
 }: {
   products: Product[];
   onRemove: (id: string) => void;
   onClear: () => void;
+  onCompare: () => void;
 }) {
   if (!products.length) return null;
 
@@ -1327,14 +1336,84 @@ function CompareBar({
           ))}
         </div>
 
-        <button
-          onClick={onClear}
-          className="shrink-0 rounded-lg px-2 py-2 text-[10px] font-bold text-[#927446] hover:bg-[#faf2e5]"
-        >
-          Clear
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={onClear}
+            className="rounded-lg px-2 py-2 text-[10px] font-bold text-[#927446] transition hover:bg-[#faf2e5]"
+          >
+            Clear
+          </button>
+          <button
+            onClick={onCompare}
+            disabled={products.length < 2}
+            className="rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-3 py-2 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
+          >
+            Compare now
+          </button>
+        </div>
       </div>
     </div>
+  );
+}
+
+/* =========================================================
+   COMPARE MODAL — SIDE-BY-SIDE PRODUCT COMPARISON
+========================================================= */
+function CompareModal({
+  products,
+  onClose,
+  onRemove,
+}: {
+  products: Product[];
+  onClose: () => void;
+  onRemove: (id: string) => void;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const rows: { label: string; value: (product: Product) => ReactNode }[] = [
+    { label: "Price", value: (product) => <span className="font-black text-[#9b702e]">{formatPrice(product.price)}</span> },
+    { label: "Original price", value: (product) => product.original_price && Number(product.original_price) > Number(product.price) ? <span className="line-through text-[#9d9180]">{formatPrice(product.original_price)}</span> : <span className="text-[#a99d8b]">—</span> },
+    { label: "Discount", value: (product) => getDiscount(product) ? <span className="font-bold text-emerald-700">{getDiscount(product)}% off</span> : "—" },
+    { label: "Brand", value: (product) => product.brand || "Not specified" },
+    { label: "Rating", value: (product) => <span className="inline-flex items-center gap-1"><Star size={12} fill="currentColor" className="text-[#b9975b]" />{Number(product.rating || 0).toFixed(1)} <span className="text-[#9d9180]">({Number(product.reviews_count || 0).toLocaleString("en-IN")})</span></span> },
+    { label: "Availability", value: (product) => Number(product.stock || 0) > 0 ? <span className="font-bold text-emerald-700">In stock · {product.stock}</span> : <span className="font-bold text-red-600">Out of stock</span> },
+  ];
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[130] flex items-center justify-center bg-[#2d2418]/55 p-3 backdrop-blur-sm sm:p-6"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <motion.section
+        role="dialog" aria-modal="true" aria-labelledby="compare-title"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}
+        className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[#e7dac2] bg-[#fffdf9] shadow-2xl"
+      >
+        <header className="flex items-center justify-between border-b border-[#eee5d7] px-5 py-4 sm:px-7">
+          <div><p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#a17a3b]">Make the right choice</p><h2 id="compare-title" className="mt-1 text-lg font-black text-[#443729] sm:text-xl">Compare products <span className="text-sm font-bold text-[#9b8e7c]">({products.length}/3)</span></h2></div>
+          <button type="button" aria-label="Close comparison" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e7dece] bg-white text-[#746653] transition hover:bg-[#f8f1e5]"><X size={18} /></button>
+        </header>
+        <div className="overflow-auto p-4 sm:p-6">
+          <div className="min-w-[520px]" style={{ display: "grid", gridTemplateColumns: `110px repeat(${Math.max(products.length, 1)}, minmax(140px, 1fr))` }}>
+            <div className="border-b border-[#eee5d7] p-3 text-[10px] font-extrabold uppercase tracking-wide text-[#9a8d7b]">Product</div>
+            {products.map((product) => <div key={product.id} className="border-b border-l border-[#eee5d7] p-3">
+              <div className="relative mx-auto mb-3 h-28 w-full max-w-[150px] overflow-hidden rounded-xl bg-[#f8f4ec]"><ProductImage src={product.image_url} alt={product.name} imageClassName="p-3" /></div>
+              <p className="line-clamp-2 min-h-9 text-xs font-extrabold leading-4 text-[#4b3d2d]">{product.name}</p>
+              <div className="mt-3 flex flex-wrap gap-2"><Link href={`/dashboard/products/${product.id}`} onClick={onClose} className="text-[10px] font-bold text-[#9b702e] underline underline-offset-2">Details</Link><button type="button" onClick={() => onRemove(product.id)} className="text-[10px] font-bold text-[#a16a5a]">Remove</button></div>
+            </div>)}
+            {rows.map((row) => <Fragment key={row.label}><div className="border-b border-[#eee5d7] bg-[#fcfaf6] p-3 text-[10px] font-bold text-[#796b59]">{row.label}</div>{products.map((product) => <div key={`${row.label}-${product.id}`} className="border-b border-l border-[#eee5d7] p-3 text-[11px] text-[#5e5140]">{row.value(product)}</div>)}</Fragment>)}
+          </div>
+          {products.length < 2 && <p className="mt-4 text-xs text-[#8d7c65]">Add at least one more product to make a useful comparison.</p>}
+        </div>
+      </motion.section>
+    </motion.div>
   );
 }
 
@@ -1435,6 +1514,8 @@ export default function ProductsPage() {
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [recentIds, setRecentIds] = useState<string[]>([]);
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [compareHydrated, setCompareHydrated] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
   /* UI */
@@ -1499,6 +1580,21 @@ export default function ProductsPage() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  // Restore comparison selection without touching cart, wishlist or account data.
+  useEffect(() => {
+    setCompareIds(safeParse<string[]>(localStorage.getItem(COMPARE_KEY), []).slice(0, 3));
+    setCompareHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!compareHydrated) return;
+    try {
+      localStorage.setItem(COMPARE_KEY, JSON.stringify(compareIds));
+    } catch {
+      // Comparison still works for the current page if browser storage is unavailable.
+    }
+  }, [compareIds, compareHydrated]);
 
   /* =======================================================
      LOAD USER DATA
@@ -2397,13 +2493,16 @@ export default function ProductsPage() {
                 placeholder="Search products..."
                 className="h-11 w-full rounded-xl border border-[#e7ded0] bg-white pl-10 pr-20 text-xs outline-none focus:border-[#b9975b]"
               />
-              <button
-                type="button"
-                onClick={() => submitSearch(search)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-3 py-2 text-[10px] font-extrabold text-white shadow-sm transition hover:shadow-md active:scale-[0.98]"
-              >
-                Search
-              </button>
+              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                {search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")} className="flex h-8 w-7 items-center justify-center text-[#a09584] hover:text-[#665845]"><X size={14} /></button>}
+                <button
+                  type="button"
+                  onClick={() => submitSearch(search)}
+                  className="rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-3 py-2 text-[10px] font-extrabold text-white shadow-sm transition hover:shadow-md active:scale-[0.98]"
+                >
+                  Search
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2672,6 +2771,12 @@ export default function ProductsPage() {
                       </button>
                     )}
 
+                    {minPrice && (
+                      <button onClick={() => setMinPrice("")} className="flex items-center gap-1.5 rounded-full border border-[#dfceb0] bg-[#fff9ed] px-3 py-1.5 text-[9px] font-bold text-[#8f6a31]">Min: {formatPrice(Number(minPrice))}<X size={11} /></button>
+                    )}
+                    {maxPrice && (
+                      <button onClick={() => setMaxPrice("")} className="flex items-center gap-1.5 rounded-full border border-[#dfceb0] bg-[#fff9ed] px-3 py-1.5 text-[9px] font-bold text-[#8f6a31]">Max: {formatPrice(Number(maxPrice))}<X size={11} /></button>
+                    )}
                     {ratingFilter !== "0" && (
                       <button
                         onClick={() => setRatingFilter("0")}
@@ -2778,7 +2883,7 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 ) : viewMode === "grid" ? (
-                  <motion.div layout className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                  <motion.div layout className="grid grid-cols-2 gap-2.5 min-[420px]:gap-3 sm:gap-4 xl:grid-cols-3">
                     <AnimatePresence mode="popLayout">
                     {filteredProducts.map((product) => (
                       <ProductCard
@@ -3091,14 +3196,24 @@ export default function ProductsPage() {
           COMPARE BAR
       ===================================================== */}
 
+      <AnimatePresence>
+        {compareModalOpen && compareProducts.length > 0 && (
+          <CompareModal
+            products={compareProducts}
+            onClose={() => setCompareModalOpen(false)}
+            onRemove={(id) => {
+              setCompareIds((current) => current.filter((productId) => productId !== id));
+              if (compareProducts.length <= 1) setCompareModalOpen(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <CompareBar
         products={compareProducts}
-        onRemove={(id) =>
-          setCompareIds(
-            compareIds.filter((productId) => productId !== id)
-          )
-        }
+        onRemove={(id) => setCompareIds((current) => current.filter((productId) => productId !== id))}
         onClear={() => setCompareIds([])}
+        onCompare={() => setCompareModalOpen(true)}
       />
 
       {/* =====================================================
@@ -3151,8 +3266,15 @@ export default function ProductsPage() {
           color: #4a3823;
         }
 
-        .group {
-          animation: primecartFadeUp 0.35s ease both;
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            scroll-behavior: auto !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
         }
 
         button,
