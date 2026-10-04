@@ -802,7 +802,7 @@ function ProductCard({
   compareIds: string[];
   toggleWishlist: (product: Product) => void;
   toggleCompare: (product: Product) => void;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   openQuickView: (product: Product) => void;
   addingProductId: string | null;
   showToast: (message: string) => void;
@@ -810,7 +810,7 @@ function ProductCard({
   const discount = getDiscount(product);
   const isWishlisted = wishlistIds.includes(product.id);
   const isCompared = compareIds.includes(product.id);
-  const outOfStock = Number(product.stock || 0) <= 0;
+  const outOfStock = Number(product.stock ?? 0) <= 0;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-[#ece3d4] bg-white shadow-[0_8px_28px_rgba(73,52,23,0.045)] transition-all duration-300 hover:-translate-y-1 hover:border-[#dfcda9] hover:shadow-[0_18px_45px_rgba(73,52,23,0.10)]">
@@ -1050,13 +1050,13 @@ function QuickView({
   product: Product;
   categories: Category[];
   onClose: () => void;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   toggleWishlist: (product: Product) => void;
   wishlistIds: string[];
 }) {
   const [quantity, setQuantity] = useState(1);
   const discount = getDiscount(product);
-  const stock = Number(product.stock || 0);
+  const stock = Number(product.stock ?? 0);
   const outOfStock = stock <= 0;
 
   useEffect(() => {
@@ -1240,10 +1240,8 @@ function QuickView({
 
             <button
               disabled={outOfStock}
-              onClick={() => {
-                for (let i = 0; i < quantity; i++) {
-                  addToCart(product);
-                }
+              onClick={async () => {
+                await addToCart(product, quantity);
                 onClose();
               }}
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#b9975b] px-5 text-xs font-extrabold text-white shadow-[0_10px_25px_rgba(185,151,91,0.22)] transition hover:bg-[#a77f42] disabled:cursor-not-allowed disabled:opacity-50"
@@ -1523,38 +1521,100 @@ export default function ProductsPage() {
   }, [loadProducts]);
 
   /* =======================================================
-     LOAD LOCAL STORAGE
+     LOAD USER DATA
+     Signed-in users: Supabase cart_items + wishlist_items
+     Guests: localStorage fallback
   ======================================================= */
 
   useEffect(() => {
-    try {
-      const savedWishlist = safeParse<string[]>(
-        localStorage.getItem(WISHLIST_KEY),
-        []
-      );
+    let cancelled = false;
 
-      const savedRecent = safeParse<string[]>(
-        localStorage.getItem(RECENT_KEY),
-        []
-      );
+    const loadUserData = async () => {
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-      const savedCart = safeParse<CartItem[]>(
-        localStorage.getItem(CART_KEY),
-        []
-      );
+        if (authError) throw authError;
 
-      setWishlistIds(savedWishlist);
-      setRecentIds(savedRecent);
-      setCartCount(
-        savedCart.reduce(
-          (total, item) => total + Number(item.quantity || 0),
-          0
-        )
-      );
-    } catch {
-      // ignore
-    }
-  }, []);
+        // Recently viewed and guest cart remain browser-specific.
+        const savedRecent = safeParse<string[]>(
+          localStorage.getItem(RECENT_KEY),
+          []
+        );
+        if (!cancelled) setRecentIds(savedRecent);
+
+        if (user) {
+          const [wishlistResult, cartResult] = await Promise.all([
+            supabase
+              .from("wishlist_items")
+              .select("product_id")
+              .eq("user_id", user.id),
+            supabase
+              .from("cart_items")
+              .select("product_id,quantity")
+              .eq("user_id", user.id),
+          ]);
+
+          if (wishlistResult.error) throw wishlistResult.error;
+          if (cartResult.error) throw cartResult.error;
+
+          if (!cancelled) {
+            const ids = (wishlistResult.data || []).map((row) => String(row.product_id));
+            setWishlistIds(ids);
+            setCartCount(
+              (cartResult.data || []).reduce(
+                (total, row) => total + Number(row.quantity || 0),
+                0
+              )
+            );
+          }
+
+          // Keep a small local cache for UI components that read these keys,
+          // but the database remains the source of truth for signed-in users.
+          try {
+            localStorage.setItem(WISHLIST_KEY, JSON.stringify((wishlistResult.data || []).map((row) => String(row.product_id))));
+          } catch {
+            // Browser storage may be disabled; database data is still available.
+          }
+        } else {
+          const savedWishlist = safeParse<string[]>(
+            localStorage.getItem(WISHLIST_KEY),
+            []
+          );
+          const savedCart = safeParse<CartItem[]>(
+            localStorage.getItem(CART_KEY),
+            []
+          );
+
+          if (!cancelled) {
+            setWishlistIds(savedWishlist);
+            setCartCount(
+              savedCart.reduce(
+                (total, item) => total + Number(item.quantity || 0),
+                0
+              )
+            );
+          }
+        }
+      } catch (err) {
+        console.error("PrimeCart user data loading error:", err);
+        // Guest fallback is used only if the account data cannot be loaded.
+        if (!cancelled) {
+          setWishlistIds(safeParse<string[]>(localStorage.getItem(WISHLIST_KEY), []));
+          const savedCart = safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
+          setCartCount(savedCart.reduce((total, item) => total + Number(item.quantity || 0), 0));
+          showToast("Could not sync cart/wishlist. Please refresh and try again.");
+        }
+      }
+    };
+
+    loadUserData();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, showToast]);
 
   /* =======================================================
      BRANDS
@@ -1793,65 +1853,67 @@ export default function ProductsPage() {
 
   /* =======================================================
      WISHLIST
+     Authenticated users are saved in public.wishlist_items.
+     Guests use localStorage until they sign in.
   ======================================================= */
 
   const toggleWishlist = useCallback(
     async (product: Product) => {
       const exists = wishlistIds.includes(product.id);
-
+      const previous = wishlistIds;
       const next = exists
         ? wishlistIds.filter((id) => id !== product.id)
         : [...wishlistIds, product.id];
 
-      setWishlistIds(next);
-
       try {
-        localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-      } catch {
-        // ignore
-      }
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+        if (authError) throw authError;
 
-      if (exists) {
-        showToast("Removed from wishlist");
-
-        try {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-
-          if (user) {
-            await supabase
-              .from("wishlist")
+        if (user) {
+          if (exists) {
+            const { error } = await supabase
+              .from("wishlist_items")
               .delete()
               .eq("user_id", user.id)
               .eq("product_id", product.id);
-          }
-        } catch {
-          // local wishlist still works
-        }
-      } else {
-        showToast("Added to wishlist");
+            if (error) throw error;
+          } else {
+            // Check first so this works even when a unique constraint is absent.
+            const { data: existingRow, error: lookupError } = await supabase
+              .from("wishlist_items")
+              .select("product_id")
+              .eq("user_id", user.id)
+              .eq("product_id", product.id)
+              .maybeSingle();
+            if (lookupError) throw lookupError;
 
-        try {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-
-          if (user) {
-            const { error } = await supabase
-              .from("wishlist")
-              .insert({
+            if (!existingRow) {
+              const { error } = await supabase.from("wishlist_items").insert({
                 user_id: user.id,
                 product_id: product.id,
               });
-
-            if (error && !error.message.toLowerCase().includes("duplicate")) {
-              console.warn("Wishlist insert:", error.message);
+              if (error) throw error;
             }
           }
-        } catch {
-          // local wishlist still works
+        } else {
+          // Guest wishlist only; do not write anonymous records to the database.
+          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
         }
+
+        setWishlistIds(next);
+        try {
+          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+        } catch {
+          // Database is authoritative for signed-in users.
+        }
+        showToast(exists ? "Removed from wishlist" : "Added to wishlist");
+      } catch (err) {
+        console.error("Wishlist update failed:", err);
+        setWishlistIds(previous);
+        showToast("Wishlist could not be saved. Please try again.");
       }
     },
     [wishlistIds, showToast, supabase]
@@ -1859,39 +1921,84 @@ export default function ProductsPage() {
 
   /* =======================================================
      CART
+     Signed-in users: public.cart_items
+     Guests: localStorage fallback
   ======================================================= */
 
   const addToCart = useCallback(
-    (product: Product) => {
-      if (Number(product.stock || 0) <= 0) {
+    async (product: Product, requestedQuantity = 1) => {
+      const stock = Number(product.stock ?? 0);
+      const quantityToAdd = Math.max(1, Math.floor(Number(requestedQuantity) || 1));
+
+      if (stock <= 0) {
         showToast("This product is currently out of stock");
         return;
       }
 
       setAddingProductId(product.id);
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+        if (authError) throw authError;
 
-      window.setTimeout(() => {
-        try {
-          const existing = safeParse<CartItem[]>(
-            localStorage.getItem(CART_KEY),
-            []
+        if (user) {
+          const { data: existingRow, error: lookupError } = await supabase
+            .from("cart_items")
+            .select("id,quantity")
+            .eq("user_id", user.id)
+            .eq("product_id", product.id)
+            .maybeSingle();
+          if (lookupError) throw lookupError;
+
+          const currentQuantity = Number(existingRow?.quantity || 0);
+          const nextQuantity = Math.min(stock, currentQuantity + quantityToAdd);
+          if (nextQuantity <= currentQuantity) {
+            showToast("You already have the maximum available quantity in your cart");
+            return;
+          }
+
+          if (existingRow) {
+            const { error } = await supabase
+              .from("cart_items")
+              .update({ quantity: nextQuantity, updated_at: new Date().toISOString() })
+              .eq("id", existingRow.id)
+              .eq("user_id", user.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.from("cart_items").insert({
+              user_id: user.id,
+              product_id: product.id,
+              quantity: nextQuantity,
+            });
+            if (error) throw error;
+          }
+
+          const { data: cartRows, error: countError } = await supabase
+            .from("cart_items")
+            .select("quantity")
+            .eq("user_id", user.id);
+          if (countError) throw countError;
+
+          const totalCount = (cartRows || []).reduce(
+            (total, row) => total + Number(row.quantity || 0),
+            0
           );
+          setCartCount(totalCount);
 
+          // Do not overwrite the guest-cart cache with partial database rows.
+          // The signed-in Cart page should read cart_items from Supabase.
+        } else {
+          const existing = safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
           const index = existing.findIndex(
-            (item) =>
-              item.product_id === product.id ||
-              item.id === product.id
+            (item) => item.product_id === product.id || item.id === product.id
           );
 
           if (index >= 0) {
-            const current = existing[index];
-
             existing[index] = {
-              ...current,
-              quantity: Math.min(
-                Number(product.stock || 999),
-                Number(current.quantity || 0) + 1
-              ),
+              ...existing[index],
+              quantity: Math.min(stock, Number(existing[index].quantity || 0) + quantityToAdd),
             };
           } else {
             existing.push({
@@ -1899,34 +2006,25 @@ export default function ProductsPage() {
               product_id: product.id,
               name: product.name,
               price: Number(product.price || 0),
-              quantity: 1,
+              quantity: Math.min(stock, quantityToAdd),
               image_url: product.image_url,
               stock: product.stock,
             });
           }
 
-          localStorage.setItem(
-            CART_KEY,
-            JSON.stringify(existing)
-          );
-
-          setCartCount(
-            existing.reduce(
-              (total, item) =>
-                total + Number(item.quantity || 0),
-              0
-            )
-          );
-
-          showToast("Added to cart");
-        } catch {
-          showToast("Unable to add product");
-        } finally {
-          setAddingProductId(null);
+          localStorage.setItem(CART_KEY, JSON.stringify(existing));
+          setCartCount(existing.reduce((total, item) => total + Number(item.quantity || 0), 0));
         }
-      }, 180);
+
+        showToast("Added to cart");
+      } catch (err) {
+        console.error("Add to cart failed:", err);
+        showToast("Could not save to cart. Please try again.");
+      } finally {
+        setAddingProductId(null);
+      }
     },
-    [showToast]
+    [showToast, supabase]
   );
 
   /* =======================================================
@@ -2568,7 +2666,7 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 ) : viewMode === "grid" ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-3">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -2971,3 +3069,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+
