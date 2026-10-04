@@ -1606,26 +1606,89 @@ export default function ProductsPage() {
      FILTERED PRODUCTS
   ======================================================= */
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+  // SEARCH MATCHES: exact matches first, related matches if no exact product exists.
+  const normalizedSearch = search.trim().toLowerCase();
 
-    const query = search.trim().toLowerCase();
+  const searchMatchData = useMemo(() => {
+    if (!normalizedSearch) {
+      return { exactProducts: products, relatedProducts: products, hasExactMatch: true };
+    }
 
-    if (query) {
-      result = result.filter((product) => {
-        const category = getCategoryName(
-          product.category_id,
-          categories
-        ).toLowerCase();
+    const normalize = (value: string) =>
+      value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const query = normalize(normalizedSearch);
+    const queryTokens = query.split(/\s+/).filter((token) => token.length > 1);
 
-        return (
-          product.name.toLowerCase().includes(query) ||
-          product.brand?.toLowerCase().includes(query) ||
-          product.short_description?.toLowerCase().includes(query) ||
-          category.includes(query)
-        );
+    // Common shopping terms help searches such as "head phone", "mobile", or "sneaker".
+    const synonymGroups = [
+      ["phone", "mobile", "smartphone", "iphone", "android"],
+      ["headphone", "headphones", "earphone", "earphones", "earbuds", "headset"],
+      ["shoe", "shoes", "sneaker", "sneakers", "footwear", "running"],
+      ["laptop", "notebook", "computer", "pc"],
+      ["watch", "smartwatch", "wristwatch"],
+      ["bag", "backpack", "handbag", "luggage", "purse"],
+      ["shirt", "tshirt", "tee", "top"],
+      ["tv", "television", "smarttv", "display"],
+      ["camera", "photography", "dslr"],
+      ["toy", "toys", "kids", "children", "baby"],
+      ["cream", "moisturizer", "lotion", "skincare", "beauty"],
+      ["car", "automotive", "vehicle", "bike", "motorcycle", "accessory"],
+      ["gaming", "game", "controller", "console", "playstation", "xbox"],
+      ["speaker", "speakers", "audio", "soundbar"],
+    ];
+
+    const expandedTokens = new Set(queryTokens);
+    synonymGroups.forEach((group) => {
+      if (group.some((term) => queryTokens.some((token) => term.includes(token) || token.includes(term)))) {
+        group.forEach((term) => expandedTokens.add(term));
+      }
+    });
+
+    const scored = products.map((product) => {
+      const category = getCategoryName(product.category_id, categories);
+      const name = normalize(product.name || "");
+      const brand = normalize(product.brand || "");
+      const description = normalize(`${product.short_description || ""} ${product.description || ""}`);
+      const categoryText = normalize(category);
+      const corpus = normalize(`${name} ${brand} ${description} ${categoryText}`);
+      const exact = name.includes(query) || brand.includes(query) || description.includes(query) || categoryText.includes(query);
+      let score = 0;
+
+      if (name.includes(query)) score += 12;
+      if (brand.includes(query)) score += 9;
+      if (categoryText.includes(query)) score += 8;
+      if (description.includes(query)) score += 5;
+
+      expandedTokens.forEach((token) => {
+        if (name.split(" ").some((part) => part === token || part.startsWith(token))) score += queryTokens.includes(token) ? 5 : 2;
+        else if (brand.includes(token)) score += queryTokens.includes(token) ? 4 : 1;
+        else if (categoryText.includes(token)) score += queryTokens.includes(token) ? 4 : 2;
+        else if (corpus.includes(token)) score += queryTokens.includes(token) ? 2 : 1;
+      });
+
+      return { product, exact, score };
+    });
+
+    const exactProducts = scored.filter((item) => item.exact).map((item) => item.product);
+    let relatedProducts = scored
+      .filter((item) => !item.exact && item.score > 0)
+      .sort((a, b) => b.score - a.score || Number(b.product.rating || 0) - Number(a.product.rating || 0))
+      .map((item) => item.product);
+
+    // If no related keyword exists in the catalogue, show popular products rather than a blank page.
+    if (!exactProducts.length && !relatedProducts.length) {
+      relatedProducts = [...products].sort((a, b) => {
+        if (Boolean(b.is_featured) !== Boolean(a.is_featured)) return b.is_featured ? 1 : -1;
+        return Number(b.rating || 0) - Number(a.rating || 0);
       });
     }
+
+    return { exactProducts, relatedProducts, hasExactMatch: exactProducts.length > 0 };
+  }, [products, categories, normalizedSearch]);
+
+  const filteredProducts = useMemo(() => {
+    // Exact search results take priority. When none exist, use related/popular suggestions.
+    let result = [...(searchMatchData.hasExactMatch ? searchMatchData.exactProducts : searchMatchData.relatedProducts)];
 
     if (selectedCategory !== "all") {
       result = result.filter(
@@ -1726,7 +1789,7 @@ export default function ProductsPage() {
   }, [
     products,
     categories,
-    search,
+    searchMatchData,
     selectedCategory,
     minPrice,
     maxPrice,
@@ -2340,6 +2403,11 @@ export default function ProductsPage() {
                       activeFilterCount > 1 ? "s" : ""
                     } active`}
                 </p>
+                {normalizedSearch && !searchMatchData.hasExactMatch && !loading && (
+                  <p className="mt-2 text-[11px] font-semibold text-[#9a7135]">
+                    No exact match for “{search.trim()}” — showing related and popular products instead.
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -3003,3 +3071,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+
