@@ -1,2031 +1,918 @@
-/* ---- PAGE BASE ---- */
 
-.categories-page {
-  --cat-gold: #b8872d;
-  --cat-gold-dark: #946b1e;
-  --cat-gold-soft: #fbf3df;
-  --cat-gold-border: #ead8ac;
-  --cat-ink: #25231e;
-  --cat-muted: #77746d;
-  --cat-border: #eeeae1;
-  --cat-surface: #ffffff;
-  --cat-background: #fffdf9;
-  --cat-green: #23845c;
-  --cat-red: #c24e43;
+@import "tailwindcss";
 
-  width: 100%;
-  min-height: 100vh;
-  padding: 24px clamp(14px, 3vw, 38px) 60px;
-  background: var(--cat-background);
-  color: var(--cat-ink);
-  font-family: inherit;
-  box-sizing: border-box;
+/* pcStyle1: Typography / text color and size */
+.pcStyle1 {
+  @apply min-h-screen bg-[#fffdf9] text-[#29251d];
 }
 
-.categories-page *,
-.categories-page *::before,
-.categories-page *::after {
-  box-sizing: border-box;
+/* pcStyle2: Background / theme colors */
+.pcStyle2 {
+  @apply border-b border-[#eadfc9] bg-[#fff9ec];
 }
 
-.categories-page button,
-.categories-page input,
-.categories-page select {
-  font: inherit;
+/* pcStyle3: Flex layout / alignment */
+.pcStyle3 {
+  @apply mx-auto flex max-w-[1500px] items-center justify-center gap-4 px-5 py-2 text-[10px] font-bold text-[#88724a] sm:gap-8 sm:text-xs;
 }
 
-.categories-page button {
-  cursor: pointer;
+/* pcStyle4: Flex layout / alignment */
+.pcStyle4 {
+  @apply flex items-center gap-1.5;
 }
 
-.categories-page a {
-  color: inherit;
-  text-decoration: none;
+/* pcStyle5: Component spacing and visual styling */
+.pcStyle5 {
+  @apply hidden sm:block;
 }
 
-.categories-page button:focus-visible,
-.categories-page a:focus-visible,
-.categories-page input:focus-visible,
-.categories-page select:focus-visible {
-  outline: 3px solid rgba(184, 135, 45, 0.35);
-  outline-offset: 3px;
-}
-
-.cat-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+/* pcStyle6: Background / theme colors */
+.pcStyle6 {
+  @apply sticky top-0 z-50 border-b border-[#eadfc9]/80 bg-[#fffdf9]/95 backdrop-blur-xl;
 }
 
-/* ---- BREADCRUMB ---- */
-
-.cat-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-bottom: 24px;
-  color: var(--cat-muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.cat-breadcrumb a {
-  transition: color 0.2s ease;
-}
-
-.cat-breadcrumb a:hover {
-  color: var(--cat-gold-dark);
-}
-
-.cat-breadcrumb span:last-child {
-  color: var(--cat-ink);
-  font-weight: 700;
-}
-
-/* ---- PAGE HEADER ---- */
-
-.cat-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 26px;
-}
-
-.cat-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--cat-gold-dark);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.45px;
-  line-height: 1.5;
-}
-
-.cat-page-header h1 {
-  margin: 11px 0 10px;
-  color: var(--cat-ink);
-  font-size: clamp(30px, 4vw, 46px);
-  line-height: 1.12;
-  letter-spacing: -1.5px;
-  font-weight: 800;
-}
-
-.cat-page-header h1 span {
-  color: var(--cat-gold);
-}
-
-.cat-page-header p {
-  max-width: 630px;
-  margin: 0;
-  color: var(--cat-muted);
-  font-size: 14px;
-  line-height: 1.75;
-}
-
-.cat-back-dashboard {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 15px;
-  border: 1px solid var(--cat-border);
-  border-radius: 11px;
-  background: #fff;
-  color: var(--cat-ink);
-  font-size: 12px;
-  font-weight: 700;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-.cat-back-dashboard:hover {
-  border-color: var(--cat-gold-border);
-  background: #fffaf0;
-  transform: translateY(-1px);
-}
-
-/* ---- SUMMARY STAT CARDS ---- */
-
-.cat-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 26px;
-}
-
-.cat-summary-card {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-width: 0;
-  padding: 18px;
-  border: 1px solid var(--cat-border);
-  border-radius: 16px;
-  background: var(--cat-surface);
-  box-shadow: 0 4px 16px rgba(44, 35, 16, 0.025);
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.cat-summary-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--cat-gold-border);
-  box-shadow: 0 8px 24px rgba(44, 35, 16, 0.055);
-}
-
-.cat-summary-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 43px;
-  height: 43px;
-  border: 1px solid #f0e1bd;
-  border-radius: 13px;
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
-}
-
-.cat-summary-card > div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.cat-summary-label {
-  color: var(--cat-muted);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.cat-summary-card strong {
-  margin: 3px 0;
-  color: var(--cat-ink);
-  font-size: 25px;
-  line-height: 1.15;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.cat-summary-card small {
-  color: #969187;
-  font-size: 10px;
-}
-
-/* ---- SEARCH PANEL ---- */
-
-.cat-search-panel {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 17px;
-}
-
-.cat-search-box {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  flex: 1;
-  min-width: 0;
-  min-height: 53px;
-  padding: 0 17px;
-  border: 1px solid #e9e3d6;
-  border-radius: 14px;
-  background: #fff;
-  color: var(--cat-muted);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.cat-search-box:focus-within {
-  border-color: var(--cat-gold);
-  box-shadow: 0 0 0 3px rgba(184, 135, 45, 0.09);
-}
-
-.cat-search-box > svg {
-  flex-shrink: 0;
-  color: var(--cat-gold-dark);
+/* pcStyle7: Flex layout / alignment */
+.pcStyle7 {
+  @apply mx-auto flex h-[72px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-10;
 }
 
-.cat-search-box input {
-  width: 100%;
-  min-width: 0;
-  padding: 13px 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--cat-ink);
-  font-size: 13px;
-}
-
-.cat-search-box input::placeholder {
-  color: #a29d93;
-}
-
-.cat-search-box input:focus-visible {
-  outline: none;
-}
-
-.cat-search-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: #f5f2ec;
-  color: var(--cat-muted);
+/* pcStyle8: Flex layout / alignment */
+.pcStyle8 {
+  @apply flex items-center gap-3;
 }
 
-.cat-search-clear:hover {
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle9: Flex layout / alignment */
+.pcStyle9 {
+  @apply flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#fff5d9] ring-1 ring-[#c79a3b]/20;
 }
 
-.cat-mobile-filter-toggle {
-  display: none;
+/* pcStyle10: Component spacing and visual styling */
+.pcStyle10 {
+  @apply h-full w-full object-contain;
 }
-
-/* ---- QUICK FILTER CHIPS ---- */
 
-.cat-quick-filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  margin-bottom: 27px;
+/* pcStyle11: Typography / text color and size */
+.pcStyle11 {
+  @apply text-xl font-black tracking-tight;
 }
 
-.cat-quick-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 0 13px;
-  border: 1px solid #eae5da;
-  border-radius: 999px;
-  background: #fff;
-  color: #625f58;
-  font-size: 11px;
-  font-weight: 650;
-  white-space: nowrap;
-  transition: all 0.18s ease;
+/* pcStyle12: Typography / text color and size */
+.pcStyle12 {
+  @apply text-[#b8872d];
 }
 
-.cat-quick-chip svg {
-  color: #8d8575;
+/* pcStyle13: Typography / text color and size */
+.pcStyle13 {
+  @apply hidden text-[9px] font-bold uppercase tracking-[0.2em] text-[#a59880] sm:block;
 }
 
-.cat-quick-chip:hover {
-  border-color: var(--cat-gold-border);
-  background: #fffaf0;
-  color: var(--cat-gold-dark);
+/* pcStyle14: Flex layout / alignment */
+.pcStyle14 {
+  @apply hidden items-center gap-1 md:flex;
 }
 
-.cat-quick-chip.active {
-  border-color: var(--cat-gold);
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle15: Card / button shape */
+.pcStyle15 {
+  @apply rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8];
 }
 
-.cat-quick-chip.active svg {
-  color: var(--cat-gold-dark);
+/* pcStyle16: Card / button shape */
+.pcStyle16 {
+  @apply rounded-xl bg-[#fff0c9] px-4 py-2.5 text-sm font-bold text-[#916b1e];
 }
 
-.cat-result-count {
-  margin-left: auto;
-  color: var(--cat-muted);
-  font-size: 11px;
-  font-weight: 600;
+/* pcStyle17: Flex layout / alignment */
+.pcStyle17 {
+  @apply flex items-center gap-2;
 }
 
-/* ---- DATABASE ERROR PANEL ---- */
-
-.cat-error-panel {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 22px;
-  padding: 16px;
-  border: 1px solid #f0d2cd;
-  border-radius: 13px;
-  background: #fff8f6;
-  color: #9d3f35;
+/* pcStyle18: Flex layout / alignment */
+.pcStyle18 {
+  @apply hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 sm:flex;
 }
 
-.cat-error-panel > svg {
-  flex-shrink: 0;
-  margin-top: 2px;
+/* pcStyle19: Flex layout / alignment */
+.pcStyle19 {
+  @apply flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#766c5b] md:hidden;
 }
 
-.cat-error-panel > div {
-  flex: 1;
-  min-width: 0;
+/* pcStyle20: Component spacing and visual styling */
+.pcStyle20 {
+  @apply mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10;
 }
 
-.cat-error-panel strong {
-  display: block;
-  font-size: 13px;
+/* pcStyle21: Flex layout / alignment */
+.pcStyle21 {
+  @apply mb-7 flex items-center gap-2 text-sm text-[#9c927f];
 }
 
-.cat-error-panel p {
-  margin: 5px 0;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  line-height: 1.6;
+/* pcStyle22: Typography / text color and size */
+.pcStyle22 {
+  @apply hover:text-[#a47720];
 }
 
-.cat-error-panel small {
-  color: #986e68;
-  font-size: 11px;
+/* pcStyle23: Typography / text color and size */
+.pcStyle23 {
+  @apply font-bold text-[#50483a];
 }
 
-.cat-error-panel button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
-  padding: 9px 12px;
-  border: 1px solid #edc6bf;
-  border-radius: 9px;
-  background: #fff;
-  color: #9d3f35;
-  font-size: 11px;
-  font-weight: 700;
+/* pcStyle24: Card / button shape */
+.pcStyle24 {
+  @apply relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] via-[#fffaf0] to-[#f8efd9] px-6 py-9 shadow-[0_20px_65px_rgba(120,90,30,0.07)] sm:px-9 lg:px-12 lg:py-12;
 }
 
-/* ---- MAIN SIDEBAR + RESULTS LAYOUT ---- */
-
-.cat-main-layout {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  align-items: start;
-  gap: 23px;
+/* pcStyle25: Card / button shape */
+.pcStyle25 {
+  @apply pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-[#c79a3b]/10 blur-3xl;
 }
 
-.cat-sidebar {
-  position: sticky;
-  top: 22px;
-  min-width: 0;
-  padding: 19px;
-  border: 1px solid var(--cat-border);
-  border-radius: 16px;
-  background: #fff;
+/* pcStyle26: Grid layout / responsive columns */
+.pcStyle26 {
+  @apply relative grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-center;
 }
-
-/* ---- FILTER HEADER ---- */
 
-.cat-filter-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid #f0ede7;
+/* pcStyle27: Flex layout / alignment */
+.pcStyle27 {
+  @apply inline-flex items-center gap-2 rounded-full border border-[#c79a3b]/20 bg-white/75 px-4 py-2 text-[10px] font-black uppercase tracking-[0.17em] text-[#9a741e];
 }
 
-.cat-filter-heading h3 {
-  margin: 5px 0 0;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
+/* pcStyle28: Typography / text color and size */
+.pcStyle28 {
+  @apply mt-5 max-w-3xl text-3xl font-black tracking-[-0.045em] sm:text-4xl lg:text-6xl;
 }
 
-.cat-text-btn {
-  padding: 5px 0;
-  border: 0;
-  background: transparent;
-  color: var(--cat-gold-dark);
-  font-size: 11px;
-  font-weight: 800;
+/* pcStyle29: Typography / text color and size */
+.pcStyle29 {
+  @apply mt-4 max-w-2xl text-sm leading-7 text-[#7f7461] sm:text-base;
 }
 
-.cat-text-btn:hover {
-  text-decoration: underline;
+/* pcStyle30: Flex layout / alignment */
+.pcStyle30 {
+  @apply mt-7 flex flex-wrap gap-3;
 }
 
-/* ---- FILTER GROUPS ---- */
-
-.cat-filter-group {
-  padding: 19px 0;
-  border-bottom: 1px solid #f0ede7;
+/* pcStyle31: Flex layout / alignment */
+.pcStyle31 {
+  @apply inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-sm;
 }
 
-.cat-filter-group h4 {
-  margin: 0 0 12px;
-  color: #47443d;
-  font-size: 12px;
-  font-weight: 800;
+/* pcStyle32: Flex layout / alignment */
+.pcStyle32 {
+  @apply inline-flex items-center gap-2 rounded-xl border border-[#dfcfac] bg-white/80 px-5 py-3 text-sm font-bold text-[#816222];
 }
 
-.cat-filter-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 9px;
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 9px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: transparent;
-  color: #77736a;
-  text-align: left;
-  font-size: 11px;
-  transition: all 0.18s ease;
+/* pcStyle33: Grid layout / responsive columns */
+.pcStyle33 {
+  @apply grid grid-cols-2 gap-3;
 }
 
-.cat-filter-option + .cat-filter-option {
-  margin-top: 3px;
+/* pcStyle34: Component spacing and visual styling */
+.pcStyle34 {
+  @apply mt-10;
 }
 
-.cat-filter-option-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
+/* pcStyle35: Grid layout / responsive columns */
+.pcStyle35 {
+  @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
 }
 
-.cat-filter-option-left svg {
-  flex-shrink: 0;
-  color: #969082;
+/* pcStyle36: Component spacing and visual styling */
+.pcStyle36 {
+  @apply mt-11;
 }
 
-.cat-filter-option:hover {
-  background: #faf8f2;
-  color: var(--cat-ink);
+/* pcStyle37: Grid layout / responsive columns */
+.pcStyle37 {
+  @apply grid grid-cols-2 gap-3 md:grid-cols-4;
 }
 
-.cat-filter-option.active {
-  border-color: #f0e2bf;
-  background: #fcf6e9;
-  color: var(--cat-gold-dark);
-  font-weight: 800;
+/* pcStyle38: Component spacing and visual styling */
+.pcStyle38 {
+  @apply group block h-full;
 }
 
-.cat-filter-option.active .cat-filter-option-left svg {
-  color: var(--cat-gold-dark);
+/* pcStyle39: Card / button shape */
+.pcStyle39 {
+  @apply h-full overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40;
 }
 
-/* ---- SORT SELECT ---- */
-
-.cat-select-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
+/* pcStyle40: Flex layout / alignment */
+.pcStyle40 {
+  @apply relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc] sm:h-36;
 }
 
-.cat-select-wrap select {
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-  padding: 0 32px 0 11px;
-  appearance: none;
-  border: 1px solid #eae5da;
-  border-radius: 9px;
-  background: #fff;
-  color: #4f4b43;
-  font-size: 11px;
-  cursor: pointer;
+/* pcStyle41: Component spacing and visual styling */
+.pcStyle41 {
+  @apply h-full w-full object-contain p-5 transition group-hover:scale-105;
 }
 
-.cat-select-wrap > svg {
-  position: absolute;
-  right: 10px;
-  pointer-events: none;
-  color: #8d8575;
+/* pcStyle42: Card / button shape */
+.pcStyle42 {
+  @apply absolute left-3 top-3 rounded-full bg-[#c79a3b] px-2.5 py-1 text-[9px] font-black text-white;
 }
-
-/* ---- INVENTORY SUMMARY ---- */
 
-.cat-inventory-box {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  margin-top: 17px;
-  padding: 13px;
-  border: 1px solid #eee7d8;
-  border-radius: 12px;
-  background: #fffdf8;
+/* pcStyle43: Component spacing and visual styling */
+.pcStyle43 {
+  @apply p-4;
 }
 
-.cat-inventory-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle44: Flex layout / alignment */
+.pcStyle44 {
+  @apply flex items-center justify-between gap-2;
 }
 
-.cat-inventory-box > div:nth-child(2) strong {
-  display: block;
-  font-size: 11px;
+/* pcStyle45: Typography / text color and size */
+.pcStyle45 {
+  @apply truncate text-sm font-black;
 }
 
-.cat-inventory-box > div:nth-child(2) p {
-  margin: 4px 0 0;
-  color: var(--cat-muted);
-  font-size: 10px;
+/* pcStyle46: Typography / text color and size */
+.pcStyle46 {
+  @apply mt-2 text-[11px] text-[#958a78];
 }
 
-.cat-inventory-divider {
-  height: 1px;
-  background: #eee7d8;
+/* pcStyle47: Flex layout / alignment */
+.pcStyle47 {
+  @apply mt-2 flex items-center gap-1 text-xs font-bold text-[#806b43];
 }
 
-.cat-inventory-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--cat-muted);
-  font-size: 10px;
+/* pcStyle48: Typography / text color and size */
+.pcStyle48 {
+  @apply fill-[#c79a3b] text-[#c79a3b];
 }
 
-.cat-inventory-line strong {
-  color: var(--cat-ink);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
+/* pcStyle49: Card / button shape */
+.pcStyle49 {
+  @apply rounded-2xl border border-[#eadfc9] bg-white p-3 shadow-sm;
 }
 
-/* ---- RESULTS HEADER ---- */
-
-.cat-results {
-  min-width: 0;
+/* pcStyle50: Flex layout / alignment */
+.pcStyle50 {
+  @apply flex flex-col gap-3 lg:flex-row;
 }
 
-.cat-results-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 17px;
+/* pcStyle51: Flex layout / alignment */
+.pcStyle51 {
+  @apply relative flex-1;
 }
 
-.cat-results-header h2 {
-  margin: 5px 0 0;
-  font-size: 23px;
-  line-height: 1.25;
-  letter-spacing: -0.6px;
-  font-weight: 800;
+/* pcStyle52: Typography / text color and size */
+.pcStyle52 {
+  @apply absolute left-4 top-1/2 -translate-y-1/2 text-[#a79b85];
 }
 
-.cat-results-total {
-  flex-shrink: 0;
-  padding: 7px 10px;
-  border: 1px solid #eee8dc;
-  border-radius: 8px;
-  background: #fff;
-  color: var(--cat-muted);
-  font-size: 10px;
-  font-weight: 700;
+/* pcStyle53: Card / button shape */
+.pcStyle53 {
+  @apply h-12 w-full rounded-xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-11 text-sm outline-none focus:border-[#c79a3b];
 }
-
-/* ---- CATEGORY CARD GRID ---- */
 
-.cat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: stretch;
-  gap: 16px;
+/* pcStyle54: Flex layout / alignment */
+.pcStyle54 {
+  @apply absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg;
 }
 
-.cat-card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid #eae6de;
-  border-radius: 15px;
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(43, 35, 17, 0.025);
-  transition:
-    transform 0.22s ease,
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+/* pcStyle55: Flex layout / alignment */
+.pcStyle55 {
+  @apply hidden items-center gap-1 lg:flex;
 }
 
-.cat-card:hover {
-  transform: translateY(-3px);
-  border-color: #dfc78f;
-  box-shadow: 0 12px 28px rgba(43, 35, 17, 0.075);
+/* pcStyle56: Card / button shape */
+.pcStyle56 {
+  @apply h-12 rounded-xl border border-[#eadfc9] bg-[#fffdf9] px-4 text-sm font-bold text-[#746957] outline-none;
 }
 
-/* ---- CATEGORY CARD IMAGE ---- */
-
-.cat-card-visual {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  min-height: 155px;
-  overflow: hidden;
-  isolation: isolate;
-  background:
-    radial-gradient(circle at 75% 25%, #fff3d1 0, transparent 34%),
-    linear-gradient(135deg, #faf4e6 0%, #f3ead6 100%);
+/* pcStyle57: Flex layout / alignment */
+.pcStyle57 {
+  @apply flex gap-4 overflow-x-auto pb-2;
 }
 
-.cat-card-image {
-  position: absolute;
-  z-index: -2;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  transition: transform 0.35s ease;
+/* pcStyle58: Component spacing and visual styling */
+.pcStyle58 {
+  @apply mb-6;
 }
 
-.cat-card:hover .cat-card-image {
-  transform: scale(1.055);
+/* pcStyle59: Typography / text color and size */
+.pcStyle59 {
+  @apply mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720];
 }
 
-.cat-card-image-shade {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(30, 24, 12, 0.015) 0%,
-    rgba(30, 24, 12, 0.03) 42%,
-    rgba(30, 24, 12, 0.38) 100%
-  );
+/* pcStyle60: Typography / text color and size */
+.pcStyle60 {
+  @apply text-2xl font-black sm:text-3xl;
 }
 
-.cat-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 43px;
-  height: 43px;
-  margin: 0 0 13px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 13px;
-  background: rgba(255, 253, 247, 0.95);
-  color: var(--cat-gold-dark);
-  box-shadow: 0 4px 13px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(8px);
-}
-
-.cat-card-deal {
-  position: absolute;
-  top: 11px;
-  left: 11px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 7px;
-  background: rgba(255, 253, 247, 0.94);
-  color: var(--cat-gold-dark);
-  font-size: 9px;
-  font-weight: 800;
-  backdrop-filter: blur(6px);
-}
-
-.cat-card-open {
-  position: absolute;
-  right: 12px;
-  bottom: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 29px;
-  height: 29px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.93);
-  color: var(--cat-ink);
+/* pcStyle61: Typography / text color and size */
+.pcStyle61 {
+  @apply mt-1 text-sm text-[#8d8372];
 }
-
-/* ---- CATEGORY CARD CONTENT ---- */
 
-.cat-card-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  padding: 14px;
+/* pcStyle62: Grid layout / responsive columns */
+.pcStyle62 {
+  @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
 }
 
-.cat-card-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
+/* pcStyle63: Component spacing and visual styling */
+.pcStyle63 {
+  @apply h-full;
 }
 
-.cat-card-title-wrap {
-  min-width: 0;
+/* pcStyle64: Component spacing and visual styling */
+.pcStyle64 {
+  @apply mt-12;
 }
 
-.cat-card-title {
-  display: inline-block;
-  color: var(--cat-ink);
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 800;
-  overflow-wrap: anywhere;
-  transition: color 0.2s ease;
+/* pcStyle65: Card / button shape */
+.pcStyle65 {
+  @apply rounded-[30px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] to-[#f8efd9] p-6 sm:p-8;
 }
 
-.cat-card-title:hover {
-  color: var(--cat-gold-dark);
+/* pcStyle66: Flex layout / alignment */
+.pcStyle66 {
+  @apply flex flex-col justify-between gap-6 lg:flex-row lg:items-end;
 }
 
-.cat-card-description {
-  display: -webkit-box;
-  min-height: 35px;
-  margin: 5px 0 0;
-  overflow: hidden;
-  color: #888379;
-  font-size: 10px;
-  line-height: 1.7;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+/* pcStyle67: Flex layout / alignment */
+.pcStyle67 {
+  @apply flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720];
 }
 
-.cat-save-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 31px;
-  height: 31px;
-  padding: 0;
-  border: 1px solid #eee8de;
-  border-radius: 9px;
-  background: #fff;
-  color: #8c867a;
-  transition: all 0.18s ease;
+/* pcStyle68: Typography / text color and size */
+.pcStyle68 {
+  @apply mt-2 text-2xl font-black sm:text-3xl;
 }
 
-.cat-save-btn:hover,
-.cat-save-btn.is-saved {
-  border-color: #ebcaca;
-  background: #fff4f3;
-  color: #c74c4c;
+/* pcStyle69: Typography / text color and size */
+.pcStyle69 {
+  @apply mt-1 text-sm text-[#887d6a];
 }
 
-/* ---- CATEGORY CARD STATISTICS ---- */
-
-.cat-card-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 15px;
-  padding: 12px 0;
-  border-top: 1px solid #f0ede7;
-  border-bottom: 1px solid #f0ede7;
+/* pcStyle70: Flex layout / alignment */
+.pcStyle70 {
+  @apply inline-flex items-center gap-2 self-start rounded-xl border border-[#d9c79e] bg-white px-4 py-2.5 text-sm font-bold text-[#866521];
 }
 
-.cat-card-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-  min-width: 0;
+/* pcStyle71: Grid layout / responsive columns */
+.pcStyle71 {
+  @apply mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
 }
 
-.cat-card-stat + .cat-card-stat {
-  padding-left: 8px;
-  border-left: 1px solid #f0ede7;
+/* pcStyle72: Grid layout / responsive columns */
+.pcStyle72 {
+  @apply mt-12 grid gap-5 lg:grid-cols-3;
 }
 
-.cat-card-stat-number {
-  color: var(--cat-ink);
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
+/* pcStyle73: Card / button shape */
+.pcStyle73 {
+  @apply mt-12 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-9 text-center shadow-sm sm:px-10;
 }
 
-.cat-stock-number {
-  color: var(--cat-green);
+/* pcStyle74: Flex layout / alignment */
+.pcStyle74 {
+  @apply mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720];
 }
 
-.cat-card-stat-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #969086;
-  font-size: 9px;
-  font-weight: 600;
-  white-space: nowrap;
+/* pcStyle75: Typography / text color and size */
+.pcStyle75 {
+  @apply mt-5 text-2xl font-black sm:text-3xl;
 }
 
-.cat-card-stat-label svg {
-  color: var(--cat-gold);
+/* pcStyle76: Typography / text color and size */
+.pcStyle76 {
+  @apply mx-auto mt-2 max-w-xl text-sm leading-6 text-[#887d6b];
 }
 
-/* ---- CATEGORY PRICE RANGE ---- */
-
-.cat-card-price-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 7px;
-  min-height: 39px;
-  padding: 9px 0;
+/* pcStyle77: Flex layout / alignment */
+.pcStyle77 {
+  @apply mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-6 py-3 text-sm font-bold text-white;
 }
 
-.cat-card-price {
-  color: var(--cat-ink);
-  font-size: 11px;
-  font-weight: 800;
-  overflow-wrap: anywhere;
+/* pcStyle78: Positioning / overlay layout */
+.pcStyle78 {
+  @apply fixed inset-0 z-[100] lg:hidden;
 }
 
-.cat-card-no-price {
-  color: #969086;
-  font-size: 10px;
+/* pcStyle79: Background / theme colors */
+.pcStyle79 {
+  @apply absolute inset-0 bg-[#5b4a2d]/25 backdrop-blur-sm;
 }
 
-.cat-low-stock-label {
-  padding: 4px 6px;
-  border-radius: 5px;
-  background: #fff3e3;
-  color: #9b6521;
-  font-size: 9px;
-  font-weight: 800;
+/* pcStyle80: Card / button shape */
+.pcStyle80 {
+  @apply absolute bottom-0 left-0 right-0 rounded-t-[28px] border-t border-[#eadfc9] bg-[#fffdf9] p-5 shadow-2xl;
 }
-
-/* ---- CARD ACTIONS ---- */
 
-.cat-card-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 10px;
+/* pcStyle81: Flex layout / alignment */
+.pcStyle81 {
+  @apply mb-5 flex items-center justify-between;
 }
 
-.cat-preview-btn,
-.cat-explore-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: 37px;
-  padding: 7px 8px;
-  border-radius: 9px;
-  font-size: 10px;
-  font-weight: 800;
-  transition: all 0.18s ease;
+/* pcStyle82: Typography / text color and size */
+.pcStyle82 {
+  @apply text-lg font-black;
 }
 
-.cat-preview-btn {
-  border: 1px solid #eae5da;
-  background: #fff;
-  color: #666157;
+/* pcStyle83: Typography / text color and size */
+.pcStyle83 {
+  @apply text-xs text-[#958a78];
 }
 
-.cat-preview-btn:hover {
-  border-color: var(--cat-gold-border);
-  background: #fffaf0;
-  color: var(--cat-gold-dark);
+/* pcStyle84: Flex layout / alignment */
+.pcStyle84 {
+  @apply flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc9];
 }
 
-.cat-explore-btn {
-  border: 1px solid var(--cat-gold);
-  background: var(--cat-gold);
-  color: #fff !important;
+/* pcStyle85: Grid layout / responsive columns */
+.pcStyle85 {
+  @apply grid grid-cols-2 gap-2;
 }
 
-.cat-explore-btn:hover {
-  border-color: var(--cat-gold-dark);
-  background: var(--cat-gold-dark);
+/* pcStyle86: Card / button shape */
+.pcStyle86 {
+  @apply rounded-2xl border border-[#eadfc9] bg-white/80 p-4 shadow-sm;
 }
 
-/* ---- LOADING SKELETON ---- */
-
-.cat-loading-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+/* pcStyle87: Flex layout / alignment */
+.pcStyle87 {
+  @apply flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a47720];
 }
 
-.cat-skeleton-card {
-  overflow: hidden;
-  padding-bottom: 16px;
-  border: 1px solid var(--cat-border);
-  border-radius: 15px;
-  background: #fff;
+/* pcStyle88: Typography / text color and size */
+.pcStyle88 {
+  @apply mt-3 text-2xl font-black;
 }
 
-.cat-skeleton-image,
-.cat-skeleton-line {
-  position: relative;
-  overflow: hidden;
-  background: #f0ede7;
+/* pcStyle89: Typography / text color and size */
+.pcStyle89 {
+  @apply mt-0.5 text-xs font-semibold text-[#958a76];
 }
 
-.cat-skeleton-image {
-  height: 155px;
-  margin-bottom: 15px;
+/* pcStyle90: Component spacing and visual styling */
+.pcStyle90 {
+  @apply mb-5;
 }
 
-.cat-skeleton-line {
-  height: 10px;
-  margin: 11px 14px;
-  border-radius: 5px;
+/* pcStyle91: Typography / text color and size */
+.pcStyle91 {
+  @apply text-2xl font-black tracking-tight sm:text-3xl;
 }
 
-.cat-skeleton-line.wide {
-  width: 67%;
+/* pcStyle92: Card / button shape */
+.pcStyle92 {
+  @apply h-full rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40;
 }
 
-.cat-skeleton-line.short {
-  width: 37%;
+/* pcStyle93: Flex layout / alignment */
+.pcStyle93 {
+  @apply flex items-center justify-between;
 }
 
-.cat-skeleton-image::after,
-.cat-skeleton-line::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.75),
-    transparent
-  );
-  content: "";
-  transform: translateX(-100%);
-  animation: cat-shimmer 1.5s infinite;
+/* pcStyle94: Flex layout / alignment */
+.pcStyle94 {
+  @apply flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white;
 }
 
-@keyframes cat-shimmer {
-  to {
-    transform: translateX(100%);
-  }
+/* pcStyle95: Typography / text color and size */
+.pcStyle95 {
+  @apply text-[#b4a78f];
 }
-
-/* ---- EMPTY STATE ---- */
 
-.cat-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 320px;
-  padding: 36px 22px;
-  border: 1px dashed #e4dccc;
-  border-radius: 16px;
-  background: #fff;
-  text-align: center;
+/* pcStyle96: Component spacing and visual styling */
+.pcStyle96 {
+  @apply mt-5 font-black;
 }
 
-.cat-empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  border: 1px solid var(--cat-gold-border);
-  border-radius: 16px;
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle97: Typography / text color and size */
+.pcStyle97 {
+  @apply mt-1 text-xs leading-5 text-[#8c816f];
 }
 
-.cat-empty-state h3 {
-  margin: 17px 0 7px;
-  color: var(--cat-ink);
-  font-size: 18px;
-  font-weight: 800;
+/* pcStyle98: Card / button shape */
+.pcStyle98 {
+  @apply group relative h-full cursor-pointer overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c79a3b]/40 hover:shadow-[0_20px_50px_rgba(130,95,25,0.1)] focus:outline-none focus:ring-2 focus:ring-[#c79a3b];
 }
 
-.cat-empty-state p {
-  max-width: 390px;
-  margin: 0;
-  color: var(--cat-muted);
-  font-size: 12px;
-  line-height: 1.7;
+/* pcStyle99: Background / theme colors */
+.pcStyle99 {
+  @apply relative h-52 overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc];
 }
 
-.cat-primary-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  margin-top: 18px;
-  padding: 0 15px;
-  border: 1px solid var(--cat-gold);
-  border-radius: 10px;
-  background: var(--cat-gold);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
+/* pcStyle100: Component spacing and visual styling */
+.pcStyle100 {
+  @apply h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105;
 }
 
-.cat-primary-btn:hover {
-  background: var(--cat-gold-dark);
+/* pcStyle101: Card / button shape */
+.pcStyle101 {
+  @apply absolute left-4 top-4 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black text-[#866521] shadow-sm;
 }
 
-/* ---- RECENTLY VIEWED SECTION ---- */
-
-.cat-recent-section {
-  margin-top: 44px;
+/* pcStyle102: Flex layout / alignment */
+.pcStyle102 {
+  @apply absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-[#c79a3b] px-3 py-1.5 text-[10px] font-black text-white shadow-sm;
 }
 
-.cat-section-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 16px;
+/* pcStyle103: Component spacing and visual styling */
+.pcStyle103 {
+  @apply p-5;
 }
 
-.cat-section-heading h2 {
-  margin: 6px 0 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+/* pcStyle104: Typography / text color and size */
+.pcStyle104 {
+  @apply mt-2 min-h-[48px] text-sm leading-6 text-[#887e6c];
 }
 
-.cat-recent-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 11px;
+/* pcStyle105: Card / button shape */
+.pcStyle105 {
+  @apply mt-4 rounded-xl bg-[#fffaf0] px-3 py-2.5;
 }
 
-.cat-recent-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--cat-border);
-  border-radius: 12px;
-  background: #fff;
-  transition: all 0.2s ease;
+/* pcStyle106: Typography / text color and size */
+.pcStyle106 {
+  @apply text-[10px] font-bold uppercase tracking-[0.12em] text-[#a08f70];
 }
 
-.cat-recent-item:hover {
-  border-color: var(--cat-gold-border);
-  background: #fffaf0;
+/* pcStyle107: Typography / text color and size */
+.pcStyle107 {
+  @apply mt-1 font-black text-[#5c4a28];
 }
 
-.cat-recent-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle108: Grid layout / responsive columns */
+.pcStyle108 {
+  @apply mt-4 grid grid-cols-3 divide-x divide-[#eee6d6] rounded-xl border border-[#eee6d6] bg-[#fffdf9];
 }
 
-.cat-recent-item > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* pcStyle109: Flex layout / alignment */
+.pcStyle109 {
+  @apply mt-4 flex flex-wrap items-center justify-between gap-2;
 }
 
-.cat-recent-item > svg {
-  flex-shrink: 0;
-  color: var(--cat-gold-dark);
+/* pcStyle110: Flex layout / alignment */
+.pcStyle110 {
+  @apply flex items-center gap-1.5 text-xs font-bold;
 }
-
-/* ---- QUICK PREVIEW MODAL ---- */
 
-.cat-modal-backdrop {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  overflow-y: auto;
-  background: rgba(30, 27, 21, 0.56);
-  backdrop-filter: blur(5px);
-  animation: cat-fade-in 0.18s ease;
+/* pcStyle111: Card / button shape */
+.pcStyle111 {
+  @apply h-2 w-2 rounded-full bg-[#d09b35];
 }
 
-.cat-preview-modal {
-  display: flex;
-  flex-direction: column;
-  width: min(100%, 660px);
-  max-height: min(86vh, 850px);
-  overflow: hidden;
-  border: 1px solid #e9dfca;
-  border-radius: 19px;
-  background: #fffdf9;
-  box-shadow: 0 25px 90px rgba(0, 0, 0, 0.2);
-  animation: cat-modal-up 0.22s ease;
+/* pcStyle112: Typography / text color and size */
+.pcStyle112 {
+  @apply text-[#a47720];
 }
 
-.cat-modal-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 23px 24px 19px;
-  border-bottom: 1px solid #eee8dd;
+/* pcStyle113: Card / button shape */
+.pcStyle113 {
+  @apply h-2 w-2 rounded-full bg-[#8ba66b];
 }
 
-.cat-modal-title-wrap {
-  min-width: 0;
+/* pcStyle114: Typography / text color and size */
+.pcStyle114 {
+  @apply text-[#71855b];
 }
 
-.cat-modal-title-wrap h2 {
-  margin: 7px 0 5px;
-  font-size: 23px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+/* pcStyle115: Card / button shape */
+.pcStyle115 {
+  @apply h-2 w-2 rounded-full bg-[#b9afa0];
 }
 
-.cat-modal-title-wrap p {
-  margin: 0;
-  color: var(--cat-muted);
-  font-size: 12px;
-  line-height: 1.7;
+/* pcStyle116: Typography / text color and size */
+.pcStyle116 {
+  @apply text-[#8d8375];
 }
 
-.cat-modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 37px;
-  height: 37px;
-  padding: 0;
-  border: 1px solid #eae4d8;
-  border-radius: 10px;
-  background: #fff;
-  color: #5c574d;
-  transition: all 0.18s ease;
+/* pcStyle117: Typography / text color and size */
+.pcStyle117 {
+  @apply text-[11px] font-black text-[#b47a1d];
 }
 
-.cat-modal-close:hover {
-  border-color: var(--cat-gold-border);
-  background: var(--cat-gold-soft);
-  color: var(--cat-gold-dark);
+/* pcStyle118: Flex layout / alignment */
+.pcStyle118 {
+  @apply mt-5 flex items-center gap-2;
 }
 
-/* ---- MODAL STATS ---- */
-
-.cat-modal-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 16px 24px;
-  border-bottom: 1px solid #eee8dd;
+/* pcStyle119: Flex layout / alignment */
+.pcStyle119 {
+  @apply flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffaf0];
 }
 
-.cat-modal-stats > div {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 13px;
-  border: 1px solid #eee7d8;
-  border-radius: 11px;
-  background: #fff;
+/* pcStyle120: Component spacing and visual styling */
+.pcStyle120 {
+  @apply h-full w-full object-contain p-1;
 }
 
-.cat-modal-stats span {
-  color: var(--cat-muted);
-  font-size: 10px;
+/* pcStyle121: Typography / text color and size */
+.pcStyle121 {
+  @apply text-xs font-bold text-[#998d78];
 }
 
-.cat-modal-stats strong {
-  color: var(--cat-ink);
-  font-size: 20px;
-  font-weight: 800;
+/* pcStyle122: Grid layout / responsive columns */
+.pcStyle122 {
+  @apply mt-5 grid grid-cols-[1fr_auto] gap-2;
 }
 
-/* ---- MODAL PRODUCT LIST ---- */
-
-.cat-preview-products-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 17px 24px 10px;
+/* pcStyle123: Flex layout / alignment */
+.pcStyle123 {
+  @apply flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5;
 }
 
-.cat-preview-products-heading h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 800;
+/* pcStyle124: Flex layout / alignment */
+.pcStyle124 {
+  @apply flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffaf0] text-[#907448] transition hover:border-[#c79a3b] hover:bg-[#fff1cd];
 }
 
-.cat-preview-products-heading > span {
-  color: var(--cat-muted);
-  font-size: 10px;
+/* pcStyle125: Typography / text color and size */
+.pcStyle125 {
+  @apply px-2 py-3 text-center;
 }
 
-.cat-preview-products {
-  min-height: 0;
-  padding: 0 24px 12px;
-  overflow-y: auto;
+/* pcStyle126: Flex layout / alignment */
+.pcStyle126 {
+  @apply flex items-center justify-center gap-1 text-sm font-black text-[#4d4230];
 }
 
-.cat-preview-product {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0ede7;
+/* pcStyle127: Typography / text color and size */
+.pcStyle127 {
+  @apply mt-0.5 text-[10px] font-semibold text-[#a09787];
 }
 
-.cat-preview-product:last-child {
-  border-bottom: 0;
+/* pcStyle128: Flex layout / alignment */
+.pcStyle128 {
+  @apply group min-w-[235px] flex-1 rounded-2xl border border-[#eadfc9] bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40;
 }
 
-.cat-preview-product-image-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 59px;
-  height: 59px;
-  overflow: hidden;
-  border: 1px solid #eee8dc;
-  border-radius: 10px;
-  background: #fff;
+/* pcStyle129: Flex layout / alignment */
+.pcStyle129 {
+  @apply flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#fff8e8];
 }
 
-.cat-preview-product-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+/* pcStyle130: Component spacing and visual styling */
+.pcStyle130 {
+  @apply h-full w-full object-contain p-2;
 }
 
-.cat-preview-product-info {
-  flex: 1;
-  min-width: 0;
+/* pcStyle131: Component spacing and visual styling */
+.pcStyle131 {
+  @apply min-w-0;
 }
 
-.cat-preview-product-info > strong {
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--cat-ink);
-  font-size: 12px;
-  line-height: 1.5;
-  font-weight: 750;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+/* pcStyle132: Flex layout / alignment */
+.pcStyle132 {
+  @apply mt-1 flex items-center gap-1.5 text-xs text-[#948875];
 }
 
-.cat-preview-product-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-  margin-top: 6px;
+/* pcStyle133: Typography / text color and size */
+.pcStyle133 {
+  @apply mt-1 text-[10px] font-bold text-[#b47b20];
 }
 
-.cat-preview-product-meta > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: #888276;
-  font-size: 9px;
-  font-weight: 650;
+/* pcStyle134: Typography / text color and size */
+.pcStyle134 {
+  @apply ml-auto shrink-0 text-[#b8aa91] transition group-hover:translate-x-1;
 }
 
-.cat-preview-product-meta > span:first-child svg {
-  color: var(--cat-gold);
+/* pcStyle135: Flex layout / alignment */
+.pcStyle135 {
+  @apply flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1ce] text-[#a47720];
 }
 
-.cat-preview-product-meta .cat-stock-available {
-  color: var(--cat-green);
+/* pcStyle136: Typography / text color and size */
+.pcStyle136 {
+  @apply mt-5 text-[10px] font-black uppercase tracking-[0.15em] text-[#a47720];
 }
 
-.cat-preview-product-meta .cat-stock-unavailable {
-  color: var(--cat-red);
+/* pcStyle137: Typography / text color and size */
+.pcStyle137 {
+  @apply mt-2 text-xl font-black;
 }
 
-.cat-preview-product-meta .cat-stock-unknown {
-  color: #77736a;
+/* pcStyle138: Typography / text color and size */
+.pcStyle138 {
+  @apply mt-2 min-h-[48px] text-sm leading-6 text-[#897e6c];
 }
 
-.cat-preview-product-meta .cat-mini-deal {
-  color: var(--cat-gold-dark);
+/* pcStyle139: Card / button shape */
+.pcStyle139 {
+  @apply h-[500px] animate-pulse rounded-[28px] border border-[#eadfc9] bg-white;
 }
 
-.cat-preview-product-price {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-  gap: 4px;
-  text-align: right;
+/* pcStyle140: Card / button shape */
+.pcStyle140 {
+  @apply h-52 rounded-t-[28px] bg-[#f6f0e2];
 }
 
-.cat-preview-product-price strong {
-  color: var(--cat-ink);
-  font-size: 12px;
-  font-weight: 800;
+/* pcStyle141: Component spacing and visual styling */
+.pcStyle141 {
+  @apply space-y-4 p-5;
 }
 
-.cat-preview-product-price del {
-  color: #999287;
-  font-size: 10px;
+/* pcStyle142: Card / button shape */
+.pcStyle142 {
+  @apply h-5 w-2/3 rounded bg-[#f3ecdc];
 }
 
-.cat-preview-product-price small {
-  color: var(--cat-green);
-  font-size: 9px;
-  font-weight: 800;
+/* pcStyle143: Card / button shape */
+.pcStyle143 {
+  @apply h-4 w-full rounded bg-[#f6f0e2];
 }
 
-.cat-modal-no-products {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 110px;
-  padding: 20px;
-  color: var(--cat-muted);
+/* pcStyle144: Card / button shape */
+.pcStyle144 {
+  @apply h-4 w-4/5 rounded bg-[#f6f0e2];
 }
 
-.cat-modal-no-products p {
-  font-size: 12px;
-  line-height: 1.6;
+/* pcStyle145: Card / button shape */
+.pcStyle145 {
+  @apply h-12 rounded-xl bg-[#f8f2e6];
 }
-
-/* ---- MODAL FOOTER ---- */
 
-.cat-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 24px;
-  border-top: 1px solid #eee8dd;
-  background: #fff;
+/* pcStyle146: Card / button shape */
+.pcStyle146 {
+  @apply h-14 rounded-xl bg-[#f8f2e6];
 }
 
-.cat-modal-secondary,
-.cat-modal-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 41px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 800;
+/* pcStyle147: Card / button shape */
+.pcStyle147 {
+  @apply rounded-[28px] border border-dashed border-[#d9cbae] bg-[#fffaf0] px-6 py-14 text-center;
 }
 
-.cat-modal-secondary {
-  border: 1px solid #eae5da;
-  background: #fff;
-  color: #666157;
+/* pcStyle148: Flex layout / alignment */
+.pcStyle148 {
+  @apply mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720];
 }
 
-.cat-modal-secondary:hover {
-  border-color: var(--cat-gold-border);
-  background: #fffaf0;
+/* pcStyle149: Typography / text color and size */
+.pcStyle149 {
+  @apply mt-5 text-xl font-black;
 }
 
-.cat-modal-primary {
-  border: 1px solid var(--cat-gold);
-  background: var(--cat-gold);
-  color: #fff !important;
+/* pcStyle150: Typography / text color and size */
+.pcStyle150 {
+  @apply mx-auto mt-2 max-w-md text-sm leading-6 text-[#8e8472];
 }
 
-.cat-modal-primary:hover {
-  background: var(--cat-gold-dark);
+/* pcStyle151: Card / button shape */
+.pcStyle151 {
+  @apply mt-6 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white;
 }
 
-/* ---- MOBILE FILTER DRAWER ---- */
-
-.cat-drawer-backdrop {
-  position: fixed;
-  z-index: 1100;
-  inset: 0;
-  display: flex;
-  justify-content: flex-end;
-  background: rgba(30, 27, 21, 0.5);
-  backdrop-filter: blur(4px);
-  animation: cat-fade-in 0.18s ease;
+/* pcStyle152: Flex layout / alignment */
+.pcStyle152 {
+  @apply fixed inset-0 z-[120] flex items-center justify-center p-4;
 }
 
-.cat-filter-drawer {
-  display: flex;
-  flex-direction: column;
-  width: min(390px, 92vw);
-  height: 100%;
-  padding: 22px;
-  overflow-y: auto;
-  background: #fffdf9;
-  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.12);
-  animation: cat-drawer-in 0.22s ease;
+/* pcStyle153: Background / theme colors */
+.pcStyle153 {
+  @apply absolute inset-0 bg-[#4f412a]/30 backdrop-blur-sm;
 }
 
-.cat-drawer-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+/* pcStyle154: Card / button shape */
+.pcStyle154 {
+  @apply relative z-10 max-h-[90vh] w-full max-w-4xl overflow-auto rounded-[30px] border border-[#eadfc9] bg-[#fffdf9] shadow-2xl;
 }
 
-.cat-drawer-top h2 {
-  margin: 6px 0 0;
-  font-size: 22px;
-  font-weight: 800;
+/* pcStyle155: Flex layout / alignment */
+.pcStyle155 {
+  @apply sticky right-0 top-0 z-20 flex justify-end p-4;
 }
 
-.cat-drawer-apply {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  flex-shrink: 0;
-  min-height: 47px;
-  margin-top: auto;
-  padding: 10px;
-  border: 1px solid var(--cat-gold);
-  border-radius: 11px;
-  background: var(--cat-gold);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
+/* pcStyle156: Flex layout / alignment */
+.pcStyle156 {
+  @apply flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white;
 }
 
-.cat-drawer-apply:hover {
-  background: var(--cat-gold-dark);
+/* pcStyle157: Grid layout / responsive columns */
+.pcStyle157 {
+  @apply grid gap-7 px-6 pb-7 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:px-10 lg:pb-10;
 }
-
-/* ---- ANIMATIONS ---- */
 
-@keyframes cat-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+/* pcStyle158: Flex layout / alignment */
+.pcStyle158 {
+  @apply relative flex min-h-[270px] items-center justify-center overflow-hidden rounded-[26px] bg-gradient-to-br from-[#fffaf0] to-[#f7efdc];
 }
-
-@keyframes cat-modal-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.985);
-  }
 
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* pcStyle159: Flex layout / alignment */
+.pcStyle159 {
+  @apply absolute left-5 top-5 z-10 flex items-center gap-2 rounded-full border border-white bg-white/90 px-3 py-1.5 text-xs font-bold text-[#866521];
 }
 
-@keyframes cat-drawer-in {
-  from {
-    transform: translateX(30px);
-  }
-
-  to {
-    transform: translateX(0);
-  }
+/* pcStyle160: Component spacing and visual styling */
+.pcStyle160 {
+  @apply max-h-[310px] w-full object-contain p-8;
 }
-
-/* ==========================================================
-   RESPONSIVE — TABLET
-   ========================================================== */
-
-@media (max-width: 1180px) {
-  .cat-main-layout {
-    grid-template-columns: 215px minmax(0, 1fr);
-    gap: 16px;
-  }
 
-  .cat-sidebar {
-    padding: 15px;
-  }
-
-  .cat-grid,
-  .cat-loading-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 13px;
-  }
-
-  .cat-card-visual,
-  .cat-skeleton-image {
-    min-height: 150px;
-    height: 150px;
-  }
+/* pcStyle161: Flex layout / alignment */
+.pcStyle161 {
+  @apply flex items-start justify-between gap-4;
+}
 
-  .cat-summary-grid {
-    gap: 10px;
-  }
+/* pcStyle162: Typography / text color and size */
+.pcStyle162 {
+  @apply text-xs font-black uppercase tracking-[0.15em] text-[#a47720];
+}
 
-  .cat-summary-card {
-    padding: 14px;
-  }
+/* pcStyle163: Typography / text color and size */
+.pcStyle163 {
+  @apply mt-2 text-3xl font-black tracking-tight;
+}
 
-  .cat-summary-icon {
-    width: 38px;
-    height: 38px;
-  }
+/* pcStyle164: Typography / text color and size */
+.pcStyle164 {
+  @apply mt-4 text-sm leading-7 text-[#807563];
+}
 
-  .cat-summary-card strong {
-    font-size: 22px;
-  }
+/* pcStyle165: Grid layout / responsive columns */
+.pcStyle165 {
+  @apply mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4;
 }
 
-/* ==========================================================
-   RESPONSIVE — MOBILE / SMALL TABLET
-   ========================================================== */
+/* pcStyle166: Card / button shape */
+.pcStyle166 {
+  @apply mt-5 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4;
+}
 
-@media (max-width: 760px) {
-  .categories-page {
-    padding: 17px 14px 38px;
-  }
+/* pcStyle167: Typography / text color and size */
+.pcStyle167 {
+  @apply text-[10px] font-black uppercase tracking-[0.13em] text-[#a08f70];
+}
 
-  .cat-breadcrumb {
-    margin-bottom: 19px;
-    font-size: 11px;
-  }
+/* pcStyle168: Typography / text color and size */
+.pcStyle168 {
+  @apply mt-1 text-lg font-black text-[#5c4a28];
+}
 
-  .cat-page-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-  }
+/* pcStyle169: Component spacing and visual styling */
+.pcStyle169 {
+  @apply mt-6;
+}
 
-  .cat-page-header h1 {
-    margin: 9px 0 8px;
-    font-size: clamp(28px, 7vw, 38px);
-    letter-spacing: -1.1px;
-  }
+/* pcStyle170: Flex layout / alignment */
+.pcStyle170 {
+  @apply mb-3 flex items-center justify-between;
+}
 
-  .cat-page-header p {
-    font-size: 12px;
-    line-height: 1.7;
-  }
+/* pcStyle171: Component spacing and visual styling */
+.pcStyle171 {
+  @apply font-black;
+}
 
-  .cat-back-dashboard {
-    min-height: 37px;
-    padding: 0 11px;
-    font-size: 11px;
-  }
+/* pcStyle172: Typography / text color and size */
+.pcStyle172 {
+  @apply text-xs font-bold text-[#9b8760];
+}
 
-  .cat-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-    margin-bottom: 19px;
-  }
+/* pcStyle173: Component spacing and visual styling */
+.pcStyle173 {
+  @apply space-y-2;
+}
 
-  .cat-summary-card {
-    gap: 10px;
-    padding: 12px;
-    border-radius: 13px;
-  }
+/* pcStyle174: Flex layout / alignment */
+.pcStyle174 {
+  @apply flex items-center gap-3 rounded-xl border border-[#eadfc9] bg-white p-2.5;
+}
 
-  .cat-summary-icon {
-    width: 35px;
-    height: 35px;
-    border-radius: 10px;
-  }
+/* pcStyle175: Flex layout / alignment */
+.pcStyle175 {
+  @apply flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fffaf0];
+}
 
-  .cat-summary-icon svg {
-    width: 17px;
-    height: 17px;
-  }
+/* pcStyle176: Flex layout / alignment */
+.pcStyle176 {
+  @apply min-w-0 flex-1;
+}
 
-  .cat-summary-label {
-    font-size: 10px;
-  }
+/* pcStyle177: Typography / text color and size */
+.pcStyle177 {
+  @apply truncate text-sm font-bold;
+}
 
-  .cat-summary-card strong {
-    margin: 3px 0;
-    font-size: 22px;
-  }
+/* pcStyle178: Flex layout / alignment */
+.pcStyle178 {
+  @apply mt-0.5 flex items-center gap-2 text-xs text-[#938875];
+}
 
-  .cat-summary-card small {
-    font-size: 9px;
-  }
+/* pcStyle179: Flex layout / alignment */
+.pcStyle179 {
+  @apply flex items-center gap-1;
+}
 
-  .cat-search-panel {
-    align-items: stretch;
-    gap: 8px;
-    margin-bottom: 13px;
-  }
+/* pcStyle180: Typography / text color and size */
+.pcStyle180 {
+  @apply text-sm font-black text-[#6d572d];
+}
 
-  .cat-search-box {
-    min-height: 46px;
-    gap: 8px;
-    padding: 0 11px;
-    border-radius: 11px;
-  }
+/* pcStyle181: Flex layout / alignment */
+.pcStyle181 {
+  @apply mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3.5 text-sm font-bold text-white shadow-sm;
+}
 
-  .cat-search-box > svg {
-    width: 17px;
-    height: 17px;
-  }
+/* pcStyle182: Card / button shape */
+.pcStyle182 {
+  @apply rounded-xl border border-[#eadfc9] bg-white px-3 py-3 text-center;
+}
 
-  .cat-search-box input {
-    padding: 10px 0;
-    font-size: 12px;
-  }
-
-  .cat-mobile-filter-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex-shrink: 0;
-    min-height: 46px;
-    padding: 0 11px;
-    border: 1px solid var(--cat-gold-border);
-    border-radius: 11px;
-    background: #fffaf0;
-    color: var(--cat-gold-dark);
-    font-size: 11px;
-    font-weight: 800;
-  }
-
-  .cat-filter-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--cat-gold);
-  }
-
-  .cat-quick-filters {
-    flex-wrap: nowrap;
-    gap: 7px;
-    margin: 0 -14px 21px;
-    padding: 0 14px 5px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .cat-quick-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  .cat-quick-chip {
-    flex-shrink: 0;
-    min-height: 33px;
-    padding: 0 10px;
-    font-size: 10px;
-  }
-
-  .cat-result-count {
-    display: none;
-  }
-
-  .cat-main-layout {
-    display: block;
-  }
-
-  .cat-sidebar {
-    display: none;
-  }
-
-  .cat-results-header {
-    align-items: center;
-    margin-bottom: 13px;
-  }
-
-  .cat-results-header h2 {
-    font-size: 20px;
-  }
-
-  .cat-results-total {
-    padding: 6px 8px;
-    font-size: 9px;
-  }
-
-  .cat-grid,
-  .cat-loading-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .cat-card {
-    border-radius: 12px;
-  }
-
-  .cat-card-visual,
-  .cat-skeleton-image {
-    min-height: 116px;
-    height: 116px;
-  }
-
-  .cat-card-icon {
-    width: 34px;
-    height: 34px;
-    margin: 0 0 10px 10px;
-    border-radius: 10px;
-  }
-
-  .cat-card-icon svg {
-    width: 19px;
-    height: 19px;
-  }
-
-  .cat-card-deal {
-    top: 7px;
-    left: 7px;
-    gap: 4px;
-    padding: 5px 6px;
-    font-size: 8px;
-  }
-
-  .cat-card-open {
-    right: 8px;
-    bottom: 9px;
-    width: 25px;
-    height: 25px;
-    border-radius: 7px;
-  }
-
-  .cat-card-content {
-    padding: 10px;
-  }
-
-  .cat-card-title-row {
-    gap: 5px;
-  }
-
-  .cat-card-title {
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .cat-card-description {
-    min-height: 30px;
-    margin-top: 4px;
-    font-size: 9px;
-    line-height: 1.6;
-  }
-
-  .cat-save-btn {
-    width: 27px;
-    height: 27px;
-    border-radius: 8px;
-  }
-
-  .cat-save-btn svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  .cat-card-stats {
-    gap: 3px;
-    margin-top: 10px;
-    padding: 9px 0;
-  }
-
-  .cat-card-stat {
-    gap: 4px;
-  }
-
-  .cat-card-stat + .cat-card-stat {
-    padding-left: 5px;
-  }
-
-  .cat-card-stat-number {
-    font-size: 14px;
-  }
-
-  .cat-card-stat-label {
-    gap: 3px;
-    font-size: 8px;
-  }
-
-  .cat-card-stat-label svg {
-    width: 9px;
-    height: 9px;
-  }
-
-  .cat-card-price-row {
-    min-height: 35px;
-    gap: 5px;
-    padding: 7px 0;
-  }
-
-  .cat-card-price {
-    font-size: 10px;
-  }
-
-  .cat-low-stock-label {
-    padding: 3px 5px;
-    font-size: 8px;
-  }
-
-  .cat-card-actions {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding-top: 7px;
-  }
-
-  .cat-preview-btn,
-  .cat-explore-btn {
-    min-height: 33px;
-    padding: 6px;
-    font-size: 10px;
-  }
-
-  .cat-preview-btn svg,
-  .cat-explore-btn svg {
-    width: 13px;
-    height: 13px;
-  }
-
-  .cat-error-panel {
-    flex-wrap: wrap;
-    padding: 12px;
-  }
-
-  .cat-error-panel > div {
-    flex-basis: calc(100% - 35px);
-  }
-
-  .cat-error-panel button {
-    margin-left: 31px;
-  }
-
-  .cat-recent-section {
-    margin-top: 31px;
-  }
-
-  .cat-section-heading h2 {
-    font-size: 19px;
-  }
-
-  .cat-recent-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .cat-recent-item {
-    gap: 8px;
-    padding: 9px;
-    border-radius: 10px;
-  }
-
-  .cat-recent-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-  }
-
-  .cat-recent-icon svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .cat-recent-item > span:nth-child(2) {
-    font-size: 10px;
-  }
-}
-
-/* ==========================================================
-   RESPONSIVE — VERY SMALL PHONES
-   ========================================================== */
-
-@media (max-width: 380px) {
-  .categories-page {
-    padding-right: 10px;
-    padding-left: 10px;
-  }
-
-  .cat-quick-filters {
-    margin-right: -10px;
-    margin-left: -10px;
-    padding-right: 10px;
-    padding-left: 10px;
-  }
-
-  .cat-grid,
-  .cat-loading-grid {
-    gap: 8px;
-  }
-
-  .cat-card-visual,
-  .cat-skeleton-image {
-    min-height: 100px;
-    height: 100px;
-  }
-
-  .cat-card-content {
-    padding: 8px;
-  }
-
-  .cat-card-title {
-    font-size: 11px;
-  }
-
-  .cat-card-description {
-    font-size: 8px;
-  }
-
-  .cat-card-stat-number {
-    font-size: 12px;
-  }
-
-  .cat-card-stat-label {
-    font-size: 7px;
-  }
-
-  .cat-card-price {
-    font-size: 9px;
-  }
-
-  .cat-card-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .cat-preview-btn,
-  .cat-explore-btn {
-    min-height: 31px;
-    font-size: 9px;
-  }
-
-  .cat-results-header h2 {
-    font-size: 18px;
-  }
-}
-
-/* ---- REDUCED MOTION ACCESSIBILITY ---- */
-
-@media (prefers-reduced-motion: reduce) {
-  .categories-page *,
-  .categories-page *::before,
-  .categories-page *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* pcStyle183: Typography / text color and size */
+.pcStyle183 {
+  @apply mt-0.5 text-[10px] font-semibold text-[#9c917e];
 }
+
