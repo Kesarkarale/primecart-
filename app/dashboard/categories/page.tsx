@@ -1,18 +1,45 @@
+
 "use client";
 
+// ============================================================
+// PRIME CART — CATEGORY PAGE
+// File: app/dashboard/categories/page.tsx
+//
+// हा page काय करतो?
+// 1. Supabase मधून active products आणतो.
+// 2. प्रत्येक category साठी product statistics मोजतो.
+// 3. Search, filters आणि sorting देतो.
+// 4. Category cards, trending categories आणि recommendations दाखवतो.
+// 5. Wishlist browser localStorage मध्ये save करतो.
+// 6. पूर्ण category card clickable ठेवतो.
+// 7. Quick Preview modal दाखवतो.
+// 8. Desktop आणि mobile साठी responsive layout देतो.
+// ============================================================
+
+// -------------------- IMPORTS --------------------
+
+// Next.js navigation आणि client-side navigation.
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+// React hooks.
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+// Animations.
 import { motion, type Variants } from "framer-motion";
+
+// Icons.
 import {
   ArrowRight,
   BarChart3,
   Baby,
   Car,
-  Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock3,
   Eye,
   Footprints,
   Gamepad2,
@@ -27,15 +54,18 @@ import {
   Smartphone,
   Sparkles,
   Star,
-  TrendingUp,
   WashingMachine,
   Watch,
   X,
   Zap,
 } from "lucide-react";
 
+// Existing Supabase client — project connection कायम.
 import { createClient } from "@/lib/supabase/client";
 
+// -------------------- TYPES --------------------
+
+// Category च्या नावापासून image, slug आणि keywords पर्यंतची माहिती.
 type Category = {
   name: string;
   slug: string;
@@ -45,6 +75,7 @@ type Category = {
   keywords: string[];
 };
 
+// Supabase products table मधून वापरली जाणारी fields.
 type Product = {
   id: string;
   category_id: string | null;
@@ -58,6 +89,7 @@ type Product = {
   category_slug?: string;
 };
 
+// एका category चे सर्व calculated statistics.
 type CategoryStats = {
   products: Product[];
   total: number;
@@ -71,6 +103,10 @@ type CategoryStats = {
   averagePrice: number;
   discountPercentage: number;
 };
+
+// -------------------- CATEGORY MASTER DATA --------------------
+// महत्त्वाचे: प्रत्येक slug हा database मधील categories.slug शी
+// match झाला पाहिजे. Slug वेगळा असल्यास count चुकीचा दिसू शकतो.
 
 const categories: Category[] = [
   {
@@ -164,26 +200,26 @@ const categories: Category[] = [
     keywords: ["gaming", "game", "console", "accessories"],
   },
   {
-  name: "Sports & Outdoor",
-  slug: "sports-outdoor",
-  description:
-    "Sports equipment, fitness gear, outdoor adventure and active lifestyle essentials.",
-  icon: Footprints,
-  image: "/sports-outdoor.png",
-  keywords: [
-    "sports",
-    "outdoor",
-    "fitness",
-    "gym",
-    "cricket",
-    "football",
-    "badminton",
-    "cycling",
-    "camping",
-    "exercise",
-  ],
-},
-    {
+    name: "Sports & Outdoor",
+    slug: "sports-outdoor",
+    description:
+      "Sports equipment, fitness gear, outdoor adventure and active lifestyle essentials.",
+    icon: Footprints,
+    image: "/sports-outdoor.png",
+    keywords: [
+      "sports",
+      "outdoor",
+      "fitness",
+      "gym",
+      "cricket",
+      "football",
+      "badminton",
+      "cycling",
+      "camping",
+      "exercise",
+    ],
+  },
+  {
     name: "Eyewear",
     slug: "eyewear",
     description:
@@ -253,61 +289,60 @@ const categories: Category[] = [
   },
 ];
 
+// -------------------- ANIMATION CONFIGURATION --------------------
+// Framer Motion animation reusable variants.
+
 const fadeUp: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 24,
-  },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.5, ease: "easeOut" },
   },
 };
 
 const cardVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 18,
-  },
+  hidden: { opacity: 0, y: 18 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.45,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.4, ease: "easeOut" },
   },
 };
 
 const stagger: Variants = {
   hidden: {},
   visible: {
-    transition: {
-      staggerChildren: 0.055,
-    },
+    transition: { staggerChildren: 0.045 },
   },
 };
 
+// -------------------- HELPER FUNCTIONS --------------------
+
+// Product image path normalize करतो.
+// Database मध्ये filename किंवा /filename दोन्ही चालतात.
 function getImage(src?: string | null) {
-  if (!src) return "/logo.png";
+  if (!src?.trim()) return "/logo.png";
+
+  const value = src.trim();
 
   if (
-    src.startsWith("/") ||
-    src.startsWith("http://") ||
-    src.startsWith("https://")
+    value.startsWith("/") ||
+    /^https?:\/\//i.test(value)
   ) {
-    return src;
+    return value;
   }
 
-  return `/${src}`;
+  return `/${value}`;
 }
 
+// Indian Rupee format.
 function money(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(Number(value))
+  ) {
     return "—";
   }
 
@@ -315,56 +350,88 @@ function money(value: number | null | undefined) {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(Number(value));
 }
 
+// Null, undefined किंवा invalid number सुरक्षितपणे 0 करतो.
 function safeNumber(value: unknown) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
+
+// localStorage मधून array safely read करतो.
+function readStoredArray(key: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(key) || "[]",
+    );
+
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(
+      (item): item is string => typeof item === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+// -------------------- MAIN PAGE --------------------
 
 export default function CategoriesPage() {
-  const supabase = createClient();
+  // Existing Supabase connection.
+  const supabase = useMemo(() => createClient(), []);
 
+  // Next.js programmatic navigation.
+  const router = useRouter();
+
+  // Database मधून load झालेली active products list.
   const [products, setProducts] = useState<Product[]>([]);
+
+  // Loading state.
   const [loading, setLoading] = useState(true);
 
+  // Search, filter आणि sorting states.
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("recommended");
 
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  // Mobile filter drawer visibility.
+  const [showMobileFilters, setShowMobileFilters] =
+    useState(false);
 
+  // Eye/Quick Preview modal साठी selected category.
   const [selectedCategory, setSelectedCategory] =
     useState<Category | null>(null);
 
+  // Recently viewed categories.
   const [recentSlugs, setRecentSlugs] = useState<string[]>([]);
-  const [wishlistCategories, setWishlistCategories] = useState<string[]>(
-    [],
-  );
 
+  // Wishlisted category slugs.
+  const [wishlistCategories, setWishlistCategories] =
+    useState<string[]>([]);
+
+  // -------------------- LOAD LOCAL PREFERENCES --------------------
+  // Recent categories आणि category wishlist localStorage मध्ये असतात.
   useEffect(() => {
-    try {
-      const recent = JSON.parse(
-        localStorage.getItem("primecart_recent_categories") || "[]",
-      );
+    setRecentSlugs(
+      readStoredArray("primecart_recent_categories"),
+    );
 
-      if (Array.isArray(recent)) {
-        setRecentSlugs(recent);
-      }
-
-      const wishlist = JSON.parse(
-        localStorage.getItem("primecart_category_wishlist") || "[]",
-      );
-
-      if (Array.isArray(wishlist)) {
-        setWishlistCategories(wishlist);
-      }
-    } catch {
-      setRecentSlugs([]);
-      setWishlistCategories([]);
-    }
+    setWishlistCategories(
+      readStoredArray("primecart_category_wishlist"),
+    );
   }, []);
+
+  // -------------------- LOAD PRODUCTS FROM SUPABASE --------------------
+  // FIX: Supabase मधील response limit मुळे products कमी मिळू नयेत
+  // म्हणून range() वापरून batches मध्ये records आणतो.
+  //
+  // येथे is_active = true मुद्दाम कायम आहे.
+  // त्यामुळे inactive products category count मध्ये येणार नाहीत.
+  //
+  // categories!inner(slug) मुळे संबंधित category चा slug मिळतो.
+  // --------------------
 
   useEffect(() => {
     let active = true;
@@ -372,55 +439,92 @@ export default function CategoriesPage() {
     async function loadProducts() {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          `
-            id,
-            category_id,
-            name,
-            image_url,
-            price,
-            original_price,
-            rating,
-            stock,
-            is_flash_sale,
-            categories!inner(
-              slug
-            )
-          `,
-        )
-        .eq("is_active", true);
+      try {
+        const pageSize = 1000;
+        let from = 0;
+        const allRows: any[] = [];
 
-      if (error) {
-        console.error("PrimeCart categories error:", error);
+        while (true) {
+          const { data, error } = await supabase
+            .from("products")
+            .select(`
+              id,
+              category_id,
+              name,
+              image_url,
+              price,
+              original_price,
+              rating,
+              stock,
+              is_flash_sale,
+              categories!inner (
+                slug
+              )
+            `)
+            .eq("is_active", true)
+            .order("id", { ascending: true })
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            throw error;
+          }
+
+          const batch = data ?? [];
+
+          allRows.push(...batch);
+
+          // शेवटचा batch मिळाल्यावर loop थांबतो.
+          if (batch.length < pageSize) {
+            break;
+          }
+
+          from += pageSize;
+        }
+
+        // Duplicate IDs आल्यास एकच record ठेवतो.
+        const uniqueRows = Array.from(
+          new Map(
+            allRows.map((item) => [String(item.id), item]),
+          ).values(),
+        );
+
+        // Supabase response आपल्या Product type मध्ये convert करतो.
+        const mappedProducts: Product[] = uniqueRows.map(
+          (item: any) => ({
+            id: String(item.id),
+            category_id:
+              item.category_id == null
+                ? null
+                : String(item.category_id),
+            name: item.name,
+            image_url: item.image_url,
+            price: item.price,
+            original_price: item.original_price,
+            rating: item.rating,
+            stock: item.stock,
+            is_flash_sale: item.is_flash_sale,
+            category_slug: Array.isArray(item.categories)
+              ? item.categories[0]?.slug
+              : item.categories?.slug,
+          }),
+        );
+
+        if (active) {
+          setProducts(mappedProducts);
+        }
+      } catch (error) {
+        console.error(
+          "PrimeCart categories product loading error:",
+          error,
+        );
 
         if (active) {
           setProducts([]);
+        }
+      } finally {
+        if (active) {
           setLoading(false);
         }
-
-        return;
-      }
-
-      const result: Product[] = (data ?? []).map((item: any) => ({
-        id: item.id,
-        category_id: item.category_id,
-        name: item.name,
-        image_url: item.image_url,
-        price: item.price,
-        original_price: item.original_price,
-        rating: item.rating,
-        stock: item.stock,
-        is_flash_sale: item.is_flash_sale,
-        category_slug: Array.isArray(item.categories)
-          ? item.categories?.[0]?.slug
-          : item.categories?.slug,
-      }));
-
-      if (active) {
-        setProducts(result);
-        setLoading(false);
       }
     }
 
@@ -431,12 +535,26 @@ export default function CategoriesPage() {
     };
   }, [supabase]);
 
+  // -------------------- CATEGORY-WISE STATISTICS --------------------
+  // इथे category slug नुसार products group केले जातात.
+  //
+  // total          = active products count
+  // inStock        = stock 5 पेक्षा जास्त असलेले products
+  // lowStock       = stock 1 ते 5 असलेले products
+  // outOfStock     = stock 0 किंवा कमी असलेले products
+  // flashDeals     = flash sale products
+  // averageRating  = average product rating
+  // minPrice/maxPrice = category price range
+  // --------------------
+
   const stats = useMemo(() => {
     const output: Record<string, CategoryStats> = {};
 
     categories.forEach((category) => {
       const list = products.filter(
-        (product) => product.category_slug === category.slug,
+        (product) =>
+          product.category_slug?.trim().toLowerCase() ===
+          category.slug.trim().toLowerCase(),
       );
 
       const inStock = list.filter(
@@ -464,37 +582,44 @@ export default function CategoriesPage() {
         .map((product) => safeNumber(product.price))
         .filter((price) => price > 0);
 
-      const discountValues = list
+      const discounts = list
         .map((product) => {
           const price = safeNumber(product.price);
           const original = safeNumber(product.original_price);
 
-          if (original <= 0 || price <= 0 || original <= price) {
-            return 0;
-          }
+          if (price <= 0 || original <= price) return 0;
 
           return ((original - price) / original) * 100;
         })
         .filter((discount) => discount > 0);
 
       output[category.slug] = {
+        // Preview साठी पहिली पाच products.
         products: list.slice(0, 5),
+
+        // पूर्ण list ची count.
         total: list.length,
+
         inStock,
         lowStock,
         outOfStock,
         flashDeals,
+
         averageRating: ratings.length
-          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+          ? ratings.reduce((a, b) => a + b, 0) /
+            ratings.length
           : 0,
+
         minPrice: prices.length ? Math.min(...prices) : 0,
         maxPrice: prices.length ? Math.max(...prices) : 0,
+
         averagePrice: prices.length
           ? prices.reduce((a, b) => a + b, 0) / prices.length
           : 0,
-        discountPercentage: discountValues.length
-          ? discountValues.reduce((a, b) => a + b, 0) /
-            discountValues.length
+
+        discountPercentage: discounts.length
+          ? discounts.reduce((a, b) => a + b, 0) /
+            discounts.length
           : 0,
       };
     });
@@ -502,19 +627,28 @@ export default function CategoriesPage() {
     return output;
   }, [products]);
 
+  // -------------------- OVERALL STATISTICS --------------------
+
   const totalProducts = products.length;
 
   const totalDeals = products.filter(
-    (product) => product.is_flash_sale,
+    (product) => product.is_flash_sale === true,
   ).length;
 
-  const ratings = products
+  const overallRatings = products
     .map((product) => safeNumber(product.rating))
     .filter((rating) => rating > 0);
 
-  const overallRating = ratings.length
-    ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+  const overallRating = overallRatings.length
+    ? overallRatings.reduce((a, b) => a + b, 0) /
+      overallRatings.length
     : 0;
+
+  // -------------------- CATEGORY SEARCH, FILTER AND SORT --------------------
+  // Search category name, description आणि keywords वर काम करतो.
+  // Filters: All, Deals, Top Rated, In Stock.
+  // Sorting: product count, rating, deals, price.
+  // --------------------
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -550,138 +684,174 @@ export default function CategoriesPage() {
       );
     }
 
+    // Recommended sorting मध्ये category order कायम ठेवतो.
     if (sort === "products") {
       result.sort(
         (a, b) =>
-          stats[b.slug]?.total - stats[a.slug]?.total,
+          (stats[b.slug]?.total ?? 0) -
+          (stats[a.slug]?.total ?? 0),
       );
     }
 
     if (sort === "rating") {
       result.sort(
         (a, b) =>
-          stats[b.slug]?.averageRating -
-          stats[a.slug]?.averageRating,
+          (stats[b.slug]?.averageRating ?? 0) -
+          (stats[a.slug]?.averageRating ?? 0),
       );
     }
 
     if (sort === "deals") {
       result.sort(
         (a, b) =>
-          stats[b.slug]?.flashDeals -
-          stats[a.slug]?.flashDeals,
+          (stats[b.slug]?.flashDeals ?? 0) -
+          (stats[a.slug]?.flashDeals ?? 0),
       );
     }
 
     if (sort === "price-low") {
       result.sort(
         (a, b) =>
-          stats[a.slug]?.minPrice - stats[b.slug]?.minPrice,
+          (stats[a.slug]?.minPrice ?? 0) -
+          (stats[b.slug]?.minPrice ?? 0),
       );
     }
 
     if (sort === "price-high") {
       result.sort(
         (a, b) =>
-          stats[b.slug]?.maxPrice - stats[a.slug]?.maxPrice,
+          (stats[b.slug]?.maxPrice ?? 0) -
+          (stats[a.slug]?.maxPrice ?? 0),
       );
     }
 
     return result;
   }, [search, filter, sort, stats]);
 
-  const trending = useMemo(() => {
-    return [...categories]
-      .sort(
-        (a, b) =>
-          stats[b.slug]?.total - stats[a.slug]?.total,
-      )
-      .slice(0, 4);
-  }, [stats]);
+  // -------------------- TRENDING CATEGORIES --------------------
+  // सर्वाधिक products असलेल्या चार categories.
+  const trending = useMemo(
+    () =>
+      [...categories]
+        .sort(
+          (a, b) =>
+            (stats[b.slug]?.total ?? 0) -
+            (stats[a.slug]?.total ?? 0),
+        )
+        .slice(0, 4),
+    [stats],
+  );
 
-  const recentlyViewed = useMemo(() => {
-    return recentSlugs
-      .map((slug) => categories.find((category) => category.slug === slug))
-      .filter(Boolean) as Category[];
-  }, [recentSlugs]);
+  // -------------------- RECENTLY VIEWED --------------------
+  const recentlyViewed = useMemo(
+    () =>
+      recentSlugs
+        .map((slug) =>
+          categories.find((category) => category.slug === slug),
+        )
+        .filter(Boolean) as Category[],
+    [recentSlugs],
+  );
 
-  const recommended = useMemo(() => {
-    return [...categories]
-      .filter((category) => !recentSlugs.includes(category.slug))
-      .sort((a, b) => {
-        const aScore =
-          stats[a.slug]?.averageRating * 2 +
-          stats[a.slug]?.flashDeals +
-          stats[a.slug]?.total / 10;
+  // -------------------- RECOMMENDED CATEGORIES --------------------
+  // Recently viewed categories वगळून बाकी categories मधून picks.
+  const recommended = useMemo(
+    () =>
+      [...categories]
+        .filter(
+          (category) => !recentSlugs.includes(category.slug),
+        )
+        .sort((a, b) => {
+          const score = (slug: string) =>
+            (stats[slug]?.averageRating ?? 0) * 2 +
+            (stats[slug]?.flashDeals ?? 0) +
+            (stats[slug]?.total ?? 0) / 10;
 
-        const bScore =
-          stats[b.slug]?.averageRating * 2 +
-          stats[b.slug]?.flashDeals +
-          stats[b.slug]?.total / 10;
+          return score(b.slug) - score(a.slug);
+        })
+        .slice(0, 4),
+    [recentSlugs, stats],
+  );
 
-        return bScore - aScore;
-      })
-      .slice(0, 4);
-  }, [recentSlugs, stats]);
+  // -------------------- OPEN CATEGORY --------------------
+  // Recent categories update करतो.
+  // Full card आणि preview actions मध्ये ही function वापरता येते.
+  const openCategory = useCallback(
+    (category: Category) => {
+      setRecentSlugs((previous) => {
+        const updated = [
+          category.slug,
+          ...previous.filter((slug) => slug !== category.slug),
+        ].slice(0, 5);
 
-  function openCategory(category: Category) {
-    setSelectedCategory(category);
+        try {
+          localStorage.setItem(
+            "primecart_recent_categories",
+            JSON.stringify(updated),
+          );
+        } catch {
+          // Browser storage unavailable असल्यास page चालू राहतो.
+        }
 
-    const updated = [
-      category.slug,
-      ...recentSlugs.filter((slug) => slug !== category.slug),
-    ].slice(0, 5);
+        return updated;
+      });
+    },
+    [],
+  );
 
-    setRecentSlugs(updated);
+  // -------------------- CATEGORY WISHLIST --------------------
+  // Category wishlist browser localStorage मध्ये save होते.
+  const toggleCategoryWishlist = useCallback((slug: string) => {
+    setWishlistCategories((previous) => {
+      const updated = previous.includes(slug)
+        ? previous.filter((item) => item !== slug)
+        : [...previous, slug];
 
-    try {
-      localStorage.setItem(
-        "primecart_recent_categories",
-        JSON.stringify(updated),
-      );
-    } catch {
-      // Ignore localStorage errors.
-    }
-  }
+      try {
+        localStorage.setItem(
+          "primecart_category_wishlist",
+          JSON.stringify(updated),
+        );
+      } catch {
+        // Browser storage unavailable असल्यास ignore.
+      }
 
-  function toggleCategoryWishlist(slug: string) {
-    const exists = wishlistCategories.includes(slug);
+      return updated;
+    });
+  }, []);
 
-    const updated = exists
-      ? wishlistCategories.filter((item) => item !== slug)
-      : [...wishlistCategories, slug];
+  // -------------------- NAVIGATE TO CATEGORY --------------------
+  // Correct dynamic route: /dashboard/categories/[slug]
+  const navigateToCategory = useCallback(
+    (category: Category) => {
+      openCategory(category);
+      setSelectedCategory(null);
 
-    setWishlistCategories(updated);
+      router.push(`/dashboard/categories/${category.slug}`);
+    },
+    [openCategory, router],
+  );
 
-    try {
-      localStorage.setItem(
-        "primecart_category_wishlist",
-        JSON.stringify(updated),
-      );
-    } catch {
-      // Ignore localStorage errors.
-    }
-  }
+  // ============================================================
+  // PAGE UI START
+  // ============================================================
 
   return (
     <main className="min-h-screen bg-[#fffdf9] text-[#29251d]">
-      {/* TOP STRIP */}
+
+      {/* -------------------- TOP PROMISE STRIP -------------------- */}
       <div className="border-b border-[#eadfc9] bg-[#fff9ec]">
         <div className="mx-auto flex max-w-[1500px] items-center justify-center gap-4 px-5 py-2 text-[10px] font-bold text-[#88724a] sm:gap-8 sm:text-xs">
           <span className="flex items-center gap-1.5">
             <CheckCircle2 size={13} />
             Secure Shopping
           </span>
-
           <span className="hidden sm:block">•</span>
-
           <span className="flex items-center gap-1.5">
             <Zap size={13} />
             Exclusive Deals
           </span>
-
           <span className="hidden sm:block">•</span>
-
           <span className="flex items-center gap-1.5">
             <Package size={13} />
             Easy Returns
@@ -689,13 +859,12 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* HEADER */}
+      {/* -------------------- STICKY HEADER -------------------- */}
       <header className="sticky top-0 z-50 border-b border-[#eadfc9]/80 bg-[#fffdf9]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-10">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3"
-          >
+
+          {/* Logo and dashboard navigation. */}
+          <Link href="/dashboard" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#fff5d9] ring-1 ring-[#c79a3b]/20">
               <img
                 src="/logo.png"
@@ -703,33 +872,30 @@ export default function CategoriesPage() {
                 className="h-full w-full object-contain"
               />
             </div>
-
             <div>
               <div className="text-xl font-black tracking-tight">
                 Prime<span className="text-[#b8872d]">Cart</span>
               </div>
-
               <div className="hidden text-[9px] font-bold uppercase tracking-[0.2em] text-[#a59880] sm:block">
                 Shop Smarter
               </div>
             </div>
           </Link>
 
+          {/* Desktop navigation. */}
           <nav className="hidden items-center gap-1 md:flex">
             <Link
               href="/dashboard"
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8] hover:text-[#986f20]"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8]"
             >
               Dashboard
             </Link>
-
             <Link
               href="/dashboard/products"
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8] hover:text-[#986f20]"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8]"
             >
               Products
             </Link>
-
             <Link
               href="/dashboard/categories"
               className="rounded-xl bg-[#fff0c9] px-4 py-2.5 text-sm font-bold text-[#916b1e]"
@@ -738,10 +904,11 @@ export default function CategoriesPage() {
             </Link>
           </nav>
 
+          {/* Shop products and mobile filter button. */}
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/products"
-              className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(184,135,45,0.2)] transition hover:-translate-y-0.5 sm:flex"
+              className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 sm:flex"
             >
               Shop Products
               <ArrowRight size={15} />
@@ -749,8 +916,9 @@ export default function CategoriesPage() {
 
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#766c5b] md:hidden"
+              aria-label="Open category filters"
               onClick={() => setShowMobileFilters(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#766c5b] md:hidden"
             >
               <Menu size={19} />
             </button>
@@ -758,24 +926,19 @@ export default function CategoriesPage() {
         </div>
       </header>
 
+      {/* -------------------- PAGE CONTENT CONTAINER -------------------- */}
       <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
-        {/* BREADCRUMB */}
+
+        {/* -------------------- BREADCRUMB -------------------- */}
         <div className="mb-7 flex items-center gap-2 text-sm text-[#9c927f]">
-          <Link
-            href="/dashboard"
-            className="hover:text-[#a47720]"
-          >
+          <Link href="/dashboard" className="hover:text-[#a47720]">
             Dashboard
           </Link>
-
-          <ChevronRight size={14} />
-
-          <span className="font-bold text-[#50483a]">
-            Categories
-          </span>
+          <span>›</span>
+          <span className="font-bold text-[#50483a]">Categories</span>
         </div>
 
-        {/* HERO */}
+        {/* -------------------- HERO SECTION -------------------- */}
         <motion.section
           variants={fadeUp}
           initial="hidden"
@@ -793,10 +956,7 @@ export default function CategoriesPage() {
 
               <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-[-0.045em] sm:text-4xl lg:text-6xl">
                 Find what you need,
-                <span className="text-[#b8872d]">
-                  {" "}
-                  faster.
-                </span>
+                <span className="text-[#b8872d]"> faster.</span>
               </h1>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#7f7461] sm:text-base">
@@ -807,15 +967,14 @@ export default function CategoriesPage() {
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard/primematch"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_25px_rgba(184,135,45,0.2)] hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-sm"
                 >
                   <Sparkles size={16} />
                   Try PrimeMatch
                 </Link>
-
                 <Link
                   href="/dashboard/products"
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#dfcfac] bg-white/80 px-5 py-3 text-sm font-bold text-[#816222] hover:border-[#c79a3b] hover:bg-[#fff7e2]"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#dfcfac] bg-white/80 px-5 py-3 text-sm font-bold text-[#816222]"
                 >
                   Browse Products
                   <ArrowRight size={16} />
@@ -823,46 +982,39 @@ export default function CategoriesPage() {
               </div>
             </div>
 
+            {/* Overall statistics from loaded products. */}
             <div className="grid grid-cols-2 gap-3">
               <HeroStat
                 icon={<Layers3 size={18} />}
-                value={categories.length.toString()}
+                value={String(categories.length)}
                 label="Categories"
               />
-
               <HeroStat
                 icon={<ShoppingBag size={18} />}
-                value={loading ? "—" : totalProducts.toString()}
-                label="Products"
+                value={loading ? "…" : String(totalProducts)}
+                label="Active Products"
               />
-
               <HeroStat
                 icon={<Zap size={18} />}
-                value={loading ? "—" : totalDeals.toString()}
+                value={loading ? "…" : String(totalDeals)}
                 label="Live Deals"
               />
-
               <HeroStat
                 icon={<Star size={18} />}
-                value={
-                  overallRating
-                    ? overallRating.toFixed(1)
-                    : "—"
-                }
+                value={overallRating ? overallRating.toFixed(1) : "—"}
                 label="Avg Rating"
               />
             </div>
           </div>
         </motion.section>
 
-        {/* SHOPPING INTENTS */}
+        {/* -------------------- SHOP BY INTENT -------------------- */}
         <section className="mt-10">
           <SectionHeading
             eyebrow="Shop by intent"
             title="What are you shopping for?"
             description="Start with a goal instead of searching through everything."
           />
-
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <IntentCard
               icon={<Gamepad2 size={22} />}
@@ -870,21 +1022,18 @@ export default function CategoriesPage() {
               text="Gaming gear, accessories and essentials."
               href="/dashboard/setup-builder?type=gaming"
             />
-
             <IntentCard
               icon={<Home size={22} />}
               title="Setup My Home"
               text="Useful products for a smarter home."
               href="/dashboard/setup-builder?type=home"
             />
-
             <IntentCard
               icon={<Smartphone size={22} />}
               title="Upgrade My Tech"
               text="Mobile, electronics and everyday tech."
-              href="/dashboard/categories/mobile"
+              href="/dashboard/categories/mobiles"
             />
-
             <IntentCard
               icon={<ShoppingBag size={22} />}
               title="Shop Within Budget"
@@ -894,181 +1043,138 @@ export default function CategoriesPage() {
           </div>
         </section>
 
-        {/* TRENDING */}
-       {/* TRENDING */}
-<section className="mt-11">
-  <SectionHeading
-    eyebrow="Trending"
-    title="Popular categories"
-    description="Explore categories with the most product activity."
-  />
-
-  <motion.div
-    variants={stagger}
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true }}
-    className="grid grid-cols-2 gap-3 md:grid-cols-4"
-  >
-    {trending.map((category) => {
-      const stat = stats[category.slug];
-
-      return (
-        <motion.div
-          key={category.slug}
-          variants={cardVariants}
-        >
-          <Link
-            href={`/dashboard/categories/${category.slug}`}
-            className="group block"
-          >
-            <div className="overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition duration-300 hover:-translate-y-1 hover:border-[#c79a3b]/40 hover:shadow-[0_15px_35px_rgba(130,95,25,0.08)]">
-
-              {/* CATEGORY IMAGE */}
-              <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc] sm:h-36">
-                <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#c79a3b]/10 blur-2xl" />
-
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="relative h-full w-full object-contain p-5 transition duration-500 group-hover:scale-110"
-                  onError={(event) => {
-                    event.currentTarget.src = "/logo.png";
-                  }}
-                />
-
-                {/* GOLD BADGE */}
-                {stat?.flashDeals > 0 && (
-                  <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-[#c79a3b] px-2.5 py-1 text-[9px] font-black text-white shadow-sm">
-                    <Zap size={10} />
-                    Deals
-                  </div>
-                )}
-              </div>
-
-              {/* CARD INFO */}
-              <div className="p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="truncate text-sm font-black text-[#29251d]">
-                    {category.name}
-                  </h3>
-
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#fff7e1] text-[#a47720] transition group-hover:bg-[#c79a3b] group-hover:text-white">
-                    <ArrowRight
-                      size={13}
-                      className="transition group-hover:translate-x-0.5"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-2 flex items-center gap-2 text-[11px] text-[#958a78]">
-                  <span>
-                    {stat?.total ?? 0} products
-                  </span>
-
-                  {stat?.flashDeals > 0 && (
-                    <>
-                      <span>•</span>
-
-                      <span className="font-bold text-[#b77d1d]">
-                        {stat.flashDeals} deals
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {stat?.averageRating > 0 && (
-                  <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#806b43]">
-                    <Star
-                      size={11}
-                      className="fill-[#c79a3b] text-[#c79a3b]"
-                    />
-
-                    {stat.averageRating.toFixed(1)}
-                  </div>
-                )}
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-      );
-    })}
-  </motion.div>
-</section>
-
-        {/* SEARCH */}
+        {/* -------------------- TRENDING CATEGORIES -------------------- */}
         <section className="mt-11">
-          <div className="rounded-2xl border border-[#eadfc9] bg-white p-3 shadow-[0_10px_35px_rgba(0,0,0,0.035)]">
+          <SectionHeading
+            eyebrow="Trending"
+            title="Popular categories"
+            description="Explore categories with the most active products."
+          />
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 gap-3 md:grid-cols-4"
+          >
+            {trending.map((category) => {
+              const stat = stats[category.slug];
+
+              return (
+                <motion.div
+                  key={category.slug}
+                  variants={cardVariants}
+                >
+                  <Link
+                    href={`/dashboard/categories/${category.slug}`}
+                    onClick={() => openCategory(category)}
+                    className="group block h-full"
+                  >
+                    <div className="h-full overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40">
+                      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc] sm:h-36">
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="h-full w-full object-contain p-5 transition group-hover:scale-105"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = "/logo.png";
+                          }}
+                        />
+                        {stat?.flashDeals > 0 && (
+                          <span className="absolute left-3 top-3 rounded-full bg-[#c79a3b] px-2.5 py-1 text-[9px] font-black text-white">
+                            ⚡ Deals
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="truncate text-sm font-black">
+                            {category.name}
+                          </h3>
+                          <ArrowRight size={14} />
+                        </div>
+
+                        <div className="mt-2 text-[11px] text-[#958a78]">
+                          {stat?.total ?? 0} active products
+                        </div>
+
+                        {stat?.averageRating > 0 && (
+                          <div className="mt-2 flex items-center gap-1 text-xs font-bold text-[#806b43]">
+                            <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
+                            {stat.averageRating.toFixed(1)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </section>
+
+        {/* -------------------- SEARCH, FILTER AND SORT -------------------- */}
+        <section className="mt-11">
+          <div className="rounded-2xl border border-[#eadfc9] bg-white p-3 shadow-sm">
             <div className="flex flex-col gap-3 lg:flex-row">
+              {/* Category search input. */}
               <div className="relative flex-1">
                 <Search
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a79b85]"
                 />
-
                 <input
                   value={search}
-                  onChange={(event) =>
-                    setSearch(event.target.value)
-                  }
-                  placeholder="Search categories, products or shopping needs..."
-                  className="h-12 w-full rounded-xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-11 text-sm font-medium outline-none placeholder:text-[#aaa08f] focus:border-[#c79a3b] focus:ring-4 focus:ring-[#c79a3b]/10"
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search categories or shopping needs..."
+                  className="h-12 w-full rounded-xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-11 text-sm outline-none focus:border-[#c79a3b]"
                 />
-
                 {search && (
                   <button
                     type="button"
+                    aria-label="Clear search"
                     onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#988d79] hover:bg-[#fff5de]"
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg"
                   >
                     <X size={16} />
                   </button>
                 )}
               </div>
 
+              {/* Desktop filter buttons. */}
               <div className="hidden items-center gap-1 lg:flex">
-                {["All", "Deals", "Top Rated", "In Stock"].map(
-                  (item) => (
-                    <FilterButton
-                      key={item}
-                      active={filter === item}
-                      onClick={() => setFilter(item)}
-                    >
-                      {item}
-                    </FilterButton>
-                  ),
-                )}
+                {["All", "Deals", "Top Rated", "In Stock"].map((item) => (
+                  <FilterButton
+                    key={item}
+                    active={filter === item}
+                    onClick={() => setFilter(item)}
+                  >
+                    {item}
+                  </FilterButton>
+                ))}
               </div>
 
+              {/* Category sorting dropdown. */}
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="h-12 rounded-xl border border-[#eadfc9] bg-[#fffdf9] px-4 text-sm font-bold text-[#746957] outline-none focus:border-[#c79a3b]"
+                className="h-12 rounded-xl border border-[#eadfc9] bg-[#fffdf9] px-4 text-sm font-bold text-[#746957] outline-none"
               >
-                <option value="recommended">
-                  Recommended
-                </option>
-                <option value="products">
-                  Most Products
-                </option>
-                <option value="rating">
-                  Highest Rated
-                </option>
-                <option value="deals">
-                  Most Deals
-                </option>
-                <option value="price-low">
-                  Lowest Starting Price
-                </option>
-                <option value="price-high">
-                  Highest Price
-                </option>
+                <option value="recommended">Recommended</option>
+                <option value="products">Most Products</option>
+                <option value="rating">Highest Rated</option>
+                <option value="deals">Most Deals</option>
+                <option value="price-low">Lowest Starting Price</option>
+                <option value="price-high">Highest Price</option>
               </select>
             </div>
           </div>
         </section>
 
-        {/* RECENTLY VIEWED */}
+        {/* -------------------- RECENTLY VIEWED CATEGORIES -------------------- */}
         {recentlyViewed.length > 0 && (
           <section className="mt-11">
             <SectionHeading
@@ -1076,38 +1182,34 @@ export default function CategoriesPage() {
               title="Recently viewed"
               description="Pick up where you left off."
             />
-
             <div className="flex gap-4 overflow-x-auto pb-2">
               {recentlyViewed.map((category) => (
                 <MiniCategory
                   key={category.slug}
                   category={category}
                   stats={stats[category.slug]}
-                  onOpen={() => openCategory(category)}
+                  onOpen={() => navigateToCategory(category)}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {/* ALL CATEGORIES */}
+        {/* -------------------- ALL CATEGORY CARDS -------------------- */}
         <section className="mt-11">
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
-                All Categories
-              </div>
-
-              <h2 className="text-2xl font-black sm:text-3xl">
-                Explore everything
-              </h2>
-
-              <p className="mt-1 text-sm text-[#8d8372]">
-                {filteredCategories.length} categories available
-              </p>
+          <div className="mb-6">
+            <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
+              All Categories
             </div>
+            <h2 className="text-2xl font-black sm:text-3xl">
+              Explore everything
+            </h2>
+            <p className="mt-1 text-sm text-[#8d8372]">
+              {filteredCategories.length} categories available
+            </p>
           </div>
 
+          {/* While products load, show skeleton cards. */}
           {loading ? (
             <LoadingGrid />
           ) : filteredCategories.length === 0 ? (
@@ -1124,33 +1226,30 @@ export default function CategoriesPage() {
               animate="visible"
               className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              {filteredCategories.map((category) => {
-                const stat = stats[category.slug];
-
-                return (
-                  <motion.div
-                    key={category.slug}
-                    variants={cardVariants}
-                  >
-                    <CategoryCard
-                      category={category}
-                      stats={stat}
-                      isWishlisted={wishlistCategories.includes(
-                        category.slug,
-                      )}
-                      onWishlist={() =>
-                        toggleCategoryWishlist(category.slug)
-                      }
-                      onPreview={() => openCategory(category)}
-                    />
-                  </motion.div>
-                );
-              })}
+              {filteredCategories.map((category) => (
+                <motion.div
+                  key={category.slug}
+                  variants={cardVariants}
+                  className="h-full"
+                >
+                  <CategoryCard
+                    category={category}
+                    stats={stats[category.slug]}
+                    isWishlisted={wishlistCategories.includes(category.slug)}
+                    onWishlist={() => toggleCategoryWishlist(category.slug)}
+                    onPreview={() => {
+                      openCategory(category);
+                      setSelectedCategory(category);
+                    }}
+                    onExplore={() => navigateToCategory(category)}
+                  />
+                </motion.div>
+              ))}
             </motion.div>
           )}
         </section>
 
-        {/* RECOMMENDED */}
+        {/* -------------------- RECOMMENDED CATEGORIES -------------------- */}
         <section className="mt-12">
           <div className="rounded-[30px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] to-[#f8efd9] p-6 sm:p-8">
             <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
@@ -1159,19 +1258,16 @@ export default function CategoriesPage() {
                   <Sparkles size={14} />
                   PrimeCart Picks
                 </div>
-
                 <h2 className="mt-2 text-2xl font-black sm:text-3xl">
                   Categories worth exploring
                 </h2>
-
                 <p className="mt-1 text-sm text-[#887d6a]">
                   A mix of ratings, products and active deals.
                 </p>
               </div>
-
               <Link
                 href="/dashboard/primematch"
-                className="inline-flex items-center gap-2 self-start rounded-xl border border-[#d9c79e] bg-white px-4 py-2.5 text-sm font-bold text-[#866521] hover:border-[#c79a3b]"
+                className="inline-flex items-center gap-2 self-start rounded-xl border border-[#d9c79e] bg-white px-4 py-2.5 text-sm font-bold text-[#866521]"
               >
                 Personalize with PrimeMatch
                 <ArrowRight size={15} />
@@ -1184,14 +1280,14 @@ export default function CategoriesPage() {
                   key={category.slug}
                   category={category}
                   stats={stats[category.slug]}
-                  onOpen={() => openCategory(category)}
+                  onOpen={() => navigateToCategory(category)}
                 />
               ))}
             </div>
           </div>
         </section>
 
-        {/* SMART TOOLS */}
+        {/* -------------------- SMART TOOLS -------------------- */}
         <section className="mt-12 grid gap-5 lg:grid-cols-3">
           <ToolCard
             icon={<Sparkles size={22} />}
@@ -1201,7 +1297,6 @@ export default function CategoriesPage() {
             href="/dashboard/primematch"
             primary
           />
-
           <ToolCard
             icon={<BarChart3 size={22} />}
             eyebrow="Budget Builder"
@@ -1209,7 +1304,6 @@ export default function CategoriesPage() {
             description="Create a product combination around the amount you want to spend."
             href="/dashboard/budget-builder"
           />
-
           <ToolCard
             icon={<Gamepad2 size={22} />}
             eyebrow="Setup Builder"
@@ -1219,24 +1313,21 @@ export default function CategoriesPage() {
           />
         </section>
 
-        {/* FINAL CTA */}
-        <section className="mt-12 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-9 text-center shadow-[0_10px_35px_rgba(0,0,0,0.035)] sm:px-10">
+        {/* -------------------- FINAL SHOPPING CTA -------------------- */}
+        <section className="mt-12 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-9 text-center shadow-sm sm:px-10">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720]">
             <ShoppingBag size={25} />
           </div>
-
           <h2 className="mt-5 text-2xl font-black sm:text-3xl">
             Ready to start shopping?
           </h2>
-
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#887d6b]">
             Explore the complete PrimeCart collection and discover products
             across every category.
           </p>
-
           <Link
             href="/dashboard/products"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-6 py-3 text-sm font-bold text-white shadow-[0_10px_25px_rgba(184,135,45,0.2)] hover:-translate-y-0.5"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-6 py-3 text-sm font-bold text-white"
           >
             View All Products
             <ArrowRight size={16} />
@@ -1244,38 +1335,30 @@ export default function CategoriesPage() {
         </section>
       </div>
 
-      {/* MOBILE FILTER DRAWER */}
+      {/* -------------------- MOBILE FILTER DRAWER -------------------- */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <button
             type="button"
-            aria-label="Close filters"
+            aria-label="Close category filters"
             className="absolute inset-0 bg-[#5b4a2d]/25 backdrop-blur-sm"
             onClick={() => setShowMobileFilters(false)}
           />
-
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            exit={{ y: "100%" }}
             className="absolute bottom-0 left-0 right-0 rounded-t-[28px] border-t border-[#eadfc9] bg-[#fffdf9] p-5 shadow-2xl"
           >
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black">
-                  Filter Categories
-                </h3>
-
+                <h3 className="text-lg font-black">Filter Categories</h3>
                 <p className="text-xs text-[#958a78]">
                   Choose what you want to explore.
                 </p>
               </div>
-
               <button
                 type="button"
-                onClick={() =>
-                  setShowMobileFilters(false)
-                }
+                onClick={() => setShowMobileFilters(false)}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc9]"
               >
                 <X size={17} />
@@ -1283,26 +1366,24 @@ export default function CategoriesPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              {["All", "Deals", "Top Rated", "In Stock"].map(
-                (item) => (
-                  <FilterButton
-                    key={item}
-                    active={filter === item}
-                    onClick={() => {
-                      setFilter(item);
-                      setShowMobileFilters(false);
-                    }}
-                  >
-                    {item}
-                  </FilterButton>
-                ),
-              )}
+              {["All", "Deals", "Top Rated", "In Stock"].map((item) => (
+                <FilterButton
+                  key={item}
+                  active={filter === item}
+                  onClick={() => {
+                    setFilter(item);
+                    setShowMobileFilters(false);
+                  }}
+                >
+                  {item}
+                </FilterButton>
+              ))}
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* QUICK PREVIEW MODAL */}
+      {/* -------------------- QUICK PREVIEW MODAL -------------------- */}
       {selectedCategory && (
         <QuickPreview
           category={selectedCategory}
@@ -1311,18 +1392,21 @@ export default function CategoriesPage() {
           onWishlist={() =>
             toggleCategoryWishlist(selectedCategory.slug)
           }
-          wishlisted={wishlistCategories.includes(
-            selectedCategory.slug,
-          )}
+          wishlisted={wishlistCategories.includes(selectedCategory.slug)}
+          onExplore={() => navigateToCategory(selectedCategory)}
         />
       )}
     </main>
   );
 }
 
-/* ------------------------------------------------ */
-/* COMPONENTS */
-/* ------------------------------------------------ */
+// ============================================================
+// REUSABLE COMPONENTS
+// प्रत्येक component वर त्याचा purpose comment दिलेला आहे.
+// ============================================================
+
+// -------------------- HERO STAT CARD --------------------
+// Hero मध्ये total categories, products, deals आणि rating दाखवतो.
 
 function HeroStat({
   icon,
@@ -1338,17 +1422,16 @@ function HeroStat({
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a47720]">
         {icon}
       </div>
-
-      <div className="mt-3 text-2xl font-black">
-        {value}
-      </div>
-
+      <div className="mt-3 text-2xl font-black">{value}</div>
       <div className="mt-0.5 text-xs font-semibold text-[#958a76]">
         {label}
       </div>
     </div>
   );
 }
+
+// -------------------- SECTION HEADING --------------------
+// प्रत्येक major section साठी समान heading layout.
 
 function SectionHeading({
   eyebrow,
@@ -1364,17 +1447,16 @@ function SectionHeading({
       <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
         {eyebrow}
       </div>
-
       <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
         {title}
       </h2>
-
-      <p className="mt-1 text-sm text-[#8d8372]">
-        {description}
-      </p>
+      <p className="mt-1 text-sm text-[#8d8372]">{description}</p>
     </div>
   );
 }
+
+// -------------------- SHOPPING INTENT CARD --------------------
+// Setup Builder, home setup आणि budget builder साठी shortcut card.
 
 function IntentCard({
   icon,
@@ -1388,30 +1470,23 @@ function IntentCard({
   href: string;
 }) {
   return (
-    <Link href={href} className="group">
-      <div className="h-full rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition hover:-translate-y-1 hover:border-[#c79a3b]/40 hover:shadow-[0_15px_35px_rgba(130,95,25,0.08)]">
+    <Link href={href} className="group block h-full">
+      <div className="h-full rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40">
         <div className="flex items-center justify-between">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d] group-hover:bg-[#c79a3b] group-hover:text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white">
             {icon}
           </div>
-
-          <ArrowRight
-            size={16}
-            className="text-[#b4a78f] transition group-hover:translate-x-1 group-hover:text-[#a47720]"
-          />
+          <ArrowRight size={16} className="text-[#b4a78f]" />
         </div>
-
-        <h3 className="mt-5 font-black">
-          {title}
-        </h3>
-
-        <p className="mt-1 text-xs leading-5 text-[#8c816f]">
-          {text}
-        </p>
+        <h3 className="mt-5 font-black">{title}</h3>
+        <p className="mt-1 text-xs leading-5 text-[#8c816f]">{text}</p>
       </div>
     </Link>
   );
 }
+
+// -------------------- FILTER BUTTON --------------------
+// Desktop आणि mobile दोन्हीकडे वापरला जाणारा filter button.
 
 function FilterButton({
   children,
@@ -1429,7 +1504,7 @@ function FilterButton({
       className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
         active
           ? "bg-[#fff0c8] text-[#8d681d] ring-1 ring-[#c79a3b]/25"
-          : "text-[#786e5e] hover:bg-[#fff8e9] hover:text-[#946c1e]"
+          : "text-[#786e5e] hover:bg-[#fff8e9]"
       }`}
     >
       {children}
@@ -1437,45 +1512,80 @@ function FilterButton({
   );
 }
 
+// -------------------- FULL CATEGORY CARD --------------------
+// मुख्य fix:
+// Card च्या कोणत्याही रिकाम्या भागावर किंवा माहितीवर क्लिक केल्यास
+// category उघडते.
+//
+// Wishlist आणि Preview buttons मात्र स्वतंत्र काम करतात.
+// त्यामुळे त्या buttons वर click केल्यावर category navigation होत नाही.
+// --------------------
+
 function CategoryCard({
   category,
   stats,
   isWishlisted,
   onWishlist,
   onPreview,
+  onExplore,
 }: {
   category: Category;
   stats: CategoryStats;
   isWishlisted: boolean;
   onWishlist: () => void;
   onPreview: () => void;
+  onExplore: () => void;
 }) {
   return (
-    <article className="group relative h-full overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c79a3b]/40 hover:shadow-[0_20px_50px_rgba(130,95,25,0.1)]">
-      {/* IMAGE */}
+    <article
+      role="link"
+      tabIndex={0}
+      aria-label={`Explore ${category.name}`}
+      onClick={onExplore}
+      onKeyDown={(event) => {
+        // Keyboard focus असताना card Enter/Space ने उघडतो.
+        // Inner buttons वर keyboard वापरल्यास त्यांची action चालते.
+        if (
+          event.target === event.currentTarget &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          onExplore();
+        }
+      }}
+      className="group relative h-full cursor-pointer overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c79a3b]/40 hover:shadow-[0_20px_50px_rgba(130,95,25,0.1)] focus:outline-none focus:ring-2 focus:ring-[#c79a3b]"
+    >
+      {/* CATEGORY IMAGE */}
       <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc]">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#c79a3b]/10 blur-2xl" />
-
         <img
           src={category.image}
           alt={category.name}
           className="h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105"
           onError={(event) => {
+            event.currentTarget.onerror = null;
             event.currentTarget.src = "/logo.png";
           }}
         />
 
-        <div className="absolute left-4 top-4 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black text-[#866521] shadow-sm backdrop-blur">
+        {/* Category name badge. */}
+        <div className="absolute left-4 top-4 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black text-[#866521] shadow-sm">
           {category.name}
         </div>
 
+        {/* Wishlist is independent from card navigation. */}
         <button
           type="button"
+          aria-label={
+            isWishlisted
+              ? `Remove ${category.name} from wishlist`
+              : `Add ${category.name} to wishlist`
+          }
           onClick={(event) => {
             event.preventDefault();
+            event.stopPropagation();
             onWishlist();
           }}
-          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border shadow-sm backdrop-blur transition ${
+          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border shadow-sm transition ${
             isWishlisted
               ? "border-[#c79a3b]/30 bg-[#fff0c8] text-[#a47720]"
               : "border-white/80 bg-white/90 text-[#9c907b] hover:text-[#a47720]"
@@ -1483,12 +1593,11 @@ function CategoryCard({
         >
           <Heart
             size={15}
-            className={
-              isWishlisted ? "fill-current" : ""
-            }
+            className={isWishlisted ? "fill-current" : ""}
           />
         </button>
 
+        {/* Live flash deal count. */}
         {stats.flashDeals > 0 && (
           <div className="absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-[#c79a3b] px-3 py-1.5 text-[10px] font-black text-white shadow-sm">
             <Zap size={11} />
@@ -1497,26 +1606,21 @@ function CategoryCard({
         )}
       </div>
 
-      {/* BODY */}
+      {/* CATEGORY DESCRIPTION AND STATISTICS */}
       <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-xl font-black tracking-tight">
-              {category.name}
-            </h3>
+        <h3 className="text-xl font-black tracking-tight">
+          {category.name}
+        </h3>
 
-            <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#887e6c]">
-              {category.description}
-            </p>
-          </div>
-        </div>
+        <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#887e6c]">
+          {category.description}
+        </p>
 
-        {/* PRICE */}
+        {/* Minimum and maximum product prices. */}
         <div className="mt-4 rounded-xl bg-[#fffaf0] px-3 py-2.5">
           <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a08f70]">
             Price range
           </div>
-
           <div className="mt-1 font-black text-[#5c4a28]">
             {stats.minPrice
               ? `${money(stats.minPrice)} – ${money(stats.maxPrice)}`
@@ -1524,18 +1628,10 @@ function CategoryCard({
           </div>
         </div>
 
-        {/* STATS */}
+        {/* Category product count, stock and rating. */}
         <div className="mt-4 grid grid-cols-3 divide-x divide-[#eee6d6] rounded-xl border border-[#eee6d6] bg-[#fffdf9]">
-          <SmallStat
-            value={stats.total}
-            label="Products"
-          />
-
-          <SmallStat
-            value={stats.inStock}
-            label="In Stock"
-          />
-
+          <SmallStat value={stats.total} label="Products" />
+          <SmallStat value={stats.inStock} label="In Stock" />
           <SmallStat
             value={
               stats.averageRating
@@ -1547,8 +1643,8 @@ function CategoryCard({
           />
         </div>
 
-        {/* STOCK */}
-        <div className="mt-4 flex items-center justify-between">
+        {/* Stock availability and average discount. */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-bold">
             {stats.lowStock > 0 ? (
               <>
@@ -1581,7 +1677,7 @@ function CategoryCard({
           )}
         </div>
 
-        {/* PRODUCT PREVIEW */}
+        {/* Small product image previews. */}
         {stats.products.length > 0 && (
           <div className="mt-5 flex items-center gap-2">
             {stats.products.slice(0, 3).map((product) => (
@@ -1594,12 +1690,12 @@ function CategoryCard({
                   alt={product.name}
                   className="h-full w-full object-contain p-1"
                   onError={(event) => {
+                    event.currentTarget.onerror = null;
                     event.currentTarget.src = "/logo.png";
                   }}
                 />
               </div>
             ))}
-
             {stats.products.length > 3 && (
               <span className="text-xs font-bold text-[#998d78]">
                 +{stats.products.length - 3}
@@ -1608,21 +1704,32 @@ function CategoryCard({
           </div>
         )}
 
-        {/* ACTIONS */}
+        {/* ACTION BUTTONS */}
         <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
-          <Link
-            href={`/dashboard/categories/${category.slug}`}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(184,135,45,0.15)] transition hover:-translate-y-0.5"
+
+          {/* Explore button uses the same category route as the card. */}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onExplore();
+            }}
+            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
           >
             Explore
             <ArrowRight size={15} />
-          </Link>
+          </button>
 
+          {/* Preview button opens modal without navigating away. */}
           <button
             type="button"
-            onClick={onPreview}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffaf0] text-[#907448] transition hover:border-[#c79a3b] hover:bg-[#fff1cd] hover:text-[#8c681f]"
+            onClick={(event) => {
+              event.stopPropagation();
+              onPreview();
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffaf0] text-[#907448] transition hover:border-[#c79a3b] hover:bg-[#fff1cd]"
             title="Quick preview"
+            aria-label={`Preview ${category.name}`}
           >
             <Eye size={17} />
           </button>
@@ -1631,6 +1738,9 @@ function CategoryCard({
     </article>
   );
 }
+
+// -------------------- SMALL STAT --------------------
+// Category card मधील individual statistic.
 
 function SmallStat({
   value,
@@ -1645,21 +1755,20 @@ function SmallStat({
     <div className="px-2 py-3 text-center">
       <div className="flex items-center justify-center gap-1 text-sm font-black text-[#4d4230]">
         {star && (
-          <Star
-            size={11}
-            className="fill-[#c79a3b] text-[#c79a3b]"
-          />
+          <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
         )}
-
         {value}
       </div>
-
       <div className="mt-0.5 text-[10px] font-semibold text-[#a09787]">
         {label}
       </div>
     </div>
   );
 }
+
+// -------------------- MINI CATEGORY --------------------
+// Recently viewed आणि recommended sections मधील compact card.
+// Card click केल्यावर category route उघडतो.
 
 function MiniCategory({
   category,
@@ -1674,7 +1783,7 @@ function MiniCategory({
     <button
       type="button"
       onClick={onOpen}
-      className="group min-w-[235px] flex-1 rounded-2xl border border-[#eadfc9] bg-white p-4 text-left shadow-[0_8px_25px_rgba(0,0,0,0.025)] transition hover:-translate-y-1 hover:border-[#c79a3b]/40"
+      className="group min-w-[235px] flex-1 rounded-2xl border border-[#eadfc9] bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40"
     >
       <div className="flex items-center gap-3">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#fff8e8]">
@@ -1683,6 +1792,7 @@ function MiniCategory({
             alt={category.name}
             className="h-full w-full object-contain p-2"
             onError={(event) => {
+              event.currentTarget.onerror = null;
               event.currentTarget.src = "/logo.png";
             }}
           />
@@ -1692,24 +1802,16 @@ function MiniCategory({
           <h3 className="truncate text-sm font-black">
             {category.name}
           </h3>
-
           <div className="mt-1 flex items-center gap-1.5 text-xs text-[#948875]">
             <span>{stats.total} products</span>
-
             {stats.averageRating > 0 && (
               <>
                 <span>•</span>
-                <Star
-                  size={11}
-                  className="fill-[#c79a3b] text-[#c79a3b]"
-                />
-                <span>
-                  {stats.averageRating.toFixed(1)}
-                </span>
+                <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
+                <span>{stats.averageRating.toFixed(1)}</span>
               </>
             )}
           </div>
-
           {stats.flashDeals > 0 && (
             <div className="mt-1 text-[10px] font-bold text-[#b47b20]">
               {stats.flashDeals} active deals
@@ -1719,12 +1821,15 @@ function MiniCategory({
 
         <ArrowRight
           size={15}
-          className="ml-auto shrink-0 text-[#b8aa91] transition group-hover:translate-x-1 group-hover:text-[#a47720]"
+          className="ml-auto shrink-0 text-[#b8aa91] transition group-hover:translate-x-1"
         />
       </div>
     </button>
   );
 }
+
+// -------------------- SMART TOOL CARD --------------------
+// PrimeMatch, Budget Builder आणि Setup Builder shortcuts.
 
 function ToolCard({
   icon,
@@ -1752,19 +1857,13 @@ function ToolCard({
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1ce] text-[#a47720]">
         {icon}
       </div>
-
       <div className="mt-5 text-[10px] font-black uppercase tracking-[0.15em] text-[#a47720]">
         {eyebrow}
       </div>
-
-      <h3 className="mt-2 text-xl font-black">
-        {title}
-      </h3>
-
+      <h3 className="mt-2 text-xl font-black">{title}</h3>
       <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#897e6c]">
         {description}
       </p>
-
       <Link
         href={href}
         className={`mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold ${
@@ -1780,6 +1879,9 @@ function ToolCard({
   );
 }
 
+// -------------------- LOADING SKELETON --------------------
+// Supabase query चालू असताना blank page न दाखवता placeholders दाखवतो.
+
 function LoadingGrid() {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -1789,7 +1891,6 @@ function LoadingGrid() {
           className="h-[500px] animate-pulse rounded-[28px] border border-[#eadfc9] bg-white"
         >
           <div className="h-52 rounded-t-[28px] bg-[#f6f0e2]" />
-
           <div className="space-y-4 p-5">
             <div className="h-5 w-2/3 rounded bg-[#f3ecdc]" />
             <div className="h-4 w-full rounded bg-[#f6f0e2]" />
@@ -1803,26 +1904,23 @@ function LoadingGrid() {
   );
 }
 
+// -------------------- EMPTY SEARCH STATE --------------------
+// Search/filter नुसार category मिळाली नाही तर हा component दिसतो.
+
 function EmptyState({
   onClear,
 }: {
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-[28px] border border-dashed border-[#d9cbaE] bg-[#fffaf0] px-6 py-14 text-center">
+    <div className="rounded-[28px] border border-dashed border-[#d9cbae] bg-[#fffaf0] px-6 py-14 text-center">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720]">
         <Search size={26} />
       </div>
-
-      <h3 className="mt-5 text-xl font-black">
-        No categories found
-      </h3>
-
+      <h3 className="mt-5 text-xl font-black">No categories found</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#8e8472]">
-        Try another search or remove the active filters to see more
-        categories.
+        Try another search or remove the active filters to see more categories.
       </p>
-
       <button
         type="button"
         onClick={onClear}
@@ -1834,23 +1932,30 @@ function EmptyState({
   );
 }
 
+// -------------------- QUICK PREVIEW MODAL --------------------
+// Eye button किंवा card मधील Preview action वर हा modal उघडतो.
+// Products ची summary, stock, rating आणि price range दाखवतो.
+
 function QuickPreview({
   category,
   stats,
   onClose,
   onWishlist,
   wishlisted,
+  onExplore,
 }: {
   category: Category;
   stats: CategoryStats;
   onClose: () => void;
   onWishlist: () => void;
   wishlisted: boolean;
+  onExplore: () => void;
 }) {
   const Icon = category.icon;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      {/* Backdrop click closes modal. */}
       <button
         type="button"
         aria-label="Close preview"
@@ -1859,44 +1964,51 @@ function QuickPreview({
       />
 
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${category.name} preview`}
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-auto rounded-[30px] border border-[#eadfc9] bg-[#fffdf9] shadow-2xl"
       >
+        {/* Modal close button. */}
         <div className="sticky right-0 top-0 z-20 flex justify-end p-4">
           <button
             type="button"
+            aria-label="Close preview"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#766c5b] shadow-sm hover:bg-[#fff7e4]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white"
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="grid gap-7 px-6 pb-7 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:px-10 lg:pb-10">
+
+          {/* Large category image. */}
           <div className="relative flex min-h-[270px] items-center justify-center overflow-hidden rounded-[26px] bg-gradient-to-br from-[#fffaf0] to-[#f7efdc]">
-            <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-white bg-white/90 px-3 py-1.5 text-xs font-bold text-[#866521]">
+            <div className="absolute left-5 top-5 z-10 flex items-center gap-2 rounded-full border border-white bg-white/90 px-3 py-1.5 text-xs font-bold text-[#866521]">
               <Icon size={13} />
               {category.name}
             </div>
-
             <img
               src={category.image}
               alt={category.name}
-              className="h-full max-h-[310px] w-full object-contain p-8"
+              className="max-h-[310px] w-full object-contain p-8"
               onError={(event) => {
+                event.currentTarget.onerror = null;
                 event.currentTarget.src = "/logo.png";
               }}
             />
           </div>
 
+          {/* Category information and product previews. */}
           <div>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
                   Quick Preview
                 </div>
-
                 <h2 className="mt-2 text-3xl font-black tracking-tight">
                   {category.name}
                 </h2>
@@ -1904,6 +2016,7 @@ function QuickPreview({
 
               <button
                 type="button"
+                aria-label="Toggle category wishlist"
                 onClick={onWishlist}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
                   wishlisted
@@ -1913,9 +2026,7 @@ function QuickPreview({
               >
                 <Heart
                   size={17}
-                  className={
-                    wishlisted ? "fill-current" : ""
-                  }
+                  className={wishlisted ? "fill-current" : ""}
                 />
               </button>
             </div>
@@ -1924,17 +2035,10 @@ function QuickPreview({
               {category.description}
             </p>
 
+            {/* Four category statistics. */}
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <PreviewStat
-                value={stats.total}
-                label="Products"
-              />
-
-              <PreviewStat
-                value={stats.inStock}
-                label="In Stock"
-              />
-
+              <PreviewStat value={stats.total} label="Products" />
+              <PreviewStat value={stats.inStock} label="In Stock" />
               <PreviewStat
                 value={
                   stats.averageRating
@@ -1943,18 +2047,14 @@ function QuickPreview({
                 }
                 label="Rating"
               />
-
-              <PreviewStat
-                value={stats.flashDeals}
-                label="Deals"
-              />
+              <PreviewStat value={stats.flashDeals} label="Deals" />
             </div>
 
+            {/* Price range. */}
             <div className="mt-5 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4">
               <div className="text-[10px] font-black uppercase tracking-[0.13em] text-[#a08f70]">
                 Price Range
               </div>
-
               <div className="mt-1 text-lg font-black text-[#5c4a28]">
                 {stats.minPrice
                   ? `${money(stats.minPrice)} – ${money(stats.maxPrice)}`
@@ -1962,14 +2062,12 @@ function QuickPreview({
               </div>
             </div>
 
+            {/* Product preview list — maximum four products. */}
             <div className="mt-6">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-black">
-                  Popular products
-                </h3>
-
+                <h3 className="font-black">Popular products</h3>
                 <span className="text-xs font-bold text-[#9b8760]">
-                  {stats.products.length} previewed
+                  {Math.min(stats.products.length, 4)} previewed
                 </span>
               </div>
 
@@ -1985,6 +2083,7 @@ function QuickPreview({
                         alt={product.name}
                         className="h-full w-full object-contain p-1"
                         onError={(event) => {
+                          event.currentTarget.onerror = null;
                           event.currentTarget.src = "/logo.png";
                         }}
                       />
@@ -1994,28 +2093,19 @@ function QuickPreview({
                       <div className="truncate text-sm font-bold">
                         {product.name}
                       </div>
-
                       <div className="mt-0.5 flex items-center gap-2 text-xs text-[#938875]">
                         {product.rating ? (
                           <span className="flex items-center gap-1">
-                            <Star
-                              size={10}
-                              className="fill-[#c79a3b] text-[#c79a3b]"
-                            />
+                            <Star size={10} className="fill-[#c79a3b] text-[#c79a3b]" />
                             {product.rating}
                           </span>
                         ) : null}
-
-                        {product.stock !== undefined && (
-                          <>
-                            <span>•</span>
-                            <span>
-                              {safeNumber(product.stock) > 0
-                                ? "In stock"
-                                : "Out of stock"}
-                            </span>
-                          </>
-                        )}
+                        <span>•</span>
+                        <span>
+                          {safeNumber(product.stock) > 0
+                            ? "In stock"
+                            : "Out of stock"}
+                        </span>
                       </div>
                     </div>
 
@@ -2027,20 +2117,24 @@ function QuickPreview({
               </div>
             </div>
 
-            <Link
-              href={`/dashboard/categories/${category.slug}`}
-              onClick={onClose}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3.5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(184,135,45,0.2)]"
+            {/* Opens the full category products page. */}
+            <button
+              type="button"
+              onClick={onExplore}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3.5 text-sm font-bold text-white shadow-sm"
             >
               Explore {category.name}
               <ArrowRight size={16} />
-            </Link>
+            </button>
           </div>
         </div>
       </motion.div>
     </div>
   );
 }
+
+// -------------------- QUICK PREVIEW STAT --------------------
+// Preview modal मधील compact statistics card.
 
 function PreviewStat({
   value,
@@ -2051,10 +2145,7 @@ function PreviewStat({
 }) {
   return (
     <div className="rounded-xl border border-[#eadfc9] bg-white px-3 py-3 text-center">
-      <div className="text-lg font-black">
-        {value}
-      </div>
-
+      <div className="text-lg font-black">{value}</div>
       <div className="mt-0.5 text-[10px] font-semibold text-[#9c917e]">
         {label}
       </div>
