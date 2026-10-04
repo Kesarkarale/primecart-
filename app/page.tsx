@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -42,6 +44,17 @@ type HeroSlide = {
   button: string;
   secondary: string;
   badge: string;
+};
+
+type SearchProduct = {
+  id: string | number;
+  name: string;
+  slug: string | null;
+  price: number;
+  original_price: number | null;
+  image_url: string | null;
+  brand: string | null;
+  short_description: string | null;
 };
 
 const categories: Category[] = [
@@ -211,9 +224,22 @@ function formatTime(totalSeconds: number) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      ),
+    []
+  );
+
   const [openMenu, setOpenMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [activeSlide, setActiveSlide] = useState(0);
   const [timeLeft, setTimeLeft] = useState(
     2 * 60 * 60 + 18 * 60 + 45
@@ -223,15 +249,91 @@ export default function HomePage() {
 
   const currentSlide = heroSlides[activeSlide];
 
-  const filteredCategories = useMemo(() => {
-    const query = search.trim().toLowerCase();
 
-    if (!query) return categories;
 
-    return categories.filter((category) =>
-      category.name.toLowerCase().includes(query)
-    );
-  }, [search]);
+  // Search actual active products from Supabase (not only static categories).
+  useEffect(() => {
+    const query = search.trim();
+    if (query.length < 2) {
+      setSearchProducts([]);
+      setSearchError("");
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError("");
+      try {
+        const safeQuery = query.replace(/[,%()]/g, " ").trim();
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, name, slug, price, original_price, image_url, brand, short_description")
+          .eq("is_active", true)
+          .or(`name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`)
+          .order("is_featured", { ascending: false })
+          .limit(8);
+
+        if (error) throw error;
+        if (!cancelled) setSearchProducts((data ?? []) as SearchProduct[]);
+      } catch (error) {
+        console.error("PrimeCart product search failed:", error);
+        if (!cancelled) {
+          setSearchProducts([]);
+          setSearchError("Products could not be loaded. Please try again.");
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [search, supabase]);
+
+  const handleProductSearch = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    const query = search.trim();
+    if (!query) return;
+
+    // Keep a search-history record for signed-in users. Search still works for guests.
+    try {
+      const safeQuery = query.replace(/[,%()]/g, " ").trim();
+      const [{ data: userData }, { count }, { data: exactProduct }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .or(`name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`),
+        supabase
+          .from("products")
+          .select("id")
+          .eq("is_active", true)
+          .ilike("name", query)
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const matchingCount = count ?? searchProducts.length;
+      await supabase.from("search_history").insert({
+        user_id: userData.user?.id ?? null,
+        search_query: query,
+        results_count: matchingCount,
+        has_results: matchingCount > 0,
+        exact_match_found: Boolean(exactProduct),
+      });
+    } catch (error) {
+      // Search itself must not fail if history permissions are unavailable.
+      console.warn("Could not save PrimeCart search history:", error);
+    }
+
+    setSearchOpen(false);
+    router.push(`/dashboard/products?search=${encodeURIComponent(query)}`);
+  };
+
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -350,7 +452,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/dashboard/products"
+              href="/auth/login"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Shop
@@ -421,14 +523,14 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/dashboard/products?sort=deals"
+              href="/auth/login"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Deals
             </Link>
 
             <Link
-              href="#contact"
+              href="/auth/login"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Contact
@@ -437,76 +539,36 @@ export default function HomePage() {
 
           {/* DESKTOP SEARCH */}
 
-          <div className="ml-auto hidden max-w-[300px] flex-1 md:flex">
-            <div className="relative w-full">
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
+          <div className="ml-auto hidden max-w-[390px] flex-1 md:flex">
+            <form onSubmit={handleProductSearch} className="relative w-full">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
+                onChange={(event) => setSearch(event.target.value)}
                 onFocus={() => setSearchOpen(true)}
-                placeholder="Search products, categories..."
+                onKeyDown={(event) => { if (event.key === "Escape") setSearchOpen(false); }}
+                placeholder="Search products, brands..."
+                aria-label="Search products"
                 className="h-11 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-4 focus:ring-[#D4AF37]/10"
               />
-
-              {searchOpen && search.trim() && (
-                <div className="absolute left-0 right-0 top-[52px] overflow-hidden rounded-2xl border border-[#ece7db] bg-white p-2 shadow-2xl">
-                  {filteredCategories.length > 0 ? (
-                    filteredCategories.map((category) => (
-                      <Link
-                        key={category.name}
-                        href={`/dashboard/categories/${category.slug}`}
-                        onClick={() => {
-                          setSearchOpen(false);
-                          setSearch("");
-                        }}
-                        className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-[#faf8f3]"
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#faf8f3]">
-                          <Image
-                            src={category.image}
-                            alt={category.name}
-                            width={35}
-                            height={35}
-                            className="h-8 w-8 object-contain"
-                          />
+              {searchOpen && search.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 top-[52px] z-[70] max-h-[420px] overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-2xl">
+                  {searchLoading ? <p className="p-4 text-center text-sm text-gray-500">Searching products…</p> : searchError ? <p className="p-4 text-center text-sm text-red-600">{searchError}</p> : searchProducts.length ? <>
+                    <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Products matching your search</p>
+                    {searchProducts.map((product) => (
+                      <button key={product.id} type="button" onClick={() => { setSearch(product.name); setSearchOpen(false); router.push(`/dashboard/products?search=${encodeURIComponent(product.name)}`); }} className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-[#faf8f3]">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">
+                          {product.image_url ? <img src={product.image_url.startsWith("http") || product.image_url.startsWith("/") ? product.image_url : `/products/${product.image_url}`} alt={product.name} className="h-full w-full object-contain p-1" /> : <ShoppingBag size={22} className="text-[#c7a24b]" />}
                         </div>
-
-                        <div>
-                          <p className="text-sm font-semibold">
-                            {category.name}
-                          </p>
-
-                          <p className="text-xs text-gray-500">
-                            {category.products}
-                          </p>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-sm text-gray-500">
-                      No matching category found. Search all products below.
-                    </div>
-                  )}
-                  <Link
-                    href={`/dashboard/products?search=${encodeURIComponent(search.trim())}`}
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearch("");
-                    }}
-                    className="mt-1 flex items-center justify-between rounded-xl bg-[#fffaf0] px-3 py-3 text-sm font-semibold text-[#8f6b12] transition hover:bg-[#f8efd9]"
-                  >
-                    <span>Search all products for “{search.trim()}”</span>
-                    <ArrowRight size={16} />
-                  </Link>
+                        <span className="min-w-0 flex-1"><span className="block line-clamp-1 text-sm font-semibold text-gray-900">{product.name}</span><span className="block line-clamp-1 text-xs text-gray-500">{product.brand || product.short_description || "PrimeCart product"}</span><span className="mt-1 block text-sm font-bold text-[#a77b16]">₹{Number(product.price).toLocaleString("en-IN")}{product.original_price && product.original_price > product.price ? <span className="ml-2 text-xs font-normal text-gray-400 line-through">₹{Number(product.original_price).toLocaleString("en-IN")}</span> : null}</span></span>
+                        <ArrowUpRight size={16} className="shrink-0 text-gray-400" />
+                      </button>
+                    ))}
+                    <button type="submit" className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#3b3323]">View all search results <ArrowRight size={15} className="ml-1 inline" /></button>
+                  </> : <div className="p-4 text-center"><p className="text-sm font-semibold text-gray-800">No matching product found.</p><p className="mt-1 text-xs text-gray-500">Press Enter to see related products.</p><button type="submit" className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white">Search related products</button></div>}
                 </div>
               )}
-            </div>
+            </form>
           </div>
 
           {/* ACTIONS */}
@@ -575,75 +637,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* MOBILE SEARCH */}
-
+        {/* MOBILE SEARCH — live Supabase product results */}
         {searchOpen && (
           <div className="border-t border-[#ece7db] bg-white px-3 py-3 sm:px-4 md:hidden">
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                autoFocus
-                value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
-                placeholder="Search products or categories..."
-                className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10"
-              />
-            </div>
-
-            {search.trim() && (
-              <div className="mt-2 max-h-64 overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((category) => (
-                    <Link
-                      key={category.name}
-                      href={`/dashboard/categories/${category.slug}`}
-                      onClick={() => {
-                        setSearchOpen(false);
-                        setSearch("");
-                      }}
-                      className="flex items-center gap-3 rounded-xl p-3 active:bg-[#faf8f3]"
-                    >
-                      <Image
-                        src={category.image}
-                        alt={category.name}
-                        width={40}
-                        height={40}
-                        className="h-9 w-9 object-contain"
-                      />
-
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold">
-                          {category.name}
-                        </p>
-
-                        <p className="text-xs text-gray-500">
-                          {category.products}
-                        </p>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="p-3 text-center text-sm text-gray-500">
-                    No matching category found. Search all products below.
-                  </p>
-                )}
-                <Link
-                  href={`/dashboard/products?search=${encodeURIComponent(search.trim())}`}
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setSearch("");
-                  }}
-                  className="mt-1 flex items-center justify-between rounded-xl bg-[#fffaf0] px-3 py-3 text-sm font-semibold text-[#8f6b12]"
-                >
-                  <span>Search all products for “{search.trim()}”</span>
-                  <ArrowRight size={16} />
-                </Link>
+            <form onSubmit={handleProductSearch} className="relative">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, brands..." aria-label="Search products" className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10" />
+            </form>
+            {search.trim().length >= 2 && (
+              <div className="mt-2 max-h-80 overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
+                {searchLoading ? <p className="p-4 text-center text-sm text-gray-500">Searching products…</p> : searchError ? <p className="p-4 text-center text-sm text-red-600">{searchError}</p> : searchProducts.length ? <>
+                  {searchProducts.map((product) => (
+                    <button key={product.id} type="button" onClick={() => { setSearch(product.name); setSearchOpen(false); router.push(`/dashboard/products?search=${encodeURIComponent(product.name)}`); }} className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left active:bg-[#faf8f3]">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">{product.image_url ? <img src={product.image_url.startsWith("http") || product.image_url.startsWith("/") ? product.image_url : `/products/${product.image_url}`} alt={product.name} className="h-full w-full object-contain p-1" /> : <ShoppingBag size={20} className="text-[#c7a24b]" />}</div>
+                      <span className="min-w-0 flex-1"><span className="block line-clamp-1 text-sm font-semibold">{product.name}</span><span className="block line-clamp-1 text-xs text-gray-500">{product.brand || product.short_description || "PrimeCart product"}</span><span className="text-sm font-bold text-[#a77b16]">₹{Number(product.price).toLocaleString("en-IN")}</span></span>
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => void handleProductSearch()} className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white">View all search results</button>
+                </> : <div className="p-4 text-center"><p className="text-sm font-semibold">No matching product found.</p><p className="mt-1 text-xs text-gray-500">Search related products instead.</p><button type="button" onClick={() => void handleProductSearch()} className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white">Search related products</button></div>}
               </div>
             )}
           </div>
@@ -656,13 +667,13 @@ export default function HomePage() {
             <div className="grid gap-1.5">
               {[
                 ["Home", "/"],
-                ["Shop", "/dashboard/products"],
+                ["Shop", "/auth/login"],
                 [
                   "Categories",
-                  "/dashboard/categories/electronics",
+                  "/auth/login",
                 ],
-                ["Deals", "/dashboard/products?sort=deals"],
-                ["Contact", "#contact"],
+                ["Deals", "/auth/login"],
+                ["Contact", "/auth/login"],
               ].map(([label, href]) => (
                 <Link
                   key={label}
@@ -841,7 +852,7 @@ lg:min-h-[540px]
           "
         >
           <Link
-            href="/dashboard/products"
+            href="/auth/login"
             className="
               inline-flex
               h-9
@@ -886,7 +897,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/dashboard/products?sort=deals"
+            href="/auth/login"
             className="
               inline-flex
               h-9
@@ -1400,7 +1411,7 @@ lg:min-h-[540px]
             </div>
 
             <Link
-              href="/dashboard/categories/electronics"
+              href="/auth/login"
               className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
             >
               View all categories
@@ -1659,7 +1670,7 @@ lg:min-h-[540px]
           COMPACT MOBILE FOOTER
       ========================================================= */}
 
-      <footer id="contact" className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
+      <footer className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
 
         <div className="mx-auto max-w-7xl">
 
@@ -2000,7 +2011,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/dashboard/products"
+            href="/dashboard/categories/electronics"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Search size={18} />
