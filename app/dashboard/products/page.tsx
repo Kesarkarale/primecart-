@@ -1801,6 +1801,65 @@ export default function ProductsPage() {
   ]);
 
   /* =======================================================
+     SAVE SEARCH ANALYTICS TO SUPABASE
+     Save only when the user submits a search (Enter), not every keystroke.
+  ======================================================= */
+  const recordSearch = useCallback(
+    async (rawQuery: string) => {
+      const query = rawQuery.trim().replace(/\s+/g, " ");
+      if (query.length < 2) return;
+
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) throw authError;
+
+        const { error: insertError } = await supabase
+          .from("search_history")
+          .insert({
+            user_id: user?.id ?? null,
+            search_query: query,
+            results_count: searchMatchData.hasExactMatch
+              ? searchMatchData.exactProducts.length
+              : searchMatchData.relatedProducts.length,
+            has_results: (searchMatchData.hasExactMatch
+              ? searchMatchData.exactProducts.length
+              : searchMatchData.relatedProducts.length) > 0,
+            exact_match_found: searchMatchData.hasExactMatch,
+          });
+
+        if (insertError) throw insertError;
+      } catch (err) {
+        // Search should still work even if analytics cannot be saved.
+        console.error("Search history save failed:", err);
+      }
+    },
+    [supabase, searchMatchData]
+  );
+
+  /* =======================================================
+     SUBMIT SEARCH
+     Search works immediately while typing. Submitting also clears old
+     filters so they cannot hide matching products.
+  ======================================================= */
+  const submitSearch = useCallback((rawQuery: string) => {
+    const query = rawQuery.trim().replace(/\s+/g, " ");
+    setSearch(query);
+    setSelectedCategory("all");
+    setMinPrice("");
+    setMaxPrice("");
+    setRatingFilter("0");
+    setDiscountFilter("0");
+    setStockOnly(false);
+    setSelectedBrands([]);
+    setSort("featured");
+    if (query.length >= 2) void recordSearch(query);
+  }, [recordSearch]);
+
+  /* =======================================================
      FLASH / RECENT / RECOMMENDED
   ======================================================= */
 
@@ -2164,18 +2223,36 @@ export default function ProductsPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitSearch(search);
+                  }
+                }}
                 placeholder="Search products, brands, categories..."
-                className="h-10 w-full rounded-xl border border-[#e9e0d2] bg-[#fffdf9] pl-10 pr-10 text-xs font-medium text-[#4b3d2d] outline-none transition placeholder:text-[#aaa092] focus:border-[#cdb47f] focus:ring-4 focus:ring-[#b9975b]/10"
+                className="h-10 w-full rounded-xl border border-[#e9e0d2] bg-[#fffdf9] pl-10 pr-20 text-xs font-medium text-[#4b3d2d] outline-none transition placeholder:text-[#aaa092] focus:border-[#cdb47f] focus:ring-4 focus:ring-[#b9975b]/10"
               />
 
-              {search && (
+              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setSearch("")}
+                    className="flex h-8 w-7 items-center justify-center text-[#a09584] hover:text-[#665845]"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
                 <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a09584] hover:text-[#665845]"
+                  type="button"
+                  aria-label="Search products"
+                  onClick={() => submitSearch(search)}
+                  className="flex h-8 items-center justify-center rounded-lg bg-[#b9975b] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#9f7b43]"
                 >
-                  <X size={15} />
+                  Search
                 </button>
-              )}
+              </div>
             </div>
 
             {/* HEADER ACTIONS */}
@@ -2298,9 +2375,22 @@ export default function ProductsPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitSearch(search);
+                  }
+                }}
                 placeholder="Search products..."
-                className="h-11 w-full rounded-xl border border-[#e7ded0] bg-white pl-10 pr-4 text-xs outline-none focus:border-[#b9975b]"
+                className="h-11 w-full rounded-xl border border-[#e7ded0] bg-white pl-10 pr-20 text-xs outline-none focus:border-[#b9975b]"
               />
+              <button
+                type="button"
+                onClick={() => submitSearch(search)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-[#b9975b] px-3 py-2 text-[10px] font-extrabold text-white"
+              >
+                Search
+              </button>
             </div>
           </div>
 
@@ -3071,4 +3161,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
