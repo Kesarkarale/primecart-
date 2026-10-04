@@ -2297,16 +2297,7 @@ export default function ProductsPage() {
       <div className="min-h-screen">
         {/* HEADER */}
         <header className="sticky top-0 z-50 border-b border-[#ebe3d7] bg-[#fffdf9]/95 backdrop-blur-xl">
-          {/* STORE ANNOUNCEMENT BAR — REAL MARKETPLACE FEEL */}
-          <div className="bg-[#3e3021] px-3 py-2 text-center text-[9px] font-bold tracking-[0.04em] text-[#fff9ed] sm:text-[10px]">
-            <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-              <Sparkles size={11} className="text-[#e8c987]" />
-              <span>THE PRIME CART EDIT</span>
-              <span className="hidden text-[#bda77e] sm:inline">•</span>
-              <span className="font-medium text-[#f0dfbd]">Discover everyday essentials, thoughtfully picked.</span>
-            </span>
-          </div>
-          <div className="flex h-[68px] items-center gap-3 px-3 sm:px-6 lg:px-8">
+          <div className="flex h-[72px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             {/* PRIME CART BRAND — YOUR EXISTING LOGO */}
             <Link
               href="/dashboard"
@@ -2407,52 +2398,10 @@ export default function ProductsPage() {
               </Link>
             </div>
           </div>
-
-          {/* CATEGORY QUICK NAV — CONNECTS SHOPPERS TO REAL CATALOGUE FILTERS */}
-          <nav aria-label="Shop categories" className="border-t border-[#f0e8dc] px-3 sm:px-6 lg:px-8">
-            <div className="mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <button
-                type="button"
-                onClick={() => { setSelectedCategory("all"); document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth" }); }}
-                className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-extrabold transition ${selectedCategory === "all" ? "bg-[#f2e4c9] text-[#8c642a]" : "text-[#796b58] hover:bg-[#f8f2e8] hover:text-[#8c642a]"}`}
-              >All Products</button>
-              {categories.slice(0, 10).map((category) => (
-                <button
-                  type="button"
-                  key={category.id}
-                  onClick={() => { setSelectedCategory(category.id); document.getElementById("all-products")?.scrollIntoView({ behavior: "smooth" }); }}
-                  className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold transition ${selectedCategory === category.id ? "bg-[#f2e4c9] text-[#8c642a]" : "text-[#796b58] hover:bg-[#f8f2e8] hover:text-[#8c642a]"}`}
-                >{category.name}</button>
-              ))}
-              <Link href="/dashboard/prime-match" className="ml-auto hidden shrink-0 items-center gap-1 rounded-full border border-[#e7d7b8] px-3 py-2 text-[10px] font-extrabold text-[#9a7135] transition hover:bg-[#fbf4e7] md:inline-flex">
-                <Sparkles size={12} /> Find my match <ArrowRight size={12} />
-              </Link>
-            </div>
-          </nav>
         </header>
 
         {/* CONTENT */}
-        <main className="mx-auto max-w-[1600px] px-3 pb-16 pt-4 sm:px-6 sm:pt-5 lg:px-8">
-          {/* TRUST STRIP — QUICK SHOPPING CONFIDENCE CUES */}
-          <section aria-label="Shopping benefits" className="mb-5 grid grid-cols-2 gap-2 rounded-2xl border border-[#eee5d8] bg-white p-3 shadow-[0_4px_18px_rgba(73,53,26,0.025)] sm:grid-cols-4 sm:gap-3 sm:px-5">
-            <div className="flex items-center gap-2.5 px-1 py-1.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efdf] text-[#98713a]"><Package size={17} /></span>
-              <span><strong className="block text-[10px] font-extrabold text-[#4b3d2d] sm:text-[11px]">Easy shopping</strong><span className="mt-0.5 block text-[9px] text-[#9b8e7d]">Explore in one place</span></span>
-            </div>
-            <div className="flex items-center gap-2.5 px-1 py-1.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efdf] text-[#98713a]"><ShoppingBag size={17} /></span>
-              <span><strong className="block text-[10px] font-extrabold text-[#4b3d2d] sm:text-[11px]">Curated choices</strong><span className="mt-0.5 block text-[9px] text-[#9b8e7d]">Products for every day</span></span>
-            </div>
-            <div className="flex items-center gap-2.5 px-1 py-1.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efdf] text-[#98713a]"><Heart size={17} /></span>
-              <span><strong className="block text-[10px] font-extrabold text-[#4b3d2d] sm:text-[11px]">Save your favourites</strong><span className="mt-0.5 block text-[9px] text-[#9b8e7d]">Your wishlist, your way</span></span>
-            </div>
-            <div className="flex items-center gap-2.5 px-1 py-1.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efdf] text-[#98713a]"><GitCompare size={17} /></span>
-              <span><strong className="block text-[10px] font-extrabold text-[#4b3d2d] sm:text-[11px]">Shop smarter</strong><span className="mt-0.5 block text-[9px] text-[#9b8e7d]">Compare before you buy</span></span>
-            </div>
-          </section>
-
+        <main className="px-4 pb-16 pt-5 sm:px-6 lg:px-8">
           {/* BREADCRUMB */}
           <div className="mb-5 flex items-center gap-2 text-[10px] font-bold text-[#a19584]">
             <Link
@@ -2467,12 +2416,6 @@ export default function ProductsPage() {
             <span className="text-[#756754]">Products</span>
           </div>
 
-          {/* STORE INTRO — EDITORIAL E-COMMERCE HIERARCHY */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-0.5">
-            <p className="text-[10px] font-semibold text-[#938572]">Everyday discoveries, made a little more special.</p>
-            <div className="hidden items-center gap-3 text-[9px] font-bold text-[#938572] sm:flex"><span className="inline-flex items-center gap-1"><Check size={11} className="text-[#a27b3e]" /> Carefully selected</span><span className="h-3 w-px bg-[#e3d7c5]" /><span className="inline-flex items-center gap-1"><Zap size={11} className="text-[#a27b3e]" /> Smart deals</span></div>
-          </div>
-
           {/* HERO */}
           <motion.section
             initial={{ opacity: 0, y: 18 }}
@@ -2483,8 +2426,7 @@ export default function ProductsPage() {
             <motion.div aria-hidden="true" animate={{ x: [0, 12, 0], y: [0, 10, 0], scale: [1, 1.06, 1] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#e2ca98]/25 blur-3xl" />
             <motion.div aria-hidden="true" animate={{ x: [0, -10, 0], y: [0, -8, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-[#f0ddba]/35 blur-3xl" />
 
-            <div className="relative grid items-center gap-7 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
-              <div className="max-w-2xl">
+            <div className="relative max-w-2xl">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#e1cda6] bg-white/70 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#9b702e] backdrop-blur">
                 <Sparkles size={11} />
                 PrimeCart Collection
@@ -2528,40 +2470,6 @@ export default function ProductsPage() {
                   View Flash Deals
                 </button>
               </div>
-              </div>
-
-              {/* HERO PRODUCT SPOTLIGHT — USES A REAL PRODUCT FROM SUPABASE DATA */}
-              {flashProducts[0] && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96, x: 12 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ duration: 0.65, delay: 0.12, ease: "easeOut" }}
-                  className="relative mx-auto hidden w-full max-w-[410px] lg:block"
-                >
-                  <div className="absolute inset-5 rounded-[2rem] bg-[#e7d2a7]/45 blur-2xl" />
-                  <div className="relative overflow-hidden rounded-[1.7rem] border border-white/80 bg-white/85 p-4 shadow-[0_24px_65px_rgba(79,56,25,0.12)] backdrop-blur">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f6ecd9] px-2.5 py-1.5 text-[9px] font-extrabold text-[#936a2f]"><Sparkles size={11} /> TODAY&apos;S PICK</span>
-                      <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#b1a28d]">PrimeCart Edit</span>
-                    </div>
-                    <button type="button" onClick={() => openQuickView(flashProducts[0])} className="group block w-full text-left">
-                      <div className="relative mx-auto aspect-[1.35] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#faf5eb] to-[#f1e4cc]">
-                        <ProductImage src={flashProducts[0].image_url} alt={flashProducts[0].name} imageClassName="p-5 transition-transform duration-700 group-hover:scale-105" />
-                        <span className="absolute left-3 top-3 rounded-full bg-[#3e3021] px-2.5 py-1.5 text-[9px] font-black text-white">{getDiscount(flashProducts[0])}% OFF</span>
-                      </div>
-                      <div className="flex items-end justify-between gap-3 px-1 pt-4">
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#ad9876]">{flashProducts[0].brand || "Featured find"}</p>
-                          <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5 text-[#403426] transition-colors group-hover:text-[#a17431]">{flashProducts[0].name}</h3>
-                          <div className="mt-2 flex items-center gap-1 text-[10px] text-[#9b8a72]"><Star size={12} fill="#c5a15e" className="text-[#c5a15e]" /><span className="font-bold text-[#665641]">{Number(flashProducts[0].rating || 0).toFixed(1)}</span><span>·</span><span>{Number(flashProducts[0].reviews_count || 0).toLocaleString("en-IN")} reviews</span></div>
-                        </div>
-                        <div className="shrink-0 text-right"><p className="text-lg font-black text-[#9a702e]">{formatPrice(flashProducts[0].price)}</p>{flashProducts[0].original_price && Number(flashProducts[0].original_price) > Number(flashProducts[0].price) && <p className="text-[10px] text-[#aa9d8a] line-through">{formatPrice(flashProducts[0].original_price)}</p>}</div>
-                      </div>
-                    </button>
-                    <button type="button" onClick={() => addToCart(flashProducts[0])} disabled={addingProductId === flashProducts[0].id || Number(flashProducts[0].stock || 0) <= 0} className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c5a05c] to-[#a87e3e] text-[11px] font-extrabold text-white shadow-[0_8px_22px_rgba(168,126,62,0.22)] transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"><ShoppingCart size={15} /> Add featured pick to cart <ArrowRight size={14} /></button>
-                  </div>
-                </motion.div>
-              )}
             </div>
           </motion.section>
 
@@ -2689,7 +2597,7 @@ export default function ProductsPage() {
             transition={{ duration: 0.4, delay: 0.08 }}
             className="mt-8 scroll-mt-24"
           >
-            <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#eee5d8] bg-white p-4 shadow-[0_5px_20px_rgba(73,53,26,0.025)] sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-[-0.02em] text-[#443729]">
                   All Products
@@ -2784,9 +2692,9 @@ export default function ProductsPage() {
             </div>
 
             {/* DESKTOP SHOP AREA */}
-            <div className="grid gap-5 lg:grid-cols-[238px_minmax(0,1fr)] xl:gap-6">
+            <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
               {/* FILTER SIDEBAR */}
-              <aside className="hidden self-start rounded-2xl border border-[#ebe3d7] bg-white p-4 shadow-[0_5px_22px_rgba(73,53,26,0.025)] lg:sticky lg:top-[156px] lg:block">
+              <aside className="hidden rounded-2xl border border-[#ebe3d7] bg-white p-4 lg:block">
                 <div className="mb-5 flex items-center justify-between border-b border-[#eee5d8] pb-4">
                   <div className="flex items-center gap-2">
                     <SlidersHorizontal
@@ -3380,6 +3288,7 @@ export default function ProductsPage() {
           width: 7px;
           height: 7px;
         }
+        
 
         ::-webkit-scrollbar-track {
           background: #f8f4ec;
