@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -813,7 +814,14 @@ function ProductCard({
   const outOfStock = Number(product.stock ?? 0) <= 0;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-[#ece3d4] bg-white shadow-[0_8px_28px_rgba(73,52,23,0.045)] transition-all duration-300 hover:-translate-y-1 hover:border-[#dfcda9] hover:shadow-[0_18px_45px_rgba(73,52,23,0.10)]">
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 22, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileHover={{ y: -5 }}
+      transition={{ duration: 0.32, ease: "easeOut" }}
+      className="group relative overflow-hidden rounded-2xl border border-[#ece3d4] bg-white shadow-[0_8px_28px_rgba(73,52,23,0.045)] transition-[border-color,box-shadow] duration-300 hover:border-[#dfcda9] hover:shadow-[0_18px_45px_rgba(73,52,23,0.10)]"
+    >
       {/* IMAGE */}
       <div className="relative aspect-square overflow-hidden bg-[#faf7f0]">
         <ProductImage
@@ -983,7 +991,7 @@ function ProductCard({
           </button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -2248,7 +2256,7 @@ export default function ProductsPage() {
                   type="button"
                   aria-label="Search products"
                   onClick={() => submitSearch(search)}
-                  className="flex h-8 items-center justify-center rounded-lg bg-[#b9975b] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#9f7b43]"
+                  className="flex h-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-2.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
                 >
                   Search
                 </button>
@@ -2313,9 +2321,14 @@ export default function ProductsPage() {
           </div>
 
           {/* HERO */}
-          <section className="relative overflow-hidden rounded-3xl border border-[#e9dfcf] bg-gradient-to-br from-[#fffdf9] via-[#fffaf0] to-[#f8efdf] p-6 shadow-[0_10px_35px_rgba(76,54,23,0.04)] sm:p-8 lg:p-10">
-            <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#e2ca98]/20 blur-3xl" />
-            <div className="absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-[#f0ddba]/30 blur-3xl" />
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            className="relative isolate overflow-hidden rounded-3xl border border-[#e9dfcf] bg-gradient-to-br from-[#fffdf9] via-[#fffaf0] to-[#f8efdf] p-6 shadow-[0_16px_45px_rgba(76,54,23,0.07)] sm:p-8 lg:p-10"
+          >
+            <motion.div aria-hidden="true" animate={{ x: [0, 12, 0], y: [0, 10, 0], scale: [1, 1.06, 1] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[#e2ca98]/25 blur-3xl" />
+            <motion.div aria-hidden="true" animate={{ x: [0, -10, 0], y: [0, -8, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-[#f0ddba]/35 blur-3xl" />
 
             <div className="relative max-w-2xl">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#e1cda6] bg-white/70 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#9b702e] backdrop-blur">
@@ -2362,7 +2375,7 @@ export default function ProductsPage() {
                 </button>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* MOBILE SEARCH */}
           <div className="mt-4 lg:hidden">
@@ -2387,7 +2400,7 @@ export default function ProductsPage() {
               <button
                 type="button"
                 onClick={() => submitSearch(search)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-[#b9975b] px-3 py-2 text-[10px] font-extrabold text-white"
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-3 py-2 text-[10px] font-extrabold text-white shadow-sm transition hover:shadow-md active:scale-[0.98]"
               >
                 Search
               </button>
@@ -2396,7 +2409,7 @@ export default function ProductsPage() {
 
           {/* FLASH DEALS */}
           {flashProducts.length > 0 && (
-            <section id="flash-deals" className="mt-7">
+            <motion.section id="flash-deals" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.12 }} className="mt-7">
               <div className="mb-4 flex items-end justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -2432,11 +2445,15 @@ export default function ProductsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {flashProducts.map((product) => (
-                  <button
+                {flashProducts.map((product, index) => (
+                  <motion.button
                     key={product.id}
                     onClick={() => openQuickView(product)}
-                    className="group relative overflow-hidden rounded-2xl border border-[#eadfce] bg-white text-left transition hover:-translate-y-1 hover:border-[#d8c29a] hover:shadow-[0_15px_35px_rgba(72,51,23,0.08)]"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.06 }}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    className="group relative overflow-hidden rounded-2xl border border-[#eadfce] bg-white text-left shadow-[0_7px_22px_rgba(72,51,23,0.035)] transition-[border-color,box-shadow] hover:border-[#d8c29a] hover:shadow-[0_15px_35px_rgba(72,51,23,0.08)]"
                   >
                     <div className="relative aspect-[1.15] overflow-hidden bg-[#faf7f0]">
                       <ProductImage
@@ -2467,15 +2484,18 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </section>
+            </motion.section>
           )}
 
           {/* TOOLBAR */}
-          <section
+          <motion.section
             id="all-products"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.08 }}
             className="mt-8 scroll-mt-24"
           >
             <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -2758,7 +2778,8 @@ export default function ProductsPage() {
                     </button>
                   </div>
                 ) : viewMode === "grid" ? (
-                  <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                  <motion.div layout className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                    <AnimatePresence mode="popLayout">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -2774,7 +2795,8 @@ export default function ProductsPage() {
                         showToast={showToast}
                       />
                     ))}
-                  </div>
+                    </AnimatePresence>
+                  </motion.div>
                 ) : (
                   <div className="space-y-3">
                     {filteredProducts.map((product) => {
@@ -2920,7 +2942,7 @@ export default function ProductsPage() {
                 )}
               </div>
             </div>
-          </section>
+          </motion.section>
 
           {/* RECOMMENDED */}
           {!loading && recommendedProducts.length > 0 && (
