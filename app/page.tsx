@@ -350,7 +350,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/auth/login"
+              href="/dashboard/products"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Shop
@@ -421,14 +421,14 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/auth/login"
+              href="/dashboard/products?sort=deals"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Deals
             </Link>
 
             <Link
-              href="/auth/login"
+              href="#contact"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Contact
@@ -490,9 +490,20 @@ export default function HomePage() {
                     ))
                   ) : (
                     <div className="p-4 text-center text-sm text-gray-500">
-                      No matching category found.
+                      No matching category found. Search all products below.
                     </div>
                   )}
+                  <Link
+                    href={`/dashboard/products?search=${encodeURIComponent(search.trim())}`}
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setSearch("");
+                    }}
+                    className="mt-1 flex items-center justify-between rounded-xl bg-[#fffaf0] px-3 py-3 text-sm font-semibold text-[#8f6b12] transition hover:bg-[#f8efd9]"
+                  >
+                    <span>Search all products for “{search.trim()}”</span>
+                    <ArrowRight size={16} />
+                  </Link>
                 </div>
               )}
             </div>
@@ -619,9 +630,20 @@ export default function HomePage() {
                   ))
                 ) : (
                   <p className="p-3 text-center text-sm text-gray-500">
-                    No category found.
+                    No matching category found. Search all products below.
                   </p>
                 )}
+                <Link
+                  href={`/dashboard/products?search=${encodeURIComponent(search.trim())}`}
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearch("");
+                  }}
+                  className="mt-1 flex items-center justify-between rounded-xl bg-[#fffaf0] px-3 py-3 text-sm font-semibold text-[#8f6b12]"
+                >
+                  <span>Search all products for “{search.trim()}”</span>
+                  <ArrowRight size={16} />
+                </Link>
               </div>
             )}
           </div>
@@ -634,13 +656,13 @@ export default function HomePage() {
             <div className="grid gap-1.5">
               {[
                 ["Home", "/"],
-                ["Shop", "/auth/login"],
+                ["Shop", "/dashboard/products"],
                 [
                   "Categories",
-                  "/auth/login",
+                  "/dashboard/categories/electronics",
                 ],
-                ["Deals", "/auth/login"],
-                ["Contact", "/auth/login"],
+                ["Deals", "/dashboard/products?sort=deals"],
+                ["Contact", "#contact"],
               ].map(([label, href]) => (
                 <Link
                   key={label}
@@ -819,7 +841,7 @@ lg:min-h-[540px]
           "
         >
           <Link
-            href="/auth/login"
+            href="/dashboard/products"
             className="
               inline-flex
               h-9
@@ -864,7 +886,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/auth/login"
+            href="/dashboard/products?sort=deals"
             className="
               inline-flex
               h-9
@@ -1378,7 +1400,7 @@ lg:min-h-[540px]
             </div>
 
             <Link
-              href="/auth/login"
+              href="/dashboard/categories/electronics"
               className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
             >
               View all categories
@@ -1637,7 +1659,7 @@ lg:min-h-[540px]
           COMPACT MOBILE FOOTER
       ========================================================= */}
 
-      <footer className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
+      <footer id="contact" className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
 
         <div className="mx-auto max-w-7xl">
 
@@ -1978,7 +2000,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/dashboard/categories/electronics"
+            href="/dashboard/products"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Search size={18} />
