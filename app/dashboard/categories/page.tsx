@@ -1,9 +1,20 @@
 
 "use client";
 
-// -------------------- CATEGORY PAGE STYLES --------------------
-// सर्व visual styles categories.css मधून येतात.
-import "./categories.css";
+// ============================================================
+// PRIME CART — CATEGORY PAGE
+// File: app/dashboard/categories/page.tsx
+//
+// हा page काय करतो?
+// 1. Supabase मधून active products आणतो.
+// 2. प्रत्येक category साठी product statistics मोजतो.
+// 3. Search, filters आणि sorting देतो.
+// 4. Category cards, trending categories आणि recommendations दाखवतो.
+// 5. Wishlist browser localStorage मध्ये save करतो.
+// 6. पूर्ण category card clickable ठेवतो.
+// 7. Quick Preview modal दाखवतो.
+// 8. Desktop आणि mobile साठी responsive layout देतो.
+// ============================================================
 
 // -------------------- IMPORTS --------------------
 
@@ -826,22 +837,22 @@ export default function CategoriesPage() {
   // ============================================================
 
   return (
-    <main className="pcStyle1">
+    <main className="min-h-screen bg-[#fffdf9] text-[#29251d]">
 
       {/* -------------------- TOP PROMISE STRIP -------------------- */}
-      <div className="pcStyle2">
-        <div className="pcStyle3">
-          <span className="pcStyle4">
+      <div className="border-b border-[#eadfc9] bg-[#fff9ec]">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-center gap-4 px-5 py-2 text-[10px] font-bold text-[#88724a] sm:gap-8 sm:text-xs">
+          <span className="flex items-center gap-1.5">
             <CheckCircle2 size={13} />
             Secure Shopping
           </span>
-          <span className="pcStyle5">•</span>
-          <span className="pcStyle4">
+          <span className="hidden sm:block">•</span>
+          <span className="flex items-center gap-1.5">
             <Zap size={13} />
             Exclusive Deals
           </span>
-          <span className="pcStyle5">•</span>
-          <span className="pcStyle4">
+          <span className="hidden sm:block">•</span>
+          <span className="flex items-center gap-1.5">
             <Package size={13} />
             Easy Returns
           </span>
@@ -849,55 +860,55 @@ export default function CategoriesPage() {
       </div>
 
       {/* -------------------- STICKY HEADER -------------------- */}
-      <header className="pcStyle6">
-        <div className="pcStyle7">
+      <header className="sticky top-0 z-50 border-b border-[#eadfc9]/80 bg-[#fffdf9]/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-10">
 
           {/* Logo and dashboard navigation. */}
-          <Link href="/dashboard" className="pcStyle8">
-            <div className="pcStyle9">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-[#fff5d9] ring-1 ring-[#c79a3b]/20">
               <img
                 src="/logo.png"
                 alt="PrimeCart"
-                className="pcStyle10"
+                className="h-full w-full object-contain"
               />
             </div>
             <div>
-              <div className="pcStyle11">
-                Prime<span className="pcStyle12">Cart</span>
+              <div className="text-xl font-black tracking-tight">
+                Prime<span className="text-[#b8872d]">Cart</span>
               </div>
-              <div className="pcStyle13">
+              <div className="hidden text-[9px] font-bold uppercase tracking-[0.2em] text-[#a59880] sm:block">
                 Shop Smarter
               </div>
             </div>
           </Link>
 
           {/* Desktop navigation. */}
-          <nav className="pcStyle14">
+          <nav className="hidden items-center gap-1 md:flex">
             <Link
               href="/dashboard"
-              className="pcStyle15"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8]"
             >
               Dashboard
             </Link>
             <Link
               href="/dashboard/products"
-              className="pcStyle15"
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#766c5b] hover:bg-[#fff8e8]"
             >
               Products
             </Link>
             <Link
               href="/dashboard/categories"
-              className="pcStyle16"
+              className="rounded-xl bg-[#fff0c9] px-4 py-2.5 text-sm font-bold text-[#916b1e]"
             >
               Categories
             </Link>
           </nav>
 
           {/* Shop products and mobile filter button. */}
-          <div className="pcStyle17">
+          <div className="flex items-center gap-2">
             <Link
               href="/dashboard/products"
-              className="pcStyle18"
+              className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 sm:flex"
             >
               Shop Products
               <ArrowRight size={15} />
@@ -907,7 +918,7 @@ export default function CategoriesPage() {
               type="button"
               aria-label="Open category filters"
               onClick={() => setShowMobileFilters(true)}
-              className="pcStyle19"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white text-[#766c5b] md:hidden"
             >
               <Menu size={19} />
             </button>
@@ -916,15 +927,15 @@ export default function CategoriesPage() {
       </header>
 
       {/* -------------------- PAGE CONTENT CONTAINER -------------------- */}
-      <div className="pcStyle20">
+      <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
 
         {/* -------------------- BREADCRUMB -------------------- */}
-        <div className="pcStyle21">
-          <Link href="/dashboard" className="pcStyle22">
+        <div className="mb-7 flex items-center gap-2 text-sm text-[#9c927f]">
+          <Link href="/dashboard" className="hover:text-[#a47720]">
             Dashboard
           </Link>
           <span>›</span>
-          <span className="pcStyle23">Categories</span>
+          <span className="font-bold text-[#50483a]">Categories</span>
         </div>
 
         {/* -------------------- HERO SECTION -------------------- */}
@@ -932,38 +943,38 @@ export default function CategoriesPage() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="pcStyle24"
+          className="relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] via-[#fffaf0] to-[#f8efd9] px-6 py-9 shadow-[0_20px_65px_rgba(120,90,30,0.07)] sm:px-9 lg:px-12 lg:py-12"
         >
-          <div className="pcStyle25" />
+          <div className="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-[#c79a3b]/10 blur-3xl" />
 
-          <div className="pcStyle26">
+          <div className="relative grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
             <div>
-              <div className="pcStyle27">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#c79a3b]/20 bg-white/75 px-4 py-2 text-[10px] font-black uppercase tracking-[0.17em] text-[#9a741e]">
                 <Sparkles size={13} />
                 Smart Shopping
               </div>
 
-              <h1 className="pcStyle28">
+              <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-[-0.045em] sm:text-4xl lg:text-6xl">
                 Find what you need,
-                <span className="pcStyle12"> faster.</span>
+                <span className="text-[#b8872d]"> faster.</span>
               </h1>
 
-              <p className="pcStyle29">
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#7f7461] sm:text-base">
                 Explore PrimeCart categories, discover trending products,
                 compare deals and find the right products for your needs.
               </p>
 
-              <div className="pcStyle30">
+              <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard/primematch"
-                  className="pcStyle31"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-sm"
                 >
                   <Sparkles size={16} />
                   Try PrimeMatch
                 </Link>
                 <Link
                   href="/dashboard/products"
-                  className="pcStyle32"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#dfcfac] bg-white/80 px-5 py-3 text-sm font-bold text-[#816222]"
                 >
                   Browse Products
                   <ArrowRight size={16} />
@@ -972,7 +983,7 @@ export default function CategoriesPage() {
             </div>
 
             {/* Overall statistics from loaded products. */}
-            <div className="pcStyle33">
+            <div className="grid grid-cols-2 gap-3">
               <HeroStat
                 icon={<Layers3 size={18} />}
                 value={String(categories.length)}
@@ -998,13 +1009,13 @@ export default function CategoriesPage() {
         </motion.section>
 
         {/* -------------------- SHOP BY INTENT -------------------- */}
-        <section className="pcStyle34">
+        <section className="mt-10">
           <SectionHeading
             eyebrow="Shop by intent"
             title="What are you shopping for?"
             description="Start with a goal instead of searching through everything."
           />
-          <div className="pcStyle35">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <IntentCard
               icon={<Gamepad2 size={22} />}
               title="Build a Gaming Setup"
@@ -1033,7 +1044,7 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- TRENDING CATEGORIES -------------------- */}
-        <section className="pcStyle36">
+        <section className="mt-11">
           <SectionHeading
             eyebrow="Trending"
             title="Popular categories"
@@ -1045,7 +1056,7 @@ export default function CategoriesPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="pcStyle37"
+            className="grid grid-cols-2 gap-3 md:grid-cols-4"
           >
             {trending.map((category) => {
               const stat = stats[category.slug];
@@ -1058,41 +1069,41 @@ export default function CategoriesPage() {
                   <Link
                     href={`/dashboard/categories/${category.slug}`}
                     onClick={() => openCategory(category)}
-                    className="pcStyle38"
+                    className="group block h-full"
                   >
-                    <div className="pcStyle39">
-                      <div className="pcStyle40">
+                    <div className="h-full overflow-hidden rounded-2xl border border-[#eadfc9] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40">
+                      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc] sm:h-36">
                         <img
                           src={category.image}
                           alt={category.name}
-                          className="pcStyle41"
+                          className="h-full w-full object-contain p-5 transition group-hover:scale-105"
                           onError={(event) => {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = "/logo.png";
                           }}
                         />
                         {stat?.flashDeals > 0 && (
-                          <span className="pcStyle42">
+                          <span className="absolute left-3 top-3 rounded-full bg-[#c79a3b] px-2.5 py-1 text-[9px] font-black text-white">
                             ⚡ Deals
                           </span>
                         )}
                       </div>
 
-                      <div className="pcStyle43">
-                        <div className="pcStyle44">
-                          <h3 className="pcStyle45">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="truncate text-sm font-black">
                             {category.name}
                           </h3>
                           <ArrowRight size={14} />
                         </div>
 
-                        <div className="pcStyle46">
+                        <div className="mt-2 text-[11px] text-[#958a78]">
                           {stat?.total ?? 0} active products
                         </div>
 
                         {stat?.averageRating > 0 && (
-                          <div className="pcStyle47">
-                            <Star size={11} className="pcStyle48" />
+                          <div className="mt-2 flex items-center gap-1 text-xs font-bold text-[#806b43]">
+                            <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
                             {stat.averageRating.toFixed(1)}
                           </div>
                         )}
@@ -1106,27 +1117,27 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- SEARCH, FILTER AND SORT -------------------- */}
-        <section className="pcStyle36">
-          <div className="pcStyle49">
-            <div className="pcStyle50">
+        <section className="mt-11">
+          <div className="rounded-2xl border border-[#eadfc9] bg-white p-3 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row">
               {/* Category search input. */}
-              <div className="pcStyle51">
+              <div className="relative flex-1">
                 <Search
                   size={18}
-                  className="pcStyle52"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a79b85]"
                 />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search categories or shopping needs..."
-                  className="pcStyle53"
+                  className="h-12 w-full rounded-xl border border-[#eadfc9] bg-[#fffdf9] pl-11 pr-11 text-sm outline-none focus:border-[#c79a3b]"
                 />
                 {search && (
                   <button
                     type="button"
                     aria-label="Clear search"
                     onClick={() => setSearch("")}
-                    className="pcStyle54"
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg"
                   >
                     <X size={16} />
                   </button>
@@ -1134,7 +1145,7 @@ export default function CategoriesPage() {
               </div>
 
               {/* Desktop filter buttons. */}
-              <div className="pcStyle55">
+              <div className="hidden items-center gap-1 lg:flex">
                 {["All", "Deals", "Top Rated", "In Stock"].map((item) => (
                   <FilterButton
                     key={item}
@@ -1150,7 +1161,7 @@ export default function CategoriesPage() {
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="pcStyle56"
+                className="h-12 rounded-xl border border-[#eadfc9] bg-[#fffdf9] px-4 text-sm font-bold text-[#746957] outline-none"
               >
                 <option value="recommended">Recommended</option>
                 <option value="products">Most Products</option>
@@ -1165,13 +1176,13 @@ export default function CategoriesPage() {
 
         {/* -------------------- RECENTLY VIEWED CATEGORIES -------------------- */}
         {recentlyViewed.length > 0 && (
-          <section className="pcStyle36">
+          <section className="mt-11">
             <SectionHeading
               eyebrow="Continue exploring"
               title="Recently viewed"
               description="Pick up where you left off."
             />
-            <div className="pcStyle57">
+            <div className="flex gap-4 overflow-x-auto pb-2">
               {recentlyViewed.map((category) => (
                 <MiniCategory
                   key={category.slug}
@@ -1185,15 +1196,15 @@ export default function CategoriesPage() {
         )}
 
         {/* -------------------- ALL CATEGORY CARDS -------------------- */}
-        <section className="pcStyle36">
-          <div className="pcStyle58">
-            <div className="pcStyle59">
+        <section className="mt-11">
+          <div className="mb-6">
+            <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
               All Categories
             </div>
-            <h2 className="pcStyle60">
+            <h2 className="text-2xl font-black sm:text-3xl">
               Explore everything
             </h2>
-            <p className="pcStyle61">
+            <p className="mt-1 text-sm text-[#8d8372]">
               {filteredCategories.length} categories available
             </p>
           </div>
@@ -1213,13 +1224,13 @@ export default function CategoriesPage() {
               variants={stagger}
               initial="hidden"
               animate="visible"
-              className="pcStyle62"
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               {filteredCategories.map((category) => (
                 <motion.div
                   key={category.slug}
                   variants={cardVariants}
-                  className="pcStyle63"
+                  className="h-full"
                 >
                   <CategoryCard
                     category={category}
@@ -1239,31 +1250,31 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- RECOMMENDED CATEGORIES -------------------- */}
-        <section className="pcStyle64">
-          <div className="pcStyle65">
-            <div className="pcStyle66">
+        <section className="mt-12">
+          <div className="rounded-[30px] border border-[#eadfc9] bg-gradient-to-br from-[#fffaf0] to-[#f8efd9] p-6 sm:p-8">
+            <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
               <div>
-                <div className="pcStyle67">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
                   <Sparkles size={14} />
                   PrimeCart Picks
                 </div>
-                <h2 className="pcStyle68">
+                <h2 className="mt-2 text-2xl font-black sm:text-3xl">
                   Categories worth exploring
                 </h2>
-                <p className="pcStyle69">
+                <p className="mt-1 text-sm text-[#887d6a]">
                   A mix of ratings, products and active deals.
                 </p>
               </div>
               <Link
                 href="/dashboard/primematch"
-                className="pcStyle70"
+                className="inline-flex items-center gap-2 self-start rounded-xl border border-[#d9c79e] bg-white px-4 py-2.5 text-sm font-bold text-[#866521]"
               >
                 Personalize with PrimeMatch
                 <ArrowRight size={15} />
               </Link>
             </div>
 
-            <div className="pcStyle71">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {recommended.map((category) => (
                 <MiniCategory
                   key={category.slug}
@@ -1277,7 +1288,7 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- SMART TOOLS -------------------- */}
-        <section className="pcStyle72">
+        <section className="mt-12 grid gap-5 lg:grid-cols-3">
           <ToolCard
             icon={<Sparkles size={22} />}
             eyebrow="PrimeMatch"
@@ -1303,20 +1314,20 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- FINAL SHOPPING CTA -------------------- */}
-        <section className="pcStyle73">
-          <div className="pcStyle74">
+        <section className="mt-12 rounded-[30px] border border-[#eadfc9] bg-white px-6 py-9 text-center shadow-sm sm:px-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720]">
             <ShoppingBag size={25} />
           </div>
-          <h2 className="pcStyle75">
+          <h2 className="mt-5 text-2xl font-black sm:text-3xl">
             Ready to start shopping?
           </h2>
-          <p className="pcStyle76">
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#887d6b]">
             Explore the complete PrimeCart collection and discover products
             across every category.
           </p>
           <Link
             href="/dashboard/products"
-            className="pcStyle77"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-6 py-3 text-sm font-bold text-white"
           >
             View All Products
             <ArrowRight size={16} />
@@ -1326,35 +1337,35 @@ export default function CategoriesPage() {
 
       {/* -------------------- MOBILE FILTER DRAWER -------------------- */}
       {showMobileFilters && (
-        <div className="pcStyle78">
+        <div className="fixed inset-0 z-[100] lg:hidden">
           <button
             type="button"
             aria-label="Close category filters"
-            className="pcStyle79"
+            className="absolute inset-0 bg-[#5b4a2d]/25 backdrop-blur-sm"
             onClick={() => setShowMobileFilters(false)}
           />
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
-            className="pcStyle80"
+            className="absolute bottom-0 left-0 right-0 rounded-t-[28px] border-t border-[#eadfc9] bg-[#fffdf9] p-5 shadow-2xl"
           >
-            <div className="pcStyle81">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-                <h3 className="pcStyle82">Filter Categories</h3>
-                <p className="pcStyle83">
+                <h3 className="text-lg font-black">Filter Categories</h3>
+                <p className="text-xs text-[#958a78]">
                   Choose what you want to explore.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowMobileFilters(false)}
-                className="pcStyle84"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc9]"
               >
                 <X size={17} />
               </button>
             </div>
 
-            <div className="pcStyle85">
+            <div className="grid grid-cols-2 gap-2">
               {["All", "Deals", "Top Rated", "In Stock"].map((item) => (
                 <FilterButton
                   key={item}
@@ -1407,12 +1418,12 @@ function HeroStat({
   label: string;
 }) {
   return (
-    <div className="pcStyle86">
-      <div className="pcStyle87">
+    <div className="rounded-2xl border border-[#eadfc9] bg-white/80 p-4 shadow-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a47720]">
         {icon}
       </div>
-      <div className="pcStyle88">{value}</div>
-      <div className="pcStyle89">
+      <div className="mt-3 text-2xl font-black">{value}</div>
+      <div className="mt-0.5 text-xs font-semibold text-[#958a76]">
         {label}
       </div>
     </div>
@@ -1432,14 +1443,14 @@ function SectionHeading({
   description: string;
 }) {
   return (
-    <div className="pcStyle90">
-      <div className="pcStyle59">
+    <div className="mb-5">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
         {eyebrow}
       </div>
-      <h2 className="pcStyle91">
+      <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
         {title}
       </h2>
-      <p className="pcStyle61">{description}</p>
+      <p className="mt-1 text-sm text-[#8d8372]">{description}</p>
     </div>
   );
 }
@@ -1459,16 +1470,16 @@ function IntentCard({
   href: string;
 }) {
   return (
-    <Link href={href} className="pcStyle38">
-      <div className="pcStyle92">
-        <div className="pcStyle93">
-          <div className="pcStyle94">
+    <Link href={href} className="group block h-full">
+      <div className="h-full rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40">
+        <div className="flex items-center justify-between">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white">
             {icon}
           </div>
-          <ArrowRight size={16} className="pcStyle95" />
+          <ArrowRight size={16} className="text-[#b4a78f]" />
         </div>
-        <h3 className="pcStyle96">{title}</h3>
-        <p className="pcStyle97">{text}</p>
+        <h3 className="mt-5 font-black">{title}</h3>
+        <p className="mt-1 text-xs leading-5 text-[#8c816f]">{text}</p>
       </div>
     </Link>
   );
@@ -1542,14 +1553,14 @@ function CategoryCard({
           onExplore();
         }
       }}
-      className="pcStyle98"
+      className="group relative h-full cursor-pointer overflow-hidden rounded-[28px] border border-[#eadfc9] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c79a3b]/40 hover:shadow-[0_20px_50px_rgba(130,95,25,0.1)] focus:outline-none focus:ring-2 focus:ring-[#c79a3b]"
     >
       {/* CATEGORY IMAGE */}
-      <div className="pcStyle99">
+      <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#fffaf0] to-[#f7efdc]">
         <img
           src={category.image}
           alt={category.name}
-          className="pcStyle100"
+          className="h-full w-full object-contain p-7 transition duration-500 group-hover:scale-105"
           onError={(event) => {
             event.currentTarget.onerror = null;
             event.currentTarget.src = "/logo.png";
@@ -1557,7 +1568,7 @@ function CategoryCard({
         />
 
         {/* Category name badge. */}
-        <div className="pcStyle101">
+        <div className="absolute left-4 top-4 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black text-[#866521] shadow-sm">
           {category.name}
         </div>
 
@@ -1588,7 +1599,7 @@ function CategoryCard({
 
         {/* Live flash deal count. */}
         {stats.flashDeals > 0 && (
-          <div className="pcStyle102">
+          <div className="absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-[#c79a3b] px-3 py-1.5 text-[10px] font-black text-white shadow-sm">
             <Zap size={11} />
             {stats.flashDeals} Live Deals
           </div>
@@ -1596,21 +1607,21 @@ function CategoryCard({
       </div>
 
       {/* CATEGORY DESCRIPTION AND STATISTICS */}
-      <div className="pcStyle103">
-        <h3 className="pcStyle11">
+      <div className="p-5">
+        <h3 className="text-xl font-black tracking-tight">
           {category.name}
         </h3>
 
-        <p className="pcStyle104">
+        <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#887e6c]">
           {category.description}
         </p>
 
         {/* Minimum and maximum product prices. */}
-        <div className="pcStyle105">
-          <div className="pcStyle106">
+        <div className="mt-4 rounded-xl bg-[#fffaf0] px-3 py-2.5">
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a08f70]">
             Price range
           </div>
-          <div className="pcStyle107">
+          <div className="mt-1 font-black text-[#5c4a28]">
             {stats.minPrice
               ? `${money(stats.minPrice)} – ${money(stats.maxPrice)}`
               : "Explore products"}
@@ -1618,7 +1629,7 @@ function CategoryCard({
         </div>
 
         {/* Category product count, stock and rating. */}
-        <div className="pcStyle108">
+        <div className="mt-4 grid grid-cols-3 divide-x divide-[#eee6d6] rounded-xl border border-[#eee6d6] bg-[#fffdf9]">
           <SmallStat value={stats.total} label="Products" />
           <SmallStat value={stats.inStock} label="In Stock" />
           <SmallStat
@@ -1633,26 +1644,26 @@ function CategoryCard({
         </div>
 
         {/* Stock availability and average discount. */}
-        <div className="pcStyle109">
-          <div className="pcStyle110">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold">
             {stats.lowStock > 0 ? (
               <>
-                <span className="pcStyle111" />
-                <span className="pcStyle112">
+                <span className="h-2 w-2 rounded-full bg-[#d09b35]" />
+                <span className="text-[#a47720]">
                   Limited stock available
                 </span>
               </>
             ) : stats.inStock > 0 ? (
               <>
-                <span className="pcStyle113" />
-                <span className="pcStyle114">
+                <span className="h-2 w-2 rounded-full bg-[#8ba66b]" />
+                <span className="text-[#71855b]">
                   Products available
                 </span>
               </>
             ) : (
               <>
-                <span className="pcStyle115" />
-                <span className="pcStyle116">
+                <span className="h-2 w-2 rounded-full bg-[#b9afa0]" />
+                <span className="text-[#8d8375]">
                   Check availability
                 </span>
               </>
@@ -1660,7 +1671,7 @@ function CategoryCard({
           </div>
 
           {stats.discountPercentage > 0 && (
-            <span className="pcStyle117">
+            <span className="text-[11px] font-black text-[#b47a1d]">
               ~{Math.round(stats.discountPercentage)}% avg deal
             </span>
           )}
@@ -1668,16 +1679,16 @@ function CategoryCard({
 
         {/* Small product image previews. */}
         {stats.products.length > 0 && (
-          <div className="pcStyle118">
+          <div className="mt-5 flex items-center gap-2">
             {stats.products.slice(0, 3).map((product) => (
               <div
                 key={product.id}
-                className="pcStyle119"
+                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffaf0]"
               >
                 <img
                   src={getImage(product.image_url)}
                   alt={product.name}
-                  className="pcStyle120"
+                  className="h-full w-full object-contain p-1"
                   onError={(event) => {
                     event.currentTarget.onerror = null;
                     event.currentTarget.src = "/logo.png";
@@ -1686,7 +1697,7 @@ function CategoryCard({
               </div>
             ))}
             {stats.products.length > 3 && (
-              <span className="pcStyle121">
+              <span className="text-xs font-bold text-[#998d78]">
                 +{stats.products.length - 3}
               </span>
             )}
@@ -1694,7 +1705,7 @@ function CategoryCard({
         )}
 
         {/* ACTION BUTTONS */}
-        <div className="pcStyle122">
+        <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
 
           {/* Explore button uses the same category route as the card. */}
           <button
@@ -1703,7 +1714,7 @@ function CategoryCard({
               event.stopPropagation();
               onExplore();
             }}
-            className="pcStyle123"
+            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
           >
             Explore
             <ArrowRight size={15} />
@@ -1716,7 +1727,7 @@ function CategoryCard({
               event.stopPropagation();
               onPreview();
             }}
-            className="pcStyle124"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffaf0] text-[#907448] transition hover:border-[#c79a3b] hover:bg-[#fff1cd]"
             title="Quick preview"
             aria-label={`Preview ${category.name}`}
           >
@@ -1741,14 +1752,14 @@ function SmallStat({
   star?: boolean;
 }) {
   return (
-    <div className="pcStyle125">
-      <div className="pcStyle126">
+    <div className="px-2 py-3 text-center">
+      <div className="flex items-center justify-center gap-1 text-sm font-black text-[#4d4230]">
         {star && (
-          <Star size={11} className="pcStyle48" />
+          <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
         )}
         {value}
       </div>
-      <div className="pcStyle127">
+      <div className="mt-0.5 text-[10px] font-semibold text-[#a09787]">
         {label}
       </div>
     </div>
@@ -1772,14 +1783,14 @@ function MiniCategory({
     <button
       type="button"
       onClick={onOpen}
-      className="pcStyle128"
+      className="group min-w-[235px] flex-1 rounded-2xl border border-[#eadfc9] bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40"
     >
-      <div className="pcStyle8">
-        <div className="pcStyle129">
+      <div className="flex items-center gap-3">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#fff8e8]">
           <img
             src={category.image}
             alt={category.name}
-            className="pcStyle130"
+            className="h-full w-full object-contain p-2"
             onError={(event) => {
               event.currentTarget.onerror = null;
               event.currentTarget.src = "/logo.png";
@@ -1787,22 +1798,22 @@ function MiniCategory({
           />
         </div>
 
-        <div className="pcStyle131">
-          <h3 className="pcStyle45">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-black">
             {category.name}
           </h3>
-          <div className="pcStyle132">
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#948875]">
             <span>{stats.total} products</span>
             {stats.averageRating > 0 && (
               <>
                 <span>•</span>
-                <Star size={11} className="pcStyle48" />
+                <Star size={11} className="fill-[#c79a3b] text-[#c79a3b]" />
                 <span>{stats.averageRating.toFixed(1)}</span>
               </>
             )}
           </div>
           {stats.flashDeals > 0 && (
-            <div className="pcStyle133">
+            <div className="mt-1 text-[10px] font-bold text-[#b47b20]">
               {stats.flashDeals} active deals
             </div>
           )}
@@ -1810,7 +1821,7 @@ function MiniCategory({
 
         <ArrowRight
           size={15}
-          className="pcStyle134"
+          className="ml-auto shrink-0 text-[#b8aa91] transition group-hover:translate-x-1"
         />
       </div>
     </button>
@@ -1843,14 +1854,14 @@ function ToolCard({
           : "border-[#eadfc9] bg-white"
       }`}
     >
-      <div className="pcStyle135">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1ce] text-[#a47720]">
         {icon}
       </div>
-      <div className="pcStyle136">
+      <div className="mt-5 text-[10px] font-black uppercase tracking-[0.15em] text-[#a47720]">
         {eyebrow}
       </div>
-      <h3 className="pcStyle137">{title}</h3>
-      <p className="pcStyle138">
+      <h3 className="mt-2 text-xl font-black">{title}</h3>
+      <p className="mt-2 min-h-[48px] text-sm leading-6 text-[#897e6c]">
         {description}
       </p>
       <Link
@@ -1873,19 +1884,19 @@ function ToolCard({
 
 function LoadingGrid() {
   return (
-    <div className="pcStyle62">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
         <div
           key={index}
-          className="pcStyle139"
+          className="h-[500px] animate-pulse rounded-[28px] border border-[#eadfc9] bg-white"
         >
-          <div className="pcStyle140" />
-          <div className="pcStyle141">
-            <div className="pcStyle142" />
-            <div className="pcStyle143" />
-            <div className="pcStyle144" />
-            <div className="pcStyle145" />
-            <div className="pcStyle146" />
+          <div className="h-52 rounded-t-[28px] bg-[#f6f0e2]" />
+          <div className="space-y-4 p-5">
+            <div className="h-5 w-2/3 rounded bg-[#f3ecdc]" />
+            <div className="h-4 w-full rounded bg-[#f6f0e2]" />
+            <div className="h-4 w-4/5 rounded bg-[#f6f0e2]" />
+            <div className="h-12 rounded-xl bg-[#f8f2e6]" />
+            <div className="h-14 rounded-xl bg-[#f8f2e6]" />
           </div>
         </div>
       ))}
@@ -1902,18 +1913,18 @@ function EmptyState({
   onClear: () => void;
 }) {
   return (
-    <div className="pcStyle147">
-      <div className="pcStyle148">
+    <div className="rounded-[28px] border border-dashed border-[#d9cbae] bg-[#fffaf0] px-6 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff0c8] text-[#a47720]">
         <Search size={26} />
       </div>
-      <h3 className="pcStyle149">No categories found</h3>
-      <p className="pcStyle150">
+      <h3 className="mt-5 text-xl font-black">No categories found</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#8e8472]">
         Try another search or remove the active filters to see more categories.
       </p>
       <button
         type="button"
         onClick={onClear}
-        className="pcStyle151"
+        className="mt-6 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white"
       >
         Clear Filters
       </button>
@@ -1943,13 +1954,13 @@ function QuickPreview({
   const Icon = category.icon;
 
   return (
-    <div className="pcStyle152">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       {/* Backdrop click closes modal. */}
       <button
         type="button"
         aria-label="Close preview"
         onClick={onClose}
-        className="pcStyle153"
+        className="absolute inset-0 bg-[#4f412a]/30 backdrop-blur-sm"
       />
 
       <motion.div
@@ -1958,32 +1969,32 @@ function QuickPreview({
         aria-label={`${category.name} preview`}
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="pcStyle154"
+        className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-auto rounded-[30px] border border-[#eadfc9] bg-[#fffdf9] shadow-2xl"
       >
         {/* Modal close button. */}
-        <div className="pcStyle155">
+        <div className="sticky right-0 top-0 z-20 flex justify-end p-4">
           <button
             type="button"
             aria-label="Close preview"
             onClick={onClose}
-            className="pcStyle156"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc9] bg-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="pcStyle157">
+        <div className="grid gap-7 px-6 pb-7 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:px-10 lg:pb-10">
 
           {/* Large category image. */}
-          <div className="pcStyle158">
-            <div className="pcStyle159">
+          <div className="relative flex min-h-[270px] items-center justify-center overflow-hidden rounded-[26px] bg-gradient-to-br from-[#fffaf0] to-[#f7efdc]">
+            <div className="absolute left-5 top-5 z-10 flex items-center gap-2 rounded-full border border-white bg-white/90 px-3 py-1.5 text-xs font-bold text-[#866521]">
               <Icon size={13} />
               {category.name}
             </div>
             <img
               src={category.image}
               alt={category.name}
-              className="pcStyle160"
+              className="max-h-[310px] w-full object-contain p-8"
               onError={(event) => {
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = "/logo.png";
@@ -1993,12 +2004,12 @@ function QuickPreview({
 
           {/* Category information and product previews. */}
           <div>
-            <div className="pcStyle161">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="pcStyle162">
+                <div className="text-xs font-black uppercase tracking-[0.15em] text-[#a47720]">
                   Quick Preview
                 </div>
-                <h2 className="pcStyle163">
+                <h2 className="mt-2 text-3xl font-black tracking-tight">
                   {category.name}
                 </h2>
               </div>
@@ -2020,12 +2031,12 @@ function QuickPreview({
               </button>
             </div>
 
-            <p className="pcStyle164">
+            <p className="mt-4 text-sm leading-7 text-[#807563]">
               {category.description}
             </p>
 
             {/* Four category statistics. */}
-            <div className="pcStyle165">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <PreviewStat value={stats.total} label="Products" />
               <PreviewStat value={stats.inStock} label="In Stock" />
               <PreviewStat
@@ -2040,11 +2051,11 @@ function QuickPreview({
             </div>
 
             {/* Price range. */}
-            <div className="pcStyle166">
-              <div className="pcStyle167">
+            <div className="mt-5 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.13em] text-[#a08f70]">
                 Price Range
               </div>
-              <div className="pcStyle168">
+              <div className="mt-1 text-lg font-black text-[#5c4a28]">
                 {stats.minPrice
                   ? `${money(stats.minPrice)} – ${money(stats.maxPrice)}`
                   : "Browse products"}
@@ -2052,25 +2063,25 @@ function QuickPreview({
             </div>
 
             {/* Product preview list — maximum four products. */}
-            <div className="pcStyle169">
-              <div className="pcStyle170">
-                <h3 className="pcStyle171">Popular products</h3>
-                <span className="pcStyle172">
+            <div className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-black">Popular products</h3>
+                <span className="text-xs font-bold text-[#9b8760]">
                   {Math.min(stats.products.length, 4)} previewed
                 </span>
               </div>
 
-              <div className="pcStyle173">
+              <div className="space-y-2">
                 {stats.products.slice(0, 4).map((product) => (
                   <div
                     key={product.id}
-                    className="pcStyle174"
+                    className="flex items-center gap-3 rounded-xl border border-[#eadfc9] bg-white p-2.5"
                   >
-                    <div className="pcStyle175">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fffaf0]">
                       <img
                         src={getImage(product.image_url)}
                         alt={product.name}
-                        className="pcStyle120"
+                        className="h-full w-full object-contain p-1"
                         onError={(event) => {
                           event.currentTarget.onerror = null;
                           event.currentTarget.src = "/logo.png";
@@ -2078,14 +2089,14 @@ function QuickPreview({
                       />
                     </div>
 
-                    <div className="pcStyle176">
-                      <div className="pcStyle177">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold">
                         {product.name}
                       </div>
-                      <div className="pcStyle178">
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-[#938875]">
                         {product.rating ? (
-                          <span className="pcStyle179">
-                            <Star size={10} className="pcStyle48" />
+                          <span className="flex items-center gap-1">
+                            <Star size={10} className="fill-[#c79a3b] text-[#c79a3b]" />
                             {product.rating}
                           </span>
                         ) : null}
@@ -2098,7 +2109,7 @@ function QuickPreview({
                       </div>
                     </div>
 
-                    <div className="pcStyle180">
+                    <div className="text-sm font-black text-[#6d572d]">
                       {money(product.price)}
                     </div>
                   </div>
@@ -2110,7 +2121,7 @@ function QuickPreview({
             <button
               type="button"
               onClick={onExplore}
-              className="pcStyle181"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3.5 text-sm font-bold text-white shadow-sm"
             >
               Explore {category.name}
               <ArrowRight size={16} />
@@ -2133,9 +2144,9 @@ function PreviewStat({
   label: string;
 }) {
   return (
-    <div className="pcStyle182">
-      <div className="pcStyle82">{value}</div>
-      <div className="pcStyle183">
+    <div className="rounded-xl border border-[#eadfc9] bg-white px-3 py-3 text-center">
+      <div className="text-lg font-black">{value}</div>
+      <div className="mt-0.5 text-[10px] font-semibold text-[#9c917e]">
         {label}
       </div>
     </div>
