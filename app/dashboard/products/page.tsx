@@ -1406,10 +1406,6 @@ function SkeletonCard() {
 export default function ProductsPage() {
   const supabase = useMemo(() => createClient(), []);
 
-  /* SIDEBAR */
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
   /* DATA */
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -1439,30 +1435,6 @@ export default function ProductsPage() {
   const [toast, setToast] = useState("");
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-  /* =======================================================
-     SIDEBAR PERSISTENCE
-  ======================================================= */
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(SIDEBAR_KEY);
-
-      if (saved !== null) {
-        setSidebarCollapsed(saved === "true");
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(SIDEBAR_KEY, String(sidebarCollapsed));
-    } catch {
-      // ignore
-    }
-  }, [sidebarCollapsed]);
 
   /* =======================================================
      TOAST
@@ -2094,65 +2066,27 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-[#faf8f3] text-[#44382a]">
       {/* =====================================================
-          SIDEBAR
+          MAIN CONTENT — SIDEBAR REMOVED
       ===================================================== */}
-
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
-        setMobileOpen={setMobileSidebarOpen}
-      />
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <div
-        className={`min-h-screen transition-[padding] duration-300 ${
-          sidebarCollapsed ? "lg:pl-[82px]" : "lg:pl-[260px]"
-        }`}
-      >
+      <div className="min-h-screen">
         {/* HEADER */}
         <header className="sticky top-0 z-50 border-b border-[#ebe3d7] bg-[#fffdf9]/95 backdrop-blur-xl">
           <div className="flex h-[72px] items-center gap-3 px-4 sm:px-6 lg:px-8">
-            {/* MOBILE MENU */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e9dfd1] bg-white text-[#675947] lg:hidden"
-            >
-              <Menu size={19} />
-            </button>
-
-            {/* DESKTOP COLLAPSE */}
-            <button
-              onClick={() =>
-                setSidebarCollapsed(!sidebarCollapsed)
-              }
-              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e9dfd1] bg-white text-[#756754] transition hover:border-[#d7c198] hover:bg-[#faf4e8] lg:flex"
-              title={
-                sidebarCollapsed
-                  ? "Expand sidebar"
-                  : "Minimize sidebar"
-              }
-            >
-              {sidebarCollapsed ? (
-                <ChevronRight size={18} />
-              ) : (
-                <ChevronLeft size={18} />
-              )}
-            </button>
-
-            {/* MOBILE LOGO */}
+            {/* PRIME CART BRAND — YOUR EXISTING LOGO */}
             <Link
               href="/dashboard"
-              className="flex shrink-0 items-center gap-2 lg:hidden"
+              className="flex shrink-0 items-center gap-2.5"
+              aria-label="PrimeCart home"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#d7b566] to-[#a97b32] text-sm font-black text-white">
-                P
-              </div>
-
-              <span className="hidden text-sm font-black text-[#403426] sm:block">
+              <Image
+                src="/logo.png"
+                alt="PrimeCart logo"
+                width={42}
+                height={42}
+                priority
+                className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+              />
+              <span className="text-base font-black tracking-[-0.03em] text-[#403426] sm:text-lg">
                 PrimeCart
               </span>
             </Link>
@@ -3069,4 +3003,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
