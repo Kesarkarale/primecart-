@@ -397,6 +397,8 @@ export default function DashboardPage() {
 
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+const [searchLoading, setSearchLoading] = useState(false);
 
   const [wishlist, setWishlist] = useState<Array<string | number>>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -729,22 +731,126 @@ export default function DashboardPage() {
   /* SEARCH                                                                   */
   /* ------------------------------------------------------------------------ */
 
-  const searchResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
+useEffect(() => {
+  let cancelled = false;
 
-    if (!q) return [];
+  const query = search.trim();
 
-    return products
-      .filter((product) => {
-        const category =
-          categoryMap.get(String(product.category_id)) || "";
+  if (!query) {
+    setSearchResults([]);
+    setSearchLoading(false);
+    return;
+  }
 
-        return `${product.name} ${product.brand || ""} ${category}`
-          .toLowerCase()
-          .includes(q);
-      })
-      .slice(0, 7);
-  }, [search, products, categoryMap]);
+  setSearchLoading(true);
+
+  const timer = window.setTimeout(async () => {
+    try {
+      /*
+       * ---------------------------------------------------------------
+       * STEP 1 — Find categories matching the search text
+       * ---------------------------------------------------------------
+       *
+       * Example:
+       * "electronics" -> Electronics category IDs
+       */
+      const {
+        data: matchingCategories,
+        error: categorySearchError,
+      } = await supabase
+        .from("categories")
+        .select("id,name")
+        .ilike("name", `%${query}%`)
+        .limit(100);
+
+      if (categorySearchError) {
+        console.error(
+          "Search category error:",
+          categorySearchError.message
+        );
+      }
+
+      const categoryIds =
+        matchingCategories?.map((category) => String(category.id)) || [];
+
+      /*
+       * ---------------------------------------------------------------
+       * STEP 2 — Search PRODUCTS directly in Supabase
+       * ---------------------------------------------------------------
+       *
+       * Search is performed across multiple product columns.
+       */
+      const productFilters = [
+        `name.ilike.%${query}%`,
+        `brand.ilike.%${query}%`,
+        `slug.ilike.%${query}%`,
+        `short_description.ilike.%${query}%`,
+        `description.ilike.%${query}%`,
+      ];
+
+      /*
+       * If a category matches, also include its category_id.
+       */
+      if (categoryIds.length > 0) {
+        categoryIds.forEach((categoryId) => {
+          productFilters.push(
+            `category_id.eq.${categoryId}`
+          );
+        });
+      }
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("products")
+        .select(
+          "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
+        )
+        .eq("is_active", true)
+        .or(productFilters.join(","))
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (error) {
+        console.error(
+          "Product search error:",
+          error.message
+        );
+
+        if (!cancelled) {
+          setSearchResults([]);
+        }
+
+        return;
+      }
+
+      if (!cancelled) {
+        setSearchResults(
+          ((data || []) as Product[])
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Database search failed:",
+        error
+      );
+
+      if (!cancelled) {
+        setSearchResults([]);
+      }
+    } finally {
+      if (!cancelled) {
+        setSearchLoading(false);
+      }
+    }
+  }, 250);
+
+  return () => {
+    cancelled = true;
+    window.clearTimeout(timer);
+  };
+}, [search, supabase]);
 
   /* ------------------------------------------------------------------------ */
   /* PRODUCT GROUPS                                                           */
@@ -1351,60 +1457,62 @@ export default function DashboardPage() {
                   </small>
                 </div>
 
-                {searchResults.length ? (
-                  searchResults.map((product) => (
-                    <button
-                      key={String(product.id)}
-                      type="button"
-                      onClick={() => {
-                        setSearchOpen(false);
-                        openProduct(product);
-                      }}
-                    >
-                      <span className="suggestion-image">
-                        {product.image_url ? (
-                          <SafeProductImage
-                            src={product.image_url}
-                            alt=""
-                            className="suggestion-product-image"
-                          />
-                        ) : (
-                          <ShoppingBag size={18} />
-                        )}
-                      </span>
+{searchLoading ? (
+  <div className="no-suggestions">
+    <Search size={20} />
+    <span>
+      Searching PrimeCart products...
+    </span>
+  </div>
+) : searchResults.length ? (
+  searchResults.map((product) => (
+    <button
+      key={String(product.id)}
+      type="button"
+      onClick={() => {
+        setSearchOpen(false);
+        openProduct(product);
+      }}
+    >
+      <span className="suggestion-image">
+        {product.image_url ? (
+          <SafeProductImage
+            src={product.image_url}
+            alt=""
+            className="suggestion-product-image"
+          />
+        ) : (
+          <ShoppingBag size={18} />
+        )}
+      </span>
 
-                      <span className="suggestion-copy">
-                        <strong>
-                          {product.name}
-                        </strong>
+      <span className="suggestion-copy">
+        <strong>
+          {product.name}
+        </strong>
 
-                        <small>
-                          {product.brand ||
-                            categoryMap.get(
-                              String(
-                                product.category_id
-                              )
-                            ) ||
-                            "PrimeCart"}
-                        </small>
-                      </span>
+        <small>
+          {product.brand ||
+            categoryMap.get(
+              String(product.category_id)
+            ) ||
+            "PrimeCart"}
+        </small>
+      </span>
 
-                      <b>
-                        {formatPrice(
-                          product.price
-                        )}
-                      </b>
-                    </button>
-                  ))
-                ) : (
-                  <div className="no-suggestions">
-                    <Search size={20} />
-                    <span>
-                      No products found for "
-                      {search}"
-                    </span>
-                  </div>
-                )}
+      <b>
+        {formatPrice(product.price)}
+      </b>
+    </button>
+  ))
+) : (
+  <div className="no-suggestions">
+    <Search size={20} />
+    <span>
+      No products found for "{search}"
+    </span>
+  </div>
+)}
 
                 {searchResults.length > 0 && (
                   <button
