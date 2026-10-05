@@ -14,10 +14,14 @@ import {
   Check,
   Heart,
   HeartOff,
+  Home,
+  LayoutGrid,
   Package,
+  Search,
   ShoppingCart,
   Star,
   Trash2,
+  UserRound,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -61,6 +65,12 @@ export default function WishlistPage() {
   const [addingId, setAddingId] = useState<string | null>(null);
 
   const [message, setMessage] = useState<Message | null>(null);
+
+  /* =========================================================
+     WISHLIST SEARCH + MOBILE NAV STATE
+  ========================================================= */
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cartCount, setCartCount] = useState(0);
 
   /*
    * -------------------------------------------------------
@@ -621,15 +631,69 @@ export default function WishlistPage() {
 
   /*
    * -------------------------------------------------------
-   * VALID ITEMS
+   * CART COUNT FOR MOBILE NAV
    * -------------------------------------------------------
    */
+  useEffect(() => {
+    const updateCartCount = () => {
+      try {
+        const raw = localStorage.getItem("primecart-cart");
+        const cart = raw ? JSON.parse(raw) : [];
+        const count = Array.isArray(cart)
+          ? cart.reduce(
+              (total: number, item: any) =>
+                total + Math.max(1, Number(item?.quantity || 1)),
+              0
+            )
+          : 0;
+        setCartCount(count);
+      } catch {
+        setCartCount(0);
+      }
+    };
 
+    updateCartCount();
+    window.addEventListener("storage", updateCartCount);
+    window.addEventListener("cart-updated", updateCartCount);
+
+    return () => {
+      window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("cart-updated", updateCartCount);
+    };
+  }, []);
+
+  /*
+   * -------------------------------------------------------
+   * VALID ITEMS + WORKING SEARCH
+   * -------------------------------------------------------
+   */
   const validItems = useMemo(() => {
     return items.filter(
       (item) => item.product !== null
     );
   }, [items]);
+
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) return validItems;
+
+    return validItems.filter((item) => {
+      const product = item.product;
+      if (!product) return false;
+
+      return [
+        product.name,
+        product.slug,
+        product.brand,
+        product.short_description,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value).toLowerCase().includes(query)
+        );
+    });
+  }, [validItems, searchQuery]);
 
   /*
    * -------------------------------------------------------
@@ -693,7 +757,7 @@ export default function WishlistPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 sm:py-6 sm:pb-6 lg:px-8">
         {/* =====================================================
             PAGE HEADER
         ===================================================== */}
@@ -751,6 +815,69 @@ export default function WishlistPage() {
 
           <div className="h-1 bg-gradient-to-r from-transparent via-[#c9a24d] to-transparent opacity-60" />
         </section>
+
+        {/* =====================================================
+            WISHLIST SEARCH
+        ===================================================== */}
+        {!loading && validItems.length > 0 && (
+          <section className="mb-6">
+            <div className="relative">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#9b762b]"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search your wishlist by product, brand..."
+                className="h-12 w-full rounded-2xl border border-[#eadfca] bg-white pl-11 pr-11 text-sm text-gray-900 outline-none shadow-sm transition focus:border-[#c9a24d] focus:ring-2 focus:ring-[#c9a24d]/20"
+                aria-label="Search wishlist"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-500 hover:text-[#9b762b]"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {searchQuery.trim() && (
+              <p className="mt-2 px-1 text-xs text-gray-500">
+                Showing {filteredItems.length} of {validItems.length} saved products
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* =====================================================
+            SEARCH EMPTY STATE
+        ===================================================== */}
+        {!loading &&
+          validItems.length > 0 &&
+          searchQuery.trim() &&
+          filteredItems.length === 0 && (
+            <div className="mb-8 rounded-2xl border border-[#eadfca] bg-white px-6 py-14 text-center shadow-sm">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fffaf0] text-[#c9a24d]">
+                <Search size={28} />
+              </div>
+              <h3 className="mt-5 text-xl font-bold">
+                No wishlist products found
+              </h3>
+              <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+                Try another product name or brand.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-5 rounded-xl bg-[#c9a24d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#b8913f]"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
 
         {/* =====================================================
             MESSAGE
@@ -843,9 +970,9 @@ export default function WishlistPage() {
             PRODUCTS
         ===================================================== */}
 
-        {!loading && validItems.length > 0 && (
+        {!loading && filteredItems.length > 0 && (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {validItems.map((item) => {
+            {filteredItems.map((item) => {
               const product = item.product!;
 
               const discount = getDiscount(
@@ -1084,6 +1211,69 @@ export default function WishlistPage() {
           </div>
         )}
       </main>
+
+      {/* =========================================================
+          MOBILE BOTTOM NAV — SAME PRIME CART STYLE
+          Mobile only; desktop navigation remains untouched.
+      ========================================================= */}
+      <nav
+        className="fixed bottom-3 left-3 right-3 z-[100] rounded-2xl border border-[#eadfca] bg-white/95 p-2 shadow-[0_10px_35px_rgba(0,0,0,0.12)] backdrop-blur-xl md:hidden"
+        aria-label="Mobile navigation"
+      >
+        <div className="grid grid-cols-5 items-center">
+          <Link
+            href="/dashboard"
+            className="group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-gray-500 transition hover:text-[#9b762b]"
+          >
+            <Home size={21} strokeWidth={2} />
+            <span className="text-[10px] font-semibold">Home</span>
+          </Link>
+
+          <Link
+            href="/dashboard/categories"
+            className="group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-gray-500 transition hover:text-[#9b762b]"
+          >
+            <LayoutGrid size={21} strokeWidth={2} />
+            <span className="text-[10px] font-semibold">Categories</span>
+          </Link>
+
+          <Link
+            href="/dashboard/wishlist"
+            aria-current="page"
+            className="relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl bg-[#fffaf0] text-[#9b762b]"
+          >
+            <span className="absolute left-1/2 top-0 h-1 w-8 -translate-x-1/2 rounded-b-full bg-[#c9a24d]" />
+            <Heart size={21} fill="currentColor" strokeWidth={2} />
+            <span className="text-[10px] font-bold">Wishlist</span>
+            {validItems.length > 0 && (
+              <span className="absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 translate-x-1/2 items-center justify-center rounded-full bg-[#c9a24d] px-1 text-[9px] font-bold text-white">
+                {validItems.length > 99 ? "99+" : validItems.length}
+              </span>
+            )}
+          </Link>
+
+          <Link
+            href="/dashboard/cart"
+            className="relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-gray-500 transition hover:text-[#9b762b]"
+          >
+            <ShoppingCart size={21} strokeWidth={2} />
+            <span className="text-[10px] font-semibold">Cart</span>
+            {cartCount > 0 && (
+              <span className="absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 translate-x-1/2 items-center justify-center rounded-full bg-[#c9a24d] px-1 text-[9px] font-bold text-white">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
+            href="/dashboard/profile"
+            className="group flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-gray-500 transition hover:text-[#9b762b]"
+          >
+            <UserRound size={21} strokeWidth={2} />
+            <span className="text-[10px] font-semibold">Account</span>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }
