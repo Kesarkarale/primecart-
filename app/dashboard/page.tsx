@@ -7592,6 +7592,165 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
             display: none !important;
           }
         }
+
+        /* ================================================================
+           FINAL HERO + MOBILE HEADER/NAV FIX
+           ================================================================ */
+        .hero-carousel {
+          width: 100% !important;
+        }
+
+        .hero-image-frame {
+          width: 100% !important;
+          aspect-ratio: 3.2 / 1 !important;
+          height: auto !important;
+          min-height: 0 !important;
+          position: relative !important;
+        }
+
+        .hero-banner {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          object-position: center !important;
+        }
+
+        @media (max-width: 680px) {
+          /* Header = logo + cart + menu, search on the next full row. */
+          .header-main {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 40px 40px !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 7px !important;
+            padding: 8px 0 9px !important;
+          }
+
+          .logo-wrap {
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+
+          .mobile-header-cart {
+            grid-column: 2 !important;
+            grid-row: 1 !important;
+            display: inline-flex !important;
+            width: 40px !important;
+            height: 40px !important;
+            margin: 0 !important;
+          }
+
+          .mobile-menu-button {
+            grid-column: 3 !important;
+            grid-row: 1 !important;
+            display: grid !important;
+            place-items: center !important;
+            width: 40px !important;
+            height: 40px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 1px solid #e4d8c0 !important;
+            border-radius: 12px !important;
+            background: #fffaf0 !important;
+            color: #8b671f !important;
+            cursor: pointer !important;
+          }
+
+          .header-actions {
+            display: none !important;
+          }
+
+          .search-box {
+            grid-column: 1 / -1 !important;
+            grid-row: 2 !important;
+            order: unset !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            margin-top: 1px !important;
+          }
+
+          .mobile-menu-overlay {
+            display: block !important;
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1500 !important;
+          }
+
+          /* Hero remains fully inside its card on phones. */
+          .hero-layout {
+            width: 100% !important;
+            margin-top: 10px !important;
+          }
+
+          .hero-carousel {
+            width: 100% !important;
+            border-radius: 15px !important;
+          }
+
+          .hero-image-frame {
+            width: 100% !important;
+            aspect-ratio: 1.82 / 1 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            border-radius: 14px !important;
+          }
+
+          .hero-banner {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center !important;
+          }
+
+          /* Bottom navigation never overflows horizontally. */
+          .mobile-bottom-nav {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            position: fixed !important;
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            width: auto !important;
+            max-width: none !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 6px 5px !important;
+            gap: 2px !important;
+            overflow: hidden !important;
+            border-radius: 20px !important;
+            z-index: 1200 !important;
+          }
+
+          .mobile-bottom-item {
+            min-width: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 3px !important;
+          }
+
+          .mobile-bottom-item span:last-child {
+            max-width: 100% !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .hero-image-frame {
+            aspect-ratio: 1.82 / 1 !important;
+          }
+
+          .mobile-bottom-nav {
+            left: 6px !important;
+            right: 6px !important;
+            bottom: 6px !important;
+          }
+        }
  `}
       </style>
     </main>
