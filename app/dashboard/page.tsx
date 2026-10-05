@@ -1879,7 +1879,7 @@ export default function DashboardPage() {
           <div className="hero-carousel">
             <div
               className="hero-image-frame"
-              style={{ aspectRatio: heroAspectRatio }}
+              style={{ aspectRatio: "auto" }}
             >
               {HERO_BANNERS.map(
                 (banner, index) => (
@@ -7594,25 +7594,47 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         }
 
         /* ================================================================
-           FINAL HERO + MOBILE HEADER/NAV FIX
+           FINAL HERO FIX — SHOW THE COMPLETE BANNER
            ================================================================ */
         .hero-carousel {
           width: 100% !important;
+          overflow: hidden !important;
         }
 
         .hero-image-frame {
           width: 100% !important;
-          aspect-ratio: 3.2 / 1 !important;
           height: auto !important;
           min-height: 0 !important;
+          max-height: none !important;
+          aspect-ratio: auto !important;
           position: relative !important;
+          overflow: hidden !important;
+          background: #fff !important;
         }
 
+        /* Inactive banners stay stacked. The active banner remains in normal
+           flow, so its natural aspect ratio determines the container height.
+           This prevents cropping/stretching on both desktop and mobile. */
         .hero-banner {
+          position: absolute !important;
+          inset: 0 !important;
           width: 100% !important;
           height: 100% !important;
-          object-fit: cover !important;
-          object-position: center !important;
+          object-fit: contain !important;
+          object-position: center center !important;
+          background: #fff !important;
+        }
+
+        .hero-banner.active {
+          position: relative !important;
+          inset: auto !important;
+          display: block !important;
+          width: 100% !important;
+          height: auto !important;
+          max-width: 100% !important;
+          object-fit: contain !important;
+          object-position: center center !important;
+          aspect-ratio: auto !important;
         }
 
         @media (max-width: 680px) {
@@ -7689,17 +7711,24 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
 
           .hero-image-frame {
             width: 100% !important;
-            aspect-ratio: 1.82 / 1 !important;
             height: auto !important;
             min-height: 0 !important;
+            aspect-ratio: auto !important;
             border-radius: 14px !important;
           }
 
           .hero-banner {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;
-            object-position: center !important;
+            object-fit: contain !important;
+            object-position: center center !important;
+          }
+
+          .hero-banner.active {
+            width: 100% !important;
+            height: auto !important;
+            display: block !important;
+            object-fit: contain !important;
           }
 
           /* Bottom navigation never overflows horizontally. */
