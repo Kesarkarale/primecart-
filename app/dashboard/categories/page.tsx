@@ -51,10 +51,12 @@ import {
   Search,
   Shirt,
   ShoppingBag,
+  ShoppingCart,
   Smartphone,
   Sparkles,
   Star,
   WashingMachine,
+  UserRound,
   Watch,
   X,
   Zap,
@@ -411,6 +413,9 @@ export default function CategoriesPage() {
   const [wishlistCategories, setWishlistCategories] =
     useState<string[]>([]);
 
+  // Mobile bottom navigation मधील cart badge साठी count.
+  const [cartCount, setCartCount] = useState(0);
+
   // -------------------- LOAD LOCAL PREFERENCES --------------------
   // Recent categories आणि category wishlist localStorage मध्ये असतात.
   useEffect(() => {
@@ -421,6 +426,57 @@ export default function CategoriesPage() {
     setWishlistCategories(
       readStoredArray("primecart_category_wishlist"),
     );
+  }, []);
+
+  // -------------------- MOBILE CART BADGE --------------------
+  // Dashboard प्रमाणे cart count localStorage मधून sync करतो.
+  // Existing cart logic ला touch करत नाही.
+  useEffect(() => {
+    const readCartCount = () => {
+      try {
+        const raw = localStorage.getItem("primecart-cart") || "[]";
+        const parsed: unknown = JSON.parse(raw);
+
+        if (!Array.isArray(parsed)) {
+          setCartCount(0);
+          return;
+        }
+
+        const total = parsed.reduce((sum, item) => {
+          if (item && typeof item === "object") {
+            const value = Number(
+              (item as { quantity?: unknown }).quantity ?? 1,
+            );
+
+            return sum + (Number.isFinite(value) && value > 0 ? value : 1);
+          }
+
+          return sum + 1;
+        }, 0);
+
+        setCartCount(total);
+      } catch {
+        setCartCount(0);
+      }
+    };
+
+    readCartCount();
+
+    const handleCartUpdate = () => readCartCount();
+
+    window.addEventListener(
+      "primecart-cart-updated",
+      handleCartUpdate,
+    );
+    window.addEventListener("storage", handleCartUpdate);
+
+    return () => {
+      window.removeEventListener(
+        "primecart-cart-updated",
+        handleCartUpdate,
+      );
+      window.removeEventListener("storage", handleCartUpdate);
+    };
   }, []);
 
   // -------------------- LOAD PRODUCTS FROM SUPABASE --------------------
@@ -927,7 +983,7 @@ export default function CategoriesPage() {
       </header>
 
       {/* -------------------- PAGE CONTENT CONTAINER -------------------- */}
-      <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+      <div className="mx-auto max-w-[1500px] px-5 pb-32 pt-7 sm:px-8 lg:px-10 lg:pb-10 lg:pt-10">
 
         {/* -------------------- BREADCRUMB -------------------- */}
         <div className="mb-7 flex items-center gap-2 text-sm text-[#9c927f]">
@@ -1396,6 +1452,81 @@ export default function CategoriesPage() {
           onExplore={() => navigateToCategory(selectedCategory)}
         />
       )}
+
+      {/* ============================================================
+          MOBILE BOTTOM NAVIGATION
+          Dashboard सारखाच mobile-only navigation bar.
+          Categories page वर Categories active राहते.
+          Desktop view वर हा पूर्णपणे hidden आहे.
+          ============================================================ */}
+      <nav
+        aria-label="Mobile shopping navigation"
+        className="fixed bottom-3 left-3 right-3 z-[90] md:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-center justify-between rounded-[28px] border border-[#eadfc9] bg-white/95 px-2 py-2 shadow-[0_12px_40px_rgba(60,45,20,0.14)] backdrop-blur-xl">
+          {/* Home */}
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[#8f897d] transition active:scale-95"
+          >
+            <div className="flex h-7 items-center justify-center">
+              <Home size={24} strokeWidth={2.1} />
+            </div>
+            <span className="text-[11px] font-bold">Home</span>
+          </Link>
+
+          {/* Categories — ACTIVE */}
+          <Link
+            href="/dashboard/categories"
+            aria-current="page"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[#a47720] transition active:scale-95"
+          >
+            <div className="relative flex h-7 items-center justify-center">
+              <span className="absolute -top-1 h-1 w-8 rounded-full bg-[#c79a3b]" />
+              <Layers3 size={24} strokeWidth={2.1} />
+            </div>
+            <span className="text-[11px] font-extrabold">Categories</span>
+          </Link>
+
+          {/* Wishlist */}
+          <Link
+            href="/dashboard/wishlist"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[#8f897d] transition active:scale-95"
+          >
+            <div className="flex h-7 items-center justify-center">
+              <Heart size={25} strokeWidth={2} />
+            </div>
+            <span className="text-[11px] font-bold">Wishlist</span>
+          </Link>
+
+          {/* Cart */}
+          <Link
+            href="/dashboard/cart"
+            className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[#8f897d] transition active:scale-95"
+          >
+            <div className="relative flex h-7 items-center justify-center">
+              <ShoppingCart size={25} strokeWidth={2} />
+              {cartCount > 0 && (
+                <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-black text-white ring-2 ring-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] font-bold">Cart</span>
+          </Link>
+
+          {/* Account */}
+          <Link
+            href="/dashboard/profile"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[#8f897d] transition active:scale-95"
+          >
+            <div className="flex h-7 items-center justify-center">
+              <UserRound size={24} strokeWidth={2.1} />
+            </div>
+            <span className="text-[11px] font-bold">Account</span>
+          </Link>
+        </div>
+      </nav>
     </main>
   );
 }
