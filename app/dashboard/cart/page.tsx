@@ -2245,36 +2245,6 @@ export default function CartPage() {
                 </div>
 
                 {/* =================================================
-                    MOBILE BENEFITS
-                ================================================= */}
-
-                <section className="grid grid-cols-1 gap-3 min-[430px]:grid-cols-3 sm:hidden">
-                  <Benefit
-                    icon={
-                      <Truck className="h-5 w-5" />
-                    }
-                    title="Fast Delivery"
-                    text="Reliable delivery to your doorstep."
-                  />
-
-                  <Benefit
-                    icon={
-                      <ShieldCheck className="h-5 w-5" />
-                    }
-                    title="Secure Shopping"
-                    text="Protected checkout experience."
-                  />
-
-                  <Benefit
-                    icon={
-                      <RefreshCcw className="h-5 w-5" />
-                    }
-                    title="Easy Returns"
-                    text="Simple returns on eligible products."
-                  />
-                </section>
-
-                {/* =================================================
                     SAVED FOR LATER
                 ================================================= */}
 
