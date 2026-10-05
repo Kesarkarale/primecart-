@@ -1652,15 +1652,32 @@ useEffect(() => {
             </Link>
           </div>
 
-          <button
-            className="mobile-menu-button"
-            onClick={() =>
-              setMobileMenuOpen(true)
-            }
-            aria-label="Open menu"
-          >
-            <Menu size={25} />
-          </button>
+          {/* ============================================================
+    MOBILE HEADER — MENU + LOGO + CART
+    Desktop header वर याचा कोणताही effect नाही.
+============================================================ */}
+
+<button
+  className="mobile-menu-button"
+  onClick={() => setMobileMenuOpen(true)}
+  aria-label="Open menu"
+>
+  <Menu size={23} />
+</button>
+
+<Link
+  href="/dashboard/cart"
+  className="mobile-cart-button"
+  aria-label="Shopping cart"
+>
+  <ShoppingCart size={22} />
+
+  {cartCount > 0 && (
+    <b>
+      {cartCount > 99 ? "99+" : cartCount}
+    </b>
+  )}
+</Link>
         </div>
       </header>
 
