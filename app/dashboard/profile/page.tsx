@@ -259,8 +259,9 @@ export default function ProfilePage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#faf8f3] text-[#17130d]">
-      {/* HEADER */}
+<main className="min-h-screen bg-[#faf8f3] pb-28 text-[#17130d] md:pb-0">
+  
+  {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-[#eadfc9] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1450px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
