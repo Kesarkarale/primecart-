@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,11 +11,11 @@ import {
   Filter,
   Heart,
   Home,
-  LayoutGrid,
-  UserRound,
   ImageOff,
   Package,
   Search,
+  UserRound,
+  LayoutGrid,
   ShoppingCart,
   SlidersHorizontal,
   Sparkles,
@@ -137,6 +137,12 @@ export default function CategoryProductsPage() {
     useState<Category | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
+
+  /* Complete product list for the current category.
+     Search results temporarily replace `products`; clearing search restores this list. */
+  const [allCategoryProducts, setAllCategoryProducts] =
+    useState<Product[]>([]);
+
   const [relatedCategories, setRelatedCategories] =
     useState<Category[]>([]);
 
@@ -145,7 +151,6 @@ export default function CategoryProductsPage() {
 
   /* Search */
   const [search, setSearch] = useState("");
-  const [searchLoading, setSearchLoading] = useState(false);
   const lastSavedSearchRef = useRef("");
 
   /* Sort */
@@ -261,7 +266,9 @@ export default function CategoryProductsPage() {
           throw productError;
         }
 
-        setProducts(productData ?? []);
+        const loadedProducts = productData ?? [];
+        setAllCategoryProducts(loadedProducts);
+        setProducts(loadedProducts);
 
         /* Related categories */
         const { data: categoryList } =
@@ -295,138 +302,170 @@ export default function CategoryProductsPage() {
   ========================================================= */
 
   useEffect(() => {
-    const term = search.trim();
+    const searchTerm = search.trim();
 
-    if (!category?.id) {
-      setSearchLoading(false);
+    if (!category?.id || !searchTerm) {
+      if (!searchTerm) {
+        setProducts(allCategoryProducts);
+        setLoading(false);
+        lastSavedSearchRef.current = "";
+      }
+
       return;
     }
 
+    let cancelled = false;
+
     const timer = window.setTimeout(async () => {
-      setSearchLoading(Boolean(term));
+      setLoading(true);
       setError("");
 
       try {
-        if (!term) {
-          const { data, error } = await supabase
-            .from("products")
-            .select(`
-              id,
-              category_id,
-              name,
-              slug,
-              short_description,
-              description,
-              price,
-              original_price,
-              stock,
-              image_url,
-              brand,
-              rating,
-              reviews_count,
-              is_featured,
-              is_flash_sale,
-              is_active,
-              created_at
-            `)
-            .eq("category_id", category.id)
-            .eq("is_active", true)
-            .order("created_at", { ascending: false });
-
-          if (error) throw error;
-          setProducts(data ?? []);
-          return;
-        }
-        // Keep PostgREST OR syntax safe when the user types special characters.
-        const safeTerm = term
+        /*
+         * Supabase/PostgREST OR search.
+         * The value is sanitized so commas/parentheses cannot break
+         * the PostgREST OR expression.
+         */
+        const safeTerm = searchTerm
           .replace(/[(),]/g, " ")
-          .replace(/\\/g, " ")
           .replace(/\s+/g, " ")
           .trim();
 
         if (!safeTerm) {
-          setProducts([]);
+          setProducts(allCategoryProducts);
+          setLoading(false);
           return;
         }
 
-        const { data, error } = await supabase
-          .from("products")
-          .select(`
-            id,
-            category_id,
-            name,
-            slug,
-            short_description,
-            description,
-            price,
-            original_price,
-            stock,
-            image_url,
-            brand,
-            rating,
-            reviews_count,
-            is_featured,
-            is_flash_sale,
-            is_active,
-            created_at
-          `)
-          .eq("category_id", category.id)
-          .eq("is_active", true)
-          .or(
-            `name.ilike.%${safeTerm}%,slug.ilike.%${safeTerm}%,brand.ilike.%${safeTerm}%,short_description.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%`
-          )
-          .order("created_at", { ascending: false });
+        const pattern = `%${safeTerm}%`;
 
-        if (error) throw error;
+        const { data, error: searchError } =
+          await supabase
+            .from("products")
+            .select(
+              `
+                id,
+                category_id,
+                name,
+                slug,
+                short_description,
+                description,
+                price,
+                original_price,
+                stock,
+                image_url,
+                brand,
+                rating,
+                reviews_count,
+                is_featured,
+                is_flash_sale,
+                is_active,
+                created_at
+              `
+            )
+            .eq("category_id", category.id)
+            .eq("is_active", true)
+            .or(
+              `name.ilike.${pattern},slug.ilike.${pattern},brand.ilike.${pattern},short_description.ilike.${pattern},description.ilike.${pattern}`
+            )
+            .order("created_at", {
+              ascending: false,
+            });
 
-        const results = data ?? [];
-        setProducts(results);
+        if (searchError) {
+          throw searchError;
+        }
 
-        // Save a submitted/debounced search once, not one row per typed character.
-        if (term.length >= 2 && lastSavedSearchRef.current !== term) {
-          lastSavedSearchRef.current = term;
+        if (cancelled) return;
 
-          const { data: { user } } = await supabase.auth.getUser();
+        const searchResults = data ?? [];
+        setProducts(searchResults);
 
-          if (user) {
-            const exactMatchFound = results.some(
-              (product) =>
-                product.name.trim().toLowerCase() === term.toLowerCase()
-            );
+        /*
+         * Store a meaningful search in search_history.
+         * We do not create a row for every React keystroke.
+         */
+        if (
+          lastSavedSearchRef.current !== searchTerm
+        ) {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
 
-            const { error: historyError } = await supabase
-              .from("search_history")
-              .insert({
-                user_id: user.id,
-                search_query: term,
-                results_count: results.length,
-                has_results: results.length > 0,
-                exact_match_found: exactMatchFound,
-              });
+          if (user && !cancelled) {
+            const exactMatchFound =
+              searchResults.some(
+                (product) =>
+                  product.name.trim().toLowerCase() ===
+                    searchTerm.toLowerCase() ||
+                  product.slug.trim().toLowerCase() ===
+                    searchTerm.toLowerCase()
+              );
+
+            const { error: historyError } =
+              await supabase
+                .from("search_history")
+                .insert({
+                  user_id: user.id,
+                  search_query: searchTerm,
+                  results_count: searchResults.length,
+                  has_results:
+                    searchResults.length > 0,
+                  exact_match_found:
+                    exactMatchFound,
+                });
 
             if (historyError) {
-              console.error("Search history error:", historyError);
+              /*
+               * Search itself should continue working even if
+               * search_history RLS/permission prevents the insert.
+               */
+              console.error(
+                "Search history insert error:",
+                historyError
+              );
             }
+
+            lastSavedSearchRef.current = searchTerm;
           }
         }
       } catch (err) {
-        console.error("Database search error:", err);
+        if (cancelled) return;
+
+        console.error(
+          "Database search error:",
+          err
+        );
+
+        setProducts([]);
+
         setError(
           err instanceof Error
             ? err.message
             : "Unable to search products."
         );
       } finally {
-        setSearchLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-    }, 450);
+    }, 350);
 
-    return () => window.clearTimeout(timer);
-  }, [search, category?.id, supabase]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    search,
+    category?.id,
+    allCategoryProducts,
+    supabase,
+  ]);
 
   /* =========================================================
      LOAD WISHLIST
   ========================================================= */
+
 
   useEffect(() => {
     async function loadWishlist() {
@@ -757,6 +796,7 @@ export default function CategoryProductsPage() {
     maxPrice < 100000;
 
   function clearFilters() {
+    lastSavedSearchRef.current = "";
     setSearch("");
     setSort("featured");
     setInStockOnly(false);
@@ -978,7 +1018,7 @@ export default function CategoryProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#faf8f3] text-[#171717]">
+    <main className="min-h-screen bg-[#faf8f3] pb-28 text-[#171717] md:pb-0">
       {/* =====================================================
           HEADER
       ===================================================== */}
@@ -1086,7 +1126,7 @@ export default function CategoryProductsPage() {
           CONTENT
       ===================================================== */}
 
-      <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 lg:px-10 lg:py-9 lg:pb-9">
+      <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-8 lg:px-10 lg:py-9">
         {/* BREADCRUMB */}
 
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-500">
@@ -1276,11 +1316,6 @@ export default function CategoryProductsPage() {
               </button>
 
               <p className="text-sm text-gray-500">
-                {searchLoading && (
-                  <span className="mr-2 font-semibold text-[#a17c00]">
-                    Searching...
-                  </span>
-                )}
                 Showing{" "}
                 <span className="font-black text-gray-900">
                   {filteredProducts.length}
@@ -1767,18 +1802,70 @@ export default function CategoryProductsPage() {
         />
       )}
 
-      {/* =====================================================
+      {/* ============================================================
           MOBILE BOTTOM NAVIGATION
-          Home / Categories / Wishlist / Cart / Account
-      ===================================================== */}
+          Exact same floating PrimeCart mobile style as Dashboard.
+          Desktop वर hidden — फक्त mobile screens वर दिसेल.
+      ============================================================ */}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-[150] border-t border-[#c9a227]/15 bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5">
-          <MobileNavItem href="/dashboard" label="Home" icon={<Home size={20} />} />
-          <MobileNavItem href="/dashboard/categories" label="Categories" icon={<LayoutGrid size={20} />} active />
-          <MobileNavItem href="/dashboard/wishlist" label="Wishlist" icon={<Heart size={20} />} badge={wishlistIds.length} />
-          <MobileNavItem href="/dashboard/cart" label="Cart" icon={<ShoppingCart size={20} />} badge={cartCount} />
-          <MobileNavItem href="/dashboard/profile" label="Account" icon={<UserRound size={20} />} />
+      <nav
+        className="fixed bottom-3 left-3 right-3 z-[200] rounded-[28px] border border-[#e7dfd0] bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1 shadow-[0_12px_40px_rgba(60,45,20,0.14)] backdrop-blur-xl md:hidden"
+        aria-label="Mobile navigation"
+      >
+        <div className="grid min-h-[82px] grid-cols-5 items-stretch">
+          {/* HOME */}
+          <MobileNavItem
+            href="/dashboard"
+            icon={<Home size={27} strokeWidth={2.1} />}
+            label="Home"
+          />
+
+          {/* CATEGORIES — ACTIVE */}
+          <MobileNavItem
+            href="/dashboard/categories"
+            icon={<LayoutGrid size={27} strokeWidth={2.1} />}
+            label="Categories"
+            active
+          />
+
+          {/* WISHLIST */}
+          <MobileNavItem
+            href="/dashboard/wishlist"
+            icon={
+              <span className="relative">
+                <Heart size={27} strokeWidth={2.1} />
+                {wishlistIds.length > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-black text-white">
+                    {wishlistIds.length > 99 ? "99+" : wishlistIds.length}
+                  </span>
+                )}
+              </span>
+            }
+            label="Wishlist"
+          />
+
+          {/* CART */}
+          <MobileNavItem
+            href="/dashboard/cart"
+            icon={
+              <span className="relative">
+                <ShoppingCart size={27} strokeWidth={2.1} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#b8872d] px-1 text-[9px] font-black text-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </span>
+            }
+            label="Cart"
+          />
+
+          {/* ACCOUNT */}
+          <MobileNavItem
+            href="/dashboard/profile"
+            icon={<UserRound size={27} strokeWidth={2.1} />}
+            label="Account"
+          />
         </div>
       </nav>
 
@@ -1787,7 +1874,7 @@ export default function CategoryProductsPage() {
       ===================================================== */}
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-[300] md:bottom-5 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#c9a227]/20 bg-white px-5 py-3.5 text-sm font-bold text-gray-800 shadow-[0_15px_50px_rgba(0,0,0,0.15)]">
+        <div className="fixed bottom-5 left-1/2 z-[300] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#c9a227]/20 bg-white px-5 py-3.5 text-sm font-bold text-gray-800 shadow-[0_15px_50px_rgba(0,0,0,0.15)]">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff3c4] text-[#a17c00]">
             <Check size={15} />
           </div>
@@ -1800,45 +1887,47 @@ export default function CategoryProductsPage() {
 }
 
 /* =========================================================
-   MOBILE BOTTOM NAV ITEM
+   MOBILE NAV ITEM
 ========================================================= */
 
 function MobileNavItem({
   href,
-  label,
   icon,
+  label,
   active = false,
-  badge = 0,
 }: {
   href: string;
+  icon: ReactNode;
   label: string;
-  icon: React.ReactNode;
   active?: boolean;
-  badge?: number;
 }) {
   return (
     <Link
       href={href}
-      className={`relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition ${
+      className={`group relative flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl transition active:scale-95 ${
         active
-          ? "text-[#a17c00]"
-          : "text-gray-500 hover:text-[#a17c00]"
+          ? "text-[#a47720]"
+          : "text-[#8e8a81] hover:text-[#a47720]"
       }`}
     >
+      {/* Active gold indicator exactly like Dashboard mobile nav. */}
       <span
-        className={`relative flex h-7 w-10 items-center justify-center rounded-xl ${
-          active ? "bg-[#fff5d4]" : "bg-transparent"
+        className={`absolute top-0 h-1 w-8 rounded-full ${
+          active ? "bg-[#b8872d]" : "bg-transparent"
+        }`}
+      />
+
+      <span className="flex h-8 items-center justify-center">
+        {icon}
+      </span>
+
+      <span
+        className={`text-[11px] ${
+          active ? "font-black text-[#a47720]" : "font-bold"
         }`}
       >
-        {icon}
-
-        {badge > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c9a227] px-1 text-[8px] font-black text-white">
-            {badge > 99 ? "99+" : badge}
-          </span>
-        )}
+        {label}
       </span>
-      <span>{label}</span>
     </Link>
   );
 }
