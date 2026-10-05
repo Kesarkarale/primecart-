@@ -1313,6 +1313,9 @@ export default function DashboardPage() {
               onFocus={() =>
                 setSearchOpen(true)
               }
+              type="search"
+              inputMode="search"
+              autoComplete="off"
               placeholder="Search products, brands and more..."
               aria-label="Search products"
             />
@@ -7427,6 +7430,404 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         @media(max-width:900px){.flash-products{grid-template-columns:repeat(2,minmax(0,1fr))!important}.flash-product{min-height:88px!important}}
         @media(max-width:680px){.flash-section{padding:14px!important}.flash-header{display:grid!important;grid-template-columns:1fr auto!important;gap:10px!important}.flash-header> a{grid-column:1/-1!important;justify-content:center!important}.flash-header p{font-size:8px!important;line-height:1.45!important}.flash-title{font-size:18px!important}.flash-products{display:flex!important;overflow-x:auto!important;scroll-snap-type:x mandatory!important;padding:2px 1px 8px!important;gap:9px!important;scrollbar-width:none!important}.flash-products::-webkit-scrollbar{display:none!important}.flash-product{min-width:220px!important;width:220px!important;flex:0 0 220px!important;scroll-snap-align:start!important}.flash-product-copy strong{font-size:11px!important}.flash-product-copy span{font-size:13px!important}}
  `}
+
+        /* ================================================================
+           PRIME CART — FINAL RESPONSIVE DASHBOARD FIX
+           - Full hero image on mobile + desktop
+           - No forced/cropped mobile hero ratio
+           - Professional mobile header
+           - Cart + 3-line menu beside PrimeCart
+           - Search works cleanly on mobile + desktop
+           - Existing bottom navigation is preserved
+           ================================================================ */
+
+        .hero-image-frame {
+          position: relative !important;
+          width: 100% !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          overflow: hidden !important;
+          background: #fffdf8 !important;
+          /* The React inline aspectRatio supplies the exact image ratio. */
+          aspect-ratio: inherit !important;
+        }
+
+        .hero-banner {
+          position: absolute !important;
+          inset: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: contain !important;
+          object-position: center center !important;
+          background: #fffdf8 !important;
+          transform: none !important;
+        }
+
+        .hero-banner.active {
+          transform: none !important;
+        }
+
+        .hero-carousel {
+          width: 100% !important;
+          min-width: 0 !important;
+          overflow: hidden !important;
+          border-radius: 18px !important;
+        }
+
+        .hero-layout {
+          width: 100% !important;
+          margin: 10px 0 24px !important;
+        }
+
+        /* Desktop search */
+        .search-box {
+          min-width: 220px !important;
+          z-index: 200 !important;
+        }
+
+        .search-box input {
+          min-width: 0 !important;
+        }
+
+        .search-submit {
+          flex: 0 0 auto !important;
+          white-space: nowrap !important;
+        }
+
+        .search-dropdown {
+          z-index: 999 !important;
+        }
+
+        /* Tablet */
+        @media (max-width: 980px) {
+          .header-main {
+            gap: 14px !important;
+          }
+
+          .logo-wrap {
+            min-width: 0 !important;
+          }
+
+          .brand-copy {
+            min-width: 0 !important;
+          }
+
+          .search-box {
+            min-width: 180px !important;
+          }
+
+          .hero-image-frame {
+            border-radius: 15px !important;
+          }
+        }
+
+        /* Mobile */
+        @media (max-width: 680px) {
+          body {
+            padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .top-strip {
+            min-height: 28px !important;
+          }
+
+          .strip-inner {
+            min-height: 28px !important;
+          }
+
+          .main-header {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 1000 !important;
+            background: rgba(255,255,255,.96) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+          }
+
+          .header-main {
+            width: calc(100% - 20px) !important;
+            min-height: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0,1fr) auto auto !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 9px 0 10px !important;
+          }
+
+          /* PrimeCart stays compact but readable. */
+        
+          .logo-wrap {
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
+          }
+
+          .brand-logo-box {
+            flex: 0 0 auto !important;
+          }
+
+          .brand-copy {
+            min-width: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .brand-name {
+            white-space: nowrap !important;
+            font-size: 18px !important;
+          }
+
+          .brand-tagline {
+            white-space: nowrap !important;
+            font-size: 7px !important;
+          }
+
+          /* Keep only Cart in the top-right, then the 3-line menu. */
+        
+          .header-actions {
+            display: flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            margin-left: 0 !important;
+          }
+
+          .header-actions .account-area,
+          .header-actions .login-action,
+          .header-actions .icon-action:nth-child(2),
+          .header-actions .icon-action > span:not(.icon-with-badge) {
+            display: none !important;
+          }
+
+          .header-actions .icon-action {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 39px !important;
+            height: 39px !important;
+            padding: 0 !important;
+            border-radius: 11px !important;
+            background: #fffaf0 !important;
+            border: 1px solid #ead9b4 !important;
+            color: #8f651b !important;
+          }
+
+          .header-actions .icon-action .icon-with-badge {
+            display: inline-flex !important;
+            position: relative !important;
+          }
+
+          .mobile-menu-button {
+            display: inline-grid !important;
+            place-items: center !important;
+            width: 39px !important;
+            height: 39px !important;
+            padding: 0 !important;
+            border-radius: 11px !important;
+            background: #fffaf0 !important;
+            border: 1px solid #ead9b4 !important;
+            color: #8f651b !important;
+          }
+
+          .mobile-menu-button svg {
+            width: 22px !important;
+            height: 22px !important;
+          }
+
+          /* Search gets its own clean second row. */
+        
+          .search-box {
+            grid-column: 1 / -1 !important;
+            order: initial !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: 44px !important;
+            min-height: 44px !important;
+            border-radius: 13px !important;
+            background: #fff !important;
+            box-shadow: 0 5px 18px rgba(56,43,17,.06) !important;
+            z-index: 1100 !important;
+          }
+
+          .search-box > svg {
+            margin-left: 13px !important;
+            width: 17px !important;
+            height: 17px !important;
+          }
+
+          .search-box input {
+            height: 100% !important;
+            min-width: 0 !important;
+            font-size: 12px !important;
+            padding: 0 8px !important;
+          }
+
+          /* Keep Search usable on phones; compact button instead of hiding it. */
+        
+          .search-submit {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 34px !important;
+            min-width: 60px !important;
+            margin-right: 4px !important;
+            padding: 0 10px !important;
+            border-radius: 9px !important;
+            font-size: 9px !important;
+          }
+
+          .clear-search {
+            flex: 0 0 auto !important;
+          }
+
+          .search-dropdown {
+            position: absolute !important;
+            top: calc(100% + 7px) !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-height: min(62vh, 430px) !important;
+            overflow-y: auto !important;
+            border-radius: 14px !important;
+            z-index: 1200 !important;
+          }
+
+          .search-dropdown button {
+            min-height: 52px !important;
+          }
+
+          /* HERO: preserve the real banner aspect ratio from React.
+             Do NOT force 1.05/1, 1.34/1, 1.48/1 or a fixed height. */
+        
+          .page-content {
+            width: calc(100% - 20px) !important;
+            padding-top: 11px !important;
+            overflow: visible !important;
+          }
+
+          .hero-layout {
+            width: 100% !important;
+            margin: 8px 0 20px !important;
+          }
+
+          .hero-carousel {
+            width: 100% !important;
+            border-radius: 14px !important;
+            overflow: hidden !important;
+          }
+
+          .hero-image-frame {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            border-radius: 14px !important;
+            /* Critical: inherit the React inline aspectRatio. */
+            aspect-ratio: inherit !important;
+          }
+
+          .hero-banner {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            object-position: center center !important;
+            background: #fffdf8 !important;
+          }
+
+          .hero-arrow {
+            width: 31px !important;
+            height: 31px !important;
+          }
+
+          .hero-left {
+            left: 7px !important;
+          }
+
+          .hero-right {
+            right: 7px !important;
+          }
+
+          .hero-dots {
+            bottom: 8px !important;
+          }
+
+          /* Existing bottom navigation stays exactly the same conceptually. */
+          .mobile-bottom-nav {
+            display: grid !important;
+            position: fixed !important;
+            left: 8px !important;
+            right: 8px !important;
+            bottom: max(8px, env(safe-area-inset-bottom)) !important;
+            height: 64px !important;
+            grid-template-columns: repeat(5, minmax(0,1fr)) !important;
+            z-index: 2000 !important;
+          }
+
+          .mobile-bottom-item {
+            min-width: 0 !important;
+            height: 52px !important;
+            font-size: 8px !important;
+          }
+
+          /* Prevent long mobile sections from affecting horizontal width. */
+          .category-section,
+          .smart-section,
+          .flash-section,
+          .trust-section,
+          .promo-section,
+          .bottom-cta {
+            max-width: 100% !important;
+            overflow: hidden !important;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .header-main {
+            width: calc(100% - 14px) !important;
+            gap: 6px !important;
+          }
+
+          .brand-name {
+            font-size: 16px !important;
+          }
+
+          .brand-tagline {
+            font-size: 6px !important;
+          }
+
+          .header-actions .icon-action,
+          .mobile-menu-button {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 10px !important;
+          }
+
+          .search-box {
+            height: 42px !important;
+            min-height: 42px !important;
+          }
+
+          .search-submit {
+            min-width: 54px !important;
+            padding: 0 8px !important;
+            font-size: 8px !important;
+          }
+
+          .page-content {
+            width: calc(100% - 14px) !important;
+          }
+
+          .hero-image-frame,
+          .hero-carousel {
+            border-radius: 11px !important;
+          }
+
+          .mobile-bottom-nav {
+            left: 6px !important;
+            right: 6px !important;
+            height: 62px !important;
+          }
+        }
+
       </style>
     </main>
   );
