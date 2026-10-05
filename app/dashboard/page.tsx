@@ -365,9 +365,13 @@ function ProductCard({
           </div>
         )}
 
-        <button className="add-cart-btn" onClick={onCart}>
-          <ShoppingCart size={13} />
-          Add to Cart
+        <button
+          className="add-cart-btn"
+          onClick={onCart}
+          aria-label={`Add ${product.name} to cart`}
+        >
+          <ShoppingCart size={15} />
+          <span className="add-cart-label">Add to Cart</span>
         </button>
       </div>
     </article>
@@ -396,6 +400,8 @@ export default function DashboardPage() {
 
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const [wishlist, setWishlist] = useState<Array<string | number>>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -725,25 +731,62 @@ export default function DashboardPage() {
   const categoryCards = visibleCategories.slice(0, 12);
 
   /* ------------------------------------------------------------------------ */
-  /* SEARCH                                                                   */
+  /* SEARCH — LIVE SUPABASE PRODUCT SEARCH                                    */
   /* ------------------------------------------------------------------------ */
 
-  const searchResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
+  useEffect(() => {
+    const query = search.trim();
 
-    if (!q) return [];
+    if (!query) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
 
-    return products
-      .filter((product) => {
-        const category =
-          categoryMap.get(String(product.category_id)) || "";
+    let cancelled = false;
 
-        return `${product.name} ${product.brand || ""} ${category}`
-          .toLowerCase()
-          .includes(q);
-      })
-      .slice(0, 7);
-  }, [search, products, categoryMap]);
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+
+      try {
+        const safeQuery = query.replace(/[%_,]/g, " ").trim();
+
+        const { data, error } = await supabase
+          .from("products")
+          .select(
+            "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
+          )
+          .eq("is_active", true)
+          .or(
+            `name.ilike.%${safeQuery}%,slug.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`
+          )
+          .order("created_at", { ascending: false })
+          .limit(7);
+
+        if (cancelled) return;
+
+        if (error) {
+          console.error("Dashboard search failed:", error);
+          setSearchResults([]);
+          return;
+        }
+
+        setSearchResults((data || []) as Product[]);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Dashboard search error:", error);
+          setSearchResults([]);
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [search, supabase]);
 
   /* ------------------------------------------------------------------------ */
   /* PRODUCT GROUPS                                                           */
@@ -1296,6 +1339,20 @@ export default function DashboardPage() {
             </span>
           </Link>
 
+          {/* MOBILE CART — icon only beside PrimeCart logo */}
+          <Link
+            href="/dashboard/cart"
+            className="mobile-header-cart"
+            aria-label="Shopping Cart"
+          >
+            <span className="mobile-header-cart-icon">
+              <ShoppingCart size={21} />
+              {cartCount > 0 && (
+                <b>{cartCount > 99 ? "99+" : cartCount}</b>
+              )}
+            </span>
+          </Link>
+
           {/* SEARCH */}
           <form
             className={`search-box ${
@@ -1350,7 +1407,12 @@ export default function DashboardPage() {
                   </small>
                 </div>
 
-                {searchResults.length ? (
+                {searchLoading ? (
+                  <div className="no-suggestions">
+                    <Search size={18} />
+                    <span>Searching products...</span>
+                  </div>
+                ) : searchResults.length ? (
                   searchResults.map((product) => (
                     <button
                       key={String(product.id)}
@@ -7426,6 +7488,110 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         @media(max-width:1200px){.flash-products{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
         @media(max-width:900px){.flash-products{grid-template-columns:repeat(2,minmax(0,1fr))!important}.flash-product{min-height:88px!important}}
         @media(max-width:680px){.flash-section{padding:14px!important}.flash-header{display:grid!important;grid-template-columns:1fr auto!important;gap:10px!important}.flash-header> a{grid-column:1/-1!important;justify-content:center!important}.flash-header p{font-size:8px!important;line-height:1.45!important}.flash-title{font-size:18px!important}.flash-products{display:flex!important;overflow-x:auto!important;scroll-snap-type:x mandatory!important;padding:2px 1px 8px!important;gap:9px!important;scrollbar-width:none!important}.flash-products::-webkit-scrollbar{display:none!important}.flash-product{min-width:220px!important;width:220px!important;flex:0 0 220px!important;scroll-snap-align:start!important}.flash-product-copy strong{font-size:11px!important}.flash-product-copy span{font-size:13px!important}}
+
+        /* FINAL REQUESTED MOBILE HEADER + CART POLISH */
+        @media (max-width: 680px) {
+          .header-main {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+
+          .logo-wrap {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+          }
+
+          .mobile-header-cart {
+            display: inline-flex !important;
+            flex: 0 0 40px !important;
+            width: 40px !important;
+            height: 40px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid #e4d8c0 !important;
+            border-radius: 12px !important;
+            background: #fffaf0 !important;
+            color: #8b671f !important;
+            text-decoration: none !important;
+          }
+
+          .mobile-header-cart-icon {
+            position: relative !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+
+          .mobile-header-cart-icon b {
+            position: absolute !important;
+            top: -9px !important;
+            right: -10px !important;
+            min-width: 16px !important;
+            height: 16px !important;
+            padding: 0 4px !important;
+            border-radius: 999px !important;
+            display: grid !important;
+            place-items: center !important;
+            background: #b8872d !important;
+            color: #fff !important;
+            border: 2px solid #fffaf0 !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+          }
+
+          .header-actions,
+          .mobile-menu-button,
+          .mobile-menu-overlay {
+            display: none !important;
+          }
+
+          .search-box {
+            order: 10 !important;
+            flex: 0 0 100% !important;
+            width: 100% !important;
+          }
+
+          .add-cart-btn {
+            width: 38px !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
+            height: 35px !important;
+            min-height: 35px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0 !important;
+            font-size: 0 !important;
+          }
+
+          .add-cart-btn .add-cart-label {
+            display: none !important;
+          }
+
+          .add-cart-btn svg {
+            width: 16px !important;
+            height: 16px !important;
+            flex: 0 0 auto !important;
+          }
+
+          .mobile-bottom-nav {
+            display: flex !important;
+            position: fixed !important;
+            left: 10px !important;
+            right: 10px !important;
+            bottom: 8px !important;
+            z-index: 1200 !important;
+          }
+        }
+
+        @media (min-width: 681px) {
+          .mobile-header-cart {
+            display: none !important;
+          }
+        }
  `}
       </style>
     </main>
