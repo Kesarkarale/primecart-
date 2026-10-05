@@ -7771,13 +7771,50 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
 
         @media (max-width: 390px) {
           .hero-image-frame {
-            aspect-ratio: 1.82 / 1 !important;
+            aspect-ratio: auto !important;
           }
 
           .mobile-bottom-nav {
             left: 6px !important;
             right: 6px !important;
             bottom: 6px !important;
+          }
+        }
+
+        /* ================================================================
+           FINAL MOBILE HERO SPACE FIX
+           Prevent the old fixed mobile aspect-ratio rules from leaving a
+           large blank white area below the actual banner.
+           ================================================================ */
+        @media (max-width: 680px) {
+          .hero-carousel {
+            height: auto !important;
+            min-height: 0 !important;
+          }
+
+          .hero-image-frame {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            aspect-ratio: auto !important;
+          }
+
+          .hero-banner.active {
+            position: relative !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            aspect-ratio: auto !important;
+            object-fit: contain !important;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .hero-image-frame {
+            height: auto !important;
+            aspect-ratio: auto !important;
           }
         }
  `}
