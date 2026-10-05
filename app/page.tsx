@@ -451,8 +451,7 @@ export default function HomePage() {
               Home
             </Link>
 
-            <Link
-              href="/auth/login"
+             <Link href="/dashboard"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Shop
@@ -522,15 +521,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            <Link
-              href="/auth/login"
+             <Link
+            href="/dashboard"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Deals
             </Link>
 
             <Link
-              href="/auth/login"
+               href="/dashboard"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Contact
@@ -667,13 +666,11 @@ export default function HomePage() {
             <div className="grid gap-1.5">
               {[
                 ["Home", "/"],
-                ["Shop", "/auth/login"],
-                [
-                  "Categories",
-                  "/auth/login",
-                ],
-                ["Deals", "/auth/login"],
-                ["Contact", "/auth/login"],
+                ["Shop", "/dashboard/products"],
+                ["Categories", "/dashboard/categories"],
+                ["Deals", "/dashboard"],
+                ["Contact", "/dashboard"],
+            
               ].map(([label, href]) => (
                 <Link
                   key={label}
@@ -852,7 +849,8 @@ lg:min-h-[540px]
           "
         >
           <Link
-            href="/auth/login"
+             href="/dashboard"
+            
             className="
               inline-flex
               h-9
@@ -897,7 +895,8 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/auth/login"
+           href="/dashboard/products"
+            
             className="
               inline-flex
               h-9
@@ -1411,7 +1410,7 @@ lg:min-h-[540px]
             </div>
 
             <Link
-              href="/auth/login"
+              href="/dashboard/categories"
               className="inline-flex items-center gap-2 text-sm font-semibold text-[#b58c24] transition hover:gap-3 sm:text-base"
             >
               View all categories
@@ -1857,21 +1856,21 @@ lg:min-h-[540px]
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard/products"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Shop
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard/categories"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Deals
@@ -2011,7 +2010,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/dashboard/categories/electronics"
+            href="/dashboard/products"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Search size={18} />
