@@ -1,22 +1,6 @@
 "use client";
 
-/* ============================================================================
-   PRIME CART — DASHBOARD PAGE
-   File: app/dashboard/page.tsx
-
-   IMPORTANT:
-   - हा मुख्य PrimeCart shopping dashboard आहे.
-   - Database: Supabase
-   - Styling: ./dashboard.css
-   - Authentication: Supabase Auth
-   - Cart: cart_items table
-   - Wishlist: wishlist_items table
-   - Product data: products table
-   - Category data: categories table
-   ============================================================================ */
-
 import Link from "next/link";
-
 import {
   useEffect,
   useMemo,
@@ -25,51 +9,10 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-
 import { useRouter } from "next/navigation";
-
-/* ============================================================================
-   SUPABASE CLIENT
-   ----------------------------------------------------------------------------
-   createClient() वापरून browser-side Supabase connection मिळतो.
-   याच connection मधून:
-   - products
-   - categories
-   - cart_items
-   - wishlist_items
-   - auth user
-   हे सर्व access केले जाते.
-   ============================================================================ */
 import { createClient } from "@/lib/supabase/client";
-
-/* ============================================================================
-   DASHBOARD CSS
-   ----------------------------------------------------------------------------
-   या page चे सर्व मुख्य CSS classes dashboard.css मध्ये आहेत.
-
-   उदाहरण:
-   .store-shell
-   .main-header
-   .search-box
-   .hero-carousel
-   .category-section
-   .product-card
-   .flash-section
-   .mobile-bottom-nav
-   इत्यादी.
-
-   म्हणजे UI बदलायचा असेल तर मुख्यतः:
-   app/dashboard/dashboard.css
-   मध्ये काम करायचे.
-   ============================================================================ */
 import "./dashboard.css";
 
-
-/* ============================================================================
-   LUCIDE ICONS
-   ----------------------------------------------------------------------------
-   हे UI icons आहेत.
-   ============================================================================ */
 import {
   ArrowRight,
   ChevronDown,
@@ -123,58 +66,31 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-
-/* ============================================================================
-   PRODUCT TYPE
-   ----------------------------------------------------------------------------
-   Supabase मधील products table चा TypeScript structure.
-   ============================================================================ */
 type Product = {
   id: string | number;
   category_id: string | number | null;
-
   name: string;
   slug?: string | null;
-
   short_description?: string | null;
   description?: string | null;
-
   price: number | null;
   original_price: number | null;
-
   stock: number | null;
-
   image_url: string | null;
-
   brand?: string | null;
-
   rating?: number | null;
   reviews_count?: number | null;
-
   is_featured?: boolean | null;
   is_flash_sale?: boolean | null;
   is_active?: boolean | null;
-
   created_at?: string | null;
 };
 
-
-/* ============================================================================
-   CATEGORY TYPE
-   ----------------------------------------------------------------------------
-   Supabase categories table.
-   ============================================================================ */
 type Category = {
   id: string | number;
   name: string;
 };
 
-
-/* ============================================================================
-   CART ITEM TYPE
-   ----------------------------------------------------------------------------
-   Dashboard वर वापरला जाणारा cart format.
-   ============================================================================ */
 type CartItem = {
   id: string | number;
   name: string;
@@ -183,38 +99,18 @@ type CartItem = {
   quantity: number;
 };
 
-
-/* ============================================================================
-   USER TYPE
-   ============================================================================ */
 type UserInfo = {
   name: string;
   email: string;
 };
 
-
-/* ============================================================================
-   LOCAL STORAGE KEYS
-   ----------------------------------------------------------------------------
-   Guest cart आणि theme browser मध्ये ठेवण्यासाठी.
-   Logged-in user साठी database हा source of truth आहे.
-   ============================================================================ */
 const CART_KEY = "primecart-cart";
 const THEME_KEY = "primecart-theme";
 
-
-/* ============================================================================
-   SUPABASE TABLE NAMES
-   ============================================================================ */
+// Supabase tables used for persistent, user-specific cart and wishlist data.
 const CART_TABLE = "cart_items";
 const WISHLIST_TABLE = "wishlist_items";
 
-
-/* ============================================================================
-   HERO BANNERS
-   ----------------------------------------------------------------------------
-   public/banner/ folder मधील images.
-   ============================================================================ */
 const HERO_BANNERS = [
   "/banner/hero-banner.png",
   "/banner/hero-banner2.png",
@@ -226,12 +122,6 @@ const HERO_BANNERS = [
   "/banner/hero-banner8.png",
 ];
 
-
-/* ============================================================================
-   HERO BANNER ROUTES
-   ----------------------------------------------------------------------------
-   कोणत्या banner वर click केल्यावर कुठे जायचे.
-   ============================================================================ */
 const HERO_LINKS = [
   "/dashboard/products",
   "/dashboard/categories/beauty",
@@ -243,12 +133,6 @@ const HERO_LINKS = [
   "/dashboard/categories",
 ];
 
-
-/* ============================================================================
-   CATEGORY DISPLAY ORDER
-   ----------------------------------------------------------------------------
-   Database मधून categories कोणत्या order मध्ये dashboard वर दिसतील.
-   ============================================================================ */
 const CATEGORY_ORDER = [
   "Mobile",
   "Electronics",
@@ -270,19 +154,8 @@ const CATEGORY_ORDER = [
   "Bag",
 ];
 
-
-/* ============================================================================
-   IMAGE URL HELPER
-   ----------------------------------------------------------------------------
-   Database मधील image_url:
-     product.png
-     /product.png
-     https://...
-   अशा वेगवेगळ्या formats मध्ये असेल तरी URL तयार करतो.
-   ============================================================================ */
 function getImageUrl(value?: string | null) {
   if (!value?.trim()) return "";
-
   const v = value.trim();
 
   if (/^https?:\/\//i.test(v) || v.startsWith("/")) {
@@ -292,23 +165,10 @@ function getImageUrl(value?: string | null) {
   return `/${v}`;
 }
 
-
-/* ============================================================================
-   PRICE FORMATTER
-   ----------------------------------------------------------------------------
-   Example:
-   2999 -> ₹2,999
-   ============================================================================ */
 function formatPrice(value: number | null | undefined) {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
-
-/* ============================================================================
-   DISCOUNT CALCULATOR
-   ----------------------------------------------------------------------------
-   Product price आणि original price वरून discount percentage.
-   ============================================================================ */
 function getDiscount(
   price: number | null | undefined,
   original: number | null | undefined
@@ -318,15 +178,6 @@ function getDiscount(
   return Math.round(((original - price) / original) * 100);
 }
 
-
-/* ============================================================================
-   CATEGORY SLUG GENERATOR
-   ----------------------------------------------------------------------------
-   Example:
-   "Home & Kitchen"
-   ->
-   "home-and-kitchen"
-   ============================================================================ */
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -336,12 +187,6 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-
-/* ============================================================================
-   CATEGORY ICON
-   ----------------------------------------------------------------------------
-   Category च्या नावावरून योग्य Lucide icon निवडतो.
-   ============================================================================ */
 function getCategoryIcon(name: string) {
   const n = name.toLowerCase();
 
@@ -364,53 +209,27 @@ function getCategoryIcon(name: string) {
   return Package;
 }
 
-
-/* ============================================================================
-   PRODUCT IMAGE FALLBACK SYSTEM
-   ----------------------------------------------------------------------------
-   Image मिळाली नाही तर वेगवेगळे possible paths try केले जातात.
-   शेवटी product-placeholder वापरला जातो.
-   ============================================================================ */
 function getImageCandidates(value?: string | null) {
   if (!value?.trim()) return [];
-
   const raw = value.trim();
+  if (/^https?:\/\//i.test(raw)) return [raw];
 
-  if (/^https?:\/\//i.test(raw)) {
-    return [raw];
-  }
-
-  const clean = raw
-    .replace(/^public[\\/]/i, "")
-    .replace(/^\//, "");
-
-  const encoded = clean
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
-
-  return Array.from(
-    new Set([
-      `/${clean}`,
-      `/${encoded}`,
-      `/products/${clean}`,
-      `/product/${clean}`,
-      `/product-images/${clean}`,
-      `/images/products/${clean}`,
-      `/images/${clean}`,
-      `/assets/products/${clean}`,
-      `/assets/images/${clean}`,
-      "/product-placeholder.png",
-    ])
-  );
+  const clean = raw.replace(/^public[\\/]/i, "").replace(/^\//, "");
+  const encoded = clean.split("/").map(encodeURIComponent).join("/");
+  return Array.from(new Set([
+    `/${clean}`,
+    `/${encoded}`,
+    `/products/${clean}`,
+    `/product/${clean}`,
+    `/product-images/${clean}`,
+    `/images/products/${clean}`,
+    `/images/${clean}`,
+    `/assets/products/${clean}`,
+    `/assets/images/${clean}`,
+    "/product-placeholder.png",
+  ]));
 }
 
-
-/* ============================================================================
-   SAFE PRODUCT IMAGE COMPONENT
-   ----------------------------------------------------------------------------
-   Product image load fail झाली तर next image path try करतो.
-   ============================================================================ */
 function SafeProductImage({
   src,
   alt,
@@ -433,33 +252,15 @@ function SafeProductImage({
       alt={alt}
       className={className}
       loading="lazy"
-      onError={() =>
-        setIndex((current) => current + 1)
-      }
+      onError={() => setIndex((current) => current + 1)}
     />
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* PRODUCT CARD                                                               */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   PRODUCT CARD
-   ----------------------------------------------------------------------------
-   Dashboard वरील प्रत्येक product ची card.
-
-   CSS FILE:
-   dashboard.css
-
-   Main classes:
-   .product-card
-   .wish-btn
-   .product-badges
-   .discount-badge
-   .product-image-wrap
-   .product-copy
-   .rating-row
-   .price-row
-   .add-cart-btn
-   ============================================================================ */
 function ProductCard({
   product,
   category,
@@ -475,21 +276,13 @@ function ProductCard({
   onCart: () => void;
   onOpen: () => void;
 }) {
-  const discount = getDiscount(
-    product.price,
-    product.original_price
-  );
-
+  const discount = getDiscount(product.price, product.original_price);
   const stock = Number(product.stock ?? 0);
 
   return (
     <article className="product-card premium-reveal">
-
-      {/* Product card decorative glow — CSS मध्ये */}
       <div className="product-card-glow" />
 
-
-      {/* Wishlist button */}
       <button
         className={`wish-btn ${wished ? "wished" : ""}`}
         aria-label="Wishlist"
@@ -502,10 +295,7 @@ function ProductCard({
         />
       </button>
 
-
-      {/* Product badges */}
       <div className="product-badges">
-
         {discount > 0 && (
           <span className="discount-badge">
             <Percent size={9} />
@@ -519,11 +309,8 @@ function ProductCard({
             Bestseller
           </span>
         )}
-
       </div>
 
-
-      {/* Product image */}
       <button
         className="product-image-wrap"
         onClick={onOpen}
@@ -536,10 +323,7 @@ function ProductCard({
             className="product-image"
           />
         ) : (
-          <ShoppingBag
-            size={48}
-            strokeWidth={1.2}
-          />
+          <ShoppingBag size={48} strokeWidth={1.2} />
         )}
 
         <span className="image-view">
@@ -548,61 +332,33 @@ function ProductCard({
         </span>
       </button>
 
-
-      {/* Product information */}
       <div className="product-copy">
+        <div className="product-category">{category}</div>
 
-        <div className="product-category">
-          {category}
-        </div>
-
-        <button
-          className="product-name"
-          onClick={onOpen}
-        >
+        <button className="product-name" onClick={onOpen}>
           {product.name}
         </button>
 
-
-        {/* Rating */}
         <div className="rating-row">
           <span className="rating-pill">
             {Number(product.rating || 0).toFixed(1)}
-            <Star
-              size={10}
-              fill="currentColor"
-            />
+            <Star size={10} fill="currentColor" />
           </span>
 
           <span className="review-count">
-            (
-            {Number(
-              product.reviews_count || 0
-            ).toLocaleString("en-IN")}
-            )
+            ({Number(product.reviews_count || 0).toLocaleString("en-IN")})
           </span>
         </div>
 
-
-        {/* Price */}
         <div className="price-row">
-          <strong>
-            {formatPrice(product.price)}
-          </strong>
+          <strong>{formatPrice(product.price)}</strong>
 
           {product.original_price &&
-            product.original_price >
-              Number(product.price || 0) && (
-              <del>
-                {formatPrice(
-                  product.original_price
-                )}
-              </del>
+            product.original_price > Number(product.price || 0) && (
+              <del>{formatPrice(product.original_price)}</del>
             )}
         </div>
 
-
-        {/* Low stock warning */}
         {stock > 0 && stock <= 10 && (
           <div className="stock-warning">
             <span />
@@ -610,2204 +366,933 @@ function ProductCard({
           </div>
         )}
 
-
-        {/* Add to cart */}
-        <button
-          className="add-cart-btn"
-          onClick={onCart}
-        >
+        <button className="add-cart-btn" onClick={onCart}>
           <ShoppingCart size={13} />
           Add to Cart
         </button>
-
       </div>
     </article>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* MAIN DASHBOARD                                                             */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   MAIN DASHBOARD
-   ============================================================================ */
 export default function DashboardPage() {
-
-  /* --------------------------------------------------------------------------
-     ROUTER + SUPABASE
-     -------------------------------------------------------------------------- */
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
 
-  const supabase = useMemo(
-    () => createClient(),
-    []
-  );
+  const categoryRailRef = useRef<HTMLDivElement>(null);
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  /* --------------------------------------------------------------------------
-     REFS
-     --------------------------------------------------------------------------
-     Category horizontal scroll साठी.
-     -------------------------------------------------------------------------- */
-  const categoryRailRef =
-    useRef<HTMLDivElement>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    name: "",
+    email: "",
+  });
 
+  const [errorMessage, setErrorMessage] = useState("");
 
-  /* --------------------------------------------------------------------------
-     DATABASE STATE
-     -------------------------------------------------------------------------- */
-  const [products, setProducts] =
-    useState<Product[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+const [searchLoading, setSearchLoading] = useState(false);
 
-  const [categories, setCategories] =
-    useState<Category[]>([]);
+  const [wishlist, setWishlist] = useState<Array<string | number>>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
 
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroAspectRatio, setHeroAspectRatio] = useState(3.2);
 
-  /* --------------------------------------------------------------------------
-     USER STATE
-     -------------------------------------------------------------------------- */
-  const [userInfo, setUserInfo] =
-    useState<UserInfo>({
-      name: "",
-      email: "",
-    });
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const [userLoggedIn, setUserLoggedIn] =
-    useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
+  const [toast, setToast] = useState("");
+  const [userLoggedIn, setUserLoggedIn] = useState(false);
 
-  /* --------------------------------------------------------------------------
-     ERROR STATE
-     -------------------------------------------------------------------------- */
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [countdown, setCountdown] = useState({
+    hours: 8,
+    minutes: 42,
+    seconds: 18,
+  });
 
-
-  /* --------------------------------------------------------------------------
-     SEARCH STATE
-     --------------------------------------------------------------------------
-     Search Supabase products/categories वर चालतो.
-     -------------------------------------------------------------------------- */
-  const [search, setSearch] =
-    useState("");
-
-  const [searchOpen, setSearchOpen] =
-    useState(false);
-
-  const [searchResults, setSearchResults] =
-    useState<Product[]>([]);
-
-  const [searchLoading, setSearchLoading] =
-    useState(false);
-
-
-  /* --------------------------------------------------------------------------
-     CART + WISHLIST STATE
-     -------------------------------------------------------------------------- */
-  const [wishlist, setWishlist] =
-    useState<Array<string | number>>([]);
-
-  const [cart, setCart] =
-    useState<CartItem[]>([]);
-
-
-  /* --------------------------------------------------------------------------
-     HERO STATE
-     -------------------------------------------------------------------------- */
-  const [heroIndex, setHeroIndex] =
-    useState(0);
-
-  const [heroAspectRatio, setHeroAspectRatio] =
-    useState(3.2);
-
-
-  /* --------------------------------------------------------------------------
-     HEADER / MENU STATE
-     -------------------------------------------------------------------------- */
-  const [profileOpen, setProfileOpen] =
-    useState(false);
-
-  const [mobileMenuOpen, setMobileMenuOpen] =
-    useState(false);
-
-
-  /* --------------------------------------------------------------------------
-     THEME STATE
-     --------------------------------------------------------------------------
-     Light / Dark mode project-wide.
-     CSS:
-     html.dark ...
-     -------------------------------------------------------------------------- */
-  const [theme, setTheme] =
-    useState<"light" | "dark">("light");
-
-
-  /* --------------------------------------------------------------------------
-     TOAST STATE
-     -------------------------------------------------------------------------- */
-  const [toast, setToast] =
-    useState("");
-
-
-  /* --------------------------------------------------------------------------
-     FLASH DEAL COUNTDOWN
-     -------------------------------------------------------------------------- */
-  const [countdown, setCountdown] =
-    useState({
-      hours: 8,
-      minutes: 42,
-      seconds: 18,
-    });
-
-
-  /* ==========================================================================
-     LOAD DASHBOARD DATA
-     ==========================================================================
-     येथे:
-     1. Logged-in user
-     2. Products
-     3. Categories
-     4. Database cart
-     5. Database wishlist
-     6. Local cart migration
-     load होते.
-     ========================================================================== */
+  /* ------------------------------------------------------------------------ */
+  /* LOAD DASHBOARD + DATABASE CART/WISHLIST                                  */
+  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
-
     let mounted = true;
 
     async function loadDashboard() {
-
       try {
-
         setErrorMessage("");
 
-
-        /* --------------------------------------------------------------------
-           LOCAL CART READER
-           -------------------------------------------------------------------- */
         const localCart = (): CartItem[] => {
-
           try {
-
-            const value = JSON.parse(
-              localStorage.getItem(
-                CART_KEY
-              ) || "[]"
-            );
-
-            return Array.isArray(value)
-              ? value
-              : [];
-
+            const value = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+            return Array.isArray(value) ? value : [];
           } catch {
-
             return [];
-
           }
         };
 
 
-        /* --------------------------------------------------------------------
-           PARALLEL DATABASE REQUESTS
-           -------------------------------------------------------------------- */
         const [
-          {
-            data: { user },
-          },
-
-          {
-            data: productData,
-            error: productError,
-          },
-
-          {
-            data: categoryData,
-            error: categoryError,
-          },
-
+          { data: { user } },
+          { data: productData, error: productError },
+          { data: categoryData, error: categoryError },
         ] = await Promise.all([
-
-          /* Current authenticated user */
           supabase.auth.getUser(),
-
-          /* Products */
           supabase
             .from("products")
             .select(
               "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
             )
             .eq("is_active", true)
-            .order(
-              "created_at",
-              { ascending: false }
-            )
+            .order("created_at", { ascending: false })
             .limit(500),
-
-          /* Categories */
           supabase
             .from("categories")
             .select("id,name")
-            .order(
-              "name",
-              { ascending: true }
-            ),
-
+            .order("name", { ascending: true }),
         ]);
 
-
-        if (productError) {
-          throw productError;
-        }
+        if (productError) throw productError;
 
         if (!mounted) return;
 
-
-        /* --------------------------------------------------------------------
-           SAVE PRODUCTS + CATEGORIES
-           -------------------------------------------------------------------- */
-        const loadedProducts =
-          (productData || []) as Product[];
-
+        const loadedProducts = (productData || []) as Product[];
         setProducts(loadedProducts);
-
-        setCategories(
-          categoryData || []
-        );
-
+        setCategories(categoryData || []);
 
         if (categoryError) {
-          console.warn(
-            "Category loading warning:",
-            categoryError.message
-          );
+          console.warn("Category loading warning:", categoryError.message);
         }
 
-
-        /* --------------------------------------------------------------------
-           LOGGED-IN USER
-           -------------------------------------------------------------------- */
         if (user) {
-
           setUserLoggedIn(true);
 
-          const meta =
-            user.user_metadata || {};
-
-
+          const meta = user.user_metadata || {};
           setUserInfo({
             name:
               meta.full_name ||
               meta.name ||
               user.email?.split("@")[0] ||
               "PrimeCart User",
-
-            email:
-              user.email || "",
+            email: user.email || "",
           });
 
-
-          /* ------------------------------------------------------------------
-             LOAD USER CART + WISHLIST
-             ------------------------------------------------------------------ */
+          /*
+           * Database is the source of truth for logged-in users.
+           * Existing localStorage data is migrated only when the user's
+           * database tables are empty. Nothing is automatically deleted.
+           */
           const [
-            {
-              data: dbCart,
-              error: dbCartError,
-            },
-
-            {
-              data: dbWishlist,
-              error: dbWishlistError,
-            },
-
+            { data: dbCart, error: dbCartError },
+            { data: dbWishlist, error: dbWishlistError },
           ] = await Promise.all([
-
             supabase
               .from(CART_TABLE)
-              .select(
-                "id,product_id,quantity,created_at,updated_at"
-              )
-              .eq(
-                "user_id",
-                user.id
-              )
-              .order(
-                "created_at",
-                { ascending: true }
-              ),
-
+              .select("id,product_id,quantity,created_at,updated_at")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: true }),
             supabase
               .from(WISHLIST_TABLE)
-              .select(
-                "product_id,created_at"
-              )
-              .eq(
-                "user_id",
-                user.id
-              )
-              .order(
-                "created_at",
-                { ascending: true }
-              ),
-
+              .select("product_id,created_at")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: true }),
           ]);
 
-
-          /* ------------------------------------------------------------------
-             DATABASE ERROR
-             ------------------------------------------------------------------ */
-          if (
-            dbCartError ||
-            dbWishlistError
-          ) {
-
-            console.error(
-              "Cart/Wishlist database error:",
-              {
-                cart:
-                  dbCartError?.message,
-
-                wishlist:
-                  dbWishlistError?.message,
-              }
-            );
-
+          if (dbCartError || dbWishlistError) {
+            console.error("Cart/Wishlist database error:", {
+              cart: dbCartError?.message,
+              wishlist: dbWishlistError?.message,
+            });
 
             if (mounted) {
-
               setErrorMessage(
                 "Cart/Wishlist database tables are not ready. Run the PrimeCart cart & wishlist SQL once in Supabase SQL Editor."
               );
-
             }
-
           } else {
+            const loadedProducts = (productData || []) as Product[];
+            const productById = new Map(
+              loadedProducts.map((product) => [String(product.id), product])
+            );
 
-            /* ---------------------------------------------------------------
-               PRODUCT ID -> PRODUCT MAP
-               --------------------------------------------------------------- */
-            const productById =
-              new Map(
-                loadedProducts.map(
-                  (product) => [
-                    String(product.id),
-                    product,
-                  ]
-                )
-              );
+            let finalCart: CartItem[] = (dbCart || []).map((item) => {
+              const product = productById.get(String(item.product_id));
 
+              return {
+                id: item.product_id,
+                name: product?.name || "PrimeCart Product",
+                price: Number(product?.price || 0),
+                image_url: product?.image_url || null,
+                quantity: Math.max(1, Number(item.quantity || 1)),
+              };
+            });
 
-            /* ---------------------------------------------------------------
-               DATABASE CART -> UI CART
-               --------------------------------------------------------------- */
-            let finalCart: CartItem[] =
-              (dbCart || []).map(
-                (item) => {
+            let finalWishlist: Array<string | number> = (dbWishlist || []).map(
+              (item) => item.product_id
+            );
 
-                  const product =
-                    productById.get(
-                      String(
-                        item.product_id
-                      )
-                    );
-
-                  return {
-                    id:
-                      item.product_id,
-
-                    name:
-                      product?.name ||
-                      "PrimeCart Product",
-
-                    price:
-                      Number(
-                        product?.price ||
-                          0
-                      ),
-
-                    image_url:
-                      product?.image_url ||
-                      null,
-
-                    quantity:
-                      Math.max(
-                        1,
-                        Number(
-                          item.quantity ||
-                            1
-                        )
-                      ),
-                  };
-
-                }
-              );
-
-
-            /* ---------------------------------------------------------------
-               DATABASE WISHLIST -> UI WISHLIST
-               --------------------------------------------------------------- */
-            let finalWishlist:
-              Array<string | number> =
-              (dbWishlist || []).map(
-                (item) =>
-                  item.product_id
-              );
-
-
-            /* ---------------------------------------------------------------
-               LOCAL CART -> DATABASE MIGRATION
-               --------------------------------------------------------------- */
-            if (
-              !dbCart?.length &&
-              localCart().length
-            ) {
-
-              const rows =
-                localCart()
-                  .filter(
-                    (item) =>
-                      item?.id != null
-                  )
-                  .map((item) => ({
-                    user_id:
-                      user.id,
-
-                    product_id:
-                      String(item.id),
-
-                    quantity:
-                      Math.max(
-                        1,
-                        Number(
-                          item.quantity ||
-                            1
-                        )
-                      ),
-                  }));
-
+            /* One-time safe migration from the old localStorage cart. */
+            if (!dbCart?.length && localCart().length) {
+              const rows = localCart()
+                .filter((item) => item?.id != null)
+                .map((item) => ({
+                  user_id: user.id,
+                  product_id: String(item.id),
+                  quantity: Math.max(1, Number(item.quantity || 1)),
+                }));
 
               if (rows.length) {
-
-                const { error } =
-                  await supabase
-                    .from(CART_TABLE)
-                    .upsert(
-                      rows,
-                      {
-                        onConflict:
-                          "user_id,product_id",
-                      }
-                    );
-
+                const { error } = await supabase
+                  .from(CART_TABLE)
+                  .upsert(rows, { onConflict: "user_id,product_id" });
 
                 if (!error) {
+                  finalCart = rows.map((item) => {
+                    const product = productById.get(String(item.product_id));
 
-                  finalCart =
-                    rows.map(
-                      (item) => {
-
-                        const product =
-                          productById.get(
-                            String(
-                              item.product_id
-                            )
-                          );
-
-                        return {
-                          id:
-                            item.product_id,
-
-                          name:
-                            product?.name ||
-                            "PrimeCart Product",
-
-                          price:
-                            Number(
-                              product?.price ||
-                                0
-                            ),
-
-                          image_url:
-                            product?.image_url ||
-                            null,
-
-                          quantity:
-                            item.quantity,
-                        };
-
-                      }
-                    );
-
+                    return {
+                      id: item.product_id,
+                      name: product?.name || "PrimeCart Product",
+                      price: Number(product?.price || 0),
+                      image_url: product?.image_url || null,
+                      quantity: item.quantity,
+                    };
+                  });
                 } else {
-
-                  console.error(
-                    "Cart migration failed:",
-                    error.message
-                  );
-
+                  console.error("Cart migration failed:", error.message);
                 }
-
               }
-
             }
 
-
-            /* ---------------------------------------------------------------
-               SAVE FINAL CART/WISHLIST INTO STATE
-               --------------------------------------------------------------- */
             if (mounted) {
-
               setCart(finalCart);
-
-              setWishlist(
-                finalWishlist
-              );
-
-              localStorage.setItem(
-                CART_KEY,
-                JSON.stringify(
-                  finalCart
-                )
-              );
-
+              setWishlist(finalWishlist);
+              localStorage.setItem(CART_KEY, JSON.stringify(finalCart));
             }
-
           }
-
         } else {
-
-          /* ----------------------------------------------------------------
-             GUEST USER
-             ----------------------------------------------------------------
-             Guest cart localStorage मध्ये राहतो.
-             Wishlist login शिवाय database मध्ये वापरता येत नाही.
-             ---------------------------------------------------------------- */
-          const guestCart =
-            localCart();
-
+          /* Guest fallback: cart may stay local, wishlist is database-only. */
+          const guestCart = localCart();
           setCart(guestCart);
-
           setWishlist([]);
-
         }
 
-
-        /* --------------------------------------------------------------------
-           LOAD SAVED THEME
-           -------------------------------------------------------------------- */
-        const savedTheme =
-          localStorage.getItem(
-            THEME_KEY
-          );
-
-        if (
-          savedTheme === "dark" &&
-          mounted
-        ) {
-
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === "dark" && mounted) {
           setTheme("dark");
-
         }
-
       } catch (error) {
-
-        console.error(
-          "Dashboard loading error:",
-          error
-        );
+        console.error("Dashboard loading error:", error);
 
         if (mounted) {
-
           setErrorMessage(
             "Unable to load PrimeCart right now. Please try again."
           );
-
         }
-
+      } finally {
+        if (mounted) {
+        }
       }
-
     }
 
-
     loadDashboard();
-
 
     return () => {
       mounted = false;
     };
-
   }, [supabase]);
 
+  /* ------------------------------------------------------------------------ */
+  /* THEME                                                                    */
+  /* ------------------------------------------------------------------------ */
 
-  /* ==========================================================================
-     THEME
-     ----------------------------------------------------------------------------
-     theme state -> html.dark class.
-     CSS dashboard.css मधून apply होते.
-     ========================================================================== */
   useEffect(() => {
-
     document.documentElement.classList.toggle(
       "dark",
       theme === "dark"
     );
 
-    localStorage.setItem(
-      THEME_KEY,
-      theme
-    );
-
+    localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
+  /* ------------------------------------------------------------------------ */
+  /* HERO                                                                     */
+  /* ------------------------------------------------------------------------ */
 
-  /* ==========================================================================
-     HERO AUTO SLIDER
-     ----------------------------------------------------------------------------
-     प्रत्येक 5.2 seconds ला next banner.
-     ========================================================================== */
   useEffect(() => {
-
-    const timer =
-      window.setInterval(() => {
-
-        setHeroIndex(
-          (current) =>
-            (current + 1) %
-            HERO_BANNERS.length
-        );
-
-      }, 5200);
-
-
-    return () =>
-      window.clearInterval(
-        timer
+    const timer = window.setInterval(() => {
+      setHeroIndex(
+        (current) => (current + 1) % HERO_BANNERS.length
       );
+    }, 5200);
 
+    return () => window.clearInterval(timer);
   }, []);
 
+  /* ------------------------------------------------------------------------ */
+  /* FLASH COUNTDOWN                                                          */
+  /* ------------------------------------------------------------------------ */
 
-  /* ==========================================================================
-     FLASH DEAL COUNTDOWN
-     ========================================================================== */
   useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCountdown((current) => {
+        let { hours, minutes, seconds } = current;
 
-    const timer =
-      window.setInterval(() => {
+        if (seconds > 0) {
+          seconds -= 1;
+        } else {
+          seconds = 59;
 
-        setCountdown((current) => {
-
-          let {
-            hours,
-            minutes,
-            seconds,
-          } = current;
-
-
-          if (seconds > 0) {
-
-            seconds -= 1;
-
+          if (minutes > 0) {
+            minutes -= 1;
           } else {
+            minutes = 59;
 
-            seconds = 59;
-
-
-            if (minutes > 0) {
-
-              minutes -= 1;
-
+            if (hours > 0) {
+              hours -= 1;
             } else {
-
-              minutes = 59;
-
-
-              if (hours > 0) {
-
-                hours -= 1;
-
-              } else {
-
-                hours = 8;
-
-              }
-
+              hours = 8;
             }
-
           }
+        }
 
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
 
-          return {
-            hours,
-            minutes,
-            seconds,
-          };
-
-        });
-
-      }, 1000);
-
-
-    return () =>
-      window.clearInterval(
-        timer
-      );
-
+    return () => window.clearInterval(timer);
   }, []);
 
+  /* ------------------------------------------------------------------------ */
+  /* TOAST                                                                    */
+  /* ------------------------------------------------------------------------ */
 
-  /* ==========================================================================
-     TOAST AUTO HIDE
-     ========================================================================== */
   useEffect(() => {
-
     if (!toast) return;
 
-    const timer =
-      window.setTimeout(
-        () => {
-          setToast("");
-        },
-        2200
-      );
+    const timer = window.setTimeout(() => {
+      setToast("");
+    }, 2200);
 
-    return () =>
-      window.clearTimeout(
-        timer
-      );
-
+    return () => window.clearTimeout(timer);
   }, [toast]);
 
+  /* ------------------------------------------------------------------------ */
+  /* CATEGORY MAP                                                             */
+  /* ------------------------------------------------------------------------ */
 
-  /* ==========================================================================
-     CATEGORY MAP
-     ----------------------------------------------------------------------------
-     category ID -> category name.
-     Product card मध्ये category name दाखवण्यासाठी.
-     ========================================================================== */
-  const categoryMap =
-    useMemo(() => {
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
 
-      const map =
-        new Map<string, string>();
+    categories.forEach((category) => {
+      map.set(String(category.id), category.name);
+    });
 
-      categories.forEach(
-        (category) => {
+    return map;
+  }, [categories]);
 
-          map.set(
-            String(category.id),
-            category.name
-          );
+  /* ------------------------------------------------------------------------ */
+  /* CATEGORY ORDER                                                           */
+  /* ------------------------------------------------------------------------ */
 
-        }
+  const visibleCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const ai = CATEGORY_ORDER.findIndex(
+        (x) => x.toLowerCase() === a.name.toLowerCase()
       );
 
-      return map;
-
-    }, [categories]);
-
-
-  /* ==========================================================================
-     CATEGORY ORDER
-     ========================================================================== */
-  const visibleCategories =
-    useMemo(() => {
-
-      return [...categories].sort(
-        (a, b) => {
-
-          const ai =
-            CATEGORY_ORDER.findIndex(
-              (x) =>
-                x.toLowerCase() ===
-                a.name.toLowerCase()
-            );
-
-          const bi =
-            CATEGORY_ORDER.findIndex(
-              (x) =>
-                x.toLowerCase() ===
-                b.name.toLowerCase()
-            );
-
-
-          if (
-            ai === -1 &&
-            bi === -1
-          ) {
-
-            return a.name.localeCompare(
-              b.name
-            );
-
-          }
-
-
-          if (ai === -1) return 1;
-
-          if (bi === -1) return -1;
-
-          return ai - bi;
-
-        }
+      const bi = CATEGORY_ORDER.findIndex(
+        (x) => x.toLowerCase() === b.name.toLowerCase()
       );
 
-    }, [categories]);
-
-
-  /* Dashboard वर पहिल्या 12 categories */
-  const categoryCards =
-    visibleCategories.slice(
-      0,
-      12
-    );
-
-
-  /* ==========================================================================
-     PRODUCT SEARCH
-     ----------------------------------------------------------------------------
-     Search:
-     - product name
-     - brand
-     - slug
-     - short description
-     - description
-     - category
-     यावर काम करतो.
-
-     CSS:
-     .search-box
-     .search-dropdown
-     .suggestion-image
-     .suggestion-copy
-     .view-search-results
-     ========================================================================== */
-  useEffect(() => {
-
-    let cancelled = false;
-
-    const query =
-      search.trim();
-
-
-    if (!query) {
-
-      setSearchResults([]);
-
-      setSearchLoading(false);
-
-      return;
-
-    }
-
-
-    setSearchLoading(true);
-
-
-    const timer =
-      window.setTimeout(
-        async () => {
-
-          try {
-
-            /* --------------------------------------------------------------
-               STEP 1 — SEARCH CATEGORY
-               -------------------------------------------------------------- */
-            const {
-              data:
-                matchingCategories,
-              error:
-                categorySearchError,
-            } =
-              await supabase
-                .from("categories")
-                .select(
-                  "id,name"
-                )
-                .ilike(
-                  "name",
-                  `%${query}%`
-                )
-                .limit(100);
-
-
-            if (
-              categorySearchError
-            ) {
-
-              console.error(
-                "Search category error:",
-                categorySearchError.message
-              );
-
-            }
-
-
-            const categoryIds =
-              matchingCategories?.map(
-                (category) =>
-                  String(
-                    category.id
-                  )
-              ) || [];
-
-
-            /* --------------------------------------------------------------
-               STEP 2 — PRODUCT SEARCH
-               -------------------------------------------------------------- */
-            const productFilters = [
-              `name.ilike.%${query}%`,
-              `brand.ilike.%${query}%`,
-              `slug.ilike.%${query}%`,
-              `short_description.ilike.%${query}%`,
-              `description.ilike.%${query}%`,
-            ];
-
-
-            /* Category match सुद्धा search मध्ये add */
-            if (
-              categoryIds.length > 0
-            ) {
-
-              categoryIds.forEach(
-                (categoryId) => {
-
-                  productFilters.push(
-                    `category_id.eq.${categoryId}`
-                  );
-
-                }
-              );
-
-            }
-
-
-            const {
-              data,
-              error,
-            } =
-              await supabase
-                .from("products")
-                .select(
-                  "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
-                )
-                .eq(
-                  "is_active",
-                  true
-                )
-                .or(
-                  productFilters.join(",")
-                )
-                .order(
-                  "created_at",
-                  {
-                    ascending:
-                      false,
-                  }
-                )
-                .limit(12);
-
-
-            if (error) {
-
-              console.error(
-                "Product search error:",
-                error.message
-              );
-
-              if (!cancelled) {
-
-                setSearchResults([]);
-
-              }
-
-              return;
-
-            }
-
-
-            if (!cancelled) {
-
-              setSearchResults(
-                (data ||
-                  []) as Product[]
-              );
-
-            }
-
-          } catch (error) {
-
-            console.error(
-              "Database search failed:",
-              error
-            );
-
-            if (!cancelled) {
-
-              setSearchResults([]);
-
-            }
-
-          } finally {
-
-            if (!cancelled) {
-
-              setSearchLoading(
-                false
-              );
-
-            }
-
-          }
-
-        },
-        250
-      );
-
-
-    return () => {
-
-      cancelled = true;
-
-      window.clearTimeout(
-        timer
-      );
-
-    };
-
-  }, [search, supabase]);
-
-
-  /* ==========================================================================
-     BEST DEALS PRODUCT LOGIC
-     ----------------------------------------------------------------------------
-     प्रत्येक category मधून best product.
-     Priority:
-     1. Discount
-     2. Rating
-     3. Reviews
-     4. Price
-     ========================================================================== */
-  const featuredProducts =
-    useMemo(() => {
-
-      const source =
-        products.filter(
-          (product) =>
-            product.is_active !==
-            false
+      if (ai === -1 && bi === -1) {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+
+      return ai - bi;
+    });
+  }, [categories]);
+
+  const categoryCards = visibleCategories.slice(0, 12);
+
+  /* ------------------------------------------------------------------------ */
+  /* SEARCH                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+useEffect(() => {
+  let cancelled = false;
+
+  const query = search.trim();
+
+  if (!query) {
+    setSearchResults([]);
+    setSearchLoading(false);
+    return;
+  }
+
+  setSearchLoading(true);
+
+  const timer = window.setTimeout(async () => {
+    try {
+      /*
+       * ---------------------------------------------------------------
+       * STEP 1 — Find categories matching the search text
+       * ---------------------------------------------------------------
+       *
+       * Example:
+       * "electronics" -> Electronics category IDs
+       */
+      const {
+        data: matchingCategories,
+        error: categorySearchError,
+      } = await supabase
+        .from("categories")
+        .select("id,name")
+        .ilike("name", `%${query}%`)
+        .limit(100);
+
+      if (categorySearchError) {
+        console.error(
+          "Search category error:",
+          categorySearchError.message
         );
+      }
 
+      const categoryIds =
+        matchingCategories?.map((category) => String(category.id)) || [];
 
-      const selected: Product[] =
-        [];
-
-      const used =
-        new Set<string>();
-
-
-      categories.forEach(
-        (category) => {
-
-          const categoryProducts =
-            source
-              .filter(
-                (product) =>
-                  String(
-                    product.category_id
-                  ) ===
-                  String(
-                    category.id
-                  )
-              )
-              .sort(
-                (a, b) => {
-
-                  const discountDiff =
-                    getDiscount(
-                      b.price,
-                      b.original_price
-                    ) -
-                    getDiscount(
-                      a.price,
-                      a.original_price
-                    );
-
-
-                  if (
-                    discountDiff !== 0
-                  ) {
-                    return discountDiff;
-                  }
-
-
-                  const ratingDiff =
-                    Number(
-                      b.rating || 0
-                    ) -
-                    Number(
-                      a.rating || 0
-                    );
-
-
-                  if (
-                    ratingDiff !== 0
-                  ) {
-                    return ratingDiff;
-                  }
-
-
-                  const reviewsDiff =
-                    Number(
-                      b.reviews_count ||
-                        0
-                    ) -
-                    Number(
-                      a.reviews_count ||
-                        0
-                    );
-
-
-                  if (
-                    reviewsDiff !== 0
-                  ) {
-                    return reviewsDiff;
-                  }
-
-
-                  return (
-                    Number(
-                      a.price || 0
-                    ) -
-                    Number(
-                      b.price || 0
-                    )
-                  );
-
-                }
-              );
-
-
-          const product =
-            categoryProducts[0];
-
-
-          if (
-            product &&
-            !used.has(
-              String(product.id)
-            )
-          ) {
-
-            selected.push(product);
-
-            used.add(
-              String(product.id)
-            );
-
-          }
-
-        }
-      );
-
-
-      return selected;
-
-    }, [products, categories]);
-
-
-  /* ==========================================================================
-     FLASH DEAL PRODUCTS
-     ========================================================================== */
-  const flashProducts =
-    useMemo(() => {
-
-      const source =
-        products
-          .filter(
-            (product) =>
-              product.is_active !==
-              false
-          )
-          .filter(
-            (product) =>
-              Number(
-                product.stock ?? 0
-              ) > 0
-          );
-
-
-      const categoryName =
-        (product: Product) =>
-          categories.find(
-            (category) =>
-              String(
-                category.id
-              ) ===
-              String(
-                product.category_id
-              )
-          )?.name
-            ?.toLowerCase() ||
-          "";
-
-
-      const categoryAliases = [
-        {
-          key: "Fashion",
-          match: [
-            "fashion",
-            "clothing",
-            "apparel",
-          ],
-        },
-
-        {
-          key: "Beauty",
-          match: [
-            "beauty",
-            "beauty & personal care",
-            "personal care",
-            "cosmetics",
-          ],
-        },
-
-        {
-          key: "Electronics",
-          match: [
-            "electronics",
-            "electronic",
-            "mobile",
-            "gaming",
-            "computer",
-          ],
-        },
-
-        {
-          key: "Home & Kitchen",
-          match: [
-            "home & kitchen",
-            "home and kitchen",
-            "home",
-            "kitchen",
-            "home & living",
-          ],
-        },
-
-        {
-          key: "Footwear",
-          match: [
-            "footwear",
-            "shoes",
-            "shoe",
-          ],
-        },
-
-        {
-          key: "Watch",
-          match: [
-            "watch",
-            "watches",
-            "wearables",
-          ],
-        },
+      /*
+       * ---------------------------------------------------------------
+       * STEP 2 — Search PRODUCTS directly in Supabase
+       * ---------------------------------------------------------------
+       *
+       * Search is performed across multiple product columns.
+       */
+      const productFilters = [
+        `name.ilike.%${query}%`,
+        `brand.ilike.%${query}%`,
+        `slug.ilike.%${query}%`,
+        `short_description.ilike.%${query}%`,
+        `description.ilike.%${query}%`,
       ];
 
-
-      const score =
-        (product: Product) => {
-
-          const discount =
-            getDiscount(
-              product.price,
-              product.original_price
-            );
-
-          const rating =
-            Number(
-              product.rating || 0
-            );
-
-          const reviews =
-            Number(
-              product.reviews_count ||
-                0
-            );
-
-          const flashBonus =
-            product.is_flash_sale
-              ? 1000
-              : 0;
-
-
-          return (
-            flashBonus +
-            discount * 10 +
-            rating * 3 +
-            Math.min(
-              reviews,
-              500
-            ) /
-              100
+      /*
+       * If a category matches, also include its category_id.
+       */
+      if (categoryIds.length > 0) {
+        categoryIds.forEach((categoryId) => {
+          productFilters.push(
+            `category_id.eq.${categoryId}`
           );
+        });
+      }
 
-        };
-
-
-      const selected: Product[] =
-        [];
-
-      const used =
-        new Set<string>();
-
-
-      categoryAliases.forEach(
-        ({ match }) => {
-
-          const product =
-            source
-              .filter(
-                (item) => {
-
-                  const name =
-                    categoryName(
-                      item
-                    );
-
-                  return match.some(
-                    (value) =>
-                      name.includes(
-                        value
-                      )
-                  );
-
-                }
-              )
-              .sort(
-                (a, b) =>
-                  score(b) -
-                  score(a)
-              )[0];
-
-
-          if (
-            product &&
-            !used.has(
-              String(product.id)
-            )
-          ) {
-
-            selected.push(product);
-
-            used.add(
-              String(product.id)
-            );
-
-          }
-
-        }
-      );
-
-
-      source
-        .filter(
-          (product) =>
-            !used.has(
-              String(product.id)
-            )
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("products")
+        .select(
+          "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
         )
-        .sort(
-          (a, b) =>
-            score(b) -
-            score(a)
-        )
-        .forEach(
-          (product) => {
+        .eq("is_active", true)
+        .or(productFilters.join(","))
+        .order("created_at", { ascending: false })
+        .limit(12);
 
-            if (
-              selected.length <
-              6
-            ) {
-
-              selected.push(
-                product
-              );
-
-              used.add(
-                String(product.id)
-              );
-
-            }
-
-          }
+      if (error) {
+        console.error(
+          "Product search error:",
+          error.message
         );
 
+        if (!cancelled) {
+          setSearchResults([]);
+        }
 
-      return selected.slice(
-        0,
-        6
+        return;
+      }
+
+      if (!cancelled) {
+        setSearchResults(
+          ((data || []) as Product[])
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Database search failed:",
+        error
       );
 
-    }, [products, categories]);
+      if (!cancelled) {
+        setSearchResults([]);
+      }
+    } finally {
+      if (!cancelled) {
+        setSearchLoading(false);
+      }
+    }
+  }, 250);
 
+  return () => {
+    cancelled = true;
+    window.clearTimeout(timer);
+  };
+}, [search, supabase]);
 
-  /* ==========================================================================
-     TOP DEALS
-     ========================================================================== */
-  const topDeals =
-    useMemo(() => {
+  /* ------------------------------------------------------------------------ */
+  /* PRODUCT GROUPS                                                           */
+  /* ------------------------------------------------------------------------ */
 
-      return [...products]
-        .sort(
-          (a, b) =>
-            getDiscount(
-              b.price,
-              b.original_price
-            ) -
-            getDiscount(
-              a.price,
-              a.original_price
-            )
-        )
-        .slice(0, 3);
-
-    }, [products]);
-
-
-  /* ==========================================================================
-     TRENDING PRODUCTS
-     ========================================================================== */
-  const trendingProducts =
-    useMemo(() => {
-
-      return [...products]
-        .sort(
-          (a, b) =>
-            Number(
-              b.rating || 0
-            ) -
-            Number(
-              a.rating || 0
-            )
-        )
-        .slice(0, 5);
-
-    }, [products]);
-
-
-  /* ==========================================================================
-     NEW ARRIVALS
-     ========================================================================== */
-  const newArrivals =
-    useMemo(() => {
-
-      return [...products]
-        .sort(
-          (a, b) => {
-
-            const first =
-              new Date(
-                a.created_at || 0
-              ).getTime();
-
-            const second =
-              new Date(
-                b.created_at || 0
-              ).getTime();
-
-            return second - first;
-
-          }
-        )
-        .slice(0, 5);
-
-    }, [products]);
-
-
-  /* ==========================================================================
-     CART COUNT
-     ========================================================================== */
-  const cartCount =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.quantity || 0
-        ),
-      0
+  const featuredProducts = useMemo(() => {
+    const source = products.filter(
+      (product) => product.is_active !== false
     );
 
+    const selected: Product[] = [];
+    const used = new Set<string>();
 
-  /* ==========================================================================
-     TOAST HELPER
-     ========================================================================== */
-  function showToast(
-    message: string
-  ) {
+    // Best Deals for You:
+    // exactly one best product from EVERY category returned by Supabase.
+    // Priority: discount -> rating -> reviews -> price.
+    categories.forEach((category) => {
+      const categoryProducts = source
+        .filter(
+          (product) =>
+            String(product.category_id) === String(category.id)
+        )
+        .sort((a, b) => {
+          const discountDiff =
+            getDiscount(b.price, b.original_price) -
+            getDiscount(a.price, a.original_price);
+
+          if (discountDiff !== 0) return discountDiff;
+
+          const ratingDiff =
+            Number(b.rating || 0) - Number(a.rating || 0);
+
+          if (ratingDiff !== 0) return ratingDiff;
+
+          const reviewsDiff =
+            Number(b.reviews_count || 0) -
+            Number(a.reviews_count || 0);
+
+          if (reviewsDiff !== 0) return reviewsDiff;
+
+          return Number(a.price || 0) - Number(b.price || 0);
+        });
+
+      const product = categoryProducts[0];
+
+      if (product && !used.has(String(product.id))) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
+
+    // If a product has a category_id that is not present in the categories
+    // table, still show one best deal for that orphan category.
+    const unmatchedCategoryIds = Array.from(
+      new Set(
+        source
+          .map((product) => String(product.category_id || ""))
+          .filter(Boolean)
+          .filter(
+            (categoryId) =>
+              !categories.some(
+                (category) => String(category.id) === categoryId
+              )
+          )
+      )
+    );
+
+    unmatchedCategoryIds.forEach((categoryId) => {
+      const product = source
+        .filter(
+          (item) =>
+            String(item.category_id) === categoryId &&
+            !used.has(String(item.id))
+        )
+        .sort((a, b) => {
+          const discountDiff =
+            getDiscount(b.price, b.original_price) -
+            getDiscount(a.price, a.original_price);
+
+          if (discountDiff !== 0) return discountDiff;
+          return Number(b.rating || 0) - Number(a.rating || 0);
+        })[0];
+
+      if (product) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
+
+    return selected;
+  }, [products, categories]);
+
+  const flashProducts = useMemo(() => {
+    /*
+     * Flash Deals intentionally uses different categories so the dashboard
+     * does not become a row of only one type of product.
+     * Supabase remains the single source for product data.
+     */
+    const source = products
+      .filter((product) => product.is_active !== false)
+      .filter((product) => Number(product.stock ?? 0) > 0);
+
+    const categoryName = (product: Product) =>
+      categories.find(
+        (category) =>
+          String(category.id) === String(product.category_id)
+      )?.name?.toLowerCase() || "";
+
+    const categoryAliases: Array<{
+      key: string;
+      match: string[];
+    }> = [
+      { key: "Fashion", match: ["fashion", "clothing", "apparel"] },
+      { key: "Beauty", match: ["beauty", "beauty & personal care", "personal care", "cosmetics"] },
+      { key: "Electronics", match: ["electronics", "electronic", "mobile", "gaming", "computer"] },
+      { key: "Home & Kitchen", match: ["home & kitchen", "home and kitchen", "home", "kitchen", "home & living"] },
+      { key: "Footwear", match: ["footwear", "shoes", "shoe"] },
+      { key: "Watch", match: ["watch", "watches", "wearables"] },
+    ];
+
+    const score = (product: Product) => {
+      const discount = getDiscount(product.price, product.original_price);
+      const rating = Number(product.rating || 0);
+      const reviews = Number(product.reviews_count || 0);
+      const flashBonus = product.is_flash_sale ? 1000 : 0;
+      return flashBonus + discount * 10 + rating * 3 + Math.min(reviews, 500) / 100;
+    };
+
+    const selected: Product[] = [];
+    const used = new Set<string>();
+
+    categoryAliases.forEach(({ match }) => {
+      const product = source
+        .filter((item) => {
+          const name = categoryName(item);
+          return match.some((value) => name.includes(value));
+        })
+        .sort((a, b) => score(b) - score(a))[0];
+
+      if (product && !used.has(String(product.id))) {
+        selected.push(product);
+        used.add(String(product.id));
+      }
+    });
+
+    // Fill remaining slots with the strongest real flash/discount products.
+    source
+      .filter((product) => !used.has(String(product.id)))
+      .sort((a, b) => score(b) - score(a))
+      .forEach((product) => {
+        if (selected.length < 6) {
+          selected.push(product);
+          used.add(String(product.id));
+        }
+      });
+
+    return selected.slice(0, 6);
+  }, [products, categories]);
+
+  const topDeals = useMemo(() => {
+    return [...products]
+      .sort(
+        (a, b) =>
+          getDiscount(b.price, b.original_price) -
+          getDiscount(a.price, a.original_price)
+      )
+      .slice(0, 3);
+  }, [products]);
+
+  const trendingProducts = useMemo(() => {
+    return [...products]
+      .sort(
+        (a, b) =>
+          Number(b.rating || 0) - Number(a.rating || 0)
+      )
+      .slice(0, 5);
+  }, [products]);
+
+  const newArrivals = useMemo(() => {
+    return [...products]
+      .sort((a, b) => {
+        const first = new Date(
+          a.created_at || 0
+        ).getTime();
+
+        const second = new Date(
+          b.created_at || 0
+        ).getTime();
+
+        return second - first;
+      })
+      .slice(0, 5);
+  }, [products]);
+
+  /* ------------------------------------------------------------------------ */
+  /* CART                                                                     */
+  /* ------------------------------------------------------------------------ */
+
+  const cartCount = cart.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  /* ------------------------------------------------------------------------ */
+  /* HELPERS                                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  function showToast(message: string) {
     setToast(message);
   }
 
-
-  /* ==========================================================================
-     WISHLIST
-     ----------------------------------------------------------------------------
-     Logged-in user:
-     wishlist_items table मध्ये save/delete.
-
-     Guest:
-     login message.
-     ========================================================================== */
-  async function toggleWishlist(
-    id: string | number
-  ) {
-
-    const normalizedId =
-      String(id);
-
+  async function toggleWishlist(id: string | number) {
+    const normalizedId = String(id);
 
     const {
-      data: {
-        user,
-      },
+      data: { user },
       error: authError,
-    } =
-      await supabase.auth.getUser();
+    } = await supabase.auth.getUser();
 
-
-    if (
-      authError ||
-      !user
-    ) {
-
-      showToast(
-        "Please login to use Wishlist"
-      );
-
+    if (authError || !user) {
+      showToast("Please login to use Wishlist");
       return;
-
     }
 
+    const exists = wishlist.some(
+      (value) => String(value) === normalizedId
+    );
 
-    const exists =
-      wishlist.some(
-        (value) =>
-          String(value) ===
-          normalizedId
-      );
+    const previous = wishlist;
+    const next = exists
+      ? wishlist.filter((value) => String(value) !== normalizedId)
+      : [...wishlist, id];
 
-
-    const previous =
-      wishlist;
-
-
-    const next =
-      exists
-        ? wishlist.filter(
-            (value) =>
-              String(value) !==
-              normalizedId
-          )
-        : [
-            ...wishlist,
-            id,
-          ];
-
-
-    /* Instant UI update */
     setWishlist(next);
 
-
-    /* ----------------------------------------------------------------------
-       REMOVE FROM WISHLIST
-       ---------------------------------------------------------------------- */
     if (exists) {
-
-      const { error } =
-        await supabase
-          .from(
-            WISHLIST_TABLE
-          )
-          .delete()
-          .eq(
-            "user_id",
-            user.id
-          )
-          .eq(
-            "product_id",
-            normalizedId
-          );
-
+      const { error } = await supabase
+        .from(WISHLIST_TABLE)
+        .delete()
+        .eq("user_id", user.id)
+        .eq("product_id", normalizedId);
 
       if (error) {
-
-        console.error(
-          "Wishlist delete failed:",
-          error
-        );
-
-        setWishlist(
-          previous
-        );
-
-        showToast(
-          `Couldn't update Wishlist: ${error.message}`
-        );
-
+        console.error("Wishlist delete failed:", error);
+        setWishlist(previous);
+        showToast(`Couldn't update Wishlist: ${error.message}`);
         return;
-
       }
 
-
-      window.dispatchEvent(
-        new Event(
-          "wishlist-updated"
-        )
-      );
-
-      showToast(
-        "Removed from Wishlist"
-      );
-
+      window.dispatchEvent(new Event("wishlist-updated"));
+      showToast("Removed from Wishlist");
       return;
-
     }
 
-
-    /* ----------------------------------------------------------------------
-       CHECK EXISTING WISHLIST ROW
-       ---------------------------------------------------------------------- */
-    const {
-      data: existingRow,
-      error: findError,
-    } =
-      await supabase
-        .from(
-          WISHLIST_TABLE
-        )
-        .select("id")
-        .eq(
-          "user_id",
-          user.id
-        )
-        .eq(
-          "product_id",
-          normalizedId
-        )
-        .maybeSingle();
-
+    const { data: existingRow, error: findError } = await supabase
+      .from(WISHLIST_TABLE)
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("product_id", normalizedId)
+      .maybeSingle();
 
     if (findError) {
-
-      console.error(
-        "Wishlist lookup failed:",
-        findError
-      );
-
-      setWishlist(
-        previous
-      );
-
-      showToast(
-        `Couldn't save Wishlist: ${findError.message}`
-      );
-
+      console.error("Wishlist lookup failed:", findError);
+      setWishlist(previous);
+      showToast(`Couldn't save Wishlist: ${findError.message}`);
       return;
-
     }
 
-
-    /* ----------------------------------------------------------------------
-       INSERT WISHLIST
-       ---------------------------------------------------------------------- */
     if (!existingRow) {
-
-      const { error } =
-        await supabase
-          .from(
-            WISHLIST_TABLE
-          )
-          .insert({
-            user_id:
-              user.id,
-
-            product_id:
-              normalizedId,
-          });
-
+      const { error } = await supabase.from(WISHLIST_TABLE).insert({
+        user_id: user.id,
+        product_id: normalizedId,
+      });
 
       if (error) {
-
-        console.error(
-          "Wishlist insert failed:",
-          error
-        );
-
-        setWishlist(
-          previous
-        );
-
-        showToast(
-          `Couldn't save Wishlist: ${error.message}`
-        );
-
+        console.error("Wishlist insert failed:", error);
+        setWishlist(previous);
+        showToast(`Couldn't save Wishlist: ${error.message}`);
         return;
-
       }
-
     }
 
-
-    window.dispatchEvent(
-      new Event(
-        "wishlist-updated"
-      )
-    );
-
-    showToast(
-      "Added to Wishlist"
-    );
-
+    window.dispatchEvent(new Event("wishlist-updated"));
+    showToast("Added to Wishlist");
   }
 
+  async function addToCart(product: Product) {
+    const productId = String(product.id);
+    const availableStock = Number(product.stock || 0);
 
-  /* ==========================================================================
-     ADD TO CART
-     ----------------------------------------------------------------------------
-     Flow:
-     1. Stock check
-     2. UI cart update
-     3. Login check
-     4. Existing cart row search
-     5. Database insert/update
-     6. UI quantity sync
-     ========================================================================== */
-  async function addToCart(
-    product: Product
-  ) {
-
-    const productId =
-      String(product.id);
-
-
-    const availableStock =
-      Number(
-        product.stock || 0
-      );
-
-
-    /* Stock check */
-    if (
-      availableStock <= 0
-    ) {
-
-      showToast(
-        "This product is currently out of stock."
-      );
-
+    if (availableStock <= 0) {
+      showToast("This product is currently out of stock.");
       return;
-
     }
-
-
-    const previous =
-      cart;
-
-
-    const existing =
-      cart.find(
-        (item) =>
-          String(item.id) ===
-          productId
-      );
-
-
-    const maxStock =
-      Math.max(
-        availableStock,
-        1
-      );
-
-
-    const nextQuantity =
-      Math.min(
-        Number(
-          existing?.quantity || 0
-        ) + 1,
-        maxStock
-      );
-
-
-    /* ----------------------------------------------------------------------
-       CREATE NEXT UI CART
-       ---------------------------------------------------------------------- */
-    const next: CartItem[] =
-      existing
-        ? cart.map(
-            (item) =>
-              String(
-                item.id
-              ) === productId
-                ? {
-                    ...item,
-                    quantity:
-                      nextQuantity,
-                  }
-                : item
-          )
-        : [
-            ...cart,
-            {
-              id:
-                product.id,
-
-              name:
-                product.name,
-
-              price:
-                Number(
-                  product.price || 0
-                ),
-
-              image_url:
-                product.image_url,
-
-              quantity: 1,
-            },
-          ];
-
-
-    /* Instant UI update */
-    setCart(next);
-
-    localStorage.setItem(
-      CART_KEY,
-      JSON.stringify(next)
+    const previous = cart;
+    const existing = cart.find(
+      (item) => String(item.id) === productId
+    );
+    const maxStock = Math.max(availableStock, 1);
+    const nextQuantity = Math.min(
+      Number(existing?.quantity || 0) + 1,
+      maxStock
     );
 
+    const next: CartItem[] = existing
+      ? cart.map((item) =>
+          String(item.id) === productId
+            ? { ...item, quantity: nextQuantity }
+            : item
+        )
+      : [
+          ...cart,
+          {
+            id: product.id,
+            name: product.name,
+            price: Number(product.price || 0),
+            image_url: product.image_url,
+            quantity: 1,
+          },
+        ];
 
-    /* ----------------------------------------------------------------------
-       AUTH CHECK
-       ---------------------------------------------------------------------- */
+    // Instant UI update + local mirror.
+    setCart(next);
+    localStorage.setItem(CART_KEY, JSON.stringify(next));
+
     const {
-      data: {
-        user,
-      },
+      data: { user },
       error: authError,
-    } =
-      await supabase.auth.getUser();
+    } = await supabase.auth.getUser();
 
-
-    if (
-      authError ||
-      !user
-    ) {
-
-      showToast(
-        "Added to Cart"
-      );
-
+    if (authError || !user) {
+      showToast("Added to Cart");
       return;
-
     }
 
-
-    /* ----------------------------------------------------------------------
-       FIND EXISTING DATABASE CART ROW
-       ---------------------------------------------------------------------- */
-    const {
-      data: existingRow,
-      error: findError,
-    } =
-      await supabase
-        .from(CART_TABLE)
-        .select(
-          "id,quantity"
-        )
-        .eq(
-          "user_id",
-          user.id
-        )
-        .eq(
-          "product_id",
-          productId
-        )
-        .maybeSingle();
-
+    // First find the row. This is more reliable than upsert when a
+    // Supabase project has an older/changed constraint definition.
+    const { data: existingRow, error: findError } = await supabase
+      .from(CART_TABLE)
+      .select("id,quantity")
+      .eq("user_id", user.id)
+      .eq("product_id", productId)
+      .maybeSingle();
 
     if (findError) {
-
-      console.error(
-        "Cart lookup failed:",
-        findError
-      );
-
+      console.error("Cart lookup failed:", findError);
       setCart(previous);
-
-      localStorage.setItem(
-        CART_KEY,
-        JSON.stringify(
-          previous
-        )
-      );
-
-      showToast(
-        `Couldn't save Add Cart: ${findError.message}`
-      );
-
+      localStorage.setItem(CART_KEY, JSON.stringify(previous));
+      showToast(`Couldn't save Add Cart: ${findError.message}`);
       return;
-
     }
 
-
-    /* ----------------------------------------------------------------------
-       DATABASE PAYLOAD
-       ---------------------------------------------------------------------- */
     const payload = {
-
-      user_id:
-        user.id,
-
-      product_id:
-        productId,
-
-      quantity:
-        existingRow
-          ? Math.min(
-              Number(
-                existingRow.quantity ||
-                  0
-              ) + 1,
-              maxStock
-            )
-          : 1,
-
-      updated_at:
-        new Date().toISOString(),
-
+      user_id: user.id,
+      product_id: productId,
+      quantity: existingRow
+        ? Math.min(Number(existingRow.quantity || 0) + 1, maxStock)
+        : 1,
+      updated_at: new Date().toISOString(),
     };
 
+    let saveError = null;
 
-    let saveError =
-      null;
-
-
-    /* Existing row -> UPDATE */
-    if (
-      existingRow?.id
-    ) {
-
-      const result =
-        await supabase
-          .from(
-            CART_TABLE
-          )
-          .update({
-            quantity:
-              payload.quantity,
-
-            updated_at:
-              payload.updated_at,
-          })
-          .eq(
-            "id",
-            existingRow.id
-          )
-          .eq(
-            "user_id",
-            user.id
-          );
-
-      saveError =
-        result.error;
-
-
+    if (existingRow?.id) {
+      const result = await supabase
+        .from(CART_TABLE)
+        .update({
+          quantity: payload.quantity,
+          updated_at: payload.updated_at,
+        })
+        .eq("id", existingRow.id)
+        .eq("user_id", user.id);
+      saveError = result.error;
     } else {
-
-      /* New row -> INSERT */
-      const result =
-        await supabase
-          .from(
-            CART_TABLE
-          )
-          .insert(
-            payload
-          );
-
-      saveError =
-        result.error;
-
+      const result = await supabase
+        .from(CART_TABLE)
+        .insert(payload);
+      saveError = result.error;
     }
 
-
-    /* ----------------------------------------------------------------------
-       DATABASE ERROR -> ROLLBACK UI
-       ---------------------------------------------------------------------- */
     if (saveError) {
-
-      console.error(
-        "Cart save failed:",
-        saveError
-      );
-
+      console.error("Cart save failed:", saveError);
       setCart(previous);
-
-      localStorage.setItem(
-        CART_KEY,
-        JSON.stringify(
-          previous
-        )
-      );
-
-      showToast(
-        `Couldn't save Add Cart: ${saveError.message}`
-      );
-
+      localStorage.setItem(CART_KEY, JSON.stringify(previous));
+      showToast(`Couldn't save Add Cart: ${saveError.message}`);
       return;
-
     }
 
+    // Keep the UI quantity identical to the database quantity.
+    const savedQuantity = payload.quantity;
+    setCart((current) => {
+      const existsInState = current.some(
+        (item) => String(item.id) === productId
+      );
 
-    /* ----------------------------------------------------------------------
-       DATABASE QUANTITY -> UI SYNC
-       ---------------------------------------------------------------------- */
-    const savedQuantity =
-      payload.quantity;
-
-
-    setCart(
-      (current) => {
-
-        const existsInState =
-          current.some(
-            (item) =>
-              String(
-                item.id
-              ) === productId
-          );
-
-
-        if (
-          !existsInState
-        ) {
-
-          return [
-            ...current,
-
-            {
-              id:
-                product.id,
-
-              name:
-                product.name,
-
-              price:
-                Number(
-                  product.price ||
-                    0
-                ),
-
-              image_url:
-                product.image_url ||
-                null,
-
-              quantity:
-                savedQuantity,
-            },
-
-          ];
-
-        }
-
-
-        return current.map(
-          (item) =>
-            String(
-              item.id
-            ) === productId
-              ? {
-                  ...item,
-                  quantity:
-                    savedQuantity,
-                }
-              : item
-        );
-
+      if (!existsInState) {
+        return [
+          ...current,
+          {
+            id: product.id,
+            name: product.name,
+            price: Number(product.price || 0),
+            image_url: product.image_url || null,
+            quantity: savedQuantity,
+          },
+        ];
       }
-    );
 
-
+      return current.map((item) =>
+        String(item.id) === productId
+          ? { ...item, quantity: savedQuantity }
+          : item
+      );
+    });
     localStorage.setItem(
       CART_KEY,
       JSON.stringify(
-        next.map(
-          (item) =>
-            String(
-              item.id
-            ) === productId
-              ? {
-                  ...item,
-                  quantity:
-                    savedQuantity,
-                }
-              : item
+        next.map((item) =>
+          String(item.id) === productId
+            ? { ...item, quantity: savedQuantity }
+            : item
         )
       )
     );
 
-
-    window.dispatchEvent(
-      new Event(
-        "cart-updated"
-      )
-    );
-
-
-    showToast(
-      existingRow
-        ? "Cart quantity updated"
-        : "Added to Cart"
-    );
-
+    window.dispatchEvent(new Event("cart-updated"));
+    showToast(existingRow ? "Cart quantity updated" : "Added to Cart");
   }
 
-
-  /* ==========================================================================
-     PRODUCT ROUTE
-     ========================================================================== */
-  function openProduct(
-    product: Product
-  ) {
-
+  function openProduct(product: Product) {
     router.push(
       `/dashboard/products/${product.id}`
     );
-
   }
 
-
-  /* ==========================================================================
-     CATEGORY ROUTE
-     ========================================================================== */
-  function openCategory(
-    category: Category
-  ) {
-
+  function openCategory(category: Category) {
     router.push(
-      `/dashboard/categories/${slugify(
-        category.name
-      )}`
+      `/dashboard/categories/${slugify(category.name)}`
     );
-
   }
 
-
-  /* ==========================================================================
-     SEARCH SUBMIT
-     ========================================================================== */
-  function submitSearch(
-    event: FormEvent
-  ) {
-
+  function submitSearch(event: FormEvent) {
     event.preventDefault();
 
     if (!search.trim()) return;
@@ -2819,87 +1304,37 @@ export default function DashboardPage() {
         search.trim()
       )}`
     );
-
   }
 
-
-  /* ==========================================================================
-     CATEGORY HORIZONTAL SCROLL
-     ========================================================================== */
   function scrollCategories(
-    direction:
-      | "left"
-      | "right"
+    direction: "left" | "right"
   ) {
-
-    categoryRailRef.current?.scrollBy(
-      {
-        left:
-          direction ===
-          "left"
-            ? -450
-            : 450,
-
-        behavior:
-          "smooth",
-      }
-    );
-
+    categoryRailRef.current?.scrollBy({
+      left:
+        direction === "left" ? -450 : 450,
+      behavior: "smooth",
+    });
   }
 
-
-  /* ==========================================================================
-     LOGOUT
-     ========================================================================== */
   async function logout() {
-
     await supabase.auth.signOut();
-
-    router.replace(
-      "/auth/login"
-    );
-
+    router.replace("/auth/login");
   }
 
-
-  /* ==========================================================================
-     COUNTDOWN FORMAT
-     ========================================================================== */
-  function formatCountdown(
-    value: number
-  ) {
-
-    return String(
-      value
-    ).padStart(2, "0");
-
+  function formatCountdown(value: number) {
+    return String(value).padStart(2, "0");
   }
 
-
-  /* ==========================================================================
-     DASHBOARD UI
-     ==========================================================================
-     खालील सर्व UI चे CSS dashboard.css मध्ये आहे.
-     ========================================================================== */
+  /* ------------------------------------------------------------------------ */
+  /* UI                                                                       */
+  /* ------------------------------------------------------------------------ */
 
   return (
     <main className="store-shell">
-
-      {/* =====================================================================
-          TOP OFFER STRIP
-          CSS:
-          .top-strip
-          .strip-inner
-          .strip-left
-          .strip-center
-          .strip-right
-          ===================================================================== */}
+      {/* TOP OFFER BAR */}
       <div className="top-strip">
-
         <div className="container strip-inner">
-
           <div className="strip-left">
-
             <span>
               <Truck size={14} />
               Free Shipping above ₹499
@@ -2918,18 +1353,14 @@ export default function DashboardPage() {
               <ShieldCheck size={14} />
               Secure Shopping
             </span>
-
           </div>
-
 
           <div className="strip-center">
             <Sparkles size={12} />
             PrimeCart Premium Shopping Experience
           </div>
 
-
           <div className="strip-right">
-
             <span>
               Get 10% OFF on your first order
             </span>
@@ -2939,38 +1370,19 @@ export default function DashboardPage() {
             <span>
               Use code: <b>WELCOME10</b>
             </span>
-
           </div>
-
         </div>
-
       </div>
 
-
-      {/* =====================================================================
-          MAIN HEADER
-          CSS:
-          .main-header
-          .header-main
-          .logo-wrap
-          .brand-logo-box
-          .brand-copy
-          .brand-name
-          .brand-tagline
-          ===================================================================== */}
+      {/* HEADER */}
       <header className="main-header">
-
         <div className="container header-main">
-
-          {/* PRIME CART LOGO */}
           <Link
             href="/dashboard"
             className="logo-wrap"
             aria-label="PrimeCart home"
           >
-
             <span className="brand-logo-box">
-
               <img
                 src="/logo.png"
                 alt="PrimeCart logo"
@@ -2980,60 +1392,30 @@ export default function DashboardPage() {
                     "none";
                 }}
               />
-
               <span className="brand-logo-fallback">
                 <ShoppingBag size={25} />
               </span>
-
             </span>
-
 
             <span className="brand-copy">
-
-              <span className="brand-name">
-                PrimeCart
-              </span>
-
-              <span className="brand-tagline">
-                Shop Smart · Live Better
-              </span>
-
+              <span className="brand-name">PrimeCart</span>
+              <span className="brand-tagline">Shop Smart · Live Better</span>
             </span>
-
           </Link>
 
-
-          {/* =================================================================
-              SEARCH BOX
-              CSS:
-              .search-box
-              .search-active
-              .clear-search
-              .search-submit
-              .search-dropdown
-              .search-dropdown-title
-              .suggestion-image
-              .suggestion-copy
-              .view-search-results
-              ================================================================= */}
+          {/* SEARCH */}
           <form
             className={`search-box ${
-              searchOpen
-                ? "search-active"
-                : ""
+              searchOpen ? "search-active" : ""
             }`}
             onSubmit={submitSearch}
           >
-
             <Search size={19} />
-
 
             <input
               value={search}
               onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
+                setSearch(event.target.value)
               }
               onFocus={() =>
                 setSearchOpen(true)
@@ -3041,7 +1423,6 @@ export default function DashboardPage() {
               placeholder="Search products, brands and more..."
               aria-label="Search products"
             />
-
 
             {search && (
               <button
@@ -3056,7 +1437,6 @@ export default function DashboardPage() {
               </button>
             )}
 
-
             <button
               type="submit"
               className="search-submit"
@@ -3064,15 +1444,9 @@ export default function DashboardPage() {
               Search
             </button>
 
-
-            {/* SEARCH DROPDOWN */}
-            {searchOpen &&
-              search.trim() && (
-
+            {searchOpen && search.trim() && (
               <div className="search-dropdown">
-
                 <div className="search-dropdown-title">
-
                   <span>
                     <Search size={13} />
                     Suggestions
@@ -3081,128 +1455,71 @@ export default function DashboardPage() {
                   <small>
                     {searchResults.length} results
                   </small>
-
                 </div>
 
+{searchLoading ? (
+  <div className="no-suggestions">
+    <Search size={20} />
+    <span>
+      Searching PrimeCart products...
+    </span>
+  </div>
+) : searchResults.length ? (
+  searchResults.map((product) => (
+    <button
+      key={String(product.id)}
+      type="button"
+      onClick={() => {
+        setSearchOpen(false);
+        openProduct(product);
+      }}
+    >
+      <span className="suggestion-image">
+        {product.image_url ? (
+          <SafeProductImage
+            src={product.image_url}
+            alt=""
+            className="suggestion-product-image"
+          />
+        ) : (
+          <ShoppingBag size={18} />
+        )}
+      </span>
 
-                {/* SEARCH LOADING */}
-                {searchLoading ? (
+      <span className="suggestion-copy">
+        <strong>
+          {product.name}
+        </strong>
 
-                  <div className="no-suggestions">
+        <small>
+          {product.brand ||
+            categoryMap.get(
+              String(product.category_id)
+            ) ||
+            "PrimeCart"}
+        </small>
+      </span>
 
-                    <Search size={20} />
+      <b>
+        {formatPrice(product.price)}
+      </b>
+    </button>
+  ))
+) : (
+  <div className="no-suggestions">
+    <Search size={20} />
+    <span>
+      No products found for "{search}"
+    </span>
+  </div>
+)}
 
-                    <span>
-                      Searching PrimeCart products...
-                    </span>
-
-                  </div>
-
-
-                ) : searchResults.length ? (
-
-                  /* SEARCH RESULTS */
-                  searchResults.map(
-                    (product) => (
-
-                    <button
-                      key={String(
-                        product.id
-                      )}
-                      type="button"
-                      onClick={() => {
-                        setSearchOpen(
-                          false
-                        );
-
-                        openProduct(
-                          product
-                        );
-                      }}
-                    >
-
-                      <span className="suggestion-image">
-
-                        {product.image_url ? (
-
-                          <SafeProductImage
-                            src={
-                              product.image_url
-                            }
-                            alt=""
-                            className="suggestion-product-image"
-                          />
-
-                        ) : (
-
-                          <ShoppingBag
-                            size={18}
-                          />
-
-                        )}
-
-                      </span>
-
-
-                      <span className="suggestion-copy">
-
-                        <strong>
-                          {product.name}
-                        </strong>
-
-                        <small>
-                          {product.brand ||
-                            categoryMap.get(
-                              String(
-                                product.category_id
-                              )
-                            ) ||
-                            "PrimeCart"}
-                        </small>
-
-                      </span>
-
-
-                      <b>
-                        {formatPrice(
-                          product.price
-                        )}
-                      </b>
-
-                    </button>
-
-                  )
-
-                  )
-
-                ) : (
-
-                  /* NO RESULTS */
-                  <div className="no-suggestions">
-
-                    <Search size={20} />
-
-                    <span>
-                      No products found for "{search}"
-                    </span>
-
-                  </div>
-
-                )}
-
-
-                {/* VIEW ALL SEARCH RESULTS */}
-                {searchResults.length >
-                  0 && (
-
+                {searchResults.length > 0 && (
                   <button
                     type="button"
                     className="view-search-results"
                     onClick={() => {
-                      setSearchOpen(
-                        false
-                      );
-
+                      setSearchOpen(false);
                       router.push(
                         `/dashboard/products?search=${encodeURIComponent(
                           search.trim()
@@ -3210,90 +1527,50 @@ export default function DashboardPage() {
                       );
                     }}
                   >
-
                     View all results
-
-                    <ArrowRight
-                      size={14}
-                    />
-
+                    <ArrowRight size={14} />
                   </button>
-
                 )}
-
               </div>
-
             )}
-
           </form>
 
-
-          {/* =================================================================
-              HEADER ACTIONS
-              CSS:
-              .header-actions
-              .account-area
-              .account-action
-              .profile-dropdown
-              .icon-action
-              .icon-with-badge
-              ================================================================= */}
+          {/* HEADER ACTIONS */}
           <div className="header-actions">
-
             {userLoggedIn ? (
-
               <div className="account-area">
-
                 <button
                   className="header-action account-action"
                   onClick={() =>
                     setProfileOpen(
-                      (value) =>
-                        !value
+                      (value) => !value
                     )
                   }
                 >
-
                   <span className="account-icon">
                     <UserRound size={21} />
                   </span>
 
                   <span>
-
-                    <small>
-                      Hello
-                    </small>
-
+                    <small>Hello</small>
                     <strong>
                       {userInfo.name
                         .split(" ")[0]
                         .slice(0, 12)}
                     </strong>
-
                   </span>
 
-                  <ChevronDown
-                    size={13}
-                  />
-
+                  <ChevronDown size={13} />
                 </button>
 
-
-                {/* PROFILE DROPDOWN */}
                 {profileOpen && (
-
                   <div className="profile-dropdown">
-
                     <div className="profile-top">
-
                       <div className="profile-avatar">
-                        <UserRound
-                          size={20}
-                        />
+                        <UserRound size={20} />
                       </div>
 
                       <div>
-
                         <strong>
                           {userInfo.name}
                         </strong>
@@ -3301,11 +1578,8 @@ export default function DashboardPage() {
                         <small>
                           {userInfo.email}
                         </small>
-
                       </div>
-
                     </div>
-
 
                     <Link href="/dashboard/profile">
                       <User size={16} />
@@ -3322,145 +1596,77 @@ export default function DashboardPage() {
                       Settings
                     </Link>
 
-
                     <div className="dropdown-divider" />
 
-
-                    <button
-                      onClick={logout}
-                    >
-                      <LogOut
-                        size={16}
-                      />
+                    <button onClick={logout}>
+                      <LogOut size={16} />
                       Sign Out
                     </button>
-
                   </div>
-
                 )}
-
               </div>
-
             ) : (
-
-              /* LOGIN BUTTON */
               <Link
                 href="/auth/login"
                 className="header-action login-action"
               >
-
                 <UserRound size={21} />
-
                 <span>
-
-                  <small>
-                    Welcome
-                  </small>
-
-                  <strong>
-                    Login / Register
-                  </strong>
-
+                  <small>Welcome</small>
+                  <strong>Login / Register</strong>
                 </span>
-
               </Link>
-
             )}
 
-
-            {/* WISHLIST */}
             <Link
               href="/dashboard/wishlist"
               className="header-action icon-action"
             >
-
               <span className="icon-with-badge">
-
                 <Heart size={23} />
-
-                {wishlist.length >
-                  0 && (
-                  <b>
-                    {wishlist.length}
-                  </b>
+                {wishlist.length > 0 && (
+                  <b>{wishlist.length}</b>
                 )}
-
               </span>
 
-              <span>
-                Wishlist
-              </span>
-
+              <span>Wishlist</span>
             </Link>
 
-
-            {/* CART */}
             <Link
               href="/dashboard/cart"
               className="header-action icon-action"
             >
-
               <span className="icon-with-badge">
+                <ShoppingCart size={24} />
 
-                <ShoppingCart
-                  size={24}
-                />
-
-                {cartCount >
-                  0 && (
-
+                {cartCount > 0 && (
                   <b>
-                    {cartCount >
-                    99
+                    {cartCount > 99
                       ? "99+"
                       : cartCount}
                   </b>
-
                 )}
-
               </span>
 
-              <span>
-                Cart
-              </span>
-
+              <span>Cart</span>
             </Link>
-
           </div>
 
-
-          {/* MOBILE MENU BUTTON */}
           <button
             className="mobile-menu-button"
             onClick={() =>
-              setMobileMenuOpen(
-                true
-              )
+              setMobileMenuOpen(true)
             }
             aria-label="Open menu"
           >
             <Menu size={25} />
           </button>
-
         </div>
-
       </header>
 
-
-      {/* =====================================================================
-          DESKTOP NAVIGATION
-          CSS:
-          .nav-bar
-          .nav-inner
-          .all-category-btn
-          .nav-new
-          .more-nav
-          .theme-switch
-          ===================================================================== */}
+      {/* DESKTOP NAV */}
       <nav className="nav-bar">
-
         <div className="container nav-inner">
-
           <button
             className="all-category-btn"
             onClick={() =>
@@ -3472,7 +1678,6 @@ export default function DashboardPage() {
             <Menu size={18} />
             All Categories
           </button>
-
 
           <Link href="/dashboard">
             Home
@@ -3519,16 +1724,11 @@ export default function DashboardPage() {
             }
           >
             More
-            <ChevronDown
-              size={14}
-            />
+            <ChevronDown size={14} />
           </button>
-
 
           <div className="nav-spacer" />
 
-
-          {/* LIGHT / DARK MODE */}
           <button
             className="theme-switch"
             onClick={() =>
@@ -3540,7 +1740,6 @@ export default function DashboardPage() {
             }
             aria-label="Toggle theme"
           >
-
             {theme === "light" ? (
               <Moon size={14} />
             ) : (
@@ -3548,180 +1747,125 @@ export default function DashboardPage() {
             )}
 
             <span>
-              {theme === "light"
-                ? "Light"
-                : "Dark"}
+              {theme === "light" ? "Light" : "Dark"}
             </span>
-
           </button>
-
         </div>
-
       </nav>
 
-
-      {/* =====================================================================
-          MOBILE SIDE MENU
-          CSS:
-          .mobile-menu-overlay
-          .mobile-menu-card
-          .mobile-menu-head
-          .mobile-menu-divider
-          .mobile-theme
-          ===================================================================== */}
+      {/* MOBILE MENU */}
       {mobileMenuOpen && (
-
         <div
           className="mobile-menu-overlay"
           onClick={() =>
-            setMobileMenuOpen(
-              false
-            )
+            setMobileMenuOpen(false)
           }
         >
-
           <div
             className="mobile-menu-card"
             onClick={(event) =>
               event.stopPropagation()
             }
           >
-
             <div className="mobile-menu-head">
-
               <div>
-
-                <strong>
-                  PrimeCart
-                </strong>
-
+                <strong>PrimeCart</strong>
                 <small>
                   Shop Smart · Live Better
                 </small>
-
               </div>
 
               <button
                 onClick={() =>
-                  setMobileMenuOpen(
-                    false
-                  )
+                  setMobileMenuOpen(false)
                 }
               >
                 <X />
               </button>
-
             </div>
-
 
             <Link
               href="/dashboard"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Home size={17} />
               Home
             </Link>
 
-
             <Link
               href="/dashboard/categories"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Layers3 size={17} />
               All Categories
             </Link>
 
-
             <Link
               href="/dashboard/products?deal=flash"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Zap size={17} />
               Deals
             </Link>
 
-
             <Link
               href="/dashboard/products?sort=bestseller"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Crown size={17} />
               Best Sellers
             </Link>
 
-
             <Link
               href="/dashboard/products?sort=newest"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Sparkles size={17} />
               New Arrivals
             </Link>
 
-
             <Link
               href="/dashboard/prime-points"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Gift size={17} />
               PrimePoints
             </Link>
 
-
             <Link
               href="/dashboard/prime-match"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Target size={17} />
               PrimeMatch
             </Link>
 
-
             <Link
               href="/dashboard/setup-builder"
               onClick={() =>
-                setMobileMenuOpen(
-                  false
-                )
+                setMobileMenuOpen(false)
               }
             >
               <Monitor size={17} />
               Build My Setup
             </Link>
 
-
             <div className="mobile-menu-divider" />
 
-
-            {/* MOBILE THEME */}
             <button
               className="mobile-theme"
               onClick={() =>
@@ -3732,7 +1876,6 @@ export default function DashboardPage() {
                 )
               }
             >
-
               {theme === "light" ? (
                 <Moon size={17} />
               ) : (
@@ -3742,25 +1885,15 @@ export default function DashboardPage() {
               {theme === "light"
                 ? "Switch to Dark Mode"
                 : "Switch to Light Mode"}
-
             </button>
-
           </div>
-
         </div>
-
       )}
 
-
-      {/* =====================================================================
-          MAIN DASHBOARD CONTENT
-          CSS:
-          .page-content
-          ===================================================================== */}
+      {/* MAIN */}
       <div
         className="container page-content"
         onClick={() => {
-
           if (searchOpen) {
             setSearchOpen(false);
           }
@@ -3768,22 +1901,14 @@ export default function DashboardPage() {
           if (profileOpen) {
             setProfileOpen(false);
           }
-
         }}
       >
-
-        {/* ERROR MESSAGE */}
+        {/* ERROR */}
         {errorMessage && (
-
           <div className="error-box">
-
             <div>
-              <ShieldCheck
-                size={18}
-              />
-              <span>
-                {errorMessage}
-              </span>
+              <ShieldCheck size={18} />
+              <span>{errorMessage}</span>
             </div>
 
             <button
@@ -3793,384 +1918,211 @@ export default function DashboardPage() {
             >
               Retry
             </button>
-
           </div>
-
         )}
 
-
-        {/* ===================================================================
-            HERO BANNER
-            CSS:
-            .hero-layout
-            .hero-carousel
-            .hero-image-frame
-            .hero-banner
-            .hero-arrow
-            .hero-counter
-            .hero-dots
-            .hero-shine
-
-            NOTE:
-            heroAspectRatio ही एकमेव inline style आहे.
-            यामुळे प्रत्येक banner ची original ratio maintain होते.
-            =================================================================== */}
+        {/* HERO — FULL WIDTH CLICKABLE BANNER */}
         <section className="hero-layout">
-
           <div className="hero-carousel">
-
             <div
               className="hero-image-frame"
-              style={{
-                aspectRatio:
-                  heroAspectRatio,
-              }}
+              style={{ aspectRatio: heroAspectRatio }}
             >
-
               {HERO_BANNERS.map(
-                (
-                  banner,
-                  index
-                ) => (
-
-                <img
-                  key={banner}
-                  src={banner}
-                  alt={`PrimeCart promotional banner ${
-                    index + 1
-                  }`}
-                  className={`hero-banner ${
-                    index ===
-                    heroIndex
-                      ? "active"
-                      : ""
-                  }`}
-                  role="button"
-                  tabIndex={
-                    index ===
-                    heroIndex
-                      ? 0
-                      : -1
-                  }
-                  onLoad={(event) => {
-
-                    const image =
-                      event.currentTarget;
-
-                    if (
-                      image.naturalWidth &&
-                      image.naturalHeight
-                    ) {
-
-                      setHeroAspectRatio(
-                        image.naturalWidth /
-                          image.naturalHeight
-                      );
-
-                    }
-
-                  }}
-                  onClick={() =>
-                    router.push(
-                      HERO_LINKS[
-                        index
-                      ]
-                    )
-                  }
-                  onKeyDown={(event) => {
-
-                    if (
-                      event.key ===
-                        "Enter" ||
-                      event.key ===
-                        " "
-                    ) {
-
-                      event.preventDefault();
-
-                      router.push(
-                        HERO_LINKS[
-                          index
-                        ]
-                      );
-
-                    }
-
-                  }}
-                />
-
-              )
+                (banner, index) => (
+                  <img
+                    key={banner}
+                    src={banner}
+                    alt={`PrimeCart promotional banner ${
+                      index + 1
+                    }`}
+                    className={`hero-banner ${
+                      index === heroIndex
+                        ? "active"
+                        : ""
+                    }`}
+                    role="button"
+                    tabIndex={index === heroIndex ? 0 : -1}
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      if (image.naturalWidth && image.naturalHeight) {
+                        setHeroAspectRatio(
+                          image.naturalWidth / image.naturalHeight
+                        );
+                      }
+                    }}
+                    onClick={() => router.push(HERO_LINKS[index])}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(HERO_LINKS[index]);
+                      }
+                    }}
+                  />
+                )
               )}
-
 
               <div className="hero-shine" />
 
-
-              {/* PREVIOUS */}
               <button
                 type="button"
                 className="hero-arrow hero-left"
                 onClick={() =>
                   setHeroIndex(
-                    (
-                      heroIndex -
-                        1 +
-                        HERO_BANNERS.length
-                    ) %
+                    (heroIndex -
+                      1 +
+                      HERO_BANNERS.length) %
                       HERO_BANNERS.length
                   )
                 }
                 aria-label="Previous banner"
               >
-                <ChevronLeft
-                  size={23}
-                />
+                <ChevronLeft size={23} />
               </button>
 
-
-              {/* NEXT */}
               <button
                 type="button"
                 className="hero-arrow hero-right"
                 onClick={() =>
                   setHeroIndex(
-                    (
-                      heroIndex +
-                        1
-                    ) %
+                    (heroIndex + 1) %
                       HERO_BANNERS.length
                   )
                 }
                 aria-label="Next banner"
               >
-                <ChevronRight
-                  size={23}
-                />
+                <ChevronRight size={23} />
               </button>
 
-
-              {/* BANNER COUNTER */}
               <div className="hero-counter">
-
                 <span>
-                  {String(
-                    heroIndex + 1
-                  ).padStart(
+                  {String(heroIndex + 1).padStart(
                     2,
                     "0"
                   )}
                 </span>
-
                 /
-
-                {String(
-                  HERO_BANNERS.length
-                ).padStart(
+                {String(HERO_BANNERS.length).padStart(
                   2,
                   "0"
                 )}
-
               </div>
 
-
-              {/* BANNER DOTS */}
               <div className="hero-dots">
-
                 {HERO_BANNERS.map(
                   (_, index) => (
-
-                  <button
-                    key={index}
-                    type="button"
-                    className={
-                      index ===
-                      heroIndex
-                        ? "active"
-                        : ""
-                    }
-                    onClick={() =>
-                      setHeroIndex(
-                        index
-                      )
-                    }
-                    aria-label={`Show banner ${
-                      index + 1
-                    }`}
-                  />
-
-               ))}
-
+                    <button
+                      key={index}
+                      type="button"
+                      className={
+                        index === heroIndex
+                          ? "active"
+                          : ""
+                      }
+                      onClick={() =>
+                        setHeroIndex(index)
+                      }
+                      aria-label={`Show banner ${
+                        index + 1
+                      }`}
+                    />
+                  )
+                )}
               </div>
-
             </div>
-
           </div>
-
         </section>
 
-
-        {/* ===================================================================
-            CATEGORY SECTION
-            CSS:
-            .category-section
-            .section-mini-head
-            .category-rail-wrap
-            .category-rail
-            .category-item
-            .category-icon
-            .rail-control
-            =================================================================== */}
+        {/* CATEGORIES */}
         <section className="category-section">
-
           <div className="section-mini-head">
-
             <div>
-
-              <span>
-                Explore
-              </span>
-
-              <strong>
-                Shop by Category
-              </strong>
-
+              <span>Explore</span>
+              <strong>Shop by Category</strong>
             </div>
 
             <Link href="/dashboard/categories">
               View All
-              <ArrowRight
-                size={13}
-              />
+              <ArrowRight size={13} />
             </Link>
-
           </div>
 
-
           <div className="category-rail-wrap">
-
             <button
               type="button"
               className="rail-control"
               onClick={() =>
-                scrollCategories(
-                  "left"
-                )
+                scrollCategories("left")
               }
               aria-label="Previous categories"
             >
               <ChevronLeft />
             </button>
 
-
             <div
               className="category-rail"
-              ref={
-                categoryRailRef
-              }
+              ref={categoryRailRef}
             >
+              {categoryCards.map((category) => {
+                const Icon = getCategoryIcon(
+                  category.name
+                );
 
-              {categoryCards.map(
-                (category) => {
+                return (
+                  <button
+                    type="button"
+                    className="category-item"
+                    key={String(category.id)}
+                    onClick={() =>
+                      openCategory(category)
+                    }
+                  >
+                    <span className="category-icon">
+                      <Icon size={24} />
+                    </span>
 
-                  const Icon =
-                    getCategoryIcon(
-                      category.name
-                    );
+                    <span>
+                      {category.name}
+                    </span>
 
-                  return (
-
-                    <button
-                      type="button"
-                      className="category-item"
-                      key={String(
-                        category.id
-                      )}
-                      onClick={() =>
-                        openCategory(
-                          category
-                        )
-                      }
-                    >
-
-                      <span className="category-icon">
-                        <Icon
-                          size={24}
-                        />
-                      </span>
-
-                      <span>
-                        {category.name}
-                      </span>
-
-                      <small>
-                        Explore
-                        <ArrowRight
-                          size={9}
-                        />
-                      </small>
-
-                    </button>
-
-                  );
-
-                }
-              )}
-
+                    <small>
+                      Explore
+                      <ArrowRight size={9} />
+                    </small>
+                  </button>
+                );
+              })}
             </div>
-
 
             <button
               type="button"
               className="rail-control"
               onClick={() =>
-                scrollCategories(
-                  "right"
-                )
+                scrollCategories("right")
               }
               aria-label="Next categories"
             >
               <ChevronRight />
             </button>
-
           </div>
-
         </section>
 
-
-        {/* ===================================================================
-            SMART SHOPPING
-            CSS:
-            .smart-section
-            .smart-grid
-            .smart-card
-            .smart-card-icon
-            .smart-badge
-            =================================================================== */}
+        {/* SMART SHOPPING */}
         <section className="smart-section">
-
           <div className="section-head">
-
             <div className="section-title">
-
               <span>
-                <Sparkles
-                  size={20}
-                />
+                <Sparkles size={20} />
               </span>
-
               Smart Shopping
-
             </div>
 
             <span className="section-caption">
               Tools made for your shopping journey
             </span>
-
           </div>
 
-
           <div className="smart-grid">
-
             <SmartCard
               icon={<Target />}
               eyebrow="PERSONALIZED"
@@ -4206,116 +2158,66 @@ export default function DashboardPage() {
               href="/dashboard/prime-points"
               badge="Rewards"
             />
-
           </div>
-
         </section>
 
-
-        {/* ===================================================================
-            BEST DEALS
-            ProductCard वापरतो.
-            =================================================================== */}
+        {/* BEST DEALS */}
         <SectionHeader
-          icon={
-            <Sparkles size={20} />
-          }
+          icon={<Sparkles size={20} />}
           title="Best Deals for You"
           subtitle="Handpicked offers based on what's trending"
           href="/dashboard/products?deal=best"
         />
 
         <section className="products-grid five-columns">
-
-          {featuredProducts.map(
-            (product) => (
-
+          {featuredProducts.map((product) => (
             <ProductCard
-              key={String(
-                product.id
-              )}
+              key={String(product.id)}
               product={product}
               category={
                 categoryMap.get(
-                  String(
-                    product.category_id
-                  )
-                ) ||
-                "Featured"
+                  String(product.category_id)
+                ) || "Featured"
               }
               wished={wishlist.some(
                 (value) =>
-                  String(
-                    value
-                  ) ===
-                  String(
-                    product.id
-                  )
+                  String(value) ===
+                  String(product.id)
               )}
               onWishlist={() =>
-                toggleWishlist(
-                  product.id
-                )
+                toggleWishlist(product.id)
               }
               onCart={() =>
-                addToCart(
-                  product
-                )
+                addToCart(product)
               }
               onOpen={() =>
-                openProduct(
-                  product
-                )
+                openProduct(product)
               }
             />
-
           ))}
-
         </section>
 
-
-        {/* ===================================================================
-            FLASH DEALS
-            CSS:
-            .flash-section
-            .flash-header
-            .flash-title
-            .flash-timer
-            .flash-products
-            .flash-product
-            =================================================================== */}
-        {flashProducts.length >
-          0 && (
-
+        {/* FLASH DEAL STRIP */}
+        {flashProducts.length > 0 && (
           <section className="flash-section">
-
             <div className="flash-header">
-
               <div>
-
                 <div className="flash-title">
-
                   <Zap
                     size={21}
                     fill="currentColor"
                   />
-
                   Flash Deals
-
                 </div>
 
                 <p>
-                  Limited-time prices. Once they're gone, they're gone.
+                  Limited-time prices. Once they're
+                  gone, they're gone.
                 </p>
-
               </div>
 
-
               <div className="flash-timer">
-
-                <span>
-                  ENDS IN
-                </span>
+                <span>ENDS IN</span>
 
                 <b>
                   {formatCountdown(
@@ -4338,418 +2240,243 @@ export default function DashboardPage() {
                     countdown.seconds
                   )}
                 </b>
-
               </div>
-
 
               <Link href="/dashboard/products?deal=flash">
                 View All Deals
-                <ArrowRight
-                  size={14}
-                />
+                <ArrowRight size={14} />
               </Link>
-
             </div>
-
 
             <div className="flash-products">
-
-              {flashProducts.map(
-                (
-                  product,
-                  index
-                ) => (
-
-                <button
-                  key={String(
-                    product.id
-                  )}
-                  type="button"
-                  className="flash-product"
-                  onClick={() =>
-                    openProduct(
-                      product
-                    )
-                  }
-                >
-
-                  <div className="flash-product-image">
-
-                    <span className="flash-number">
-                      0{index + 1}
-                    </span>
-
-                    {product.image_url ? (
-
-                      <SafeProductImage
-                        src={
-                          product.image_url
-                        }
-                        alt={
-                          product.name
-                        }
-                        className="flash-product-img"
-                      />
-
-                    ) : (
-
-                      <ShoppingBag
-                        size={30}
-                      />
-
-                    )}
-
-                  </div>
-
-
-                  <div className="flash-product-copy">
-
-                    <small className="flash-category-label">
-                      {categoryMap.get(
-                        String(
-                          product.category_id
-                        )
-                      ) ||
-                        "Deal"}
-                    </small>
-
-                    <strong>
-                      {product.name}
-                    </strong>
-
-                    <span>
-                      {formatPrice(
-                        product.price
+              {flashProducts.map((product, index) => (
+                  <button
+                    key={String(product.id)}
+                    type="button"
+                    className="flash-product"
+                    onClick={() =>
+                      openProduct(product)
+                    }
+                  >
+                    <div className="flash-product-image">
+                      <span className="flash-number">0{index + 1}</span>
+                      {product.image_url ? (
+                        <SafeProductImage
+                          src={product.image_url}
+                          alt={product.name}
+                          className="flash-product-img"
+                        />
+                      ) : (
+                        <ShoppingBag size={30} />
                       )}
-                    </span>
+                    </div>
 
+                    <div className="flash-product-copy">
+                      <small className="flash-category-label">
+                        {categoryMap.get(String(product.category_id)) || "Deal"}
+                      </small>
 
-                    {getDiscount(
-                      product.price,
-                      product.original_price
-                    ) > 0 && (
+                      <strong>
+                        {product.name}
+                      </strong>
 
-                      <em>
-                        {getDiscount(
-                          product.price,
-                          product.original_price
+                      <span>
+                        {formatPrice(
+                          product.price
                         )}
-                        % OFF
-                      </em>
+                      </span>
 
-                    )}
-
-                  </div>
-
-                </button>
-
-              ))}
-
+                      {getDiscount(
+                        product.price,
+                        product.original_price
+                      ) > 0 && (
+                        <em>
+                          {getDiscount(
+                            product.price,
+                            product.original_price
+                          )}
+                          % OFF
+                        </em>
+                      )}
+                    </div>
+                  </button>
+                ))}
             </div>
-
           </section>
-
         )}
 
-
-        {/* ===================================================================
-            PROMOTIONAL CARDS
-            CSS:
-            .promo-grid
-            .promo-card
-            .promo-gold
-            .promo-cream
-            .promo-fashion
-            =================================================================== */}
+        {/* PROMO CARDS */}
         <section className="promo-grid">
-
           <PromoCard
             className="promo-gold"
-            icon={
-              <Zap size={21} />
-            }
+            icon={<Zap size={21} />}
             eyebrow="LIMITED TIME"
             title="Up to 70% OFF"
             text="Discover today's most exciting deals."
             href="/dashboard/products?deal=flash"
             button="Shop Deals"
-            product={
-              flashProducts[0]
-            }
+            product={flashProducts[0]}
           />
 
           <PromoCard
             className="promo-cream"
-            icon={
-              <Home size={21} />
-            }
+            icon={<Home size={21} />}
             eyebrow="HOME ESSENTIALS"
             title="Make Home Better"
             text="Beautiful essentials for your everyday life."
             href="/dashboard/categories/home-and-kitchen"
             button="Explore Home"
-            product={
-              flashProducts[1]
-            }
+            product={flashProducts[1]}
           />
 
           <PromoCard
             className="promo-fashion"
-            icon={
-              <Shirt size={21} />
-            }
+            icon={<Shirt size={21} />}
             eyebrow="NEW COLLECTION"
             title="Style Your Way"
             text="Fresh looks, everyday comfort and more."
             href="/dashboard/categories/fashion"
             button="Shop Fashion"
-            product={
-              flashProducts[2]
-            }
+            product={flashProducts[2]}
           />
-
         </section>
 
-
-        {/* ===================================================================
-            TRENDING PRODUCTS
-            =================================================================== */}
+        {/* TRENDING */}
         <SectionHeader
-          icon={
-            <TrendingUp
-              size={20}
-            />
-          }
+          icon={<TrendingUp size={20} />}
           title="Trending Now"
           subtitle="Products shoppers are loving right now"
           href="/dashboard/products?sort=trending"
         />
 
         <section className="products-grid five-columns trending-grid">
-
-          {trendingProducts.map(
-            (product) => (
-
+          {trendingProducts.map((product) => (
             <ProductCard
-              key={String(
-                product.id
-              )}
+              key={String(product.id)}
               product={product}
               category={
                 categoryMap.get(
-                  String(
-                    product.category_id
-                  )
-                ) ||
-                "Trending"
+                  String(product.category_id)
+                ) || "Trending"
               }
               wished={wishlist.some(
                 (value) =>
                   String(value) ===
-                  String(
-                    product.id
-                  )
+                  String(product.id)
               )}
               onWishlist={() =>
-                toggleWishlist(
-                  product.id
-                )
+                toggleWishlist(product.id)
               }
               onCart={() =>
-                addToCart(
-                  product
-                )
+                addToCart(product)
               }
               onOpen={() =>
-                openProduct(
-                  product
-                )
+                openProduct(product)
               }
             />
-
           ))}
-
         </section>
 
-
-        {/* ===================================================================
-            NEW ARRIVALS
-            =================================================================== */}
-        {newArrivals.length >
-          0 && (
-
+        {/* NEW ARRIVALS */}
+        {newArrivals.length > 0 && (
           <>
-
             <SectionHeader
-              icon={
-                <Sparkles
-                  size={20}
-                />
-              }
+              icon={<Sparkles size={20} />}
               title="Fresh Arrivals"
               subtitle="Recently added to PrimeCart"
               href="/dashboard/products?sort=newest"
             />
 
-
             <section className="products-grid five-columns">
-
-              {newArrivals.map(
-                (product) => (
-
+              {newArrivals.map((product) => (
                 <ProductCard
-                  key={String(
-                    product.id
-                  )}
-                  product={
-                    product
-                  }
+                  key={String(product.id)}
+                  product={product}
                   category={
                     categoryMap.get(
-                      String(
-                        product.category_id
-                      )
-                    ) ||
-                    "New Arrival"
+                      String(product.category_id)
+                    ) || "New Arrival"
                   }
                   wished={wishlist.some(
                     (value) =>
-                      String(
-                        value
-                      ) ===
-                      String(
-                        product.id
-                      )
+                      String(value) ===
+                      String(product.id)
                   )}
                   onWishlist={() =>
-                    toggleWishlist(
-                      product.id
-                    )
+                    toggleWishlist(product.id)
                   }
                   onCart={() =>
-                    addToCart(
-                      product
-                    )
+                    addToCart(product)
                   }
                   onOpen={() =>
-                    openProduct(
-                      product
-                    )
+                    openProduct(product)
                   }
                 />
-
               ))}
-
             </section>
-
           </>
-
         )}
 
-
-        {/* ===================================================================
-            TRUST / WHY PRIME CART
-            CSS:
-            .trust-section
-            .trust-heading
-            .trust-strip
-            .trust-item
-            =================================================================== */}
+        {/* TRUST */}
         <section className="trust-section">
-
           <div className="trust-heading">
-
-            <span>
-              WHY PRIME CART?
-            </span>
-
+            <span>WHY PRIME CART?</span>
             <strong>
               Shopping designed around you
             </strong>
-
           </div>
 
-
           <div className="trust-strip">
-
             <TrustItem
-              icon={
-                <Truck />
-              }
+              icon={<Truck />}
               title="Free Shipping"
               text="On orders above ₹499"
             />
 
             <TrustItem
-              icon={
-                <RotateCcw />
-              }
+              icon={<RotateCcw />}
               title="Easy Returns"
               text="7-day hassle-free returns"
             />
 
             <TrustItem
-              icon={
-                <ShieldCheck />
-              }
+              icon={<ShieldCheck />}
               title="Secure Payments"
               text="100% secure checkout"
             />
 
             <TrustItem
-              icon={
-                <Headphones />
-              }
+              icon={<Headphones />}
               title="Customer Support"
               text="We're here to help"
             />
-
           </div>
-
         </section>
 
-
-        {/* ===================================================================
-            BOTTOM CTA
-            CSS:
-            .bottom-cta
-            .bottom-cta-glow
-            .bottom-cta-content
-            .bottom-cta-actions
-            =================================================================== */}
+        {/* BOTTOM CTA */}
         <section className="bottom-cta">
-
           <div className="bottom-cta-glow" />
 
-
           <div className="bottom-cta-content">
-
             <span>
               <Crown size={14} />
               PRIME CART
             </span>
 
-
             <h2>
               Your smarter way to shop.
             </h2>
-
 
             <p>
               Discover products, compare deals and
               build your perfect shopping experience.
             </p>
 
-
             <div className="bottom-cta-actions">
-
               <Link href="/dashboard/products">
                 Explore Products
-                <ArrowRight
-                  size={15}
-                />
+                <ArrowRight size={15} />
               </Link>
-
 
               <Link
                 href="/dashboard/prime-match"
@@ -4758,171 +2485,70 @@ export default function DashboardPage() {
                 Try PrimeMatch
                 <Target size={15} />
               </Link>
-
             </div>
-
           </div>
-
         </section>
-
       </div>
 
-
-      {/* =====================================================================
-          MOBILE BOTTOM NAVIGATION
-          CSS:
-          .mobile-bottom-nav
-          .mobile-bottom-item
-          .mobile-bottom-icon-wrap
-          ===================================================================== */}
-      <nav
-        className="mobile-bottom-nav"
-        aria-label="Mobile navigation"
-      >
-
-        <Link
-          href="/dashboard"
-          className="mobile-bottom-item active"
-        >
+      {/* MOBILE BOTTOM NAV */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+        <Link href="/dashboard" className="mobile-bottom-item active">
           <Home size={19} />
-          <span>
-            Home
-          </span>
+          <span>Home</span>
         </Link>
 
-
-        <Link
-          href="/dashboard/categories"
-          className="mobile-bottom-item"
-        >
+        <Link href="/dashboard/categories" className="mobile-bottom-item">
           <Layers3 size={19} />
-          <span>
-            Categories
-          </span>
+          <span>Categories</span>
         </Link>
 
-
-        <Link
-          href="/dashboard/wishlist"
-          className="mobile-bottom-item mobile-bottom-wishlist"
-        >
-
+        <Link href="/dashboard/wishlist" className="mobile-bottom-item mobile-bottom-wishlist">
           <span className="mobile-bottom-icon-wrap">
-
             <Heart size={20} />
-
-            {wishlist.length >
-              0 && (
-              <b>
-                {wishlist.length >
-                99
-                  ? "99+"
-                  : wishlist.length}
-              </b>
-            )}
-
+            {wishlist.length > 0 && <b>{wishlist.length > 99 ? "99+" : wishlist.length}</b>}
           </span>
-
-          <span>
-            Wishlist
-          </span>
-
+          <span>Wishlist</span>
         </Link>
 
-
-        <Link
-          href="/dashboard/cart"
-          className="mobile-bottom-item mobile-bottom-cart"
-        >
-
+        <Link href="/dashboard/cart" className="mobile-bottom-item mobile-bottom-cart">
           <span className="mobile-bottom-icon-wrap">
-
-            <ShoppingCart
-              size={20}
-            />
-
-            {cartCount >
-              0 && (
-              <b>
-                {cartCount >
-                99
-                  ? "99+"
-                  : cartCount}
-              </b>
-            )}
-
+            <ShoppingCart size={20} />
+            {cartCount > 0 && <b>{cartCount > 99 ? "99+" : cartCount}</b>}
           </span>
-
-          <span>
-            Cart
-          </span>
-
+          <span>Cart</span>
         </Link>
-
 
         {userLoggedIn ? (
-
-          <Link
-            href="/dashboard/profile"
-            className="mobile-bottom-item"
-          >
+          <Link href="/dashboard/profile" className="mobile-bottom-item">
             <UserRound size={19} />
-            <span>
-              Account
-            </span>
+            <span>Account</span>
           </Link>
-
         ) : (
-
-          <Link
-            href="/auth/login"
-            className="mobile-bottom-item"
-          >
+          <Link href="/auth/login" className="mobile-bottom-item">
             <UserRound size={19} />
-            <span>
-              Login
-            </span>
+            <span>Login</span>
           </Link>
-
         )}
-
       </nav>
 
-
-      {/* =====================================================================
-          TOAST NOTIFICATION
-          CSS:
-          .toast
-          ===================================================================== */}
+      {/* TOAST */}
       {toast && (
-
         <div className="toast">
-
           <span>
-            <CheckCircle2
-              size={17}
-            />
+            <CheckCircle2 size={17} />
           </span>
 
           {toast}
-
         </div>
-
       )}
 
-
-      {/* =====================================================================
-          BACK TO TOP
-          CSS:
-          .back-top
-          ===================================================================== */}
+      {/* BACK TO TOP */}
       <button
         className="back-top"
         onClick={() =>
           window.scrollTo({
             top: 0,
-            behavior:
-              "smooth",
+            behavior: "smooth",
           })
         }
         aria-label="Back to top"
@@ -4930,16 +2556,15 @@ export default function DashboardPage() {
         <ChevronUp size={18} />
       </button>
 
+
     </main>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* SERVICE                                                                    */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   SERVICE COMPONENT
-   ----------------------------------------------------------------------------
-   हा reusable service row component आहे.
-   ============================================================================ */
 function Service({
   icon,
   title,
@@ -4951,37 +2576,22 @@ function Service({
 }) {
   return (
     <div className="service-row">
-
       <span className="service-icon">
         {icon}
       </span>
 
       <span>
-
-        <strong>
-          {title}
-        </strong>
-
-        <small>
-          {text}
-        </small>
-
+        <strong>{title}</strong>
+        <small>{text}</small>
       </span>
-
     </div>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* SECTION HEADER                                                             */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   SECTION HEADER COMPONENT
-   ----------------------------------------------------------------------------
-   Best Deals / Trending / Fresh Arrivals सारख्या sections साठी reusable.
-   CSS:
-   .section-head
-   .section-title
-   .section-caption
-   ============================================================================ */
 function SectionHeader({
   icon,
   title,
@@ -4995,51 +2605,31 @@ function SectionHeader({
 }) {
   return (
     <div className="section-head">
-
       <div>
-
         <div className="section-title">
-
-          <span>
-            {icon}
-          </span>
-
+          <span>{icon}</span>
           {title}
-
         </div>
 
-
         {subtitle && (
-
           <span className="section-caption">
             {subtitle}
           </span>
-
         )}
-
       </div>
 
-
       <Link href={href}>
-
         View All
-
-        <ArrowRight
-          size={13}
-        />
-
+        <ArrowRight size={13} />
       </Link>
-
     </div>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* SMART CARD                                                                 */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   SMART CARD COMPONENT
-   ----------------------------------------------------------------------------
-   PrimeMatch / Budget Builder / Setup Builder / PrimePoints.
-   ============================================================================ */
 function SmartCard({
   icon,
   eyebrow,
@@ -5060,52 +2650,34 @@ function SmartCard({
       href={href}
       className="smart-card"
     >
-
       <span className="smart-badge">
         {badge}
       </span>
-
 
       <div className="smart-card-icon">
         {icon}
       </div>
 
-
       <span className="smart-card-eyebrow">
         {eyebrow}
       </span>
 
+      <h3>{title}</h3>
 
-      <h3>
-        {title}
-      </h3>
-
-
-      <p>
-        {text}
-      </p>
-
+      <p>{text}</p>
 
       <span className="smart-card-link">
-
         Explore
-
-        <ArrowRight
-          size={11}
-        />
-
+        <ArrowRight size={11} />
       </span>
-
     </Link>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* PROMO CARD                                                                 */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   PROMO CARD COMPONENT
-   ----------------------------------------------------------------------------
-   Flash / Home / Fashion promotional cards.
-   ============================================================================ */
 function PromoCard({
   className,
   icon,
@@ -5126,67 +2698,41 @@ function PromoCard({
   product?: Product;
 }) {
   return (
-    <div
-      className={`promo-card ${className}`}
-    >
-
+    <div className={`promo-card ${className}`}>
       <div>
-
         <div className="promo-icon">
           {icon}
         </div>
-
 
         <span className="promo-eyebrow">
           {eyebrow}
         </span>
 
+        <h3>{title}</h3>
 
-        <h3>
-          {title}
-        </h3>
-
-
-        <p>
-          {text}
-        </p>
-
+        <p>{text}</p>
 
         <Link href={href}>
-
           {button}
-
-          <ArrowRight
-            size={11}
-          />
-
+          <ArrowRight size={11} />
         </Link>
-
       </div>
 
-
       {product?.image_url && (
-
         <SafeProductImage
-          src={
-            product.image_url
-          }
+          src={product.image_url}
           alt=""
           className="promo-product-image"
         />
-
       )}
-
     </div>
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* TRUST ITEM                                                                 */
+/* -------------------------------------------------------------------------- */
 
-/* ============================================================================
-   TRUST ITEM COMPONENT
-   ----------------------------------------------------------------------------
-   Free Shipping / Returns / Secure Payments / Support.
-   ============================================================================ */
 function TrustItem({
   icon,
   title,
@@ -5198,24 +2744,12 @@ function TrustItem({
 }) {
   return (
     <div className="trust-item">
-
-      <span>
-        {icon}
-      </span>
-
+      <span>{icon}</span>
 
       <div>
-
-        <strong>
-          {title}
-        </strong>
-
-        <small>
-          {text}
-        </small>
-
+        <strong>{title}</strong>
+        <small>{text}</small>
       </div>
-
     </div>
   );
 }
