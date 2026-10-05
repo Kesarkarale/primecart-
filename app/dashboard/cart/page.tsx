@@ -2808,6 +2808,96 @@ export default function CartPage() {
           </div>
         </div>
       )}
+            {/* ============================================================
+          MOBILE BOTTOM NAVIGATION
+          Same navigation as Dashboard / Categories / Wishlist
+          Mobile only — desktop वर hidden
+      ============================================================ */}
+      <nav className="fixed bottom-3 left-3 right-3 z-[100] md:hidden">
+        <div className="grid h-[68px] grid-cols-5 items-center rounded-[22px] border border-[#eadfc9] bg-white/95 px-2 shadow-[0_12px_40px_rgba(75,55,20,0.16)] backdrop-blur-xl">
+
+          {/* HOME */}
+          <Link
+            href="/dashboard"
+            className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538]">
+              <Home size={19} strokeWidth={2} />
+            </div>
+
+            <span className="text-[10px] font-semibold">
+              Home
+            </span>
+          </Link>
+
+          {/* CATEGORIES */}
+          <Link
+            href="/dashboard/categories"
+            className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538]">
+              <LayoutGrid size={19} strokeWidth={2} />
+            </div>
+
+            <span className="text-[10px] font-semibold">
+              Categories
+            </span>
+          </Link>
+
+          {/* WISHLIST */}
+          <Link
+            href="/dashboard/wishlist"
+            className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition"
+          >
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538]">
+              <Heart size={19} strokeWidth={2} />
+
+              {wishlistCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-[#b9975b] px-1 text-[8px] font-bold text-white">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
+            </div>
+
+            <span className="text-[10px] font-semibold">
+              Wishlist
+            </span>
+          </Link>
+
+          {/* CART */}
+          <Link
+            href="/dashboard/cart"
+            className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538]">
+              <ShoppingBag size={19} strokeWidth={2} />
+            </div>
+
+            <span className="text-[10px] font-semibold">
+              Cart
+            </span>
+          </Link>
+
+          {/* ACCOUNT — ACTIVE */}
+          <Link
+            href="/dashboard/profile"
+            className="flex h-full flex-col items-center justify-center gap-1 text-[#977538]"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f3ead8] shadow-sm">
+              <UserRound
+                size={19}
+                strokeWidth={2.2}
+                className="text-[#977538]"
+              />
+            </div>
+
+            <span className="text-[10px] font-bold">
+              Account
+            </span>
+          </Link>
+
+        </div>
+      </nav>
     </main>
   );
 }
