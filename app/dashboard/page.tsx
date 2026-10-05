@@ -7817,6 +7817,135 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
             aspect-ratio: auto !important;
           }
         }
+
+        /* ================================================================
+           FINAL WHITE + GOLD THEME POLISH
+           Flash Deals + All Categories button
+           ================================================================ */
+        .all-category-btn {
+          background: linear-gradient(135deg, #c79a3b, #a8751f) !important;
+          color: #fff !important;
+          border: 1px solid rgba(255,255,255,.22) !important;
+          box-shadow: 0 6px 15px rgba(184,135,45,.20) !important;
+        }
+        .all-category-btn:hover {
+          background: linear-gradient(135deg, #d2aa57, #b8872d) !important;
+          transform: translateY(-1px);
+        }
+        .all-category-btn svg {
+          color: #fff8e8 !important;
+        }
+
+        .flash-section {
+          background: linear-gradient(135deg, #fffdf8 0%, #fff8e9 55%, #f8edcf 100%) !important;
+          border: 1px solid rgba(184,135,45,.24) !important;
+          box-shadow: 0 14px 34px rgba(112,79,20,.10) !important;
+        }
+        .flash-header {
+          background: linear-gradient(135deg, #fff 0%, #fffaf0 100%) !important;
+          border-bottom: 1px solid rgba(184,135,45,.16) !important;
+        }
+        .flash-title {
+          color: #8b641d !important;
+        }
+        .flash-title svg {
+          color: #b8872d !important;
+        }
+        .flash-header p {
+          color: #8d8577 !important;
+        }
+        .flash-timer span {
+          color: #9a711f !important;
+          border-color: rgba(184,135,45,.22) !important;
+          background: #fff8e8 !important;
+        }
+        .flash-timer b {
+          color: #7b5715 !important;
+          background: #fff !important;
+          border: 1px solid rgba(184,135,45,.20) !important;
+          box-shadow: 0 4px 10px rgba(112,79,20,.08) !important;
+        }
+        .flash-timer i {
+          color: #b8872d !important;
+        }
+        .flash-header > a {
+          color: #9a6d19 !important;
+          background: #fffaf0 !important;
+          border: 1px solid rgba(184,135,45,.24) !important;
+          border-radius: 999px !important;
+        }
+
+        @media (max-width: 680px) {
+          .all-category-btn {
+            background: linear-gradient(135deg, #c79a3b, #a8751f) !important;
+          }
+
+          .flash-section {
+            margin: 16px 0 !important;
+            border-radius: 13px !important;
+          }
+          .flash-header {
+            padding: 11px 12px !important;
+            gap: 8px !important;
+          }
+          .flash-title {
+            font-size: 15px !important;
+            line-height: 1.1 !important;
+          }
+          .flash-title svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+          .flash-header p {
+            font-size: 9px !important;
+            margin-top: 3px !important;
+            line-height: 1.25 !important;
+          }
+          .flash-timer {
+            transform: scale(.84) !important;
+            transform-origin: right center !important;
+            margin-left: auto !important;
+          }
+          .flash-timer span {
+            font-size: 7px !important;
+            padding: 3px 5px !important;
+          }
+          .flash-timer b {
+            min-width: 23px !important;
+            height: 23px !important;
+            font-size: 10px !important;
+            border-radius: 6px !important;
+          }
+          .flash-timer i {
+            font-size: 10px !important;
+          }
+          .flash-header > a {
+            font-size: 9px !important;
+            padding: 5px 8px !important;
+          }
+          .flash-products {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+            padding: 8px !important;
+          }
+          .flash-product {
+            min-height: 132px !important;
+            padding: 7px !important;
+            border-radius: 10px !important;
+          }
+          .flash-product-image {
+            height: 70px !important;
+            min-height: 70px !important;
+            border-radius: 8px !important;
+          }
+          .flash-product strong {
+            font-size: 11px !important;
+          }
+          .flash-product span,
+          .flash-product em {
+            font-size: 8px !important;
+          }
+        }
  `}
       </style>
     </main>
