@@ -7429,16 +7429,10 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
         @media(max-width:1200px){.flash-products{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
         @media(max-width:900px){.flash-products{grid-template-columns:repeat(2,minmax(0,1fr))!important}.flash-product{min-height:88px!important}}
         @media(max-width:680px){.flash-section{padding:14px!important}.flash-header{display:grid!important;grid-template-columns:1fr auto!important;gap:10px!important}.flash-header> a{grid-column:1/-1!important;justify-content:center!important}.flash-header p{font-size:8px!important;line-height:1.45!important}.flash-title{font-size:18px!important}.flash-products{display:flex!important;overflow-x:auto!important;scroll-snap-type:x mandatory!important;padding:2px 1px 8px!important;gap:9px!important;scrollbar-width:none!important}.flash-products::-webkit-scrollbar{display:none!important}.flash-product{min-width:220px!important;width:220px!important;flex:0 0 220px!important;scroll-snap-align:start!important}.flash-product-copy strong{font-size:11px!important}.flash-product-copy span{font-size:13px!important}}
- `}
+ }
 
         /* ================================================================
-           PRIME CART — FINAL RESPONSIVE DASHBOARD FIX
-           - Full hero image on mobile + desktop
-           - No forced/cropped mobile hero ratio
-           - Professional mobile header
-           - Cart + 3-line menu beside PrimeCart
-           - Search works cleanly on mobile + desktop
-           - Existing bottom navigation is preserved
+           PRIME CART — FINAL RESPONSIVE DASHBOARD FIX MOBILE
            ================================================================ */
 
         .hero-image-frame {
