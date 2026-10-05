@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,6 +10,9 @@ import {
   ChevronDown,
   Filter,
   Heart,
+  Home,
+  LayoutGrid,
+  UserRound,
   ImageOff,
   Package,
   Search,
@@ -142,6 +145,8 @@ export default function CategoryProductsPage() {
 
   /* Search */
   const [search, setSearch] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const lastSavedSearchRef = useRef("");
 
   /* Sort */
   const [sort, setSort] = useState("featured");
@@ -284,6 +289,140 @@ export default function CategoryProductsPage() {
 
     loadData();
   }, [slug, supabase]);
+
+  /* =========================================================
+     DATABASE SEARCH + SEARCH HISTORY
+  ========================================================= */
+
+  useEffect(() => {
+    const term = search.trim();
+
+    if (!category?.id) {
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(Boolean(term));
+      setError("");
+
+      try {
+        if (!term) {
+          const { data, error } = await supabase
+            .from("products")
+            .select(`
+              id,
+              category_id,
+              name,
+              slug,
+              short_description,
+              description,
+              price,
+              original_price,
+              stock,
+              image_url,
+              brand,
+              rating,
+              reviews_count,
+              is_featured,
+              is_flash_sale,
+              is_active,
+              created_at
+            `)
+            .eq("category_id", category.id)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+          setProducts(data ?? []);
+          return;
+        }
+        // Keep PostgREST OR syntax safe when the user types special characters.
+        const safeTerm = term
+          .replace(/[(),]/g, " ")
+          .replace(/\\/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (!safeTerm) {
+          setProducts([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("products")
+          .select(`
+            id,
+            category_id,
+            name,
+            slug,
+            short_description,
+            description,
+            price,
+            original_price,
+            stock,
+            image_url,
+            brand,
+            rating,
+            reviews_count,
+            is_featured,
+            is_flash_sale,
+            is_active,
+            created_at
+          `)
+          .eq("category_id", category.id)
+          .eq("is_active", true)
+          .or(
+            `name.ilike.%${safeTerm}%,slug.ilike.%${safeTerm}%,brand.ilike.%${safeTerm}%,short_description.ilike.%${safeTerm}%,description.ilike.%${safeTerm}%`
+          )
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const results = data ?? [];
+        setProducts(results);
+
+        // Save a submitted/debounced search once, not one row per typed character.
+        if (term.length >= 2 && lastSavedSearchRef.current !== term) {
+          lastSavedSearchRef.current = term;
+
+          const { data: { user } } = await supabase.auth.getUser();
+
+          if (user) {
+            const exactMatchFound = results.some(
+              (product) =>
+                product.name.trim().toLowerCase() === term.toLowerCase()
+            );
+
+            const { error: historyError } = await supabase
+              .from("search_history")
+              .insert({
+                user_id: user.id,
+                search_query: term,
+                results_count: results.length,
+                has_results: results.length > 0,
+                exact_match_found: exactMatchFound,
+              });
+
+            if (historyError) {
+              console.error("Search history error:", historyError);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Database search error:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to search products."
+        );
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [search, category?.id, supabase]);
 
   /* =========================================================
      LOAD WISHLIST
@@ -441,27 +580,6 @@ export default function CategoryProductsPage() {
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
-
-    const searchValue =
-      search.trim().toLowerCase();
-
-    if (searchValue) {
-      result = result.filter(
-        (product) =>
-          product.name
-            .toLowerCase()
-            .includes(searchValue) ||
-          product.brand
-            ?.toLowerCase()
-            .includes(searchValue) ||
-          product.short_description
-            ?.toLowerCase()
-            .includes(searchValue) ||
-          product.description
-            ?.toLowerCase()
-            .includes(searchValue)
-      );
-    }
 
     if (inStockOnly) {
       result = result.filter(
@@ -968,7 +1086,7 @@ export default function CategoryProductsPage() {
           CONTENT
       ===================================================== */}
 
-      <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-8 lg:px-10 lg:py-9">
+      <div className="mx-auto max-w-[1500px] px-4 py-6 pb-24 sm:px-8 lg:px-10 lg:py-9 lg:pb-9">
         {/* BREADCRUMB */}
 
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-500">
@@ -1158,6 +1276,11 @@ export default function CategoryProductsPage() {
               </button>
 
               <p className="text-sm text-gray-500">
+                {searchLoading && (
+                  <span className="mr-2 font-semibold text-[#a17c00]">
+                    Searching...
+                  </span>
+                )}
                 Showing{" "}
                 <span className="font-black text-gray-900">
                   {filteredProducts.length}
@@ -1645,11 +1768,26 @@ export default function CategoryProductsPage() {
       )}
 
       {/* =====================================================
+          MOBILE BOTTOM NAVIGATION
+          Home / Categories / Wishlist / Cart / Account
+      ===================================================== */}
+
+      <nav className="fixed bottom-0 left-0 right-0 z-[150] border-t border-[#c9a227]/15 bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
+          <MobileNavItem href="/dashboard" label="Home" icon={<Home size={20} />} />
+          <MobileNavItem href="/dashboard/categories" label="Categories" icon={<LayoutGrid size={20} />} active />
+          <MobileNavItem href="/dashboard/wishlist" label="Wishlist" icon={<Heart size={20} />} badge={wishlistIds.length} />
+          <MobileNavItem href="/dashboard/cart" label="Cart" icon={<ShoppingCart size={20} />} badge={cartCount} />
+          <MobileNavItem href="/dashboard/profile" label="Account" icon={<UserRound size={20} />} />
+        </div>
+      </nav>
+
+      {/* =====================================================
           TOAST
       ===================================================== */}
 
       {toast && (
-        <div className="fixed bottom-5 left-1/2 z-[300] flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#c9a227]/20 bg-white px-5 py-3.5 text-sm font-bold text-gray-800 shadow-[0_15px_50px_rgba(0,0,0,0.15)]">
+        <div className="fixed bottom-24 left-1/2 z-[300] md:bottom-5 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-[#c9a227]/20 bg-white px-5 py-3.5 text-sm font-bold text-gray-800 shadow-[0_15px_50px_rgba(0,0,0,0.15)]">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff3c4] text-[#a17c00]">
             <Check size={15} />
           </div>
@@ -1658,6 +1796,50 @@ export default function CategoryProductsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+/* =========================================================
+   MOBILE BOTTOM NAV ITEM
+========================================================= */
+
+function MobileNavItem({
+  href,
+  label,
+  icon,
+  active = false,
+  badge = 0,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  badge?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition ${
+        active
+          ? "text-[#a17c00]"
+          : "text-gray-500 hover:text-[#a17c00]"
+      }`}
+    >
+      <span
+        className={`relative flex h-7 w-10 items-center justify-center rounded-xl ${
+          active ? "bg-[#fff5d4]" : "bg-transparent"
+        }`}
+      >
+        {icon}
+
+        {badge > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c9a227] px-1 text-[8px] font-black text-white">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+      </span>
+      <span>{label}</span>
+    </Link>
   );
 }
 
