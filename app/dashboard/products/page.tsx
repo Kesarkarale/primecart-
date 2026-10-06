@@ -1967,13 +1967,6 @@ export default function ProductsPage() {
      FLASH / RECENT / RECOMMENDED
   ======================================================= */
 
-  const flashProducts = useMemo(() => {
-    const flash = products.filter((product) => product.is_flash_sale);
-
-    return (flash.length ? flash : products)
-      .sort((a, b) => getDiscount(b) - getDiscount(a))
-      .slice(0, 4);
-  }, [products]);
 
   const recentProducts = useMemo(() => {
     return recentIds
@@ -2457,18 +2450,7 @@ export default function ProductsPage() {
                   Explore Products
                 </button>
 
-                <button
-                  onClick={() => {
-                    document
-                      .getElementById("flash-deals")
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      });
-                }}
-                  className="rounded-xl border border-[#ddcba9] bg-white/70 px-5 py-3 text-xs font-extrabold text-[#87652f] backdrop-blur transition hover:bg-white"
-                >
-                  View Flash Deals
-                </button>
+            
               </div>
             </div>
           </motion.section>
@@ -2505,89 +2487,6 @@ export default function ProductsPage() {
               </div>
             </div>
           </div>
-
-          {/* FLASH DEALS */}
-          {flashProducts.length > 0 && (
-            <motion.section id="flash-deals" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.12 }} className="mt-7">
-              <div className="mb-4 flex items-end justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f4e3c3] text-[#9c702e]">
-                      <Zap size={15} fill="currentColor" />
-                    </span>
-
-                    <div>
-                      <h2 className="text-lg font-black text-[#443729]">
-                        Flash Deals
-                      </h2>
-                      <p className="text-[10px] text-[#9c8e7c]">
-                        Limited-time offers picked for you
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setDiscountFilter("10");
-                    document
-                      .getElementById("all-products")
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      });
-                  }}
-                  className="hidden items-center gap-1 text-[10px] font-extrabold text-[#9c712f] sm:flex"
-                >
-                  See all deals
-                  <ArrowRight size={13} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {flashProducts.map((product, index) => (
-                  <motion.button
-                    key={product.id}
-                    onClick={() => openQuickView(product)}
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.06 }}
-                    whileHover={{ y: -4, scale: 1.01 }}
-                    className="group relative overflow-hidden rounded-2xl border border-[#eadfce] bg-white text-left shadow-[0_7px_22px_rgba(72,51,23,0.035)] transition-[border-color,box-shadow] hover:border-[#d8c29a] hover:shadow-[0_15px_35px_rgba(72,51,23,0.08)]"
-                  >
-                    <div className="relative aspect-[1.15] overflow-hidden bg-[#faf7f0]">
-                      <ProductImage
-                        src={product.image_url}
-                        alt={product.name}
-                        imageClassName="p-4 group-hover:scale-[1.025]"
-                      />
-
-                      <span className="absolute left-2.5 top-2.5 rounded-full bg-[#3e3021] px-2 py-1 text-[8px] font-black text-white">
-                        {getDiscount(product)}% OFF
-                      </span>
-                    </div>
-
-                    <div className="p-3">
-                      <p className="line-clamp-1 text-[11px] font-bold text-[#4f4232]">
-                        {product.name}
-                      </p>
-
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-sm font-black text-[#a07532]">
-                          {formatPrice(product.price)}
-                        </span>
-
-                        {product.original_price && (
-                          <span className="text-[9px] text-[#aaa092] line-through">
-                            {formatPrice(product.original_price)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </motion.section>
-          )}
 
           {/* TOOLBAR */}
           <motion.section
