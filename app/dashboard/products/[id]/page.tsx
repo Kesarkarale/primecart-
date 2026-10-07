@@ -97,6 +97,7 @@ type ImageFallbackProps = {
 ========================================================= */
 
 const RECENT_KEY = "primecart-recently-viewed";
+const PENDING_CART_KEY = "primecart-pending-cart";
 
 const gold = "#b9975b";
 const goldDark = "#96723b";
@@ -468,8 +469,10 @@ export default function ProductDetailPage() {
   const loadCartCount = useCallback(async () => {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user ?? null;
 
       if (!user) {
         setCartCount(0);
@@ -596,8 +599,10 @@ export default function ProductDetailPage() {
       setRecommendedProducts((recommendationData as Product[]) || []);
 
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user ?? null;
 
       if (user) {
         const { data: wishlistData } = await supabase
@@ -707,9 +712,11 @@ export default function ProductDetailPage() {
         --------------------------------------------- */
 
         const {
-          data: { user },
+          data: { session },
           error: userError,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
+
+        const user = session?.user ?? null;
 
         if (userError) {
           console.error("Auth user error:", userError);
@@ -718,8 +725,16 @@ export default function ProductDetailPage() {
         }
 
         if (!user) {
-          setToast("Please login to add products to cart.");
-          router.push("/auth/login");
+          localStorage.setItem(
+            PENDING_CART_KEY,
+            JSON.stringify({
+              productId: product.id,
+              quantity: Math.max(1, Math.min(Number(qty) || 1, maxQuantity)),
+            })
+          );
+
+          window.location.href =
+            `/auth/login?redirect=${encodeURIComponent("/dashboard/cart")}`;
           return false;
         }
 
@@ -799,7 +814,6 @@ export default function ProductDetailPage() {
             .from("cart_items")
             .update({
               quantity: newQuantity,
-		name: product.name,
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingItem.id)
@@ -853,7 +867,6 @@ export default function ProductDetailPage() {
           .insert({
             user_id: user.id,
             product_id: product.id,
-            name: product.name,
             quantity: safeQuantity,
           })
           .select(
@@ -1034,8 +1047,10 @@ const handleAddToCart = async () => {
 
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user ?? null;
 
       if (!user) {
         router.push("/auth/login");
@@ -1115,8 +1130,10 @@ const handleAddToCart = async () => {
   const handleRelatedWishlist = async (item: Product) => {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user ?? null;
 
       if (!user) {
         router.push("/auth/login");
