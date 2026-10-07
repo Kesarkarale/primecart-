@@ -97,6 +97,7 @@ type ToastState = {
 ========================================================= */
 
 const CART_KEY = "primecart-cart";
+const BUY_NOW_KEY = "primecart-buy-now";
 const ADDRESS_KEY = "primecart-addresses";
 const ORDERS_KEY = "primecart-orders";
 
@@ -363,6 +364,7 @@ export default function CheckoutPage() {
   );
 
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isBuyNowCheckout, setIsBuyNowCheckout] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] =
     useState("");
@@ -421,24 +423,100 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     async function loadCheckoutData() {
-      const savedCart = safeParse<CartItem[]>(
-        localStorage.getItem(CART_KEY),
-        []
+      const buyNow = safeParse<{
+        productId?: string;
+        quantity?: number;
+      } | null>(
+        localStorage.getItem(BUY_NOW_KEY),
+        null
       );
 
-      const normalizedCart = savedCart
-        .filter((item) => item && item.id)
-        .map((item) => ({
-          ...item,
-          quantity: Math.max(
-            1,
-            Number(item.quantity || 1)
-          ),
-          price: Number(item.price || 0),
-        }));
+      /*
+       * BUY NOW has priority over the normal cart.
+       * It loads exactly one product for this checkout and
+       * never changes the user's saved cart.
+       */
+      if (buyNow?.productId) {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-      if (!cancelled) {
-        setItems(normalizedCart);
+        if (!session?.user || sessionError) {
+          window.location.href =
+            `/auth/login?redirect=${encodeURIComponent("/dashboard/checkout")}`;
+          return;
+        }
+
+        const { data: buyNowProduct, error: productError } =
+          await supabase
+            .from("products")
+            .select(
+              "id,name,price,original_price,image_url,brand,stock,is_active"
+            )
+            .eq("id", buyNow.productId)
+            .eq("is_active", true)
+            .maybeSingle();
+
+        if (productError || !buyNowProduct) {
+          console.error("Buy Now product load error:", productError);
+          localStorage.removeItem(BUY_NOW_KEY);
+          if (!cancelled) setItems([]);
+          return;
+        }
+
+        const availableStock = Number(buyNowProduct.stock || 0);
+        const safeQuantity = Math.max(
+          1,
+          Math.min(Number(buyNow.quantity) || 1, availableStock || 1)
+        );
+
+        if (availableStock <= 0) {
+          localStorage.removeItem(BUY_NOW_KEY);
+          if (!cancelled) setItems([]);
+          return;
+        }
+
+        const buyNowItem: CartItem = {
+          id: String(buyNowProduct.id),
+          product_id: String(buyNowProduct.id),
+          name: buyNowProduct.name,
+          price: Number(buyNowProduct.price || 0),
+          original_price:
+            buyNowProduct.original_price == null
+              ? null
+              : Number(buyNowProduct.original_price),
+          quantity: safeQuantity,
+          image_url: buyNowProduct.image_url || null,
+          brand: buyNowProduct.brand || null,
+          stock: availableStock,
+        };
+
+        if (!cancelled) {
+          setIsBuyNowCheckout(true);
+          setItems([buyNowItem]);
+        }
+      } else {
+        const savedCart = safeParse<CartItem[]>(
+          localStorage.getItem(CART_KEY),
+          []
+        );
+
+        const normalizedCart = savedCart
+          .filter((item) => item && item.id)
+          .map((item) => ({
+            ...item,
+            quantity: Math.max(
+              1,
+              Number(item.quantity || 1)
+            ),
+            price: Number(item.price || 0),
+          }));
+
+        if (!cancelled) {
+          setIsBuyNowCheckout(false);
+          setItems(normalizedCart);
+        }
       }
 
       const localAddresses = safeParse<Address[]>(
@@ -2052,6 +2130,7 @@ async function placeOrder() {
       );
 
     if (
+      !isBuyNowCheckout &&
       orderedProductIds.length > 0
     ) {
       const {
@@ -2085,9 +2164,11 @@ async function placeOrder() {
        STEP 11: CLEAR LOCAL CART
     ===================================================== */
 
-    localStorage.removeItem(
-      CART_KEY
-    );
+    if (isBuyNowCheckout) {
+      localStorage.removeItem(BUY_NOW_KEY);
+    } else {
+      localStorage.removeItem(CART_KEY);
+    }
 
     window.dispatchEvent(
       new Event("storage")
