@@ -1021,18 +1021,40 @@ const handleAddToCart = async () => {
   const handleBuyNow = async () => {
     if (!product || isOutOfStock || cartLoading) return;
 
-    setCartLoading(true);
+    const safeQuantity = Math.max(
+      1,
+      Math.min(Number(quantity) || 1, maxQuantity)
+    );
 
     try {
-      const added = await addProductToCart(quantity);
+      /*
+       * BUY NOW IS A SEPARATE CHECKOUT FLOW.
+       * Do not add the product to cart_items because Buy Now
+       * should purchase only this product and must not change
+       * the user's existing cart.
+       */
+      localStorage.setItem(
+        "primecart-buy-now",
+        JSON.stringify({
+          productId: product.id,
+          quantity: safeQuantity,
+        })
+      );
 
-      if (added) {
-        router.push("/dashboard/checkout");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        window.location.href =
+          `/auth/login?redirect=${encodeURIComponent("/dashboard/checkout")}`;
+        return;
       }
+
+      router.push("/dashboard/checkout");
     } catch (error) {
       console.error("Buy now error:", error);
-    } finally {
-      setCartLoading(false);
+      setToast("Unable to continue to checkout. Please try again.");
     }
   };
 
