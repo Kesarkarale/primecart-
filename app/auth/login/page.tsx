@@ -843,7 +843,7 @@ export default function LoginPage() {
               Don't have an account?{" "}
 
               <Link
-                href="/register"
+                href="/auth/register"
                 className="
                   font-bold
                   text-[#c18b13]
