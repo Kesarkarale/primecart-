@@ -1735,21 +1735,20 @@ lg:min-h-[540px]
                   Home
                 </Link>
 
-                <Link
+               
                  <Link href="/dashboard/products">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Shop
                 </Link>
 
-                <Link
+                
                  <Link href="/dashboard/categories">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
-                <Link
                    <Link href="/dashboard/products">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
@@ -2020,7 +2019,7 @@ lg:min-h-[540px]
             </span>
           </Link>
 
-          <Link
+         
           <Link href="/dashboard/wishlist">
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
@@ -2031,7 +2030,7 @@ lg:min-h-[540px]
             </span>
           </Link>
 
-          <Link
+ 
            <Link href="/dashboard/cart">
             className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
