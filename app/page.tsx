@@ -1745,14 +1745,14 @@ lg:min-h-[540px]
 
                 
                  <Link
-                   href="/dashboard/categories">
+                   href="/dashboard/categories"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
                    <Link 
-                     href="/dashboard/products">
+                     href="/dashboard/products"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Deals
