@@ -292,19 +292,169 @@ export default function CartPage() {
 
     try {
       const {
-        data: { user },
+        data: { session },
         error: userError,
-      } = await supabase.auth.getUser();
+      } = await supabase.auth.getSession();
 
       if (userError) throw userError;
 
+      const user = session?.user ?? null;
+
       if (!user) {
-  // Guest users can open the cart page.
-  // Guest cart is intentionally empty.
-  setCart([]);
-  writeStorage(CART_KEY, []);
-  return;
-}
+        // Guest users can open the cart page.
+        // Guest cart is intentionally empty.
+        setCart([]);
+        writeStorage(CART_KEY, []);
+        return;
+      }
+
+      /*
+       * ============================================================
+       * PENDING CART ITEM FROM DASHBOARD
+       * ============================================================
+       *
+       * Dashboard guests are redirected to login when they click
+       * "Add to Cart". The dashboard stores the selected product in
+       * localStorage as "primecart-pending-cart".
+       *
+       * After login, the cart page consumes that item and saves it
+       * into the same cart_items table used everywhere else.
+       */
+      const pendingCartRaw = localStorage.getItem(
+        "primecart-pending-cart",
+      );
+
+      if (pendingCartRaw) {
+        let pendingCartSaved = false;
+
+        try {
+          const pendingCart = JSON.parse(pendingCartRaw);
+          const pendingProductId = String(
+            pendingCart?.productId ?? "",
+          );
+          const pendingQuantity = Math.max(
+            1,
+            Number(pendingCart?.quantity ?? 1) || 1,
+          );
+
+          if (pendingProductId) {
+            const {
+              data: pendingProduct,
+              error: pendingProductError,
+            } = await supabase
+              .from("products")
+              .select(
+                "id,name,price,original_price,image_url,brand,stock,rating,reviews_count,category_id,is_active",
+              )
+              .eq("id", pendingProductId)
+              .maybeSingle();
+
+            if (pendingProductError) {
+              throw pendingProductError;
+            }
+
+            if (!pendingProduct) {
+              showNotice(
+                "The selected product could not be found.",
+                "error",
+              );
+              pendingCartSaved = true;
+            } else if (
+              pendingProduct.is_active === false ||
+              Number(pendingProduct.stock ?? 0) <= 0
+            ) {
+              showNotice(
+                "The selected product is currently unavailable.",
+                "error",
+              );
+              pendingCartSaved = true;
+            } else {
+              const pendingStock = Math.max(
+                0,
+                Number(pendingProduct.stock) || 0,
+              );
+
+              const {
+                data: existingPendingRow,
+                error: existingPendingError,
+              } = await supabase
+                .from("cart_items")
+                .select("id,quantity")
+                .eq("user_id", user.id)
+                .eq("product_id", pendingProductId)
+                .maybeSingle();
+
+              if (existingPendingError) {
+                throw existingPendingError;
+              }
+
+              const finalQuantity = existingPendingRow
+                ? Math.min(
+                    Number(existingPendingRow.quantity || 0) +
+                      pendingQuantity,
+                    pendingStock,
+                  )
+                : Math.min(
+                    pendingQuantity,
+                    pendingStock,
+                  );
+
+              if (existingPendingRow?.id) {
+                const { error: updatePendingError } =
+                  await supabase
+                    .from("cart_items")
+                    .update({
+                      quantity: finalQuantity,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", existingPendingRow.id)
+                    .eq("user_id", user.id);
+
+                if (updatePendingError) {
+                  throw updatePendingError;
+                }
+              } else {
+                const { error: insertPendingError } =
+                  await supabase
+                    .from("cart_items")
+                    .insert({
+                      user_id: user.id,
+                      product_id: pendingProductId,
+                      quantity: finalQuantity,
+                      updated_at: new Date().toISOString(),
+                    });
+
+                if (insertPendingError) {
+                  throw insertPendingError;
+                }
+              }
+
+              pendingCartSaved = true;
+              showNotice(
+                existingPendingRow
+                  ? "Product added to your cart."
+                  : "Product added to your cart.",
+                "success",
+              );
+            }
+          } else {
+            pendingCartSaved = true;
+          }
+        } catch (pendingError) {
+          console.error(
+            "Pending cart item error:",
+            pendingError,
+          );
+          showNotice(
+            "Could not add the selected product to your cart. Please try again.",
+            "error",
+          );
+        }
+
+        if (pendingCartSaved) {
+          localStorage.removeItem("primecart-pending-cart");
+        }
+      }
 
       const { data: rows, error: cartError } = await supabase
         .from("cart_items")
