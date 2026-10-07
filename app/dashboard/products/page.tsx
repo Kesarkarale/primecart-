@@ -94,6 +94,7 @@ type CartItem = {
 ========================================================= */
 
 const CART_KEY = "primecart-cart";
+const PENDING_CART_KEY = "primecart-pending-cart";
 const WISHLIST_KEY = "primecart-wishlist";
 const RECENT_KEY = "primecart-recently-viewed";
 const COMPARE_KEY = "primecart-compare-products";
@@ -1608,11 +1609,13 @@ export default function ProductsPage() {
     const loadUserData = async () => {
       try {
         const {
-          data: { user },
+          data: { session },
           error: authError,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
 
         if (authError) throw authError;
+
+        const user = session?.user ?? null;
 
         // Recently viewed and guest cart remain browser-specific.
         const savedRecent = safeParse<string[]>(
@@ -2129,13 +2132,31 @@ export default function ProductsPage() {
       setAddingProductId(product.id);
       try {
         const {
-          data: { user },
+          data: { session },
           error: authError,
-        } = await supabase.auth.getUser();
+        } = await supabase.auth.getSession();
         if (authError) throw authError;
 
-        if (user) {
-          const { data: existingRow, error: lookupError } = await supabase
+        const user = session?.user ?? null;
+
+        // Guests can browse freely, but Add to Cart requires login.
+        // Save the exact product/quantity so the Cart page can add it
+        // to Supabase after the user signs in.
+        if (!user) {
+          localStorage.setItem(
+            PENDING_CART_KEY,
+            JSON.stringify({
+              productId: product.id,
+              quantity: quantityToAdd,
+            })
+          );
+
+          window.location.href =
+            `/auth/login?redirect=${encodeURIComponent("/dashboard/cart")}`;
+          return;
+        }
+
+        const { data: existingRow, error: lookupError } = await supabase
             .from("cart_items")
             .select("id,quantity")
             .eq("user_id", user.id)
@@ -2180,32 +2201,6 @@ export default function ProductsPage() {
 
           // Do not overwrite the guest-cart cache with partial database rows.
           // The signed-in Cart page should read cart_items from Supabase.
-        } else {
-          const existing = safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
-          const index = existing.findIndex(
-            (item) => item.product_id === product.id || item.id === product.id
-          );
-
-          if (index >= 0) {
-            existing[index] = {
-              ...existing[index],
-              quantity: Math.min(stock, Number(existing[index].quantity || 0) + quantityToAdd),
-            };
-          } else {
-            existing.push({
-              id: product.id,
-              product_id: product.id,
-              name: product.name,
-              price: Number(product.price || 0),
-              quantity: Math.min(stock, quantityToAdd),
-              image_url: product.image_url,
-              stock: product.stock,
-            });
-          }
-
-          localStorage.setItem(CART_KEY, JSON.stringify(existing));
-          setCartCount(existing.reduce((total, item) => total + Number(item.quantity || 0), 0));
-        }
 
         showToast("Added to cart");
       } catch (err) {
