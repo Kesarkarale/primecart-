@@ -2024,7 +2024,7 @@ lg:min-h-[540px]
 
          
           <Link 
-               href="/dashboard/wishlist">
+               href="/dashboard/wishlist"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Heart size={18} />
@@ -2036,7 +2036,7 @@ lg:min-h-[540px]
 
  
            <Link
-             href="/dashboard/cart">
+             href="/dashboard/cart" 
             className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
