@@ -299,9 +299,12 @@ export default function CartPage() {
       if (userError) throw userError;
 
       if (!user) {
-        redirectToLogin();
-        return;
-      }
+  // Guest users can open the cart page.
+  // Guest cart is intentionally empty.
+  setCart([]);
+  writeStorage(CART_KEY, []);
+  return;
+}
 
       const { data: rows, error: cartError } = await supabase
         .from("cart_items")
@@ -764,19 +767,19 @@ export default function CartPage() {
 
     try {
       const {
-        data: { user },
-        error: userError,
-      } =
-        await supabase.auth.getUser();
+  data: { user },
+  error: userError,
+} = await supabase.auth.getUser();
 
-      if (userError)
-        throw userError;
+if (userError) throw userError;
 
-      if (!user) {
-        redirectToLogin();
-        return;
-      }
-
+if (!user) {
+  // Guest users can browse/open cart without login.
+  // Cart stays empty until the user logs in and adds an item.
+  setCart([]);
+  writeStorage(CART_KEY, []);
+  return;
+}
       /*
        * Explicit user action:
        * quantity reached zero -> delete.
