@@ -243,6 +243,7 @@ function getImageCandidates(value?: string | null) {
 
   const clean = raw
     .replace(/^public[\\/]/i, "")
+    .replace(/\\/g, "/")
     .replace(/^\//, "");
 
   const encoded = clean
@@ -471,6 +472,28 @@ export default function CheckoutPage() {
           Math.min(Number(buyNow.quantity) || 1, availableStock || 1)
         );
 
+        /*
+         * Some PrimeCart products keep their actual image in the
+         * product_images table while products.image_url can be empty.
+         * Try the primary image as a fallback for Buy Now checkout.
+         */
+        let checkoutImageUrl = buyNowProduct.image_url || null;
+
+        if (!checkoutImageUrl) {
+          try {
+            const { data: extraImage } = await supabase
+              .from("product_images")
+              .select("image_url")
+              .eq("product_id", buyNowProduct.id)
+              .limit(1)
+              .maybeSingle();
+
+            checkoutImageUrl = extraImage?.image_url || null;
+          } catch {
+            // product_images is only a fallback; checkout still works without it.
+          }
+        }
+
         if (availableStock <= 0) {
           localStorage.removeItem(BUY_NOW_KEY);
           if (!cancelled) setItems([]);
@@ -487,7 +510,7 @@ export default function CheckoutPage() {
               ? null
               : Number(buyNowProduct.original_price),
           quantity: safeQuantity,
-          image_url: buyNowProduct.image_url || null,
+          image_url: checkoutImageUrl,
           brand: buyNowProduct.brand || null,
           stock: availableStock,
         };
