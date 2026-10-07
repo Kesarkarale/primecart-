@@ -586,7 +586,7 @@ export default function HomePage() {
             </button>
 
             <Link
-              href="/auth/login"
+                 href="/dashboard/wishlist"
               className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:flex"
               aria-label="Wishlist"
             >
@@ -594,7 +594,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/auth/login"
+              href="/dashboard/cart"
               className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 sm:h-10 sm:w-10"
               aria-label="Shopping cart"
             >
@@ -1581,7 +1581,7 @@ lg:min-h-[540px]
                 </p>
 
                 <Link
-                  href="/auth/login"
+                   href="/dashboard/prime-points"
                   className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
                 >
                   Explore PrimePoints
@@ -1736,21 +1736,21 @@ lg:min-h-[540px]
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                 <Link href="/dashboard/products">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Shop
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                 <Link href="/dashboard/categories">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                   <Link href="/dashboard/products">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Deals
@@ -2021,7 +2021,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/auth/login"
+          <Link href="/dashboard/wishlist">
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Heart size={18} />
@@ -2032,7 +2032,7 @@ lg:min-h-[540px]
           </Link>
 
           <Link
-            href="/auth/login"
+           <Link href="/dashboard/cart">
             className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
