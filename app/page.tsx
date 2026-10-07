@@ -1736,20 +1736,23 @@ lg:min-h-[540px]
                 </Link>
 
                
-                 <Link href="/dashboard/products">
-                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
-                >
-                  Shop
+                <Link
+                    href="/dashboard/products"
+                    className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                      >
+                           Shop
                 </Link>
 
                 
-                 <Link href="/dashboard/categories">
+                 <Link
+                   href="/dashboard/categories">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
-                   <Link href="/dashboard/products">
+                   <Link 
+                     href="/dashboard/products">
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Deals
@@ -2020,7 +2023,8 @@ lg:min-h-[540px]
           </Link>
 
          
-          <Link href="/dashboard/wishlist">
+          <Link 
+               href="/dashboard/wishlist">
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Heart size={18} />
@@ -2031,7 +2035,8 @@ lg:min-h-[540px]
           </Link>
 
  
-           <Link href="/dashboard/cart">
+           <Link
+             href="/dashboard/cart">
             className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
