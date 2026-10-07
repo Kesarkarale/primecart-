@@ -1081,6 +1081,32 @@ export default function DashboardPage() {
       showToast("This product is currently out of stock.");
       return;
     }
+
+    // Guest users can browse the dashboard, but Add to Cart requires login.
+    // Save the intended product so the cart can add it after login.
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      try {
+        localStorage.setItem(
+          "primecart-pending-cart",
+          JSON.stringify({
+            productId: product.id,
+            quantity: 1,
+          })
+        );
+      } catch (error) {
+        console.error("Could not save pending cart item:", error);
+      }
+
+      window.location.href =
+        `/auth/login?redirect=${encodeURIComponent("/dashboard/cart")}`;
+      return;
+    }
+
     const previous = cart;
     const existing = cart.find(
       (item) => String(item.id) === productId
@@ -1111,16 +1137,6 @@ export default function DashboardPage() {
     // Instant UI update + local mirror.
     setCart(next);
     localStorage.setItem(CART_KEY, JSON.stringify(next));
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      showToast("Added to Cart");
-      return;
-    }
 
     // First find the row. This is more reliable than upsert when a
     // Supabase project has an older/changed constraint definition.
@@ -1201,6 +1217,7 @@ export default function DashboardPage() {
           : item
       );
     });
+
     localStorage.setItem(
       CART_KEY,
       JSON.stringify(
