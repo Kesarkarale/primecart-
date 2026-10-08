@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const PENDING_CART_KEY = "primecart-pending-cart";
+const CART_KEY = "primecart-cart";
+
 export default function LoginPage() {
   const supabase = createClient();
 
@@ -28,6 +31,384 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
 
   // =========================================================
+  // GET REDIRECT URL
+  // =========================================================
+
+  const getRedirectUrl = () => {
+    if (typeof window === "undefined") {
+      return "/dashboard";
+    }
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const redirect = params.get("redirect");
+
+    if (
+      redirect &&
+      redirect.startsWith("/") &&
+      !redirect.startsWith("//")
+    ) {
+      return redirect;
+    }
+
+    return "/dashboard";
+  };
+
+  // =========================================================
+  // MOVE PENDING / GUEST CART TO SUPABASE
+  // =========================================================
+
+  const migrateGuestCart = async (
+    userId: string
+  ) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      /*
+        -------------------------------------------------------
+        1. PRODUCT DETAIL PAGE PENDING CART
+        Format:
+        {
+          productId: "...",
+          quantity: 1
+        }
+        -------------------------------------------------------
+      */
+
+      const pendingRaw =
+        localStorage.getItem(PENDING_CART_KEY);
+
+      let pendingItems: {
+        productId: string;
+        quantity: number;
+      }[] = [];
+
+      if (pendingRaw) {
+        try {
+          const parsed = JSON.parse(pendingRaw);
+
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed) &&
+            parsed.productId
+          ) {
+            pendingItems.push({
+              productId: String(
+                parsed.productId
+              ),
+              quantity: Math.max(
+                1,
+                Number(parsed.quantity) || 1
+              ),
+            });
+          }
+
+          /*
+            Also support array format just in case
+            multiple pending products are saved.
+          */
+          if (Array.isArray(parsed)) {
+            pendingItems = parsed
+              .map((item) => ({
+                productId: String(
+                  item?.productId ||
+                    item?.product_id ||
+                    item?.id ||
+                    ""
+                ),
+                quantity: Math.max(
+                  1,
+                  Number(item?.quantity) || 1
+                ),
+              }))
+              .filter(
+                (item) => Boolean(item.productId)
+              );
+          }
+        } catch (parseError) {
+          console.error(
+            "Pending cart parse error:",
+            parseError
+          );
+        }
+      }
+
+      /*
+        -------------------------------------------------------
+        2. PRODUCTS PAGE GUEST CART
+        Format:
+        [
+          {
+            id,
+            product_id,
+            quantity,
+            ...
+          }
+        ]
+        -------------------------------------------------------
+      */
+
+      const guestCartRaw =
+        localStorage.getItem(CART_KEY);
+
+      let guestCartItems: {
+        productId: string;
+        quantity: number;
+      }[] = [];
+
+      if (guestCartRaw) {
+        try {
+          const parsed = JSON.parse(
+            guestCartRaw
+          );
+
+          if (Array.isArray(parsed)) {
+            guestCartItems = parsed
+              .map((item) => ({
+                productId: String(
+                  item?.product_id ||
+                    item?.id ||
+                    ""
+                ),
+                quantity: Math.max(
+                  1,
+                  Number(item?.quantity) || 1
+                ),
+              }))
+              .filter(
+                (item) => Boolean(item.productId)
+              );
+          }
+        } catch (parseError) {
+          console.error(
+            "Guest cart parse error:",
+            parseError
+          );
+        }
+      }
+
+      /*
+        -------------------------------------------------------
+        3. COMBINE BOTH CART SOURCES
+        -------------------------------------------------------
+      */
+
+      const combinedMap = new Map<
+        string,
+        number
+      >();
+
+      for (const item of guestCartItems) {
+        combinedMap.set(
+          item.productId,
+          (combinedMap.get(item.productId) || 0) +
+            item.quantity
+        );
+      }
+
+      for (const item of pendingItems) {
+        combinedMap.set(
+          item.productId,
+          (combinedMap.get(item.productId) || 0) +
+            item.quantity
+        );
+      }
+
+      const combinedItems = Array.from(
+        combinedMap.entries()
+      ).map(
+        ([productId, quantity]) => ({
+          productId,
+          quantity,
+        })
+      );
+
+      if (combinedItems.length === 0) {
+        return;
+      }
+
+      /*
+        -------------------------------------------------------
+        4. SAVE EACH PRODUCT INTO cart_items
+        -------------------------------------------------------
+      */
+
+      for (const item of combinedItems) {
+        /*
+          Get current product stock.
+        */
+        const {
+          data: product,
+          error: productError,
+        } = await supabase
+          .from("products")
+          .select("id,stock")
+          .eq("id", item.productId)
+          .maybeSingle();
+
+        if (productError) {
+          console.error(
+            "Product lookup during cart migration failed:",
+            productError
+          );
+          continue;
+        }
+
+        /*
+          Product no longer exists.
+        */
+        if (!product) {
+          continue;
+        }
+
+        const stock = Math.max(
+          0,
+          Number(product.stock || 0)
+        );
+
+        /*
+          Do not add out-of-stock products.
+        */
+        if (stock <= 0) {
+          continue;
+        }
+
+        /*
+          Never exceed available stock.
+        */
+        const requestedQuantity = Math.min(
+          stock,
+          Math.max(
+            1,
+            Number(item.quantity) || 1
+          )
+        );
+
+        /*
+          Check whether product already exists
+          in user's Supabase cart.
+        */
+        const {
+          data: existingRow,
+          error: findError,
+        } = await supabase
+          .from("cart_items")
+          .select("id,quantity")
+          .eq("user_id", userId)
+          .eq(
+            "product_id",
+            item.productId
+          )
+          .maybeSingle();
+
+        if (findError) {
+          console.error(
+            "Existing cart lookup failed:",
+            findError
+          );
+          continue;
+        }
+
+        /*
+          Existing quantity + guest quantity.
+        */
+        const currentQuantity = Number(
+          existingRow?.quantity || 0
+        );
+
+        const nextQuantity = Math.min(
+          stock,
+          currentQuantity +
+            requestedQuantity
+        );
+
+        if (existingRow) {
+          const { error: updateError } =
+            await supabase
+              .from("cart_items")
+              .update({
+                quantity: nextQuantity,
+                updated_at:
+                  new Date().toISOString(),
+              })
+              .eq(
+                "id",
+                existingRow.id
+              )
+              .eq(
+                "user_id",
+                userId
+              );
+
+          if (updateError) {
+            console.error(
+              "Cart update during migration failed:",
+              updateError
+            );
+          }
+        } else {
+          const { error: insertError } =
+            await supabase
+              .from("cart_items")
+              .insert({
+                user_id: userId,
+                product_id:
+                  item.productId,
+                quantity:
+                  requestedQuantity,
+              });
+
+          if (insertError) {
+            console.error(
+              "Cart insert during migration failed:",
+              insertError
+            );
+          }
+        }
+      }
+
+      /*
+        -------------------------------------------------------
+        5. CLEAR GUEST CART AFTER SUCCESSFUL MIGRATION
+        -------------------------------------------------------
+      */
+
+      localStorage.removeItem(
+        PENDING_CART_KEY
+      );
+
+      localStorage.removeItem(
+        CART_KEY
+      );
+
+      /*
+        Notify other PrimeCart pages that cart changed.
+      */
+      window.dispatchEvent(
+        new Event("cart-updated")
+      );
+
+      console.log(
+        "Guest cart migrated successfully."
+      );
+    } catch (migrationError) {
+      /*
+        Do not block login if cart migration
+        has an unexpected error.
+      */
+      console.error(
+        "Guest cart migration error:",
+        migrationError
+      );
+    }
+  };
+
+  // =========================================================
   // EMAIL + PASSWORD LOGIN
   // =========================================================
 
@@ -41,15 +422,20 @@ export default function LoginPage() {
     setError("");
     setSuccess("");
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail =
+      email.trim().toLowerCase();
 
     if (!cleanEmail) {
-      setError("Please enter your email address.");
+      setError(
+        "Please enter your email address."
+      );
       return;
     }
 
     if (!password) {
-      setError("Please enter your password.");
+      setError(
+        "Please enter your password."
+      );
       return;
     }
 
@@ -59,10 +445,11 @@ export default function LoginPage() {
       const {
         data,
         error: loginError,
-      } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password,
-      });
+      } =
+        await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
       if (loginError) {
         console.error(
@@ -90,13 +477,18 @@ export default function LoginPage() {
             "Please verify your email before logging in."
           );
         } else {
-          setError(loginError.message);
+          setError(
+            loginError.message
+          );
         }
 
         return;
       }
 
-      if (!data.session || !data.user) {
+      if (
+        !data.session ||
+        !data.user
+      ) {
         setError(
           "Login session could not be created. Please try again."
         );
@@ -108,16 +500,36 @@ export default function LoginPage() {
         data.user.email
       );
 
+      /*
+        IMPORTANT:
+        Move product selected before login
+        into authenticated Supabase cart.
+      */
+      await migrateGuestCart(
+        data.user.id
+      );
+
+      const redirectUrl =
+        getRedirectUrl();
+
       setSuccess(
         "Login successful. Redirecting..."
       );
 
-      // Small delay so success message is visible
+      /*
+        Small delay so success message
+        is visible.
+      */
       setTimeout(() => {
-        window.location.replace("/dashboard");
+        window.location.replace(
+          redirectUrl
+        );
       }, 500);
     } catch (err) {
-      console.error("Login error:", err);
+      console.error(
+        "Login error:",
+        err
+      );
 
       if (err instanceof Error) {
         setError(err.message);
@@ -144,8 +556,29 @@ export default function LoginPage() {
     try {
       setGoogleLoading(true);
 
+      /*
+        Preserve the page where user wanted to go.
+
+        Example:
+        /dashboard/cart
+
+        becomes:
+
+        /auth/callback?next=/auth/login?redirect=/dashboard/cart
+      */
+
+      const redirectUrl =
+        getRedirectUrl();
+
+      const callbackNext =
+        `/auth/login?redirect=${encodeURIComponent(
+          redirectUrl
+        )}`;
+
       const redirectTo =
-        `${window.location.origin}/auth/callback?next=/dashboard`;
+        `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          callbackNext
+        )}`;
 
       const {
         data,
@@ -167,7 +600,9 @@ export default function LoginPage() {
           googleError
         );
 
-        setError(googleError.message);
+        setError(
+          googleError.message
+        );
         setGoogleLoading(false);
         return;
       }
