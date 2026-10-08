@@ -28,8 +28,6 @@ import {
   X,
   Zap,
   WalletCards,
-  Wrench,
-  Trophy,
   Target,
   Grid3X3,
   List,
@@ -94,7 +92,6 @@ type CartItem = {
 ========================================================= */
 
 const CART_KEY = "primecart-cart";
-const PENDING_CART_KEY = "primecart-pending-cart";
 const WISHLIST_KEY = "primecart-wishlist";
 const RECENT_KEY = "primecart-recently-viewed";
 const COMPARE_KEY = "primecart-compare-products";
@@ -144,16 +141,6 @@ const smartTools = [
     label: "Budget Builder",
     href: "/dashboard/budget-builder",
     icon: WalletCards,
-  },
-  {
-    label: "Setup Builder",
-    href: "/dashboard/setup-builder",
-    icon: Wrench,
-  },
-  {
-    label: "PrimePoints",
-    href: "/dashboard/prime-points",
-    icon: Trophy,
   },
 ];
 
@@ -1609,13 +1596,11 @@ export default function ProductsPage() {
     const loadUserData = async () => {
       try {
         const {
-          data: { session },
+          data: { user },
           error: authError,
-        } = await supabase.auth.getSession();
+        } = await supabase.auth.getUser();
 
         if (authError) throw authError;
-
-        const user = session?.user ?? null;
 
         // Recently viewed and guest cart remain browser-specific.
         const savedRecent = safeParse<string[]>(
@@ -2132,27 +2117,52 @@ export default function ProductsPage() {
       setAddingProductId(product.id);
       try {
         const {
-          data: { session },
+          data: { user },
           error: authError,
-        } = await supabase.auth.getSession();
+        } = await supabase.auth.getUser();
+
         if (authError) throw authError;
 
-        const user = session?.user ?? null;
-
-        // Guests can browse freely, but Add to Cart requires login.
-        // Save the exact product/quantity so the Cart page can add it
-        // to Supabase after the user signs in.
+        // Guest users must login before adding to the database cart.
+        // Save the selected product in the existing guest-cart cache first.
+        // After login, the Cart/Dashboard flow can migrate this item to
+        // public.cart_items for the authenticated user.
         if (!user) {
-          localStorage.setItem(
-            PENDING_CART_KEY,
-            JSON.stringify({
-              productId: product.id,
-              quantity: quantityToAdd,
-            })
+          const existing = safeParse<CartItem[]>(localStorage.getItem(CART_KEY), []);
+          const index = existing.findIndex(
+            (item) => item.product_id === product.id || item.id === product.id
           );
 
-          window.location.href =
-            `/auth/login?redirect=${encodeURIComponent("/dashboard/cart")}`;
+          if (index >= 0) {
+            existing[index] = {
+              ...existing[index],
+              quantity: Math.min(
+                stock,
+                Number(existing[index].quantity || 0) + quantityToAdd
+              ),
+            };
+          } else {
+            existing.push({
+              id: product.id,
+              product_id: product.id,
+              name: product.name,
+              price: Number(product.price || 0),
+              quantity: Math.min(stock, quantityToAdd),
+              image_url: product.image_url,
+              stock: product.stock,
+            });
+          }
+
+          localStorage.setItem(CART_KEY, JSON.stringify(existing));
+          setCartCount(
+            existing.reduce(
+              (total, item) => total + Number(item.quantity || 0),
+              0
+            )
+          );
+
+          showToast("Please login to add this product to your Cart.");
+          window.location.href = "/auth/login?redirect=/dashboard/cart";
           return;
         }
 
