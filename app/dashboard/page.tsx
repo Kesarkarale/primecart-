@@ -17,7 +17,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   Eye,
   Heart,
   Home,
@@ -31,7 +30,6 @@ import {
   Sparkles,
   Star,
   Sun,
-  Tag,
   Truck,
   UserRound,
   Watch,
@@ -45,7 +43,6 @@ import {
   Dumbbell,
   Car,
   BookOpen,
-  Palette,
   Gamepad2,
   Monitor,
   X,
@@ -54,7 +51,6 @@ import {
   User,
   Zap,
   TrendingUp,
-  Gift,
   Target,
   Wallet,
   Layers3,
@@ -1082,28 +1078,18 @@ export default function DashboardPage() {
       return;
     }
 
-    // Guest users can browse the dashboard, but Add to Cart requires login.
-    // Save the intended product so the cart can add it after login.
+    /*
+     * Guests can browse the complete store, but adding to Cart requires
+     * authentication. Check the Supabase session before changing the cart.
+     */
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      try {
-        localStorage.setItem(
-          "primecart-pending-cart",
-          JSON.stringify({
-            productId: product.id,
-            quantity: 1,
-          })
-        );
-      } catch (error) {
-        console.error("Could not save pending cart item:", error);
-      }
-
-      window.location.href =
-        `/auth/login?redirect=${encodeURIComponent("/dashboard/cart")}`;
+      showToast("Please login to add products to Cart.");
+      router.push("/auth/login");
       return;
     }
 
@@ -1217,7 +1203,6 @@ export default function DashboardPage() {
           : item
       );
     });
-
     localStorage.setItem(
       CART_KEY,
       JSON.stringify(
@@ -1665,23 +1650,11 @@ export default function DashboardPage() {
             New Arrivals
           </Link>
 
-          <Link href="/dashboard/prime-points">
-            PrimePoints
-          </Link>
-
           <Link
             href="/dashboard/prime-match"
             className="nav-new"
           >
             PrimeMatch
-            <em>New</em>
-          </Link>
-
-          <Link
-            href="/dashboard/setup-builder"
-            className="nav-new"
-          >
-            Build My Setup
             <em>New</em>
           </Link>
 
@@ -1805,16 +1778,6 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/dashboard/prime-points"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Gift size={17} />
-              PrimePoints
-            </Link>
-
-            <Link
               href="/dashboard/prime-match"
               onClick={() =>
                 setMobileMenuOpen(false)
@@ -1822,16 +1785,6 @@ export default function DashboardPage() {
             >
               <Target size={17} />
               PrimeMatch
-            </Link>
-
-            <Link
-              href="/dashboard/setup-builder"
-              onClick={() =>
-                setMobileMenuOpen(false)
-              }
-            >
-              <Monitor size={17} />
-              Build My Setup
             </Link>
 
             <div className="mobile-menu-divider" />
@@ -2111,23 +2064,6 @@ export default function DashboardPage() {
               badge="Smart"
             />
 
-            <SmartCard
-              icon={<Monitor />}
-              eyebrow="BUILD YOUR SPACE"
-              title="Build My Setup"
-              text="Create gaming, college, work, fitness or home setups with ease."
-              href="/dashboard/setup-builder"
-              badge="New"
-            />
-
-            <SmartCard
-              icon={<Gift />}
-              eyebrow="REWARDS"
-              title="PrimePoints"
-              text="Earn points while you shop and unlock exciting rewards."
-              href="/dashboard/prime-points"
-              badge="Rewards"
-            />
           </div>
         </section>
 
