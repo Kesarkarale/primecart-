@@ -11,18 +11,14 @@ import {
   ArrowUpRight,
   BadgeCheck,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Headphones,
   Heart,
   Menu,
-  PackageCheck,
   Search,
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   Sparkles,
-  Star,
   Truck,
   UserRound,
   X,
@@ -34,16 +30,6 @@ type Category = {
   products: string;
   image: string;
   slug: string;
-};
-
-type HeroSlide = {
-  eyebrow: string;
-  title: string;
-  highlight: string;
-  description: string;
-  button: string;
-  secondary: string;
-  badge: string;
 };
 
 type SearchProduct = {
@@ -96,39 +82,6 @@ const categories: Category[] = [
   },
 ];
 
-const heroSlides: HeroSlide[] = [
-  {
-    eyebrow: "🔥 SUPER SALE IS LIVE",
-    title: "Shop More.",
-    highlight: "Pay Less.",
-    description:
-      "Discover premium products, everyday essentials and exciting deals — all in one beautiful shopping experience.",
-    button: "Shop Now",
-    secondary: "Explore Deals",
-    badge: "Up to 70% OFF",
-  },
-  {
-    eyebrow: "✨ PRIMECART PICKS",
-    title: "Curated.",
-    highlight: "Just For You.",
-    description:
-      "Explore hand-picked products across electronics, fashion, beauty, home and gaming.",
-    button: "Explore Picks",
-    secondary: "View Categories",
-    badge: "Premium Selection",
-  },
-  {
-    eyebrow: "⚡ FLASH DEALS",
-    title: "Big Deals.",
-    highlight: "Limited Time.",
-    description:
-      "Don't miss today's exclusive offers. Grab your favourites before the timer runs out.",
-    button: "Grab Deals",
-    secondary: "Shop Everything",
-    badge: "Limited Time",
-  },
-];
-
 const benefits = [
   {
     icon: Truck,
@@ -152,6 +105,11 @@ const benefits = [
   },
 ];
 
+/*
+ * PrimeCart Advantage
+ *
+ * Setup Builder and PrimePoints have been completely removed.
+ */
 const primeFeatures = [
   {
     icon: Sparkles,
@@ -168,22 +126,6 @@ const primeFeatures = [
       "Plan your shopping intelligently and discover the best combination within your budget.",
     href: "/dashboard/budget-builder",
     label: "Build Budget",
-  },
-  {
-    icon: PackageCheck,
-    title: "Build My Setup",
-    description:
-      "Create complete gaming, college, work, fitness or home setups with ease.",
-    href: "/dashboard/setup-builder",
-    label: "Build Setup",
-  },
-  {
-    icon: Star,
-    title: "PrimePoints",
-    description:
-      "Shop, complete challenges and collect rewards while becoming a PrimeCart member.",
-    href: "/dashboard/prime-points",
-    label: "Earn Rewards",
   },
 ];
 
@@ -223,8 +165,23 @@ function formatTime(totalSeconds: number) {
   };
 }
 
+function getProductImage(imageUrl: string | null) {
+  if (!imageUrl) return null;
+
+  if (
+    imageUrl.startsWith("http://") ||
+    imageUrl.startsWith("https://") ||
+    imageUrl.startsWith("/")
+  ) {
+    return imageUrl;
+  }
+
+  return `/products/${imageUrl}`;
+}
+
 export default function HomePage() {
   const router = useRouter();
+
   const supabase = useMemo(
     () =>
       createBrowserClient(
@@ -235,25 +192,29 @@ export default function HomePage() {
   );
 
   const [openMenu, setOpenMenu] = useState(false);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [searchProducts, setSearchProducts] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [activeSlide, setActiveSlide] = useState(0);
+
   const [timeLeft, setTimeLeft] = useState(
     2 * 60 * 60 + 18 * 60 + 45
   );
+
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  const currentSlide = heroSlides[activeSlide];
-
-
-
-  // Search actual active products from Supabase (not only static categories).
+  /*
+   * Live product search
+   *
+   * Guests can search normally.
+   * Authentication is NOT required here.
+   */
   useEffect(() => {
     const query = search.trim();
+
     if (query.length < 2) {
       setSearchProducts([]);
       setSearchError("");
@@ -262,29 +223,46 @@ export default function HomePage() {
     }
 
     let cancelled = false;
+
     const timeout = window.setTimeout(async () => {
       setSearchLoading(true);
       setSearchError("");
+
       try {
         const safeQuery = query.replace(/[,%()]/g, " ").trim();
+
         const { data, error } = await supabase
           .from("products")
-          .select("id, name, slug, price, original_price, image_url, brand, short_description")
+          .select(
+            "id, name, slug, price, original_price, image_url, brand, short_description"
+          )
           .eq("is_active", true)
-          .or(`name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`)
+          .or(
+            `name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`
+          )
           .order("is_featured", { ascending: false })
           .limit(8);
 
-        if (error) throw error;
-        if (!cancelled) setSearchProducts((data ?? []) as SearchProduct[]);
+        if (error) {
+          throw error;
+        }
+
+        if (!cancelled) {
+          setSearchProducts((data ?? []) as SearchProduct[]);
+        }
       } catch (error) {
         console.error("PrimeCart product search failed:", error);
+
         if (!cancelled) {
           setSearchProducts([]);
-          setSearchError("Products could not be loaded. Please try again.");
+          setSearchError(
+            "Products could not be loaded. Please try again."
+          );
         }
       } finally {
-        if (!cancelled) setSearchLoading(false);
+        if (!cancelled) {
+          setSearchLoading(false);
+        }
       }
     }, 250);
 
@@ -294,30 +272,53 @@ export default function HomePage() {
     };
   }, [search, supabase]);
 
-  const handleProductSearch = async (event?: React.FormEvent<HTMLFormElement>) => {
+  /*
+   * Search submit
+   *
+   * Search works for both guests and logged-in users.
+   * Search history is only useful when the database accepts it.
+   * Even if search_history insert fails, the actual search still works.
+   */
+  const handleProductSearch = async (
+    event?: React.FormEvent<HTMLFormElement>
+  ) => {
     event?.preventDefault();
-    const query = search.trim();
-    if (!query) return;
 
-    // Keep a search-history record for signed-in users. Search still works for guests.
+    const query = search.trim();
+
+    if (!query) {
+      return;
+    }
+
     try {
       const safeQuery = query.replace(/[,%()]/g, " ").trim();
-      const [{ data: userData }, { count }, { data: exactProduct }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .eq("is_active", true)
-          .or(`name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`),
-        supabase
-          .from("products")
-          .select("id")
-          .eq("is_active", true)
-          .ilike("name", query)
-          .limit(1)
-          .maybeSingle(),
-      ]);
+
+      const [{ data: userData }, { count }, { data: exactProduct }] =
+        await Promise.all([
+          supabase.auth.getUser(),
+
+          supabase
+            .from("products")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .eq("is_active", true)
+            .or(
+              `name.ilike.%${safeQuery}%,brand.ilike.%${safeQuery}%,short_description.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`
+            ),
+
+          supabase
+            .from("products")
+            .select("id")
+            .eq("is_active", true)
+            .ilike("name", query)
+            .limit(1)
+            .maybeSingle(),
+        ]);
+
       const matchingCount = count ?? searchProducts.length;
+
       await supabase.from("search_history").insert({
         user_id: userData.user?.id ?? null,
         search_query: query,
@@ -326,62 +327,59 @@ export default function HomePage() {
         exact_match_found: Boolean(exactProduct),
       });
     } catch (error) {
-      // Search itself must not fail if history permissions are unavailable.
-      console.warn("Could not save PrimeCart search history:", error);
+      /*
+       * Search must never fail just because search_history
+       * permissions/table/RLS are unavailable.
+       */
+      console.warn(
+        "Could not save PrimeCart search history:",
+        error
+      );
     }
 
     setSearchOpen(false);
-    router.push(`/dashboard/products?search=${encodeURIComponent(query)}`);
+    setOpenMenu(false);
+
+    router.push(
+      `/dashboard/products?search=${encodeURIComponent(query)}`
+    );
   };
 
-
+  /*
+   * Flash deal countdown
+   */
   useEffect(() => {
     const timer = window.setInterval(() => {
       setTimeLeft((value) =>
-        value <= 0 ? 2 * 60 * 60 + 18 * 60 + 45 : value - 1
+        value <= 0
+          ? 2 * 60 * 60 + 18 * 60 + 45
+          : value - 1
       );
     }, 1000);
 
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const slider = window.setInterval(() => {
-      setActiveSlide((value) => (value + 1) % heroSlides.length);
-    }, 6500);
-
-    return () => window.clearInterval(slider);
-  }, []);
-
   const formattedTime = formatTime(timeLeft);
 
+  /*
+   * Newsletter
+   */
   const handleSubscribe = (
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      return;
+    }
 
     setSubscribed(true);
     setEmail("");
   };
 
-  const nextSlide = () => {
-    setActiveSlide(
-      (value) => (value + 1) % heroSlides.length
-    );
-  };
-
-  const previousSlide = () => {
-    setActiveSlide(
-      (value) =>
-        (value - 1 + heroSlides.length) % heroSlides.length
-    );
-  };
-
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-[#faf8f3] pb-20 text-[#171512] md:pb-0">
-
       {/* =========================================================
           TOP ANNOUNCEMENT
       ========================================================= */}
@@ -405,9 +403,7 @@ export default function HomePage() {
       ========================================================= */}
 
       <nav className="sticky top-0 z-50 border-b border-[#ece7db] bg-white/95 shadow-[0_4px_20px_rgba(40,30,10,0.04)] backdrop-blur-xl">
-
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-2 px-3 sm:h-[74px] sm:gap-4 sm:px-6">
-
           {/* LOGO */}
 
           <Link
@@ -433,7 +429,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* compact mobile brand */}
             <div className="block sm:hidden">
               <h1 className="text-lg font-extrabold tracking-tight">
                 Prime<span className="text-[#D4AF37]">Cart</span>
@@ -451,7 +446,8 @@ export default function HomePage() {
               Home
             </Link>
 
-             <Link href="/dashboard"
+            <Link
+              href="/dashboard/products"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Shop
@@ -521,15 +517,15 @@ export default function HomePage() {
               </div>
             </div>
 
-             <Link
-            href="/dashboard"
+            <Link
+              href="/dashboard"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Deals
             </Link>
 
             <Link
-               href="/dashboard"
+              href="/dashboard"
               className="font-medium text-gray-600 transition hover:text-[#D4AF37]"
             >
               Contact
@@ -539,32 +535,146 @@ export default function HomePage() {
           {/* DESKTOP SEARCH */}
 
           <div className="ml-auto hidden max-w-[390px] flex-1 md:flex">
-            <form onSubmit={handleProductSearch} className="relative w-full">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <form
+              onSubmit={handleProductSearch}
+              className="relative w-full"
+            >
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+
               <input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
                 onFocus={() => setSearchOpen(true)}
-                onKeyDown={(event) => { if (event.key === "Escape") setSearchOpen(false); }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setSearchOpen(false);
+                  }
+                }}
                 placeholder="Search products, brands..."
                 aria-label="Search products"
                 className="h-11 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none transition focus:border-[#D4AF37] focus:bg-white focus:ring-4 focus:ring-[#D4AF37]/10"
               />
+
               {searchOpen && search.trim().length >= 2 && (
                 <div className="absolute left-0 right-0 top-[52px] z-[70] max-h-[420px] overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-2xl">
-                  {searchLoading ? <p className="p-4 text-center text-sm text-gray-500">Searching products…</p> : searchError ? <p className="p-4 text-center text-sm text-red-600">{searchError}</p> : searchProducts.length ? <>
-                    <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">Products matching your search</p>
-                    {searchProducts.map((product) => (
-                      <button key={product.id} type="button" onClick={() => { setSearch(product.name); setSearchOpen(false); router.push(`/dashboard/products?search=${encodeURIComponent(product.name)}`); }} className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-[#faf8f3]">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">
-                          {product.image_url ? <img src={product.image_url.startsWith("http") || product.image_url.startsWith("/") ? product.image_url : `/products/${product.image_url}`} alt={product.name} className="h-full w-full object-contain p-1" /> : <ShoppingBag size={22} className="text-[#c7a24b]" />}
-                        </div>
-                        <span className="min-w-0 flex-1"><span className="block line-clamp-1 text-sm font-semibold text-gray-900">{product.name}</span><span className="block line-clamp-1 text-xs text-gray-500">{product.brand || product.short_description || "PrimeCart product"}</span><span className="mt-1 block text-sm font-bold text-[#a77b16]">₹{Number(product.price).toLocaleString("en-IN")}{product.original_price && product.original_price > product.price ? <span className="ml-2 text-xs font-normal text-gray-400 line-through">₹{Number(product.original_price).toLocaleString("en-IN")}</span> : null}</span></span>
-                        <ArrowUpRight size={16} className="shrink-0 text-gray-400" />
+                  {searchLoading ? (
+                    <p className="p-4 text-center text-sm text-gray-500">
+                      Searching products…
+                    </p>
+                  ) : searchError ? (
+                    <p className="p-4 text-center text-sm text-red-600">
+                      {searchError}
+                    </p>
+                  ) : searchProducts.length ? (
+                    <>
+                      <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        Products matching your search
+                      </p>
+
+                      {searchProducts.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => {
+                            setSearch(product.name);
+                            setSearchOpen(false);
+
+                            router.push(
+                              `/dashboard/products?search=${encodeURIComponent(
+                                product.name
+                              )}`
+                            );
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-[#faf8f3]"
+                        >
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">
+                            {getProductImage(product.image_url) ? (
+                              <img
+                                src={getProductImage(
+                                  product.image_url
+                                )!}
+                                alt={product.name}
+                                className="h-full w-full object-contain p-1"
+                              />
+                            ) : (
+                              <ShoppingBag
+                                size={22}
+                                className="text-[#c7a24b]"
+                              />
+                            )}
+                          </div>
+
+                          <span className="min-w-0 flex-1">
+                            <span className="block line-clamp-1 text-sm font-semibold text-gray-900">
+                              {product.name}
+                            </span>
+
+                            <span className="block line-clamp-1 text-xs text-gray-500">
+                              {product.brand ||
+                                product.short_description ||
+                                "PrimeCart product"}
+                            </span>
+
+                            <span className="mt-1 block text-sm font-bold text-[#a77b16]">
+                              ₹
+                              {Number(
+                                product.price
+                              ).toLocaleString("en-IN")}
+
+                              {product.original_price &&
+                              product.original_price >
+                                product.price ? (
+                                <span className="ml-2 text-xs font-normal text-gray-400 line-through">
+                                  ₹
+                                  {Number(
+                                    product.original_price
+                                  ).toLocaleString("en-IN")}
+                                </span>
+                              ) : null}
+                            </span>
+                          </span>
+
+                          <ArrowUpRight
+                            size={16}
+                            className="shrink-0 text-gray-400"
+                          />
+                        </button>
+                      ))}
+
+                      <button
+                        type="submit"
+                        className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#3b3323]"
+                      >
+                        View all search results{" "}
+                        <ArrowRight
+                          size={15}
+                          className="ml-1 inline"
+                        />
                       </button>
-                    ))}
-                    <button type="submit" className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#3b3323]">View all search results <ArrowRight size={15} className="ml-1 inline" /></button>
-                  </> : <div className="p-4 text-center"><p className="text-sm font-semibold text-gray-800">No matching product found.</p><p className="mt-1 text-xs text-gray-500">Press Enter to see related products.</p><button type="submit" className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white">Search related products</button></div>}
+                    </>
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-sm font-semibold text-gray-800">
+                        No matching product found.
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        Press Enter to see related products.
+                      </p>
+
+                      <button
+                        type="submit"
+                        className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        Search related products
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </form>
@@ -573,7 +683,6 @@ export default function HomePage() {
           {/* ACTIONS */}
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 md:ml-3">
-
             <button
               type="button"
               onClick={() =>
@@ -586,7 +695,7 @@ export default function HomePage() {
             </button>
 
             <Link
-                 href="/dashboard/wishlist"
+              href="/auth/login"
               className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#f6f2e9] transition hover:bg-[#eee5d1] sm:flex"
               aria-label="Wishlist"
             >
@@ -594,7 +703,7 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/dashboard/cart"
+              href="/auth/login"
               className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] transition active:scale-95 sm:h-10 sm:w-10"
               aria-label="Shopping cart"
             >
@@ -636,24 +745,130 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* MOBILE SEARCH — live Supabase product results */}
+        {/* MOBILE SEARCH */}
+
         {searchOpen && (
           <div className="border-t border-[#ece7db] bg-white px-3 py-3 sm:px-4 md:hidden">
-            <form onSubmit={handleProductSearch} className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, brands..." aria-label="Search products" className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10" />
+            <form
+              onSubmit={handleProductSearch}
+              className="relative"
+            >
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                placeholder="Search products, brands..."
+                aria-label="Search products"
+                className="h-12 w-full rounded-2xl border border-[#e9e3d7] bg-[#faf8f3] pl-11 pr-4 text-sm outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10"
+              />
             </form>
+
             {search.trim().length >= 2 && (
               <div className="mt-2 max-h-80 overflow-y-auto rounded-2xl border border-[#ece7db] bg-white p-2 shadow-lg">
-                {searchLoading ? <p className="p-4 text-center text-sm text-gray-500">Searching products…</p> : searchError ? <p className="p-4 text-center text-sm text-red-600">{searchError}</p> : searchProducts.length ? <>
-                  {searchProducts.map((product) => (
-                    <button key={product.id} type="button" onClick={() => { setSearch(product.name); setSearchOpen(false); router.push(`/dashboard/products?search=${encodeURIComponent(product.name)}`); }} className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left active:bg-[#faf8f3]">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">{product.image_url ? <img src={product.image_url.startsWith("http") || product.image_url.startsWith("/") ? product.image_url : `/products/${product.image_url}`} alt={product.name} className="h-full w-full object-contain p-1" /> : <ShoppingBag size={20} className="text-[#c7a24b]" />}</div>
-                      <span className="min-w-0 flex-1"><span className="block line-clamp-1 text-sm font-semibold">{product.name}</span><span className="block line-clamp-1 text-xs text-gray-500">{product.brand || product.short_description || "PrimeCart product"}</span><span className="text-sm font-bold text-[#a77b16]">₹{Number(product.price).toLocaleString("en-IN")}</span></span>
+                {searchLoading ? (
+                  <p className="p-4 text-center text-sm text-gray-500">
+                    Searching products…
+                  </p>
+                ) : searchError ? (
+                  <p className="p-4 text-center text-sm text-red-600">
+                    {searchError}
+                  </p>
+                ) : searchProducts.length ? (
+                  <>
+                    {searchProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          setSearch(product.name);
+                          setSearchOpen(false);
+
+                          router.push(
+                            `/dashboard/products?search=${encodeURIComponent(
+                              product.name
+                            )}`
+                          );
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left active:bg-[#faf8f3]"
+                      >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#faf8f3]">
+                          {getProductImage(
+                            product.image_url
+                          ) ? (
+                            <img
+                              src={getProductImage(
+                                product.image_url
+                              )!}
+                              alt={product.name}
+                              className="h-full w-full object-contain p-1"
+                            />
+                          ) : (
+                            <ShoppingBag
+                              size={20}
+                              className="text-[#c7a24b]"
+                            />
+                          )}
+                        </div>
+
+                        <span className="min-w-0 flex-1">
+                          <span className="block line-clamp-1 text-sm font-semibold">
+                            {product.name}
+                          </span>
+
+                          <span className="block line-clamp-1 text-xs text-gray-500">
+                            {product.brand ||
+                              product.short_description ||
+                              "PrimeCart product"}
+                          </span>
+
+                          <span className="text-sm font-bold text-[#a77b16]">
+                            ₹
+                            {Number(
+                              product.price
+                            ).toLocaleString("en-IN")}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleProductSearch()
+                      }
+                      className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white"
+                    >
+                      View all search results
                     </button>
-                  ))}
-                  <button type="button" onClick={() => void handleProductSearch()} className="mt-1 w-full rounded-xl bg-[#171512] px-3 py-3 text-sm font-semibold text-white">View all search results</button>
-                </> : <div className="p-4 text-center"><p className="text-sm font-semibold">No matching product found.</p><p className="mt-1 text-xs text-gray-500">Search related products instead.</p><button type="button" onClick={() => void handleProductSearch()} className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white">Search related products</button></div>}
+                  </>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-sm font-semibold">
+                      No matching product found.
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Search related products instead.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleProductSearch()
+                      }
+                      className="mt-3 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Search related products
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -670,7 +885,6 @@ export default function HomePage() {
                 ["Categories", "/dashboard/categories"],
                 ["Deals", "/dashboard"],
                 ["Contact", "/dashboard"],
-            
               ].map(([label, href]) => (
                 <Link
                   key={label}
@@ -704,687 +918,254 @@ export default function HomePage() {
         )}
       </nav>
 
-{/* =========================================================
-    HERO
-========================================================= */}
-
-<section className="px-3 pt-5 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
-  <div
-    className="
-      relative
-      mx-auto
-      max-w-[1380px]
-      overflow-hidden
-      rounded-[22px]
-      border
-      border-[#eadfc9]
-      bg-[#fffdfa]
-      shadow-[0_18px_50px_rgba(80,60,20,0.10)]
-      sm:rounded-[28px]
-    "
-  >
-    <div
-      className="
-        grid
-        grid-cols-2
-        min-h-[320px]
-sm:min-h-[430px]
-lg:min-h-[540px]
-      "
-    >
-      {/* =====================================================
-          LEFT CONTENT
-      ===================================================== */}
-      <div
-        className="
-          relative
-          z-10
-          flex
-          min-w-0
-          flex-col
-          justify-center
-          px-3
-          py-6
-          sm:px-7
-          sm:py-10
-          lg:px-14
-          lg:py-16
-          xl:px-16
-        "
-      >
-        {/* Sale Badge */}
-        <div
-          className="
-            mb-3
-            inline-flex
-            w-fit
-            max-w-full
-            items-center
-            gap-1
-            rounded-full
-            border
-            border-[#ead9b7]
-            bg-[#fffaf0]
-            px-2
-            py-1
-            text-[8px]
-            font-medium
-            text-[#c28f20]
-            sm:mb-5
-            sm:gap-2
-            sm:px-3
-            sm:py-1.5
-            sm:text-xs
-            lg:mb-7
-            lg:px-4
-            lg:py-2
-            lg:text-sm
-          "
-        >
-          <span className="text-[10px] sm:text-sm lg:text-base">
-            🔥
-          </span>
-
-          <span className="truncate">
-            Super Sale is Live!
-          </span>
-        </div>
-
-        {/* Heading */}
-        <h1
-          className="
-            max-w-[620px]
-            font-serif
-            text-[25px]
-            font-bold
-            leading-[0.98]
-            tracking-[-1.2px]
-            text-[#111111]
-            sm:text-[45px]
-            sm:tracking-[-1.8px]
-            lg:text-[68px]
-            lg:tracking-[-2px]
-            xl:text-[76px]
-          "
-        >
-          Shop More.
-          <br />
-
-          <span className="text-[#d5ad32]">
-            Pay Less.
-          </span>
-        </h1>
-
-        {/* Description */}
-        <p
-          className="
-            mt-3
-            max-w-[560px]
-            text-[9px]
-            leading-[1.55]
-            text-[#4f4a42]
-            sm:mt-5
-            sm:text-[13px]
-            sm:leading-6
-            lg:mt-7
-            lg:text-[18px]
-            lg:leading-7
-          "
-        >
-          Discover the best products at unbeatable prices.
-          Your one-stop destination for all your needs.
-        </p>
-
-        {/* Buttons */}
-        <div
-          className="
-            mt-4
-            flex
-            flex-col
-            gap-2
-            sm:mt-6
-            sm:flex-row
-            sm:gap-3
-            lg:mt-8
-          "
-        >
-          <Link
-             href="/dashboard"
-            
-            className="
-              inline-flex
-              h-9
-              items-center
-              justify-center
-              gap-1
-              rounded-lg
-              bg-[#d8af32]
-              px-3
-              text-[9px]
-              font-semibold
-              text-white
-              shadow-[0_7px_18px_rgba(207,166,45,0.20)]
-              transition-all
-              duration-300
-              hover:-translate-y-1
-              hover:bg-[#c99f25]
-              hover:shadow-[0_12px_25px_rgba(207,166,45,0.28)]
-              sm:h-11
-              sm:gap-1.5
-              sm:rounded-xl
-              sm:px-5
-              sm:text-xs
-              lg:h-14
-              lg:gap-2
-              lg:px-8
-              lg:text-[15px]
-            "
-          >
-            Shop Now
-
-            <ArrowRight
-              className="
-                h-3
-                w-3
-                sm:h-3.5
-                sm:w-3.5
-                lg:h-4
-                lg:w-4
-              "
-            />
-          </Link>
-
-          <Link
-           href="/dashboard/products"
-            
-            className="
-              inline-flex
-              h-9
-              items-center
-              justify-center
-              rounded-lg
-              border
-              border-[#d9dce2]
-              bg-white
-              px-3
-              text-[9px]
-              font-semibold
-              text-[#171717]
-              transition-all
-              duration-300
-              hover:-translate-y-1
-              hover:border-[#d5ad32]
-              hover:text-[#b88b20]
-              hover:shadow-[0_10px_25px_rgba(0,0,0,0.06)]
-              sm:h-11
-              sm:rounded-xl
-              sm:px-5
-              sm:text-xs
-              lg:h-14
-              lg:px-8
-              lg:text-[15px]
-            "
-          >
-            Explore Deals
-          </Link>
-        </div>
-
-        {/* Customers */}
-        <div
-          className="
-            mt-5
-            flex
-            min-w-0
-            items-center
-            gap-2
-            sm:mt-7
-            sm:gap-3
-            lg:mt-10
-            lg:gap-4
-          "
-        >
-          {/* Avatar Stack */}
-          <div className="flex shrink-0 -space-x-2 sm:-space-x-3">
-            <div
-              className="
-                h-6
-                w-6
-                rounded-full
-                border
-                border-white
-                bg-[#d9dde5]
-                sm:h-8
-                sm:w-8
-                lg:h-10
-                lg:w-10
-                lg:border-2
-              "
-            />
-
-            <div
-              className="
-                h-6
-                w-6
-                rounded-full
-                border
-                border-white
-                bg-[#aeb7c8]
-                sm:h-8
-                sm:w-8
-                lg:h-10
-                lg:w-10
-                lg:border-2
-              "
-            />
-
-            <div
-              className="
-                h-6
-                w-6
-                rounded-full
-                border
-                border-white
-                bg-[#737e92]
-                sm:h-8
-                sm:w-8
-                lg:h-10
-                lg:w-10
-                lg:border-2
-              "
-            />
-          </div>
-
-          <p
-            className="
-              min-w-0
-              text-[8px]
-              leading-3
-              text-[#444]
-              sm:text-xs
-              lg:text-sm
-            "
-          >
-            Join{" "}
-            <span className="font-semibold text-[#d0a52e]">
-              10,000+
-            </span>{" "}
-            Happy Customers
-          </p>
-        </div>
-      </div>
-
-     {/* =====================================================
-    RIGHT IMAGE
-===================================================== */}
-<div
-  className="
-    relative
-    min-h-full
-    overflow-hidden
-    bg-[#fffdfa]
-  "
->
-  <Image
-    src="/hero-product.png"
-    alt="PrimeCart premium collection"
-    fill
-    priority
-    sizes="50vw"
-    className="
-      object-contain
-      object-center
-      scale-[1.02]
-      transition-transform
-      duration-700
-      ease-out
-      sm:scale-[1.04]
-      lg:object-cover
-      lg:scale-[0.95]
-      lg:hover:scale-[1.015]
-    "
-  />
-</div>
-    </div>
-  </div>
-</section>
-
       {/* =========================================================
-    BENEFITS
-========================================================= */}
+          HERO
+      ========================================================= */}
 
-<section className="px-3 py-2 sm:px-6 sm:py-4">
-  <div className="mx-auto max-w-7xl">
-    <div
-      className="
-        grid
-        grid-cols-2
-        overflow-hidden
-        rounded-2xl
-        border
-        border-[#e9e2d5]
-        bg-white
-        shadow-sm
-        sm:grid-cols-2
-        lg:grid-cols-4
-        lg:rounded-3xl
-      "
-    >
-      {benefits.map((benefit, index) => {
-        const Icon = benefit.icon;
+      <section className="px-3 pt-5 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
+        <div className="relative mx-auto max-w-[1380px] overflow-hidden rounded-[22px] border border-[#eadfc9] bg-[#fffdfa] shadow-[0_18px_50px_rgba(80,60,20,0.10)] sm:rounded-[28px]">
+          <div className="grid min-h-[320px] grid-cols-2 sm:min-h-[430px] lg:min-h-[540px]">
+            {/* LEFT CONTENT */}
 
-        return (
-          <div
-            key={benefit.title}
-            className={`
-              flex
-              min-w-0
-              items-center
-              gap-2.5
-              px-3
-              py-3
-              sm:gap-4
-              sm:px-5
-              sm:py-6
+            <div className="relative z-10 flex min-w-0 flex-col justify-center px-3 py-6 sm:px-7 sm:py-10 lg:px-14 lg:py-16 xl:px-16">
+              <div className="mb-3 inline-flex w-fit max-w-full items-center gap-1 rounded-full border border-[#ead9b7] bg-[#fffaf0] px-2 py-1 text-[8px] font-medium text-[#c28f20] sm:mb-5 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs lg:mb-7 lg:px-4 lg:py-2 lg:text-sm">
+                <span className="text-[10px] sm:text-sm lg:text-base">
+                  🔥
+                </span>
 
-              ${index % 2 === 0
-                ? "border-r border-[#eee8dc] lg:border-r"
-                : ""}
+                <span className="truncate">
+                  Super Sale is Live!
+                </span>
+              </div>
 
-              ${index < 2
-                ? "border-b border-[#eee8dc] lg:border-b-0"
-                : ""}
+              <h1 className="max-w-[620px] font-serif text-[25px] font-bold leading-[0.98] tracking-[-1.2px] text-[#111111] sm:text-[45px] sm:tracking-[-1.8px] lg:text-[68px] lg:tracking-[-2px] xl:text-[76px]">
+                Shop More.
+                <br />
 
-              lg:border-b-0
-              lg:px-5
-            `}
-          >
-            {/* Icon */}
-            <div
-              className="
-                flex
-                h-8
-                w-8
-                shrink-0
-                items-center
-                justify-center
-                rounded-lg
-                bg-[#fff7e5]
-                text-[#b58c24]
+                <span className="text-[#d5ad32]">
+                  Pay Less.
+                </span>
+              </h1>
 
-                sm:h-11
-                sm:w-11
-                sm:rounded-xl
+              <p className="mt-3 max-w-[560px] text-[9px] leading-[1.55] text-[#4f4a42] sm:mt-5 sm:text-[13px] sm:leading-6 lg:mt-7 lg:text-[18px] lg:leading-7">
+                Discover the best products at unbeatable
+                prices. Your one-stop destination for all
+                your needs.
+              </p>
 
-                lg:h-12
-                lg:w-12
-                lg:rounded-2xl
-              "
-            >
-              <Icon
-                size={16}
-                className="
-                  sm:h-[20px]
-                  sm:w-[20px]
-                  lg:h-[22px]
-                  lg:w-[22px]
-                "
+              <div className="mt-4 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:gap-3 lg:mt-8">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[#d8af32] px-3 text-[9px] font-semibold text-white shadow-[0_7px_18px_rgba(207,166,45,0.20)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#c99f25] hover:shadow-[0_12px_25px_rgba(207,166,45,0.28)] sm:h-11 sm:gap-1.5 sm:rounded-xl sm:px-5 sm:text-xs lg:h-14 lg:gap-2 lg:px-8 lg:text-[15px]"
+                >
+                  Shop Now
+
+                  <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
+                </Link>
+
+                <Link
+                  href="/dashboard/products"
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[#d9dce2] bg-white px-3 text-[9px] font-semibold text-[#171717] transition-all duration-300 hover:-translate-y-1 hover:border-[#d5ad32] hover:text-[#b88b20] hover:shadow-[0_10px_25px_rgba(0,0,0,0.06)] sm:h-11 sm:rounded-xl sm:px-5 sm:text-xs lg:h-14 lg:px-8 lg:text-[15px]"
+                >
+                  Explore Deals
+                </Link>
+              </div>
+
+              <div className="mt-5 flex min-w-0 items-center gap-2 sm:mt-7 sm:gap-3 lg:mt-10 lg:gap-4">
+                <div className="flex shrink-0 -space-x-2 sm:-space-x-3">
+                  <div className="h-6 w-6 rounded-full border border-white bg-[#d9dde5] sm:h-8 sm:w-8 lg:h-10 lg:w-10 lg:border-2" />
+                  <div className="h-6 w-6 rounded-full border border-white bg-[#aeb7c8] sm:h-8 sm:w-8 lg:h-10 lg:w-10 lg:border-2" />
+                  <div className="h-6 w-6 rounded-full border border-white bg-[#737e92] sm:h-8 sm:w-8 lg:h-10 lg:w-10 lg:border-2" />
+                </div>
+
+                <p className="min-w-0 text-[8px] leading-3 text-[#444] sm:text-xs lg:text-sm">
+                  Join{" "}
+                  <span className="font-semibold text-[#d0a52e]">
+                    10,000+
+                  </span>{" "}
+                  Happy Customers
+                </p>
+              </div>
+            </div>
+
+            {/* RIGHT IMAGE */}
+
+            <div className="relative min-h-full overflow-hidden bg-[#fffdfa]">
+              <Image
+                src="/hero-product.png"
+                alt="PrimeCart premium collection"
+                fill
+                priority
+                sizes="50vw"
+                className="object-contain object-center scale-[1.02] transition-transform duration-700 ease-out sm:scale-[1.04] lg:object-cover lg:scale-[0.95] lg:hover:scale-[1.015]"
               />
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Text */}
-            <div className="min-w-0">
-              <h3
-                className="
-                  truncate
-                  text-[11px]
-                  font-bold
-                  leading-tight
-                  text-[#171717]
+      {/* =========================================================
+          BENEFITS
+      ========================================================= */}
 
-                  sm:text-sm
-                  lg:text-base
-                "
+      <section className="px-3 py-2 sm:px-6 sm:py-4">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-[#e9e2d5] bg-white shadow-sm sm:grid-cols-2 lg:grid-cols-4 lg:rounded-3xl">
+            {benefits.map((benefit, index) => {
+              const Icon = benefit.icon;
+
+              return (
+                <div
+                  key={benefit.title}
+                  className={`flex min-w-0 items-center gap-2.5 px-3 py-3 sm:gap-4 sm:px-5 sm:py-6 ${
+                    index % 2 === 0
+                      ? "border-r border-[#eee8dc] lg:border-r"
+                      : ""
+                  } ${
+                    index < 2
+                      ? "border-b border-[#eee8dc] lg:border-b-0"
+                      : ""
+                  } lg:border-b-0 lg:px-5`}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fff7e5] text-[#b58c24] sm:h-11 sm:w-11 sm:rounded-xl lg:h-12 lg:w-12 lg:rounded-2xl">
+                    <Icon
+                      size={16}
+                      className="sm:h-[20px] sm:w-[20px] lg:h-[22px] lg:w-[22px]"
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="truncate text-[11px] font-bold leading-tight text-[#171717] sm:text-sm lg:text-base">
+                      {benefit.title}
+                    </h3>
+
+                    <p className="mt-0.5 line-clamp-1 text-[8px] leading-3 text-gray-500 sm:text-[11px] sm:leading-4 lg:text-xs">
+                      {benefit.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FLASH DEALS
+      ========================================================= */}
+
+      <section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
+                <Zap size={15} />
+                Limited Time
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Flash Deals
+              </h2>
+
+              <p className="mt-2 text-sm text-gray-500 sm:text-base">
+                Grab the deal before the clock runs out.
+              </p>
+            </div>
+
+            <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
+                  {formattedTime.hours}
+                </p>
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+                  Hrs
+                </p>
+              </div>
+
+              <span className="font-bold text-[#b58c24]">
+                :
+              </span>
+
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
+                  {formattedTime.minutes}
+                </p>
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+                  Min
+                </p>
+              </div>
+
+              <span className="font-bold text-[#b58c24]">
+                :
+              </span>
+
+              <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
+                <p className="text-lg font-black leading-none">
+                  {formattedTime.seconds}
+                </p>
+
+                <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
+                  Sec
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0 sm:snap-none md:grid-cols-3"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {dealItems.map((deal) => (
+              <Link
+                key={deal.title}
+                href={deal.href}
+                className="group relative w-[82vw] min-w-[82vw] shrink-0 snap-start overflow-hidden rounded-[24px] border border-[#e9e2d5] bg-white p-3.5 shadow-sm transition duration-300 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:shrink sm:rounded-[28px] sm:p-5 sm:active:scale-100 sm:hover:-translate-y-1 sm:hover:shadow-xl"
               >
-                {benefit.title}
-              </h3>
+                <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
+                  {deal.discount}
+                </div>
 
-              <p
-                className="
-                  mt-0.5
-                  line-clamp-1
-                  text-[8px]
-                  leading-3
-                  text-gray-500
+                <div className="flex h-[190px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
+                  <Image
+                    src={deal.image}
+                    alt={deal.title}
+                    width={300}
+                    height={240}
+                    className="h-[160px] w-full object-contain transition duration-500 sm:h-[190px] sm:group-hover:scale-105"
+                  />
+                </div>
 
-                  sm:text-[11px]
-                  sm:leading-4
+                <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-black sm:text-xl">
+                      {deal.title}
+                    </p>
 
-                  lg:text-xs
-                "
-              >
-                {benefit.description}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-</section>
+                    <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
+                      {deal.subtitle}
+                    </p>
+                  </div>
 
-{/* =========================================================
-    FLASH DEALS
-========================================================= */}
-
-<section className="px-3 py-10 sm:px-6 sm:py-14 lg:py-20">
-  <div className="mx-auto max-w-7xl">
-
-    {/* HEADER */}
-
-    <div className="mb-7 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-
-      <div>
-        <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-[#b58c24] sm:text-sm">
-          <Zap size={15} />
-          Limited Time
-        </div>
-
-        <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-          Flash Deals
-        </h2>
-
-        <p className="mt-2 text-sm text-gray-500 sm:text-base">
-          Grab the deal before the clock runs out.
-        </p>
-      </div>
-
-      {/* TIMER */}
-
-      <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.hours}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Hrs
-          </p>
-        </div>
-
-        <span className="font-bold text-[#b58c24]">
-          :
-        </span>
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.minutes}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Min
-          </p>
-        </div>
-
-        <span className="font-bold text-[#b58c24]">
-          :
-        </span>
-
-        <div className="min-w-[58px] rounded-xl bg-[#171512] px-2.5 py-2 text-center text-white sm:min-w-[64px] sm:px-3">
-          <p className="text-lg font-black leading-none">
-            {formattedTime.seconds}
-          </p>
-
-          <p className="mt-1 text-[8px] uppercase tracking-wider text-white/60">
-            Sec
-          </p>
-        </div>
-      </div>
-    </div>
-
-    {/* DEAL CARDS */}
-
-    <div
-      className="
-        flex
-        gap-4
-        overflow-x-auto
-        pb-4
-        snap-x
-        snap-mandatory
-        scrollbar-hide
-
-        sm:grid
-        sm:grid-cols-2
-        sm:gap-5
-        sm:overflow-visible
-        sm:pb-0
-        sm:snap-none
-
-        md:grid-cols-3
-      "
-      style={{
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-    >
-
-      {dealItems.map((deal) => (
-        <Link
-          key={deal.title}
-          href={deal.href}
-          className="
-            group
-            relative
-            w-[82vw]
-            min-w-[82vw]
-            shrink-0
-            snap-start
-            overflow-hidden
-            rounded-[24px]
-            border
-            border-[#e9e2d5]
-            bg-white
-            p-3.5
-            shadow-sm
-            transition
-            duration-300
-            active:scale-[0.98]
-
-            sm:w-auto
-            sm:min-w-0
-            sm:shrink
-            sm:rounded-[28px]
-            sm:p-5
-            sm:active:scale-100
-
-            sm:hover:-translate-y-1
-            sm:hover:shadow-xl
-          "
-        >
-
-          {/* DISCOUNT BADGE */}
-
-          <div className="absolute right-3 top-3 z-10 rounded-full bg-[#171512] px-2.5 py-1.5 text-[8px] font-bold tracking-wider text-white sm:right-4 sm:top-4 sm:px-3 sm:text-[10px]">
-            {deal.discount}
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e8e1d4] transition sm:h-10 sm:w-10 sm:group-hover:border-[#D4AF37] sm:group-hover:bg-[#D4AF37] sm:group-hover:text-white">
+                    <ArrowUpRight size={17} />
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
 
-          {/* IMAGE */}
-
-          <div className="flex h-[190px] items-center justify-center rounded-[20px] bg-[#faf8f3] sm:h-[220px] sm:rounded-[22px]">
-
-            <Image
-              src={deal.image}
-              alt={deal.title}
-              width={300}
-              height={240}
-              className="
-                h-[160px]
-                w-full
-                object-contain
-                transition
-                duration-500
-                sm:h-[190px]
-                sm:group-hover:scale-105
-              "
-            />
-
+          <div className="mt-3 flex items-center justify-center gap-1.5 sm:hidden">
+            <span className="h-1.5 w-5 rounded-full bg-[#D4AF37]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
           </div>
-
-          {/* CONTENT */}
-
-          <div className="flex items-end justify-between gap-3 px-1 pt-4 sm:pt-5">
-
-            <div className="min-w-0">
-
-              <p className="truncate text-lg font-black sm:text-xl">
-                {deal.title}
-              </p>
-
-              <p className="mt-1 line-clamp-2 text-xs text-gray-500 sm:text-sm">
-                {deal.subtitle}
-              </p>
-
-            </div>
-
-            <div
-              className="
-                flex
-                h-9
-                w-9
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-[#e8e1d4]
-                transition
-
-                sm:h-10
-                sm:w-10
-                sm:group-hover:border-[#D4AF37]
-                sm:group-hover:bg-[#D4AF37]
-                sm:group-hover:text-white
-              "
-            >
-              <ArrowUpRight size={17} />
-            </div>
-
-          </div>
-        </Link>
-      ))}
-    </div>
-
-    {/* MOBILE SWIPE INDICATOR */}
-
-    <div className="mt-3 flex items-center justify-center gap-1.5 sm:hidden">
-      <span className="h-1.5 w-5 rounded-full bg-[#D4AF37]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
-      <span className="h-1.5 w-1.5 rounded-full bg-[#d9d2c5]" />
-    </div>
-
-  </div>
-</section>
+        </div>
+      </section>
 
       {/* =========================================================
           CATEGORIES
@@ -1392,9 +1173,7 @@ lg:min-h-[540px]
 
       <section className="bg-white px-3 py-12 sm:px-6 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl">
-
           <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
-
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
                 Explore Store
@@ -1405,7 +1184,8 @@ lg:min-h-[540px]
               </h2>
 
               <p className="mt-2 max-w-xl text-sm text-gray-500 sm:text-base">
-                Find exactly what you need from our growing collection.
+                Find exactly what you need from our growing
+                collection.
               </p>
             </div>
 
@@ -1457,14 +1237,13 @@ lg:min-h-[540px]
         </div>
       </section>
 
-  {/* =========================================================
+      {/* =========================================================
           PRIME CART ADVANTAGE
-          MOBILE = HORIZONTAL LIKE CATEGORY
+          ONLY PRIMEMATCH + BUDGET BUILDER
       ========================================================= */}
 
       <section className="px-3 py-11 sm:px-6 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl">
-
           <div className="mb-6 sm:mb-9">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b58c24] sm:text-sm">
               More than shopping
@@ -1475,15 +1254,12 @@ lg:min-h-[540px]
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm text-gray-500 sm:text-base">
-              Smart shopping tools designed to make buying easier,
-              faster and more rewarding.
+              Smart shopping tools designed to make buying
+              easier, faster and more rewarding.
             </p>
           </div>
 
-          {/* HORIZONTAL ON MOBILE */}
-
-          <div className="pc-scrollbar-none flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:pb-0 md:snap-none">
-
+          <div className="pc-scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:pb-0 md:snap-none">
             {primeFeatures.map((feature) => {
               const Icon = feature.icon;
 
@@ -1496,7 +1272,6 @@ lg:min-h-[540px]
                   <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-[#D4AF37]/10 transition duration-700 group-hover:scale-150" />
 
                   <div className="relative">
-
                     <div className="flex items-start justify-between">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff6df] text-[#b58c24] transition duration-300 group-hover:scale-105 sm:h-14 sm:w-14">
                         <Icon size={24} />
@@ -1529,8 +1304,6 @@ lg:min-h-[540px]
             })}
           </div>
 
-          {/* MOBILE SWIPE INDICATOR */}
-
           <div className="mt-1 flex justify-center gap-1.5 md:hidden">
             {primeFeatures.map((feature, index) => (
               <span
@@ -1547,80 +1320,11 @@ lg:min-h-[540px]
       </section>
 
       {/* =========================================================
-          PRIMEPOINTS
-      ========================================================= */}
-
-      <section className="px-3 pb-12 sm:px-6 sm:pb-16 lg:pb-20">
-        <div className="mx-auto max-w-7xl">
-
-          <div className="relative overflow-hidden rounded-[28px] bg-[#171512] px-5 py-9 text-white sm:rounded-[32px] sm:px-10 sm:py-12 lg:px-14">
-
-            <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-[#D4AF37]/20 blur-3xl" />
-
-            <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-[#D4AF37]/10 blur-3xl" />
-
-            <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
-
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e4c46a] sm:px-4 sm:py-2 sm:text-xs">
-                  <Star size={13} fill="currentColor" />
-                  PrimePoints
-                </div>
-
-                <h2 className="mt-4 max-w-2xl text-3xl font-black leading-tight sm:mt-5 sm:text-4xl lg:text-5xl">
-                  Shop. Earn.
-                  <span className="text-[#D4AF37]">
-                    {" "}Get Rewarded.
-                  </span>
-                </h2>
-
-                <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:mt-4 sm:text-base sm:leading-7">
-                  Turn your shopping activity into rewards with
-                  PrimePoints. Complete challenges, collect points
-                  and unlock exclusive benefits.
-                </p>
-
-                <Link
-                   href="/dashboard/prime-points"
-                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#D4AF37] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c69f2f] sm:mt-7 sm:px-6 sm:py-3.5"
-                >
-                  Explore PrimePoints
-                  <ArrowRight size={17} />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-                {[
-                  ["01", "Shop"],
-                  ["02", "Earn"],
-                  ["03", "Redeem"],
-                ].map(([number, label]) => (
-                  <div
-                    key={number}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm sm:p-6"
-                  >
-                    <p className="text-xl font-black text-[#D4AF37] sm:text-2xl">
-                      {number}
-                    </p>
-
-                    <p className="mt-1 text-[10px] font-semibold text-white/70 sm:text-sm">
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================
           NEWSLETTER
       ========================================================= */}
 
       <section className="border-y border-[#ece7db] bg-white px-3 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl text-center">
-
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff5dc] text-[#b58c24] sm:h-14 sm:w-14">
             <ShoppingBag size={22} />
           </div>
@@ -1630,8 +1334,8 @@ lg:min-h-[540px]
           </h2>
 
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-500 sm:mt-3 sm:text-base">
-            Get notified about new arrivals, exclusive offers and
-            limited-time deals.
+            Get notified about new arrivals, exclusive offers
+            and limited-time deals.
           </p>
 
           {subscribed ? (
@@ -1664,19 +1368,16 @@ lg:min-h-[540px]
           )}
         </div>
       </section>
-      
-{/* =========================================================
-          COMPACT MOBILE FOOTER
+
+      {/* =========================================================
+          FOOTER
       ========================================================= */}
 
       <footer className="bg-[#faf8f3] px-3 pb-24 pt-9 sm:px-6 sm:pb-8 sm:pt-14">
-
         <div className="mx-auto max-w-7xl">
-
           {/* BRAND */}
 
           <div className="border-b border-[#e7e0d4] pb-6 sm:pb-10">
-
             <Link
               href="/"
               className="flex items-center gap-2.5"
@@ -1718,10 +1419,9 @@ lg:min-h-[540px]
             </div>
           </div>
 
-          {/* MOBILE COMPACT LINKS */}
+          {/* MOBILE LINKS */}
 
           <div className="grid grid-cols-3 gap-3 border-b border-[#e7e0d4] py-6 sm:hidden">
-
             <div>
               <h3 className="text-xs font-bold">
                 Quick Links
@@ -1735,24 +1435,22 @@ lg:min-h-[540px]
                   Home
                 </Link>
 
-               
                 <Link
-                    href="/dashboard/products"
-                    className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
-                      >
-                           Shop
+                  href="/dashboard/products"
+                  className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
+                >
+                  Shop
                 </Link>
 
-                
-                 <Link
-                   href="/dashboard/categories"
+                <Link
+                  href="/dashboard/categories"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Categories
                 </Link>
 
-                   <Link 
-                     href="/dashboard/products"
+                <Link
+                  href="/dashboard"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Deals
@@ -1767,28 +1465,28 @@ lg:min-h-[540px]
 
               <div className="mt-3 flex flex-col gap-2">
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Contact
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Shipping
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Returns
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="text-[11px] text-gray-500 transition hover:text-[#D4AF37]"
                 >
                   Privacy
@@ -1802,7 +1500,6 @@ lg:min-h-[540px]
               </h3>
 
               <div className="mt-3 space-y-2.5">
-
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck
                     size={14}
@@ -1835,7 +1532,6 @@ lg:min-h-[540px]
                     Support
                   </span>
                 </div>
-
               </div>
             </div>
           </div>
@@ -1843,7 +1539,6 @@ lg:min-h-[540px]
           {/* DESKTOP FOOTER LINKS */}
 
           <div className="hidden gap-10 border-b border-[#e7e0d4] py-10 sm:grid sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr]">
-
             <div>
               <h3 className="font-bold">
                 Quick Links
@@ -1887,28 +1582,28 @@ lg:min-h-[540px]
 
               <div className="mt-4 flex flex-col gap-3 text-sm text-gray-500">
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Contact Us
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Shipping Policy
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Returns
                 </Link>
 
                 <Link
-                  href="/auth/login"
+                  href="/dashboard"
                   className="transition hover:text-[#D4AF37]"
                 >
                   Privacy Policy
@@ -1922,7 +1617,6 @@ lg:min-h-[540px]
               </h3>
 
               <div className="mt-4 space-y-4">
-
                 <div className="flex gap-3">
                   <ShieldCheck
                     className="mt-0.5 shrink-0 text-[#D4AF37]"
@@ -1973,7 +1667,6 @@ lg:min-h-[540px]
                     </p>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -1997,9 +1690,7 @@ lg:min-h-[540px]
       ========================================================= */}
 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e7e0d4] bg-white/95 px-2 py-1.5 shadow-[0_-5px_25px_rgba(50,35,10,0.08)] backdrop-blur-xl md:hidden">
-
         <div className="mx-auto flex max-w-md items-center justify-around">
-
           <Link
             href="/"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-[#D4AF37]"
@@ -2022,9 +1713,8 @@ lg:min-h-[540px]
             </span>
           </Link>
 
-         
-          <Link 
-               href="/dashboard/wishlist"
+          <Link
+            href="/auth/login"
             className="flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <Heart size={18} />
@@ -2034,9 +1724,8 @@ lg:min-h-[540px]
             </span>
           </Link>
 
- 
-           <Link
-             href="/dashboard/cart" 
+          <Link
+            href="/auth/login"
             className="relative flex min-w-[52px] flex-col items-center gap-0.5 px-2 py-1 text-gray-500"
           >
             <ShoppingCart size={18} />
@@ -2060,7 +1749,6 @@ lg:min-h-[540px]
               Account
             </span>
           </Link>
-
         </div>
       </div>
     </main>
