@@ -102,7 +102,9 @@ function formatPrice(value: number) {
 }
 
 function getImageCandidates(value?: string | null) {
-  if (!value?.trim()) return ["/placeholder-product.png"];
+  if (!value?.trim()) {
+    return ["/placeholder-product.png"];
+  }
 
   const raw = value.trim();
 
@@ -110,7 +112,9 @@ function getImageCandidates(value?: string | null) {
     return [raw, "/placeholder-product.png"];
   }
 
-  const clean = raw.replace(/^public[\\/]/i, "").replace(/^\/+/, "");
+  const clean = raw
+    .replace(/^public[\\/]/i, "")
+    .replace(/^\/+/, "");
 
   const encoded = clean
     .split("/")
@@ -150,7 +154,8 @@ function ProductImage({
     setIndex(0);
   }, [src]);
 
-  const current = candidates[index] ?? "/placeholder-product.png";
+  const current =
+    candidates[index] ?? "/placeholder-product.png";
 
   return (
     <img
@@ -240,20 +245,27 @@ export default function CartPage() {
   const [wishlist, setWishlist] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [removedId, setRemovedId] = useState<string | null>(null);
-  const [validatingCart, setValidatingCart] = useState(false);
+  const [updatingId, setUpdatingId] =
+    useState<string | null>(null);
+  const [removedId, setRemovedId] =
+    useState<string | null>(null);
+  const [validatingCart, setValidatingCart] =
+    useState(false);
 
   const [coupon, setCoupon] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
-    null,
-  );
-  const [couponOpen, setCouponOpen] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] =
+    useState<string | null>(null);
+  const [couponOpen, setCouponOpen] =
+    useState(false);
 
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] =
+    useState<Notice | null>(null);
 
   const showNotice = useCallback(
-    (message: string, type: NoticeType = "success") => {
+    (
+      message: string,
+      type: NoticeType = "success",
+    ) => {
       setNotice({
         message,
         type,
@@ -276,6 +288,14 @@ export default function CartPage() {
    *
    * cart_items is the permanent database cart record.
    *
+   * Login page is responsible for migrating:
+   * - primecart-pending-cart
+   * - primecart-cart
+   *
+   * into cart_items after successful login.
+   *
+   * Cart page ONLY reads cart_items.
+   *
    * We NEVER automatically delete cart_items because:
    * - product is inactive
    * - product is out of stock
@@ -287,380 +307,329 @@ export default function CartPage() {
    * - Save for Later
    */
 
-  const loadCartFromDatabase = useCallback(async () => {
-    setLoading(true);
+  const loadCartFromDatabase =
+    useCallback(async () => {
+      setLoading(true);
 
-    try {
-      const {
-        data: { session },
-        error: userError,
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error: userError,
+        } = await supabase.auth.getSession();
 
-      if (userError) throw userError;
+        if (userError) throw userError;
 
-      const user = session?.user ?? null;
+        const user = session?.user ?? null;
 
-      if (!user) {
-        // Guest users can open the cart page.
-        // Guest cart is intentionally empty.
-        setCart([]);
-        writeStorage(CART_KEY, []);
-        return;
-      }
+        if (!user) {
+          /*
+           * Guest users can open the cart page.
+           *
+           * Cart remains empty until the user logs in
+           * and adds/migrates a product.
+           */
+          setCart([]);
+          writeStorage(CART_KEY, []);
+          return;
+        }
 
-      /*
-       * ============================================================
-       * PENDING CART ITEM FROM DASHBOARD
-       * ============================================================
-       *
-       * Dashboard guests are redirected to login when they click
-       * "Add to Cart". The dashboard stores the selected product in
-       * localStorage as "primecart-pending-cart".
-       *
-       * After login, the cart page consumes that item and saves it
-       * into the same cart_items table used everywhere else.
-       */
-      const pendingCartRaw = localStorage.getItem(
-        "primecart-pending-cart",
-      );
+        /*
+         * ========================================================
+         * LOAD AUTHENTICATED CART FROM DATABASE
+         * ========================================================
+         */
 
-      if (pendingCartRaw) {
-        let pendingCartSaved = false;
+        const {
+          data: rows,
+          error: cartError,
+        } = await supabase
+          .from("cart_items")
+          .select(
+            "id,user_id,product_id,quantity,created_at",
+          )
+          .eq("user_id", user.id)
+          .order("created_at", {
+            ascending: false,
+          });
 
-        try {
-          const pendingCart = JSON.parse(pendingCartRaw);
-          const pendingProductId = String(
-            pendingCart?.productId ?? "",
-          );
-          const pendingQuantity = Math.max(
-            1,
-            Number(pendingCart?.quantity ?? 1) || 1,
-          );
+        if (cartError) throw cartError;
 
-          if (pendingProductId) {
-            const {
-              data: pendingProduct,
-              error: pendingProductError,
-            } = await supabase
-              .from("products")
-              .select(
-                "id,name,price,original_price,image_url,brand,stock,rating,reviews_count,category_id,is_active",
-              )
-              .eq("id", pendingProductId)
-              .maybeSingle();
+        const cartRows =
+          (rows ?? []) as CartRow[];
 
-            if (pendingProductError) {
-              throw pendingProductError;
-            }
+        if (!cartRows.length) {
+          setCart([]);
+          writeStorage(CART_KEY, []);
+          return;
+        }
 
-            if (!pendingProduct) {
-              showNotice(
-                "The selected product could not be found.",
-                "error",
-              );
-              pendingCartSaved = true;
-            } else if (
-              pendingProduct.is_active === false ||
-              Number(pendingProduct.stock ?? 0) <= 0
-            ) {
-              showNotice(
-                "The selected product is currently unavailable.",
-                "error",
-              );
-              pendingCartSaved = true;
-            } else {
-              const pendingStock = Math.max(
-                0,
-                Number(pendingProduct.stock) || 0,
-              );
+        /*
+         * Get all product IDs from cart_items.
+         */
 
-              const {
-                data: existingPendingRow,
-                error: existingPendingError,
-              } = await supabase
-                .from("cart_items")
-                .select("id,quantity")
-                .eq("user_id", user.id)
-                .eq("product_id", pendingProductId)
-                .maybeSingle();
+        const productIds = Array.from(
+          new Set(
+            cartRows.map(
+              (row) => row.product_id,
+            ),
+          ),
+        );
 
-              if (existingPendingError) {
-                throw existingPendingError;
-              }
+        /*
+         * Load product information.
+         */
 
-              const finalQuantity = existingPendingRow
-                ? Math.min(
-                    Number(existingPendingRow.quantity || 0) +
-                      pendingQuantity,
-                    pendingStock,
-                  )
-                : Math.min(
-                    pendingQuantity,
-                    pendingStock,
-                  );
+        const {
+          data: products,
+          error: productsError,
+        } = await supabase
+          .from("products")
+          .select(
+            "id,name,price,original_price,image_url,brand,stock,rating,reviews_count,category_id,is_active",
+          )
+          .in("id", productIds);
 
-              if (existingPendingRow?.id) {
-                const { error: updatePendingError } =
-                  await supabase
-                    .from("cart_items")
-                    .update({
-                      quantity: finalQuantity,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", existingPendingRow.id)
-                    .eq("user_id", user.id);
-
-                if (updatePendingError) {
-                  throw updatePendingError;
-                }
-              } else {
-                const { error: insertPendingError } =
-                  await supabase
-                    .from("cart_items")
-                    .insert({
-                      user_id: user.id,
-                      product_id: pendingProductId,
-                      quantity: finalQuantity,
-                      updated_at: new Date().toISOString(),
-                    });
-
-                if (insertPendingError) {
-                  throw insertPendingError;
-                }
-              }
-
-              pendingCartSaved = true;
-              showNotice(
-                existingPendingRow
-                  ? "Product added to your cart."
-                  : "Product added to your cart.",
-                "success",
-              );
-            }
-          } else {
-            pendingCartSaved = true;
-          }
-        } catch (pendingError) {
+        if (productsError) {
           console.error(
-            "Pending cart item error:",
-            pendingError,
+            "Cart products query error:",
+            productsError,
           );
+
           showNotice(
-            "Could not add the selected product to your cart. Please try again.",
+            `Cart items are safely stored in the database, but product details could not be loaded. ${productsError.message}`,
             "error",
           );
+
+          return;
         }
 
-        if (pendingCartSaved) {
-          localStorage.removeItem("primecart-pending-cart");
+        /*
+         * IMPORTANT:
+         *
+         * Missing product rows are NOT deleted from cart_items.
+         */
+
+        const loadedProductIds = new Set(
+          (products ?? []).map(
+            (product) => product.id,
+          ),
+        );
+
+        const missingProductIds =
+          productIds.filter(
+            (id) =>
+              !loadedProductIds.has(id),
+          );
+
+        if (missingProductIds.length) {
+          console.warn(
+            "Cart product IDs exist in cart_items but were not returned:",
+            missingProductIds,
+          );
+
+          showNotice(
+            "Some saved cart products could not be displayed right now. Your database cart is safe.",
+            "info",
+          );
         }
-      }
 
-      const { data: rows, error: cartError } = await supabase
-        .from("cart_items")
-        .select(
-          "id,user_id,product_id,quantity,created_at",
-        )
-        .eq("user_id", user.id)
-        .order("created_at", {
-          ascending: false,
-        });
+        /*
+         * Create product lookup map.
+         */
 
-      if (cartError) throw cartError;
+        const productMap =
+          new Map<string, Product>(
+            (products ?? []).map(
+              (product) => [
+                product.id,
+                {
+                  ...product,
+                  price:
+                    Number(product.price) ||
+                    0,
+                  original_price:
+                    product.original_price ===
+                    null
+                      ? null
+                      : Number(
+                          product.original_price,
+                        ) || 0,
+                  stock: Math.max(
+                    0,
+                    Number(product.stock) ||
+                      0,
+                  ),
+                  rating:
+                    product.rating ===
+                    null
+                      ? null
+                      : Number(
+                          product.rating,
+                        ),
+                  reviews_count:
+                    product.reviews_count ===
+                    null
+                      ? null
+                      : Number(
+                          product.reviews_count,
+                        ),
+                  is_active:
+                    product.is_active !==
+                    false,
+                } as Product,
+              ],
+            ),
+          );
 
-      const cartRows = (rows ?? []) as CartRow[];
+        const nextCart: CartItem[] = [];
 
-      if (!cartRows.length) {
-        setCart([]);
-        writeStorage(CART_KEY, []);
-        return;
-      }
+        /*
+         * Build the active UI cart.
+         */
 
-      const productIds = Array.from(
-        new Set(
-          cartRows.map((row) => row.product_id),
-        ),
-      );
+        for (const row of cartRows) {
+          const product =
+            productMap.get(
+              row.product_id,
+            );
 
-      const {
-        data: products,
-        error: productsError,
-      } = await supabase
-        .from("products")
-        .select(
-          "id,name,price,original_price,image_url,brand,stock,rating,reviews_count,category_id,is_active",
-        )
-        .in("id", productIds);
+          /*
+           * Product missing:
+           * Keep database cart_items row.
+           * Do not show it in active UI.
+           */
 
-      if (productsError) {
+          if (!product) {
+            continue;
+          }
+
+          /*
+           * Product inactive/out of stock:
+           * Keep database cart_items row.
+           * Do not show it in active UI.
+           */
+
+          if (
+            product.is_active === false ||
+            product.stock <= 0
+          ) {
+            continue;
+          }
+
+          const requested =
+            Math.max(
+              1,
+              Number(row.quantity) || 1,
+            );
+
+          /*
+           * Never allow displayed quantity
+           * to be higher than current stock.
+           */
+
+          const quantity = Math.min(
+            requested,
+            product.stock,
+          );
+
+          /*
+           * If quantity exceeds stock,
+           * update quantity only.
+           *
+           * We DO NOT delete the cart row.
+           */
+
+          if (
+            quantity !== requested
+          ) {
+            const { error } =
+              await supabase
+                .from("cart_items")
+                .update({
+                  quantity,
+                })
+                .eq(
+                  "id",
+                  row.id,
+                )
+                .eq(
+                  "user_id",
+                  user.id,
+                );
+
+            if (error) throw error;
+          }
+
+          nextCart.push({
+            ...product,
+            quantity,
+            cart_item_id: row.id,
+          });
+        }
+
+        setCart(nextCart);
+
+        /*
+         * LocalStorage is only a cache snapshot.
+         *
+         * Database remains the source of truth.
+         */
+
+        writeStorage(
+          CART_KEY,
+          nextCart,
+        );
+      } catch (error) {
         console.error(
-          "Cart products query error:",
-          productsError,
+          "Load cart error:",
+          error,
         );
 
         showNotice(
-          `Cart items are safely stored in the database, but product details could not be loaded. ${productsError.message}`,
+          "Could not load your cart. Please refresh and try again.",
           "error",
         );
-
-        return;
+      } finally {
+        setLoading(false);
       }
+    }, [
+      showNotice,
+      supabase,
+    ]);
 
-      /*
-       * IMPORTANT:
-       * Missing product rows are NOT deleted from cart_items.
-       */
-      const loadedProductIds = new Set(
-        (products ?? []).map((product) => product.id),
-      );
+  const refreshCart = useCallback(
+    async () => {
+      await loadCartFromDatabase();
+    },
+    [loadCartFromDatabase],
+  );
 
-      const missingProductIds = productIds.filter(
-        (id) => !loadedProductIds.has(id),
-      );
-
-      if (missingProductIds.length) {
-        console.warn(
-          "Cart product IDs exist in cart_items but were not returned:",
-          missingProductIds,
-        );
-
-        showNotice(
-          "Some saved cart products could not be displayed right now. Your database cart is safe.",
-          "info",
-        );
-      }
-
-      const productMap = new Map<string, Product>(
-        (products ?? []).map((product) => [
-          product.id,
-          {
-            ...product,
-            price: Number(product.price) || 0,
-            original_price:
-              product.original_price === null
-                ? null
-                : Number(product.original_price) || 0,
-            stock: Math.max(
-              0,
-              Number(product.stock) || 0,
-            ),
-            rating:
-              product.rating === null
-                ? null
-                : Number(product.rating),
-            reviews_count:
-              product.reviews_count === null
-                ? null
-                : Number(product.reviews_count),
-            is_active: product.is_active !== false,
-          } as Product,
-        ]),
-      );
-
-      const nextCart: CartItem[] = [];
-
-      for (const row of cartRows) {
-        const product = productMap.get(row.product_id);
-
-        /*
-         * Product missing:
-         * Keep DB cart_items row.
-         * Just don't show it in active UI.
-         */
-        if (!product) {
-          continue;
-        }
-
-        /*
-         * Product inactive/out of stock:
-         * Keep DB cart_items row.
-         * Just don't show it in active UI.
-         */
-        if (
-          product.is_active === false ||
-          product.stock <= 0
-        ) {
-          continue;
-        }
-
-        const requested = Math.max(
-          1,
-          Number(row.quantity) || 1,
-        );
-
-        const quantity = Math.min(
-          requested,
-          product.stock,
-        );
-
-        /*
-         * Quantity is adjusted only when it exceeds current stock.
-         * The cart row itself is NOT deleted.
-         */
-        if (quantity !== requested) {
-          const { error } = await supabase
-            .from("cart_items")
-            .update({
-              quantity,
-            })
-            .eq("id", row.id)
-            .eq("user_id", user.id);
-
-          if (error) throw error;
-        }
-
-        nextCart.push({
-          ...product,
-          quantity,
-          cart_item_id: row.id,
-        });
-      }
-
-      setCart(nextCart);
-
-      /*
-       * This is only a cache snapshot.
-       * It does NOT modify/delete database rows.
-       */
-      writeStorage(CART_KEY, nextCart);
-    } catch (error) {
-      console.error(
-        "Load cart error:",
-        error,
-      );
-
-      showNotice(
-        "Could not load your cart. Please refresh and try again.",
-        "error",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    redirectToLogin,
-    showNotice,
-    supabase,
-  ]);
-
-  const refreshCart = useCallback(async () => {
-    await loadCartFromDatabase();
-  }, [loadCartFromDatabase]);
+  /*
+   * ============================================================
+   * INITIAL LOAD
+   * ============================================================
+   */
 
   useEffect(() => {
-    const saved = readStorage<Partial<SavedItem>>(
-      SAVED_KEY,
-    )
-      .map(normalizeSavedItem)
-      .filter(
-        (item): item is SavedItem =>
-          item !== null,
-      );
+    const saved =
+      readStorage<
+        Partial<SavedItem>
+      >(SAVED_KEY)
+        .map(normalizeSavedItem)
+        .filter(
+          (
+            item,
+          ): item is SavedItem =>
+            item !== null,
+        );
 
     const storedWishlist =
       readStorage<unknown>(
         WISHLIST_KEY,
       ).filter(
-        (value): value is string =>
+        (
+          value,
+        ): value is string =>
           typeof value === "string",
       );
 
@@ -669,6 +638,12 @@ export default function CartPage() {
 
     void loadCartFromDatabase();
   }, [loadCartFromDatabase]);
+
+  /*
+   * ============================================================
+   * SAVE LOCAL CACHE
+   * ============================================================
+   */
 
   useEffect(() => {
     if (!loading) {
@@ -688,6 +663,12 @@ export default function CartPage() {
     }
   }, [loading, wishlist]);
 
+  /*
+   * ============================================================
+   * NOTICE AUTO CLOSE
+   * ============================================================
+   */
+
   useEffect(() => {
     if (!notice) return;
 
@@ -701,12 +682,24 @@ export default function CartPage() {
   }, [notice]);
 
   /*
-   * Keep cart synchronized with other PrimeCart pages.
+   * ============================================================
+   * CART EVENT SYNC
+   * ============================================================
+   *
+   * Other pages can dispatch:
+   *
+   * window.dispatchEvent(
+   *   new Event("cart-updated")
+   * )
+   *
+   * Cart page reloads database cart.
    */
+
   useEffect(() => {
-    const handleCartUpdated = () => {
-      void refreshCart();
-    };
+    const handleCartUpdated =
+      () => {
+        void refreshCart();
+      };
 
     window.addEventListener(
       "cart-updated",
@@ -839,23 +832,38 @@ export default function CartPage() {
       0,
     );
 
-  const shippingProgress = Math.min(
-    Math.round(
-      (subtotal /
-        FREE_SHIPPING_LIMIT) *
-        100,
-    ),
-    100,
-  );
+  const shippingProgress =
+    Math.min(
+      Math.round(
+        (subtotal /
+          FREE_SHIPPING_LIMIT) *
+          100,
+      ),
+      100,
+    );
 
   function persistCart(
     nextCart: CartItem[],
   ) {
     setCart(nextCart);
+
     writeStorage(
       CART_KEY,
       nextCart,
     );
+
+    /*
+     * Notify other PrimeCart pages.
+     */
+
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.dispatchEvent(
+        new Event("cart-updated"),
+      );
+    }
   }
 
   /*
@@ -870,10 +878,11 @@ export default function CartPage() {
       | "increase"
       | "decrease",
   ) {
-    const current = cart.find(
-      (item) =>
-        item.id === productId,
-    );
+    const current =
+      cart.find(
+        (item) =>
+          item.id === productId,
+      );
 
     if (
       !current ||
@@ -917,23 +926,36 @@ export default function CartPage() {
 
     try {
       const {
-  data: { user },
-  error: userError,
-} = await supabase.auth.getUser();
+        data: { user },
+        error: userError,
+      } =
+        await supabase.auth.getUser();
 
-if (userError) throw userError;
+      if (userError)
+        throw userError;
 
-if (!user) {
-  // Guest users can browse/open cart without login.
-  // Cart stays empty until the user logs in and adds an item.
-  setCart([]);
-  writeStorage(CART_KEY, []);
-  return;
-}
+      if (!user) {
+        /*
+         * Guest users cannot modify
+         * authenticated cart records.
+         */
+
+        setCart([]);
+        writeStorage(
+          CART_KEY,
+          [],
+        );
+
+        redirectToLogin();
+
+        return;
+      }
+
       /*
-       * Explicit user action:
-       * quantity reached zero -> delete.
+       * Quantity reached zero:
+       * explicit user action -> delete.
        */
+
       if (nextQuantity <= 0) {
         const { error } =
           await supabase
@@ -973,6 +995,8 @@ if (!user) {
           .update({
             quantity:
               nextQuantity,
+            updated_at:
+              new Date().toISOString(),
           })
           .eq(
             "id",
@@ -1016,17 +1040,16 @@ if (!user) {
    * ============================================================
    * REMOVE ITEM
    * ============================================================
-   *
-   * This is an explicit user action.
    */
 
   async function removeItem(
     productId: string,
   ) {
-    const removed = cart.find(
-      (item) =>
-        item.id === productId,
-    );
+    const removed =
+      cart.find(
+        (item) =>
+          item.id === productId,
+      );
 
     if (!removed) return;
 
@@ -1137,6 +1160,7 @@ if (!user) {
       /*
        * Explicit Save for Later action.
        */
+
       const { error } =
         await supabase
           .from("cart_items")
@@ -1280,6 +1304,8 @@ if (!user) {
             .from("cart_items")
             .update({
               quantity,
+              updated_at:
+                new Date().toISOString(),
             })
             .eq(
               "id",
@@ -1340,6 +1366,8 @@ if (!user) {
             product_id:
               item.id,
             quantity,
+            updated_at:
+              new Date().toISOString(),
           })
           .select(
             "id,quantity",
@@ -1528,12 +1556,12 @@ if (!user) {
    * FRESH CHECKOUT VALIDATION
    * ============================================================
    *
-   * IMPORTANT:
-   *
    * No cart_items DELETE happens here.
    *
-   * Unavailable products are simply excluded from the active
-   * checkout cart. Their database cart_items rows remain stored.
+   * Unavailable products are simply excluded from
+   * the active checkout cart.
+   *
+   * Their database cart_items rows remain stored.
    */
 
   async function validateCartBeforeCheckout(): Promise<boolean> {
@@ -1683,6 +1711,7 @@ if (!user) {
          * Keep database cart_items.
          * Do not include it in checkout.
          */
+
         if (!product) {
           continue;
         }
@@ -1691,6 +1720,7 @@ if (!user) {
          * Product inactive:
          * Keep database cart_items.
          */
+
         if (
           product.is_active ===
           false
@@ -1702,6 +1732,7 @@ if (!user) {
          * Product out of stock:
          * Keep database cart_items.
          */
+
         if (
           product.stock <= 0
         ) {
@@ -1723,9 +1754,10 @@ if (!user) {
           );
 
         /*
-         * If current requested quantity is greater than stock,
-         * only quantity is corrected. Row is never deleted.
+         * Quantity greater than stock:
+         * only quantity is corrected.
          */
+
         if (
           quantity !==
           requested
@@ -1736,6 +1768,8 @@ if (!user) {
             .from("cart_items")
             .update({
               quantity,
+              updated_at:
+                new Date().toISOString(),
             })
             .eq(
               "id",
@@ -1766,9 +1800,13 @@ if (!user) {
 
       /*
        * Update active UI only.
-       * Database cart_items that are unavailable remain untouched.
+       *
+       * Database cart_items that are unavailable
+       * remain untouched.
        */
+
       setCart(nextCart);
+
       writeStorage(
         CART_KEY,
         nextCart,
@@ -1791,8 +1829,10 @@ if (!user) {
         );
 
         /*
-         * User should see the updated amount before checkout.
+         * User should see updated amount
+         * before checkout.
          */
+
         return false;
       }
 
@@ -1830,8 +1870,10 @@ if (!user) {
      * Checkout page can read cart_items directly.
      *
      * These localStorage snapshots are compatibility/cache only.
+     *
      * NO cart_items are deleted here.
      */
+
     writeStorage(
       CHECKOUT_CART_KEY,
       cart.map(
@@ -1865,6 +1907,12 @@ if (!user) {
     window.location.href =
       "/dashboard/products";
   }
+
+  /*
+   * ============================================================
+   * LOADING
+   * ============================================================
+   */
 
   if (loading) {
     return <CartLoading />;
@@ -2131,9 +2179,7 @@ if (!user) {
                   </div>
                 </section>
 
-                {/* =================================================
-                    PRODUCT CARDS
-                ================================================= */}
+                {/* PRODUCT CARDS */}
 
                 <div className="space-y-4">
                   {cart.map(
@@ -2496,7 +2542,6 @@ if (!user) {
 
               {/* =================================================
                   RIGHT / ORDER SUMMARY
-                  Visible on mobile also
               ================================================= */}
 
               <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -2937,75 +2982,110 @@ if (!user) {
 
       {/* ============================================================
           MOBILE BOTTOM NAVIGATION
-          Same PrimeCart navigation used across Dashboard pages
-          Cart is the active section on this page.
       ============================================================ */}
+
       <nav className="fixed bottom-3 left-3 right-3 z-[100] md:hidden">
         <div className="grid h-[68px] grid-cols-5 items-center rounded-[22px] border border-[#eadfc9] bg-white/95 px-2 shadow-[0_12px_40px_rgba(75,55,20,0.16)] backdrop-blur-xl dark:border-[#3a3224] dark:bg-[#171512]/95">
-
           {/* HOME */}
+
           <Link
             href="/dashboard"
             className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition dark:text-[#aaa092]"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538] dark:group-hover:bg-[#211c14]">
-              <Home size={19} strokeWidth={2} />
+              <Home
+                size={19}
+                strokeWidth={2}
+              />
             </div>
-            <span className="text-[10px] font-semibold">Home</span>
+
+            <span className="text-[10px] font-semibold">
+              Home
+            </span>
           </Link>
 
           {/* CATEGORIES */}
+
           <Link
             href="/dashboard/categories"
             className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition dark:text-[#aaa092]"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538] dark:group-hover:bg-[#211c14]">
-              <LayoutGrid size={19} strokeWidth={2} />
+              <LayoutGrid
+                size={19}
+                strokeWidth={2}
+              />
             </div>
-            <span className="text-[10px] font-semibold">Categories</span>
+
+            <span className="text-[10px] font-semibold">
+              Categories
+            </span>
           </Link>
 
           {/* WISHLIST */}
+
           <Link
             href="/dashboard/wishlist"
             className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition dark:text-[#aaa092]"
           >
             <div className="relative flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538] dark:group-hover:bg-[#211c14]">
-              <Heart size={19} strokeWidth={2} />
+              <Heart
+                size={19}
+                strokeWidth={2}
+              />
             </div>
-            <span className="text-[10px] font-semibold">Wishlist</span>
+
+            <span className="text-[10px] font-semibold">
+              Wishlist
+            </span>
           </Link>
 
           {/* CART — ACTIVE */}
+
           <Link
             href="/dashboard/cart"
             className="flex h-full flex-col items-center justify-center gap-1 text-[#977538]"
           >
             <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-[#f3ead8] shadow-sm dark:bg-[#211c14]">
-              <ShoppingCart size={19} strokeWidth={2.2} className="text-[#977538]" />
+              <ShoppingCart
+                size={19}
+                strokeWidth={2.2}
+                className="text-[#977538]"
+              />
+
               {itemCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-[#b9975b] px-1 text-[8px] font-bold text-white dark:border-[#171512]">
-                  {itemCount > 99 ? "99+" : itemCount}
+                  {itemCount > 99
+                    ? "99+"
+                    : itemCount}
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-bold">Cart</span>
+
+            <span className="text-[10px] font-bold">
+              Cart
+            </span>
           </Link>
 
           {/* ACCOUNT */}
+
           <Link
             href="/dashboard/profile"
             className="group flex h-full flex-col items-center justify-center gap-1 text-[#8a7d6b] transition dark:text-[#aaa092]"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-xl transition group-hover:bg-[#f5ecdc] group-hover:text-[#977538] dark:group-hover:bg-[#211c14]">
-              <UserRound size={19} strokeWidth={2} />
+              <UserRound
+                size={19}
+                strokeWidth={2}
+              />
             </div>
-            <span className="text-[10px] font-semibold">Account</span>
-          </Link>
 
+            <span className="text-[10px] font-semibold">
+              Account
+            </span>
+          </Link>
         </div>
       </nav>
-
     </main>
   );
 }
