@@ -981,38 +981,38 @@ export default function CategoriesPage() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="category-hero relative overflow-hidden rounded-[24px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] via-[#fffaf0] to-[#f8efd9] px-4 py-5 shadow-[0_20px_65px_rgba(120,90,30,0.07)] sm:rounded-[32px] sm:px-9 sm:py-9 lg:px-12 lg:py-12"
+          className="relative overflow-hidden rounded-[32px] border border-[#eadfc9] bg-gradient-to-br from-[#fffdf8] via-[#fffaf0] to-[#f8efd9] px-6 py-9 shadow-[0_20px_65px_rgba(120,90,30,0.07)] sm:px-9 lg:px-12 lg:py-12"
         >
           <div className="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-[#c79a3b]/10 blur-3xl" />
 
-          <div className="category-hero-inner relative grid grid-cols-[1.15fr_0.85fr] items-center gap-3 sm:gap-6 lg:grid-cols-[1.35fr_0.65fr] lg:gap-10">
+          <div className="relative grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#c79a3b]/20 bg-white/75 px-4 py-2 text-[10px] font-black uppercase tracking-[0.17em] text-[#9a741e]">
                 <Sparkles size={13} />
                 Smart Shopping
               </div>
 
-              <h1 className="mt-3 max-w-3xl text-xl font-black leading-tight tracking-[-0.045em] sm:mt-5 sm:text-4xl lg:text-6xl">
+              <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-[-0.045em] sm:text-4xl lg:text-6xl">
                 Find what you need,
                 <span className="text-[#b8872d]"> faster.</span>
               </h1>
 
-              <p className="mt-2 max-w-2xl text-[11px] leading-4 text-[#7f7461] sm:mt-4 sm:text-base sm:leading-7">
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#7f7461] sm:text-base">
                 Explore PrimeCart categories, discover trending products,
                 compare deals and find the right products for your needs.
               </p>
 
-              <div className="mt-3 flex flex-col gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
+              <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard/primematch"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-2.5 py-2 text-[10px] font-bold text-white shadow-sm sm:rounded-xl sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-5 py-3 text-sm font-bold text-white shadow-sm"
                 >
                   <Sparkles size={16} />
                   Try PrimeMatch
                 </Link>
                 <Link
                   href="/dashboard/products"
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#dfcfac] bg-white/80 px-2.5 py-2 text-[10px] font-bold text-[#816222] sm:rounded-xl sm:gap-2 sm:px-5 sm:py-3 sm:text-sm"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#dfcfac] bg-white/80 px-5 py-3 text-sm font-bold text-[#816222]"
                 >
                   Browse Products
                   <ArrowRight size={16} />
@@ -1021,7 +1021,7 @@ export default function CategoriesPage() {
             </div>
 
             {/* Overall statistics from loaded products. */}
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <HeroStat
                 icon={<Layers3 size={18} />}
                 value={String(categories.length)}
@@ -1053,8 +1053,19 @@ export default function CategoriesPage() {
             title="What are you shopping for?"
             description="Start with a goal instead of searching through everything."
           />
-          <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <IntentCard
+              icon={<Gamepad2 size={22} />}
+              title="Build a Gaming Setup"
+              text="Gaming gear, accessories and essentials."
+              href="/dashboard/setup-builder?type=gaming"
+            />
+            <IntentCard
+              icon={<Home size={22} />}
+              title="Setup My Home"
+              text="Useful products for a smarter home."
+              href="/dashboard/setup-builder?type=home"
+            />
             <IntentCard
               icon={<Smartphone size={22} />}
               title="Upgrade My Tech"
@@ -1106,7 +1117,7 @@ export default function CategoriesPage() {
                           className="h-full w-full object-contain p-5 transition group-hover:scale-105"
                           onError={(event) => {
                             event.currentTarget.onerror = null;
-                            event.currentTarget.style.display = "none";
+                            event.currentTarget.src = "/logo.png";
                           }}
                         />
                         {stat?.flashDeals > 0 && (
@@ -1251,7 +1262,7 @@ export default function CategoriesPage() {
               variants={stagger}
               initial="hidden"
               animate="visible"
-              className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               {filteredCategories.map((category) => (
                 <motion.div
@@ -1331,6 +1342,13 @@ export default function CategoriesPage() {
             description="Create a product combination around the amount you want to spend."
             href="/dashboard/budget-builder"
           />
+          <ToolCard
+            icon={<Gamepad2 size={22} />}
+            eyebrow="Setup Builder"
+            title="Build your setup."
+            description="Create gaming, college, work, fitness or home setups."
+            href="/dashboard/setup-builder"
+          />
         </section>
 
         {/* -------------------- FINAL SHOPPING CTA -------------------- */}
@@ -1354,19 +1372,6 @@ export default function CategoriesPage() {
           </Link>
         </section>
       </div>
-
-      <style jsx global>{`
-        @media (max-width: 639px) {
-          .category-hero-inner > div:first-child { min-width: 0; }
-          .category-hero-inner > div:first-child > div:first-child { font-size: 8px; padding: 5px 7px; letter-spacing: .08em; }
-          .category-hero-inner > div:first-child > div:first-child svg { width: 10px; height: 10px; }
-          .category-hero-inner > div:last-child { min-width: 0; }
-          .category-hero-inner > div:last-child > div { min-width: 0; padding: 8px 5px; border-radius: 12px; }
-          .category-hero-inner > div:last-child > div > div:first-child { font-size: 15px; }
-          .category-hero-inner > div:last-child > div > div:last-child { font-size: 8px; }
-          .category-hero-inner > div:last-child svg { width: 13px; height: 13px; }
-        }
-      `}</style>
 
       {/* -------------------- MOBILE FILTER DRAWER -------------------- */}
       {showMobileFilters && (
@@ -1526,12 +1531,14 @@ function HeroStat({
   label: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[#eadfc9] bg-white/80 p-4 shadow-sm">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a47720]">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-[#eadfc9] bg-white/80 p-3 shadow-sm sm:p-4">
+      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff2cf] text-[#a47720] sm:h-9 sm:w-9">
         {icon}
       </div>
-      <div className="mt-3 text-2xl font-black">{value}</div>
-      <div className="mt-0.5 text-xs font-semibold text-[#958a76]">
+      <div className="mt-2 min-w-0 break-words text-xl font-black leading-tight tabular-nums sm:mt-3 sm:text-2xl">
+        {value}
+      </div>
+      <div className="mt-1 break-words text-[10px] font-semibold leading-tight text-[#958a76] sm:text-xs">
         {label}
       </div>
     </div>
@@ -1578,7 +1585,7 @@ function IntentCard({
   href: string;
 }) {
   return (
-    <Link href={href} className="group block h-full min-w-[220px] sm:min-w-0">
+    <Link href={href} className="group block h-full">
       <div className="h-full rounded-2xl border border-[#eadfc9] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#c79a3b]/40">
         <div className="flex items-center justify-between">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff6df] text-[#b8872d] transition group-hover:bg-[#c79a3b] group-hover:text-white">
@@ -1785,6 +1792,33 @@ function CategoryCard({
           )}
         </div>
 
+        {/* Small product image previews. */}
+        {stats.products.length > 0 && (
+          <div className="mt-5 flex items-center gap-2">
+            {stats.products.slice(0, 3).map((product) => (
+              <div
+                key={product.id}
+                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffaf0]"
+              >
+                <img
+                  src={getImage(product.image_url)}
+                  alt={product.name}
+                  className="h-full w-full object-contain p-1"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/logo.png";
+                  }}
+                />
+              </div>
+            ))}
+            {stats.products.length > 3 && (
+              <span className="text-xs font-bold text-[#998d78]">
+                +{stats.products.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* ACTION BUTTONS */}
         <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
 
@@ -1874,7 +1908,7 @@ function MiniCategory({
             className="h-full w-full object-contain p-2"
             onError={(event) => {
               event.currentTarget.onerror = null;
-              event.currentTarget.style.display = "none";
+              event.currentTarget.src = "/logo.png";
             }}
           />
         </div>
@@ -1965,7 +1999,7 @@ function ToolCard({
 
 function LoadingGrid() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
         <div
           key={index}
