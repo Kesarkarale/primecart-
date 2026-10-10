@@ -1649,47 +1649,6 @@ const handleAddToCart = async () => {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-[#eadfcb] bg-white px-3 py-3 text-center">
-                  <ShieldCheck
-                    size={18}
-                    className="mx-auto text-[#9b753d]"
-                  />
-                  <p className="mt-1 text-[10px] font-bold text-[#665a49]">
-                    Secure Shopping
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-[#eadfcb] bg-white px-3 py-3 text-center">
-                  <BadgeCheck
-                    size={18}
-                    className="mx-auto text-[#9b753d]"
-                  />
-                  <p className="mt-1 text-[10px] font-bold text-[#665a49]">
-                    Genuine Product
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-[#eadfcb] bg-white px-3 py-3 text-center">
-                  <RotateCcw
-                    size={18}
-                    className="mx-auto text-[#9b753d]"
-                  />
-                  <p className="mt-1 text-[10px] font-bold text-[#665a49]">
-                    Easy Returns
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-[#eadfcb] bg-white px-3 py-3 text-center">
-                  <Truck
-                    size={18}
-                    className="mx-auto text-[#9b753d]"
-                  />
-                  <p className="mt-1 text-[10px] font-bold text-[#665a49]">
-                    Fast Delivery
-                  </p>
-                </div>
-              </div>
             </div>
 
             <div className="pc-fade-up lg:sticky lg:top-[88px]">
