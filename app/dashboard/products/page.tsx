@@ -1814,6 +1814,116 @@ export default function ProductsPage() {
 
 
   /* =======================================================
+     FILTER COUNT
+  ======================================================= */
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+
+    if (selectedCategory !== "all") count++;
+    if (minPrice) count++;
+    if (maxPrice) count++;
+    if (ratingFilter !== "0") count++;
+    if (discountFilter !== "0") count++;
+    if (stockOnly) count++;
+    count += selectedBrands.length;
+
+    return count;
+  }, [
+    selectedCategory,
+    minPrice,
+    maxPrice,
+    ratingFilter,
+    discountFilter,
+    stockOnly,
+    selectedBrands,
+  ]);
+
+  /* =======================================================
+     CLEAR FILTERS
+  ======================================================= */
+
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setSelectedCategory("all");
+    setMinPrice("");
+    setMaxPrice("");
+    setRatingFilter("0");
+    setDiscountFilter("0");
+    setStockOnly(false);
+    setSelectedBrands([]);
+    setSort("featured");
+  }, []);
+
+  /* =======================================================
+     WISHLIST
+     Authenticated users are saved in public.wishlist_items.
+     Guests use localStorage until they sign in.
+  ======================================================= */
+
+  const toggleWishlist = useCallback(
+    async (product: Product) => {
+      const exists = wishlistIds.includes(product.id);
+      const previous = wishlistIds;
+      const next = exists
+        ? wishlistIds.filter((id) => id !== product.id)
+        : [...wishlistIds, product.id];
+
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+        if (authError) throw authError;
+
+        if (user) {
+          if (exists) {
+            const { error } = await supabase
+              .from("wishlist_items")
+              .delete()
+              .eq("user_id", user.id)
+              .eq("product_id", product.id);
+            if (error) throw error;
+          } else {
+            // Check first so this works even when a unique constraint is absent.
+            const { data: existingRow, error: lookupError } = await supabase
+              .from("wishlist_items")
+              .select("product_id")
+              .eq("user_id", user.id)
+              .eq("product_id", product.id)
+              .maybeSingle();
+            if (lookupError) throw lookupError;
+
+            if (!existingRow) {
+              const { error } = await supabase.from("wishlist_items").insert({
+                user_id: user.id,
+                product_id: product.id,
+              });
+              if (error) throw error;
+            }
+          }
+        } else {
+          // Guest wishlist only; do not write anonymous records to the database.
+          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+        }
+
+        setWishlistIds(next);
+        try {
+          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+        } catch {
+          // Database is authoritative for signed-in users.
+        }
+        showToast(exists ? "Removed from wishlist" : "Added to wishlist");
+      } catch (err) {
+        console.error("Wishlist update failed:", err);
+        setWishlistIds(previous);
+        showToast("Wishlist could not be saved. Please try again.");
+      }
+    },
+    [wishlistIds, showToast, supabase]
+  );
+
+  /* =======================================================
      CART
      Signed-in users: public.cart_items
      Guests: localStorage fallback
