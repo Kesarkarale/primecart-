@@ -1668,31 +1668,6 @@ function CategoryCard({
           {category.name}
         </div>
 
-        {/* Wishlist is independent from card navigation. */}
-        <button
-          type="button"
-          aria-label={
-            isWishlisted
-              ? `Remove ${category.name} from wishlist`
-              : `Add ${category.name} to wishlist`
-          }
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onWishlist();
-          }}
-          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border shadow-sm transition ${
-            isWishlisted
-              ? "border-[#c79a3b]/30 bg-[#fff0c8] text-[#a47720]"
-              : "border-white/80 bg-white/90 text-[#9c907b] hover:text-[#a47720]"
-          }`}
-        >
-          <Heart
-            size={15}
-            className={isWishlisted ? "fill-current" : ""}
-          />
-        </button>
-
         {/* Live flash deal count. */}
         {stats.flashDeals > 0 && (
           <div className="absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-[#c79a3b] px-3 py-1.5 text-[10px] font-black text-white shadow-sm">
