@@ -21,7 +21,6 @@ import {
   Star,
   Target,
   TrendingUp,
-  X,
   Zap,
 } from "lucide-react";
 
@@ -84,7 +83,7 @@ type Budget = {
 type Importance = {
   budget: number;
   quality: number;
-  brand: number;
+  premium: number;
   rating: number;
 };
 
@@ -341,26 +340,6 @@ const SUBCATEGORY_MAP: Record<string, { label: string; keywords: string[] }[]> =
     { label: "Eyewear Accessories", keywords: ["eyewear accessory", "glasses case", "cleaning cloth"] },
   ],
 };
-
-function getCategoryIcon(categoryName: string) {
-  const name = normalize(categoryName);
-  if (name.includes("mobile")) return "📱";
-  if (name.includes("electronics")) return "🎧";
-  if (name.includes("home") || name.includes("kitchen")) return "🏠";
-  if (name.includes("fashion")) return "👕";
-  if (name.includes("footwear") || name.includes("shoe")) return "👟";
-  if (name.includes("beauty")) return "✨";
-  if (name.includes("toy") || name.includes("baby")) return "🧸";
-  if (name.includes("sport") || name.includes("fitness")) return "🏃";
-  if (name.includes("appliance")) return "⚡";
-  if (name.includes("automotive")) return "🚗";
-  if (name.includes("gaming")) return "🎮";
-  if (name.includes("watch")) return "⌚";
-  if (name.includes("bag")) return "👜";
-  if (name.includes("book")) return "📚";
-  if (name.includes("eyewear")) return "👓";
-  return "•";
-}
 
 function getSubcategoryOptions(categoryName: string) {
   const name = normalize(categoryName);
@@ -921,7 +900,7 @@ function scoreProduct(
   purpose: string,
   budget: string,
   categoryId: string,
-  brand: string,
+  productPreference: string,
   search: string,
   importance: Importance
 ): MatchProduct {
@@ -1000,23 +979,19 @@ function scoreProduct(
     }
   }
 
-  /* BRAND */
+  /* PREMIUM: prefer higher-quality products near the top of the selected budget. */
 
-  let brandScore = 80;
-
-  if (
-    brand === "Any Brand" ||
-    brand === "all"
-  ) {
-    brandScore = 80;
-  } else if (
-    normalize(product.brand) ===
-    normalize(brand)
-  ) {
-    brandScore = 100;
-  } else {
-    brandScore = 25;
-  }
+  const selectedBudgetForPremium = BUDGETS.find((item) => item.id === budget);
+  const budgetMax = selectedBudgetForPremium?.max ?? Infinity;
+  const price = Number(product.price) || 0;
+  const premiumPriceScore = budgetMax === Infinity
+    ? clamp(Math.round((Math.log10(price + 1) / Math.log10(150001)) * 100))
+    : budgetMax > 0
+      ? clamp(Math.round((price / budgetMax) * 100))
+      : 0;
+  const premiumScore = clamp(Math.round(
+    calculateQualityScore(product) * 0.7 + premiumPriceScore * 0.3
+  ));
 
   /* RATING */
 
@@ -1060,14 +1035,14 @@ function scoreProduct(
   const rawWeights = {
     budget: importance.budget,
     quality: importance.quality,
-    brand: importance.brand,
+    premium: importance.premium,
     rating: importance.rating,
   };
 
   const totalPriority =
     rawWeights.budget +
     rawWeights.quality +
-    rawWeights.brand +
+    rawWeights.premium +
     rawWeights.rating;
 
   const normalizedBudget =
@@ -1082,9 +1057,9 @@ function scoreProduct(
         totalPriority
       : 0.25;
 
-  const normalizedBrand =
+  const normalizedPremium =
     totalPriority > 0
-      ? rawWeights.brand /
+      ? rawWeights.premium /
         totalPriority
       : 0.25;
 
@@ -1097,7 +1072,7 @@ function scoreProduct(
   /*
     Purpose + category always remain important.
     User-controlled importance decides how
-    budget / quality / brand / rating are balanced.
+    budget / quality / premium / rating are balanced.
   */
 
   const score =
@@ -1112,14 +1087,18 @@ function scoreProduct(
     ratingScore *
       normalizedRating *
       0.10 +
-    brandScore *
-      normalizedBrand *
+    premiumScore *
+      normalizedPremium *
       0.08 +
     availabilityScore * 0.04 +
     searchScore * 0.08;
 
   let finalScore =
     Math.round(score);
+
+  if (productPreference === "Premium") {
+    finalScore += Math.round(premiumScore * 0.08);
+  }
 
   if (product.is_featured) {
     finalScore += 2;
@@ -1179,9 +1158,9 @@ function scoreProduct(
     );
   }
 
-  if (brandScore >= 95) {
+  if (premiumScore >= 90) {
     reasons.push(
-      "Preferred brand"
+      "Premium-quality pick"
     );
   }
 
@@ -1241,58 +1220,12 @@ function scoreProduct(
       purpose: purposeScore,
       quality: qualityScore,
       rating: ratingScore,
-      brand: brandScore,
+      brand: premiumScore,
       availability:
         availabilityScore,
       search: searchScore,
     },
   };
-}
-
-/* =========================================================
-   SMART SHOPPING INTELLIGENCE
-========================================================= */
-
-type SmartQuery = {
-  budgetMax: number | null;
-  purpose: string | null;
-  categoryHint: string | null;
-  keywords: string[];
-};
-
-function parseSmartQuery(query: string): SmartQuery {
-  const value = normalize(query);
-  const numberMatch = value.match(/(?:under|below|less than|upto|up to|within|under rs|under ₹|below rs|below ₹)\s*₹?\s*([\d,]+)/i)
-    || value.match(/₹\s*([\d,]+)/i)
-    || value.match(/(?:rs\.?|inr)\s*([\d,]+)/i);
-
-  const budgetMax = numberMatch
-    ? Number(String(numberMatch[1]).replace(/,/g, ""))
-    : null;
-
-  let purpose: string | null = null;
-  if (/\b(running|gym|fitness|workout|sports|yoga|training)\b/i.test(value)) purpose = "fitness";
-  else if (/\b(study|student|office|work|work from home|productivity|desk)\b/i.test(value)) purpose = "work";
-  else if (/\b(gaming|game|console|music|movie|movies|speaker|headset)\b/i.test(value)) purpose = "entertainment";
-  else if (/\b(fashion|shirt|dress|jacket|watch|bag|wallet|style)\b/i.test(value)) purpose = "style";
-  else if (/\b(home|kitchen|coffee|appliance|decor|furniture)\b/i.test(value)) purpose = "home";
-
-  let categoryHint: string | null = null;
-  if (/\b(shoes?|sneakers?|footwear|running shoes)\b/i.test(value)) categoryHint = "footwear";
-  else if (/\b(phone|mobile|smartphone|iphone|android)\b/i.test(value)) categoryHint = "mobile";
-  else if (/\b(laptop|notebook|computer)\b/i.test(value)) categoryHint = "work";
-  else if (/\b(headphones?|earbuds?|headset|speaker)\b/i.test(value)) categoryHint = "audio";
-  else if (/\b(watch|smartwatch)\b/i.test(value)) categoryHint = "watch";
-  else if (/\b(bag|backpack|wallet)\b/i.test(value)) categoryHint = "bag";
-
-  const stopWords = new Set(["mala","mujhe","i","need","want","for","under","below","less","than","rs","inr","the","a","an","with","and","please","pahije","chahiye","ke","liye","hai"]);
-  const keywords = value
-    .replace(/₹?\s*[\d,]+/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 2 && !stopWords.has(word))
-    .slice(0, 8);
-
-  return { budgetMax, purpose, categoryHint, keywords };
 }
 
 /* =========================================================
@@ -1304,20 +1237,6 @@ function getMatchTier(score: number) {
   if (score >= 84) return { label: "Strong Match", tone: "strong" };
   if (score >= 72) return { label: "Good Match", tone: "good" };
   return { label: "Potential Match", tone: "potential" };
-}
-
-function getSmartSearchHints(query: string) {
-  const value = normalize(query);
-  if (!value) return [];
-
-  const hints: string[] = [];
-  if (/\b(?:under|below|less than)\s*\d+/i.test(value)) hints.push("Budget detected");
-  if (/\b(?:running|gym|fitness|workout|sports)\b/i.test(value)) hints.push("Fitness intent");
-  if (/\b(?:study|office|work|laptop|desk)\b/i.test(value)) hints.push("Work & Study intent");
-  if (/\b(?:gaming|game|console|headset)\b/i.test(value)) hints.push("Entertainment intent");
-  if (/\b(?:fashion|shirt|dress|jacket|shoes|watch|bag)\b/i.test(value)) hints.push("Style intent");
-  if (/\b(?:home|kitchen|coffee|appliance|decor)\b/i.test(value)) hints.push("Home intent");
-  return hints;
 }
 
 /* =========================================================
@@ -1497,9 +1416,9 @@ function ProductCard({
   );
 
   return (
-    <article className="group overflow-hidden rounded-[26px] border border-[#e8dfcf] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d9bf7b] hover:shadow-[0_22px_55px_rgba(80,60,20,0.10)]">
+    <article className="group overflow-hidden rounded-2xl border border-[#e8dfcf] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#d9bf7b] hover:shadow-[0_22px_55px_rgba(80,60,20,0.10)]">
       {/* IMAGE */}
-      <div className="relative h-[280px] overflow-hidden bg-[#faf9f6]">
+      <div className="relative h-[170px] overflow-hidden bg-[#faf9f6] sm:h-[230px] lg:h-[260px]">
         <Link
           href={`/dashboard/products/${product.id}`}
           className="block h-full w-full"
@@ -1563,7 +1482,7 @@ function ProductCard({
       </div>
 
       {/* CONTENT */}
-      <div className="p-2 sm:p-5">
+      <div className="p-3 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <span className="max-w-[65%] truncate text-[10px] font-black uppercase tracking-[0.14em] text-[#a17b2f]">
             {product.categoryName}
@@ -1777,9 +1696,6 @@ export default function PrimeMatchPage() {
   const [categories, setCategories] =
     useState<Category[]>([]);
 
-  const [brands, setBrands] =
-    useState<string[]>([]);
-
   const [wishlist, setWishlist] =
     useState<string[]>([]);
 
@@ -1823,18 +1739,17 @@ const [matchStage, setMatchStage] =
   const [subcategory, setSubcategory] =
     useState("all");
 
+  // Standard shows general matches; Premium prioritizes quality and higher prices within budget.
   const [brand, setBrand] =
-    useState("Any Brand");
+    useState("Standard");
 
-  const [search, setSearch] =
-    useState("");
-
+  // Keep exactly one priority selected by default.
   const [importance, setImportance] =
     useState<Importance>({
-      budget: 70,
-      quality: 75,
-      brand: 40,
-      rating: 65,
+      budget: 100,
+      quality: 45,
+      premium: 45,
+      rating: 45,
     });
 
 
@@ -1964,29 +1879,50 @@ const [matchStage, setMatchStage] =
         categoryResult,
         wishlistResult,
       ] = await Promise.all([
-        supabase
-          .from("products")
-          .select(
-            `
-              id,
-              category_id,
-              name,
-              slug,
-              short_description,
-              description,
-              price,
-              original_price,
-              stock,
-              image_url,
-              brand,
-              rating,
-              reviews_count,
-              is_featured,
-              is_flash_sale,
-              is_active
-            `
-          )
-          .eq("is_active", true),
+        // Supabase commonly limits a response to 1,000 rows. Load every
+        // active product in pages so later categories are not silently missed.
+        (async () => {
+          const pageSize = 1000;
+          const allProducts: Product[] = [];
+          let from = 0;
+
+          while (true) {
+            const { data, error } = await supabase
+              .from("products")
+              .select(
+                `
+                  id,
+                  category_id,
+                  name,
+                  slug,
+                  short_description,
+                  description,
+                  price,
+                  original_price,
+                  stock,
+                  image_url,
+                  brand,
+                  rating,
+                  reviews_count,
+                  is_featured,
+                  is_flash_sale,
+                  is_active
+                `
+              )
+              .eq("is_active", true)
+              .range(from, from + pageSize - 1);
+
+            if (error) return { data: null, error };
+
+            const page = (data ?? []) as Product[];
+            allProducts.push(...page);
+
+            if (page.length < pageSize) break;
+            from += pageSize;
+          }
+
+          return { data: allProducts, error: null };
+        })(),
 
         supabase
           .from("categories")
@@ -1998,7 +1934,7 @@ const [matchStage, setMatchStage] =
           }),
 
         supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .select("product_id")
           .eq(
             "user_id",
@@ -2036,25 +1972,6 @@ const [matchStage, setMatchStage] =
       setProducts(productData);
       setCategories(categoryData);
 
-      const uniqueBrands =
-        Array.from(
-          new Set(
-            productData
-              .map((item) =>
-                item.brand?.trim()
-              )
-              .filter(
-                (
-                  item
-                ): item is string =>
-                  Boolean(item)
-              )
-          )
-        ).sort((a, b) =>
-          a.localeCompare(b)
-        );
-
-      setBrands(uniqueBrands);
 
       setWishlist(
         (
@@ -2100,7 +2017,7 @@ const [matchStage, setMatchStage] =
           budget,
           category,
           brand,
-          search,
+          "",
           importance
         )
       )
@@ -2172,46 +2089,11 @@ const [matchStage, setMatchStage] =
     budget,
     category,
     brand,
-    search,
     importance,
   ]);
 
-  const filteredResults =
-    useMemo(() => {
-      if (!search.trim()) {
-        return allResults;
-      }
-
-      const query =
-        normalize(search);
-
-      return allResults.filter(
-        (product) => {
-          const text =
-            normalize(
-              [
-                product.name,
-                product.brand,
-                product.categoryName,
-                product.short_description,
-                product.description,
-              ].join(" ")
-            );
-
-          return query
-            .split(/\s+/)
-            .some((term) =>
-              text.includes(term)
-            );
-        }
-      );
-    }, [
-      allResults,
-      search,
-    ]);
-
   const subcategoryResults = useMemo(() => {
-    let pool = filteredResults;
+    let pool = allResults;
 
     // Category is already exact in allResults.
     // Subcategory is also exact: no related/alternative category products.
@@ -2223,12 +2105,7 @@ const [matchStage, setMatchStage] =
       );
     }
 
-    // Brand selection is strict.
-    if (brand !== "Any Brand" && brand !== "all") {
-      pool = pool.filter((product) =>
-        normalize(product.brand) === normalize(brand)
-      );
-    }
+    // Premium is a ranking preference, not a database brand filter.
 
     // Budget is strict. Never show an out-of-budget "related" alternative.
     const selectedBudget = BUDGETS.find((item) => item.id === budget);
@@ -2240,24 +2117,9 @@ const [matchStage, setMatchStage] =
       });
     }
 
-    // If the user entered a search term, every term must match the selected
-    // product data instead of showing a loosely related result.
-    if (search.trim()) {
-      const terms = normalize(search).split(/\s+/).filter(Boolean);
-      pool = pool.filter((product) => {
-        const text = normalize([
-          product.name,
-          product.brand,
-          product.short_description,
-          product.description,
-          product.categoryName,
-        ].join(" "));
-        return terms.every((term) => text.includes(term));
-      });
-    }
 
     return pool;
-  }, [filteredResults, category, subcategory, categories, brand, budget, search]);
+  }, [allResults, category, subcategory, categories, budget]);
 
   // Products stay hidden until the user explicitly runs PrimeMatch.
   // After matching, we keep a snapshot so changing controls does not
@@ -2292,15 +2154,6 @@ const [matchStage, setMatchStage] =
       )
     : 0;
 
-  const smartSearchHints = useMemo(
-    () => getSmartSearchHints(search),
-    [search]
-  );
-
-  const smartQuery = useMemo(
-    () => parseSmartQuery(search),
-    [search]
-  );
 
   const budgetAdvisor = useMemo(() => {
     if (!results.length) return null;
@@ -2518,7 +2371,7 @@ const [matchStage, setMatchStage] =
       if (exists) {
         const { error: deleteError } =
           await supabase
-            .from("wishlist")
+            .from("wishlist_items")
             .delete()
             .eq(
               "user_id",
@@ -2546,7 +2399,7 @@ const [matchStage, setMatchStage] =
       } else {
         const { error: insertError } =
           await supabase
-            .from("wishlist")
+            .from("wishlist_items")
             .insert({
               user_id: user.id,
               product_id:
@@ -2576,31 +2429,6 @@ const [matchStage, setMatchStage] =
         "Could not update wishlist."
       );
     }
-  }
-
-  function applySmartSearch() {
-    if (!search.trim()) {
-      setToast("Type what you are looking for first.");
-      return;
-    }
-
-    const parsed = smartQuery;
-    if (parsed.purpose) setPurpose(parsed.purpose);
-
-    if (parsed.budgetMax !== null) {
-      const match = BUDGETS.find((item) => parsed.budgetMax !== null && parsed.budgetMax <= item.max);
-      if (match) setBudget(match.id);
-    }
-
-    if (parsed.categoryHint) {
-      const categoryMatch = categories.find((item) => {
-        const name = normalize(item.name);
-        return name.includes(parsed.categoryHint || "") || keywordsForCategory(item.name).some((word) => parsed.categoryHint === "footwear" ? word.includes("shoe") || word.includes("foot") : name.includes(word));
-      });
-      if (categoryMatch) setCategory(categoryMatch.id);
-    }
-
-    setToast("PrimeMatch understood your search preferences.");
   }
 
   function surpriseMe() {
@@ -2704,14 +2532,13 @@ async function runMatch() {
   setBudget("1000-5000");
   setCategory("all");
   setSubcategory("all");
-  setBrand("Any Brand");
-  setSearch("");
+  setBrand("Standard");
 
   setImportance({
-    budget: 70,
-    quality: 75,
-    brand: 40,
-    rating: 65,
+    budget: 100,
+    quality: 45,
+    premium: 45,
+    rating: 45,
   });
 
   setMatching(false);
@@ -2984,80 +2811,8 @@ async function runMatch() {
               </div>
             </div>
 
-            {/* SEARCH */}
-            <div className="mt-4 sm:mt-7">
-              <label className="mb-2 block text-xs font-black text-gray-700">
-                Search for something specific
-              </label>
-
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(
-                      event.target.value
-                    )
-                  }
-                  placeholder="e.g. wireless headphones, running shoes, smartphone..."
-                  className="h-12 w-full rounded-2xl border border-[#e4dac8] bg-[#fffdfa] pl-11 pr-11 text-sm font-semibold outline-none transition placeholder:text-gray-400 focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
-                />
-
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSearch("")
-                    }
-                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:bg-[#fff8e8] hover:text-[#9b762b]"
-                  >
-                    <X
-                      size={14}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {smartSearchHints.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {smartSearchHints.map((hint) => (
-                    <span key={hint} className="inline-flex items-center gap-1.5 rounded-full border border-[#ead9ad] bg-[#fff8e8] px-3 py-1.5 text-[10px] font-black text-[#8f6b25]">
-                      <Sparkles size={11} />
-                      {hint}
-                    </span>
-                  ))}
-                  <span className="text-[10px] font-semibold text-gray-400 self-center">PrimeMatch will use these signals while ranking.</span>
-                </div>
-              )}
-            </div>
-
-            {/* SMART SEARCH UNDERSTANDING */}
-            {search.trim() && (
-              <div className="mt-3 rounded-2xl border border-[#eadfc9] bg-[#fffaf0] p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9b762b]">Smart search understanding</p>
-                    <p className="mt-1 text-xs font-semibold text-gray-500">PrimeMatch can translate your words into shopping preferences.</p>
-                  </div>
-                  <button type="button" onClick={applySmartSearch} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d8c38f] bg-white px-4 py-2.5 text-[10px] font-black text-[#8f6b24] transition hover:bg-[#fff4d6] sm:w-auto">
-                    <Sparkles size={13} /> Apply smart search
-                  </button>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {smartQuery.budgetMax !== null && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Budget ≤ {money(smartQuery.budgetMax)}</span>}
-                  {smartQuery.purpose && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Purpose: {PURPOSES.find((item) => item.id === smartQuery.purpose)?.title}</span>}
-                  {smartQuery.categoryHint && <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#956f27]">Category: {smartQuery.categoryHint}</span>}
-                  {smartQuery.keywords.slice(0, 4).map((word) => <span key={word} className="rounded-full border border-[#eadfc9] bg-white px-3 py-1.5 text-[10px] font-bold text-gray-500">{word}</span>)}
-                </div>
-              </div>
-            )}
-
             {/* FILTER GRID */}
-            <div className="mt-7 grid gap-4 md:grid-cols-3">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {/* BUDGET */}
               <div>
                 <label className="mb-2 block text-xs font-black text-gray-700">
@@ -3100,128 +2855,80 @@ async function runMatch() {
                 </div>
               </div>
 
-              {/* CATEGORY */}
-              <div className="md:col-span-3">
-                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <label className="block text-xs font-black text-gray-700">Choose a category</label>
-                    <p className="mt-1 text-[11px] font-semibold text-gray-400">Pick the shopping category first. We will show its relevant product types next.</p>
-                  </div>
-                  <span className="text-[10px] font-black text-[#a17b2f]">{categories.length} categories</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                  <button type="button" onClick={() => { setCategory("all"); setSubcategory("all"); }} className={`rounded-2xl border p-3 text-left transition sm:p-4 ${category === "all" ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm" : "border-[#eee5d6] bg-white hover:border-[#dbc58e] hover:bg-[#fffdfa]"}`}>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f6f2e9] text-sm font-black text-[#a17b2f]">✦</span>
-                    <p className="mt-2 text-[11px] font-black text-[#3f3525] sm:text-xs">All Categories</p>
-                    <p className="mt-0.5 text-[9px] font-semibold text-gray-400">Explore everything</p>
-                  </button>
-                  {categories.map((item) => {
-                    const selected = category === item.id;
-                    const icon = getCategoryIcon(item.name);
-                    return (
-                      <button key={item.id} type="button" onClick={() => { setCategory(item.id); setSubcategory("all"); setMatched(false); setMatchedResults([]); }} className={`rounded-2xl border p-3 text-left transition sm:p-4 ${selected ? "border-[#c9a24d] bg-[#fff8e8] shadow-sm" : "border-[#eee5d6] bg-white hover:border-[#dbc58e] hover:bg-[#fffdfa]"}`}>
-                        <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${selected ? "bg-[#c9a24d] text-white" : "bg-[#f6f2e9] text-[#a17b2f]"}`}>{icon}</span>
-                        <p className="mt-2 line-clamp-1 text-[11px] font-black text-[#3f3525] sm:text-xs">{item.name}</p>
-                        <p className="mt-0.5 text-[9px] font-semibold text-gray-400">Choose product type</p>
-                      </button>
-                    );
-                  })}
+              {/* CATEGORY: options come directly from the Supabase categories table */}
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-xs font-black text-gray-700">
+                  Choose a category
+                </label>
+                <div className="relative">
+                  <select
+                    value={category}
+                    onChange={(event) => {
+                      setCategory(event.target.value);
+                      setSubcategory("all");
+                      setMatched(false);
+                      setMatchedResults([]);
+                    }}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#e4dac8] bg-white px-3 pr-9 text-sm font-semibold outline-none focus:border-[#c9a24d]"
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((item) => (
+                      <option key={item.id} value={item.id}>{item.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </div>
 
-              {/* SUBCATEGORY */}
+              {/* SUBCATEGORY: narrows products inside the selected category */}
               {activeCategory && getSubcategoryOptions(activeCategory.name).length > 0 && (
-                <div className="md:col-span-3">
-                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <label className="block text-xs font-black text-gray-700">
-                        {activeCategory.name} Subcategory
-                      </label>
-                      <p className="mt-1 text-[11px] font-semibold text-gray-400">
-                        Choose a more specific product type for a better match.
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-black text-[#a17b2f]">
-                      {getSubcategoryOptions(activeCategory.name).length} types available
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                    <button
-                      type="button"
-                      onClick={() => setSubcategory("all")}
-                      className={`rounded-2xl border px-3 py-3 text-left text-xs font-black transition ${
-                        subcategory === "all"
-                          ? "border-[#c9a24d] bg-[#fff8e8] text-[#8f6b25] shadow-sm"
-                          : "border-[#eee5d6] bg-white text-gray-600 hover:border-[#dbc58e]"
-                      }`}
+                <div>
+                  <label className="mb-2 block text-xs font-black text-gray-700">
+                    Product type
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={subcategory}
+                      onChange={(event) => {
+                        setSubcategory(event.target.value);
+                        setMatched(false);
+                        setMatchedResults([]);
+                      }}
+                      className="h-12 w-full appearance-none rounded-xl border border-[#e4dac8] bg-white px-3 pr-9 text-sm font-semibold outline-none focus:border-[#c9a24d]"
                     >
-                      All {activeCategory.name}
-                    </button>
-
-                    {getSubcategoryOptions(activeCategory.name).map((item) => (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={() => setSubcategory(item.label)}
-                        className={`rounded-2xl border px-3 py-3 text-left text-xs font-black transition ${
-                          subcategory === item.label
-                            ? "border-[#c9a24d] bg-[#fff8e8] text-[#8f6b25] shadow-sm"
-                            : "border-[#eee5d6] bg-white text-gray-600 hover:border-[#dbc58e]"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                      <option value="all">All {activeCategory.name}</option>
+                      {getSubcategoryOptions(activeCategory.name).map((item) => (
+                        <option key={item.label} value={item.label}>{item.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
                 </div>
               )}
 
-              {/* BRAND */}
+              {/* PRODUCT PREFERENCE: Standard or Premium */}
               <div>
                 <label className="mb-2 block text-xs font-black text-gray-700">
-                  Brand
+                  Product preference
                 </label>
-
                 <div className="relative">
                   <select
                     value={brand}
-                    onChange={(event) =>
-                      setBrand(
-                        event.target
-                          .value
-                      )
-                    }
-                    className="h-12 w-full appearance-none rounded-2xl border border-[#e4dac8] bg-[#fffdfa] px-4 pr-10 text-sm font-bold outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
+                    onChange={(event) => {
+                      const nextPreference = event.target.value;
+                      setBrand(nextPreference);
+                      if (nextPreference === "Premium") {
+                        setImportance({ budget: 45, quality: 45, premium: 100, rating: 45 });
+                      }
+                    }}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#e4dac8] bg-white px-3 pr-9 text-sm font-semibold outline-none focus:border-[#c9a24d]"
                   >
-                    <option value="Any Brand">
-                      Any Brand
-                    </option>
-
-                    {brands.map(
-                      (item) => (
-                        <option
-                          key={
-                            item
-                          }
-                          value={
-                            item
-                          }
-                        >
-                          {
-                            item
-                          }
-                        </option>
-                      )
-                    )}
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium</option>
                   </select>
-
-                  <ChevronDown
-                    size={16}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
+                  <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
+                <p className="mt-1 text-[10px] text-gray-400">Premium favors higher quality and price within your budget.</p>
               </div>
             </div>
 
@@ -3242,28 +2949,28 @@ async function runMatch() {
                   label="Budget"
                   value={importance.budget}
                   onSelect={() =>
-                    setImportance({ budget: 100, quality: 45, brand: 45, rating: 45 })
+                    setImportance({ budget: 100, quality: 45, premium: 45, rating: 45 })
                   }
                 />
                 <ImportanceChoice
                   label="Quality"
                   value={importance.quality}
                   onSelect={() =>
-                    setImportance({ budget: 45, quality: 100, brand: 45, rating: 45 })
+                    setImportance({ budget: 45, quality: 100, premium: 45, rating: 45 })
                   }
                 />
                 <ImportanceChoice
-                  label="Brand"
-                  value={importance.brand}
+                  label="Premium"
+                  value={importance.premium}
                   onSelect={() =>
-                    setImportance({ budget: 45, quality: 45, brand: 100, rating: 45 })
+                    setImportance({ budget: 45, quality: 45, premium: 100, rating: 45 })
                   }
                 />
                 <ImportanceChoice
                   label="Rating"
                   value={importance.rating}
                   onSelect={() =>
-                    setImportance({ budget: 45, quality: 45, brand: 45, rating: 100 })
+                    setImportance({ budget: 45, quality: 45, premium: 45, rating: 100 })
                   }
                 />
               </div>
@@ -3775,7 +3482,7 @@ async function runMatch() {
                           />
 
                           <ScoreBar
-                            label="Brand"
+                            label="Premium"
                             value={
                               topMatch
                                 .breakdown
@@ -3985,7 +3692,7 @@ async function runMatch() {
                   </div>
 
                   {matchAnalytics && (
-                    <div className="rounded-[26px] border border-[#e8dfcf] bg-white p-6 shadow-sm">
+                    <div className="rounded-2xl border border-[#e8dfcf] bg-white p-6 shadow-sm">
                       <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3d2] text-[#9b762b]"><Award size={18} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">Recommendation analytics</p><h3 className="mt-1 text-xl font-black">What PrimeMatch found</h3></div></div>
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         {[["Analysed", matchAnalytics.analysed],["Matched", matchAnalytics.matched],["In budget", matchAnalytics.inBudget],["Highly rated", matchAnalytics.highRated],["Great deals", matchAnalytics.deals],["Available", matchAnalytics.available]].map(([label,value]) => <div key={String(label)} className="rounded-2xl bg-[#fffaf0] p-3"><p className="text-[10px] font-bold text-gray-400">{label}</p><p className="mt-1 text-lg font-black text-[#8f6b24]">{value}</p></div>)}
@@ -4095,10 +3802,8 @@ async function runMatch() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
-                  Try changing the category,
-                  brand, budget or search term.
-                  PrimeMatch will automatically
-                  recalculate the results.
+                  Try changing the category, product type or budget.
+                  PrimeMatch will check the matching products again.
                 </p>
 
                 <button
