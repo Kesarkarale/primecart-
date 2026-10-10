@@ -1055,18 +1055,6 @@ export default function CategoriesPage() {
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <IntentCard
-              icon={<Gamepad2 size={22} />}
-              title="Build a Gaming Setup"
-              text="Gaming gear, accessories and essentials."
-              href="/dashboard/setup-builder?type=gaming"
-            />
-            <IntentCard
-              icon={<Home size={22} />}
-              title="Setup My Home"
-              text="Useful products for a smarter home."
-              href="/dashboard/setup-builder?type=home"
-            />
-            <IntentCard
               icon={<Smartphone size={22} />}
               title="Upgrade My Tech"
               text="Mobile, electronics and everyday tech."
@@ -1326,7 +1314,7 @@ export default function CategoriesPage() {
         </section>
 
         {/* -------------------- SMART TOOLS -------------------- */}
-        <section className="mt-12 grid gap-5 lg:grid-cols-3">
+        <section className="mt-12 grid gap-5 lg:grid-cols-2">
           <ToolCard
             icon={<Sparkles size={22} />}
             eyebrow="PrimeMatch"
@@ -1341,13 +1329,6 @@ export default function CategoriesPage() {
             title="Plan your shopping."
             description="Create a product combination around the amount you want to spend."
             href="/dashboard/budget-builder"
-          />
-          <ToolCard
-            icon={<Gamepad2 size={22} />}
-            eyebrow="Setup Builder"
-            title="Build your setup."
-            description="Create gaming, college, work, fitness or home setups."
-            href="/dashboard/setup-builder"
           />
         </section>
 
