@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  GitCompare,
   Heart,
   Home,
   ImageOff,
@@ -94,7 +93,6 @@ type CartItem = {
 const CART_KEY = "primecart-cart";
 const WISHLIST_KEY = "primecart-wishlist";
 const RECENT_KEY = "primecart-recently-viewed";
-const COMPARE_KEY = "primecart-compare-products";
 const SIDEBAR_KEY = "primecart-sidebar-collapsed";
 
 const INR = new Intl.NumberFormat("en-IN", {
@@ -779,9 +777,7 @@ function ProductCard({
   product,
   categories,
   wishlistIds,
-  compareIds,
   toggleWishlist,
-  toggleCompare,
   addToCart,
   openQuickView,
   addingProductId,
@@ -790,9 +786,7 @@ function ProductCard({
   product: Product;
   categories: Category[];
   wishlistIds: string[];
-  compareIds: string[];
   toggleWishlist: (product: Product) => void;
-  toggleCompare: (product: Product) => void;
   addToCart: (product: Product, quantity?: number) => void;
   openQuickView: (product: Product) => void;
   addingProductId: string | null;
@@ -800,7 +794,6 @@ function ProductCard({
 }) {
   const discount = getDiscount(product);
   const isWishlisted = wishlistIds.includes(product.id);
-  const isCompared = compareIds.includes(product.id);
   const outOfStock = Number(product.stock ?? 0) <= 0;
 
   return (
@@ -952,17 +945,6 @@ function ProductCard({
 
         {/* BOTTOM */}
         <div className="mt-4 flex items-center gap-2 border-t border-[#f0e8da] pt-3">
-          <button
-            onClick={() => toggleCompare(product)}
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition ${
-              isCompared
-                ? "border-[#cdb47f] bg-[#f8efde] text-[#a77b32]"
-                : "border-[#e8dfd2] text-[#968a78] hover:border-[#cfb988] hover:text-[#a77b32]"
-            }`}
-            title="Compare"
-          >
-            <GitCompare size={14} />
-          </button>
 
           <button
             onClick={() => openQuickView(product)}
@@ -1268,144 +1250,6 @@ function QuickView({
 }
 
 /* =========================================================
-   COMPARE BAR
-========================================================= */
-
-function CompareBar({
-  products,
-  onRemove,
-  onClear,
-  onCompare,
-}: {
-  products: Product[];
-  onRemove: (id: string) => void;
-  onClear: () => void;
-  onCompare: () => void;
-}) {
-  if (!products.length) return null;
-
-  return (
-    <div className="fixed bottom-4 left-1/2 z-[70] w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-2xl border border-[#dfcfb0] bg-[#fffdf9]/95 p-3 shadow-[0_20px_55px_rgba(51,36,16,0.16)] backdrop-blur-xl">
-      <div className="flex items-center gap-3">
-        <div className="hidden shrink-0 sm:block">
-          <p className="text-xs font-extrabold text-[#4e402e]">
-            Compare Products
-          </p>
-          <p className="text-[9px] text-[#a09482]">
-            Up to 3 products
-          </p>
-        </div>
-
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="relative flex min-w-[145px] items-center gap-2 rounded-xl border border-[#eee4d4] bg-white p-2"
-            >
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#faf7f0]">
-                <ProductImage
-                  src={product.image_url}
-                  alt={product.name}
-                  imageClassName="p-1"
-                />
-              </div>
-
-              <p className="line-clamp-2 flex-1 text-[10px] font-bold text-[#5b4c39]">
-                {product.name}
-              </p>
-
-              <button
-                onClick={() => onRemove(product.id)}
-                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#4a3a27] text-white"
-              >
-                <X size={11} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={onClear}
-            className="rounded-lg px-2 py-2 text-[10px] font-bold text-[#927446] transition hover:bg-[#faf2e5]"
-          >
-            Clear
-          </button>
-          <button
-            onClick={onCompare}
-            disabled={products.length < 2}
-            className="rounded-lg bg-gradient-to-r from-[#c6a15d] to-[#a9803c] px-3 py-2 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
-          >
-            Compare now
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   COMPARE MODAL — SIDE-BY-SIDE PRODUCT COMPARISON
-========================================================= */
-function CompareModal({
-  products,
-  onClose,
-  onRemove,
-}: {
-  products: Product[];
-  onClose: () => void;
-  onRemove: (id: string) => void;
-}) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  const rows: { label: string; value: (product: Product) => ReactNode }[] = [
-    { label: "Price", value: (product) => <span className="font-black text-[#9b702e]">{formatPrice(product.price)}</span> },
-    { label: "Original price", value: (product) => product.original_price && Number(product.original_price) > Number(product.price) ? <span className="line-through text-[#9d9180]">{formatPrice(product.original_price)}</span> : <span className="text-[#a99d8b]">—</span> },
-    { label: "Discount", value: (product) => getDiscount(product) ? <span className="font-bold text-emerald-700">{getDiscount(product)}% off</span> : "—" },
-    { label: "Brand", value: (product) => product.brand || "Not specified" },
-    { label: "Rating", value: (product) => <span className="inline-flex items-center gap-1"><Star size={12} fill="currentColor" className="text-[#b9975b]" />{Number(product.rating || 0).toFixed(1)} <span className="text-[#9d9180]">({Number(product.reviews_count || 0).toLocaleString("en-IN")})</span></span> },
-    { label: "Availability", value: (product) => Number(product.stock || 0) > 0 ? <span className="font-bold text-emerald-700">In stock · {product.stock}</span> : <span className="font-bold text-red-600">Out of stock</span> },
-  ];
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-[#2d2418]/55 p-3 backdrop-blur-sm sm:p-6"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}
-    >
-      <motion.section
-        role="dialog" aria-modal="true" aria-labelledby="compare-title"
-        initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}
-        className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[#e7dac2] bg-[#fffdf9] shadow-2xl"
-      >
-        <header className="flex items-center justify-between border-b border-[#eee5d7] px-5 py-4 sm:px-7">
-          <div><p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#a17a3b]">Make the right choice</p><h2 id="compare-title" className="mt-1 text-lg font-black text-[#443729] sm:text-xl">Compare products <span className="text-sm font-bold text-[#9b8e7c]">({products.length}/3)</span></h2></div>
-          <button type="button" aria-label="Close comparison" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e7dece] bg-white text-[#746653] transition hover:bg-[#f8f1e5]"><X size={18} /></button>
-        </header>
-        <div className="overflow-auto p-4 sm:p-6">
-          <div className="min-w-[520px]" style={{ display: "grid", gridTemplateColumns: `110px repeat(${Math.max(products.length, 1)}, minmax(140px, 1fr))` }}>
-            <div className="border-b border-[#eee5d7] p-3 text-[10px] font-extrabold uppercase tracking-wide text-[#9a8d7b]">Product</div>
-            {products.map((product) => <div key={product.id} className="border-b border-l border-[#eee5d7] p-3">
-              <div className="relative mx-auto mb-3 h-28 w-full max-w-[150px] overflow-hidden rounded-xl bg-[#f8f4ec]"><ProductImage src={product.image_url} alt={product.name} imageClassName="p-3" /></div>
-              <p className="line-clamp-2 min-h-9 text-xs font-extrabold leading-4 text-[#4b3d2d]">{product.name}</p>
-              <div className="mt-3 flex flex-wrap gap-2"><Link href={`/dashboard/products/${product.id}`} onClick={onClose} className="text-[10px] font-bold text-[#9b702e] underline underline-offset-2">Details</Link><button type="button" onClick={() => onRemove(product.id)} className="text-[10px] font-bold text-[#a16a5a]">Remove</button></div>
-            </div>)}
-            {rows.map((row) => <Fragment key={row.label}><div className="border-b border-[#eee5d7] bg-[#fcfaf6] p-3 text-[10px] font-bold text-[#796b59]">{row.label}</div>{products.map((product) => <div key={`${row.label}-${product.id}`} className="border-b border-l border-[#eee5d7] p-3 text-[11px] text-[#5e5140]">{row.value(product)}</div>)}</Fragment>)}
-          </div>
-          {products.length < 2 && <p className="mt-4 text-xs text-[#8d7c65]">Add at least one more product to make a useful comparison.</p>}
-        </div>
-      </motion.section>
-    </motion.div>
-  );
-}
-
-/* =========================================================
    TRUST STRIP
 ========================================================= */
 
@@ -1501,9 +1345,6 @@ export default function ProductsPage() {
   /* USER FEATURES */
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [recentIds, setRecentIds] = useState<string[]>([]);
-  const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [compareHydrated, setCompareHydrated] = useState(false);
-  const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
   /* UI */
@@ -1534,28 +1375,39 @@ export default function ProductsPage() {
     setError("");
 
     try {
-      const [productsResult, categoriesResult] = await Promise.all([
-        supabase
-          .from("products")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false }),
-
+      // Supabase returns a limited number of rows per request. Fetch in pages
+      // so search can cover the full active product catalogue.
+      const [allProducts, categoriesResult] = await Promise.all([
+        (async () => {
+          const pageSize = 1000;
+          const rows: Product[] = [];
+          let from = 0;
+          while (true) {
+            const { data, error } = await supabase
+              .from("products")
+              .select("*")
+              .eq("is_active", true)
+              .order("created_at", { ascending: false })
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            const batch = (data || []) as Product[];
+            rows.push(...batch);
+            if (batch.length < pageSize) break;
+            from += pageSize;
+          }
+          return rows;
+        })(),
         supabase
           .from("categories")
           .select("id,name,slug")
           .order("name", { ascending: true }),
       ]);
 
-      if (productsResult.error) {
-        throw productsResult.error;
-      }
-
       if (categoriesResult.error) {
         throw categoriesResult.error;
       }
 
-      setProducts((productsResult.data || []) as Product[]);
+      setProducts(allProducts);
       setCategories((categoriesResult.data || []) as Category[]);
     } catch (err) {
       console.error("Products loading error:", err);
@@ -1568,21 +1420,6 @@ export default function ProductsPage() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
-
-  // Restore comparison selection without touching cart, wishlist or account data.
-  useEffect(() => {
-    setCompareIds(safeParse<string[]>(localStorage.getItem(COMPARE_KEY), []).slice(0, 3));
-    setCompareHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!compareHydrated) return;
-    try {
-      localStorage.setItem(COMPARE_KEY, JSON.stringify(compareIds));
-    } catch {
-      // Comparison still works for the current page if browser storage is unavailable.
-    }
-  }, [compareIds, compareHydrated]);
 
   /* =======================================================
      LOAD USER DATA
@@ -1767,19 +1604,11 @@ export default function ProductsPage() {
       .sort((a, b) => b.score - a.score || Number(b.product.rating || 0) - Number(a.product.rating || 0))
       .map((item) => item.product);
 
-    // If no related keyword exists in the catalogue, show popular products rather than a blank page.
-    if (!exactProducts.length && !relatedProducts.length) {
-      relatedProducts = [...products].sort((a, b) => {
-        if (Boolean(b.is_featured) !== Boolean(a.is_featured)) return b.is_featured ? 1 : -1;
-        return Number(b.rating || 0) - Number(a.rating || 0);
-      });
-    }
-
     return { exactProducts, relatedProducts, hasExactMatch: exactProducts.length > 0 };
   }, [products, categories, normalizedSearch]);
 
   const filteredProducts = useMemo(() => {
-    // Exact search results take priority. When none exist, use related/popular suggestions.
+    // Show all exact and related matching products; never substitute unrelated products.
     let result = [...(searchMatchData.hasExactMatch ? searchMatchData.exactProducts : searchMatchData.relatedProducts)];
 
     if (selectedCategory !== "all") {
@@ -1982,121 +1811,7 @@ export default function ProductsPage() {
       .slice(0, 4);
   }, [products, recentIds]);
 
-  const compareProducts = useMemo(() => {
-    return compareIds
-      .map((id) => products.find((product) => product.id === id))
-      .filter(Boolean) as Product[];
-  }, [compareIds, products]);
 
-  /* =======================================================
-     FILTER COUNT
-  ======================================================= */
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-
-    if (selectedCategory !== "all") count++;
-    if (minPrice) count++;
-    if (maxPrice) count++;
-    if (ratingFilter !== "0") count++;
-    if (discountFilter !== "0") count++;
-    if (stockOnly) count++;
-    count += selectedBrands.length;
-
-    return count;
-  }, [
-    selectedCategory,
-    minPrice,
-    maxPrice,
-    ratingFilter,
-    discountFilter,
-    stockOnly,
-    selectedBrands,
-  ]);
-
-  /* =======================================================
-     CLEAR FILTERS
-  ======================================================= */
-
-  const clearFilters = useCallback(() => {
-    setSearch("");
-    setSelectedCategory("all");
-    setMinPrice("");
-    setMaxPrice("");
-    setRatingFilter("0");
-    setDiscountFilter("0");
-    setStockOnly(false);
-    setSelectedBrands([]);
-    setSort("featured");
-  }, []);
-
-  /* =======================================================
-     WISHLIST
-     Authenticated users are saved in public.wishlist_items.
-     Guests use localStorage until they sign in.
-  ======================================================= */
-
-  const toggleWishlist = useCallback(
-    async (product: Product) => {
-      const exists = wishlistIds.includes(product.id);
-      const previous = wishlistIds;
-      const next = exists
-        ? wishlistIds.filter((id) => id !== product.id)
-        : [...wishlistIds, product.id];
-
-      try {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-        if (authError) throw authError;
-
-        if (user) {
-          if (exists) {
-            const { error } = await supabase
-              .from("wishlist_items")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("product_id", product.id);
-            if (error) throw error;
-          } else {
-            // Check first so this works even when a unique constraint is absent.
-            const { data: existingRow, error: lookupError } = await supabase
-              .from("wishlist_items")
-              .select("product_id")
-              .eq("user_id", user.id)
-              .eq("product_id", product.id)
-              .maybeSingle();
-            if (lookupError) throw lookupError;
-
-            if (!existingRow) {
-              const { error } = await supabase.from("wishlist_items").insert({
-                user_id: user.id,
-                product_id: product.id,
-              });
-              if (error) throw error;
-            }
-          }
-        } else {
-          // Guest wishlist only; do not write anonymous records to the database.
-          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-        }
-
-        setWishlistIds(next);
-        try {
-          localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
-        } catch {
-          // Database is authoritative for signed-in users.
-        }
-        showToast(exists ? "Removed from wishlist" : "Added to wishlist");
-      } catch (err) {
-        console.error("Wishlist update failed:", err);
-        setWishlistIds(previous);
-        showToast("Wishlist could not be saved. Please try again.");
-      }
-    },
-    [wishlistIds, showToast, supabase]
-  );
 
   /* =======================================================
      CART
@@ -2262,26 +1977,7 @@ export default function ProductsPage() {
      COMPARE
   ======================================================= */
 
-  const toggleCompare = useCallback(
-    (product: Product) => {
-      if (compareIds.includes(product.id)) {
-        setCompareIds(
-          compareIds.filter((id) => id !== product.id)
-        );
-        showToast("Removed from comparison");
-        return;
-      }
 
-      if (compareIds.length >= 3) {
-        showToast("You can compare up to 3 products");
-        return;
-      }
-
-      setCompareIds([...compareIds, product.id]);
-      showToast("Added to comparison");
-    },
-    [compareIds, showToast]
-  );
 
   /* =======================================================
      HEADER
@@ -2316,7 +2012,7 @@ export default function ProductsPage() {
             </Link>
 
             {/* SEARCH */}
-            <div className="relative min-w-0 flex-1">
+            <div className="relative hidden min-w-0 flex-1 md:block">
               <Search
                 size={17}
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a29683]"
@@ -2795,9 +2491,7 @@ export default function ProductsPage() {
                         product={product}
                         categories={categories}
                         wishlistIds={wishlistIds}
-                        compareIds={compareIds}
                         toggleWishlist={toggleWishlist}
-                        toggleCompare={toggleCompare}
                         addToCart={addToCart}
                         openQuickView={openQuickView}
                         addingProductId={addingProductId}
@@ -3095,30 +2789,6 @@ export default function ProductsPage() {
           wishlistIds={wishlistIds}
         />
       )}
-
-      {/* =====================================================
-          COMPARE BAR
-      ===================================================== */}
-
-      <AnimatePresence>
-        {compareModalOpen && compareProducts.length > 0 && (
-          <CompareModal
-            products={compareProducts}
-            onClose={() => setCompareModalOpen(false)}
-            onRemove={(id) => {
-              setCompareIds((current) => current.filter((productId) => productId !== id));
-              if (compareProducts.length <= 1) setCompareModalOpen(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <CompareBar
-        products={compareProducts}
-        onRemove={(id) => setCompareIds((current) => current.filter((productId) => productId !== id))}
-        onClear={() => setCompareIds([])}
-        onCompare={() => setCompareModalOpen(true)}
-      />
 
       {/* =====================================================
           TOAST
