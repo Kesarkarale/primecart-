@@ -1263,10 +1263,6 @@ export default function CategoriesPage() {
                     stats={stats[category.slug]}
                     isWishlisted={wishlistCategories.includes(category.slug)}
                     onWishlist={() => toggleCategoryWishlist(category.slug)}
-                    onPreview={() => {
-                      openCategory(category);
-                      setSelectedCategory(category);
-                    }}
                     onExplore={() => navigateToCategory(category)}
                   />
                 </motion.div>
@@ -1622,14 +1618,12 @@ function CategoryCard({
   stats,
   isWishlisted,
   onWishlist,
-  onPreview,
   onExplore,
 }: {
   category: Category;
   stats: CategoryStats;
   isWishlisted: boolean;
   onWishlist: () => void;
-  onPreview: () => void;
   onExplore: () => void;
 }) {
   return (
@@ -1748,61 +1742,19 @@ function CategoryCard({
           )}
         </div>
 
-        {/* Small product image previews. */}
-        {stats.products.length > 0 && (
-          <div className="mt-5 flex items-center gap-2">
-            {stats.products.slice(0, 3).map((product) => (
-              <div
-                key={product.id}
-                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#eadfc9] bg-[#fffaf0]"
-              >
-                <img
-                  src={getImage(product.image_url)}
-                  alt={product.name}
-                  className="h-full w-full object-contain p-1"
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src = "/logo.png";
-                  }}
-                />
-              </div>
-            ))}
-            {stats.products.length > 3 && (
-              <span className="text-xs font-bold text-[#998d78]">
-                +{stats.products.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
         {/* ACTION BUTTONS */}
-        <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
-
-          {/* Explore button uses the same category route as the card. */}
+        <div className="mt-5">
+          {/* Explore button opens the selected category. */}
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
               onExplore();
             }}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c79a3b] to-[#b8872d] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
           >
             Explore
             <ArrowRight size={15} />
-          </button>
-
-          {/* Preview button opens modal without navigating away. */}
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onPreview();
-            }}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc9] bg-[#fffaf0] text-[#907448] transition hover:border-[#c79a3b] hover:bg-[#fff1cd]"
-            title="Quick preview"
-            aria-label={`Preview ${category.name}`}
-          >
-            <Eye size={17} />
           </button>
         </div>
       </div>
