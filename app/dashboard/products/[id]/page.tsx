@@ -1437,22 +1437,6 @@ const handleAddToCart = async () => {
               <Share2 size={17} />
             </button>
 
-            <button
-              onClick={toggleWishlist}
-              disabled={wishlistLoading}
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
-                wishlisted
-                  ? "border-[#d6bc89] bg-[#fbf1df] text-[#9a7339]"
-                  : "border-[#eadfcb] bg-white text-[#756957] hover:border-[#d3bc8b] hover:text-[#9a7339]"
-              }`}
-              aria-label="Wishlist"
-            >
-              <Heart
-                size={17}
-                fill={wishlisted ? "currentColor" : "none"}
-              />
-            </button>
-
             <Link
               href="/dashboard/wishlist"
               className="hidden h-10 items-center justify-center rounded-xl border border-[#eadfcb] bg-white px-3 text-[#756957] transition hover:border-[#d3bc8b] hover:text-[#9a7339] sm:flex"
@@ -1891,71 +1875,7 @@ const handleAddToCart = async () => {
                   </button>
                 </div>
 
-                <div className="mt-6 grid gap-3 border-t border-[#eee5d7] pt-5 sm:grid-cols-2">
-                  <div className="flex items-start gap-3">
-                    <Truck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#9a7339]"
-                    />
 
-                    <div>
-                      <p className="text-xs font-bold text-[#544839]">
-                        Fast Delivery
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-4 text-[#978b7b]">
-                        Reliable delivery with secure packaging.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Undo2
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#9a7339]"
-                    />
-
-                    <div>
-                      <p className="text-xs font-bold text-[#544839]">
-                        Easy Returns
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-4 text-[#978b7b]">
-                        Hassle-free return experience.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#9a7339]"
-                    />
-
-                    <div>
-                      <p className="text-xs font-bold text-[#544839]">
-                        Secure Payment
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-4 text-[#978b7b]">
-                        Protected checkout and payment flow.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <BadgeCheck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#9a7339]"
-                    />
-
-                    <div>
-                      <p className="text-xs font-bold text-[#544839]">
-                        PrimeCart Promise
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-4 text-[#978b7b]">
-                        Quality-focused shopping experience.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1996,34 +1916,8 @@ const handleAddToCart = async () => {
 
         <section
           id="overview"
-          className="pc-section mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8"
-        >
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <BenefitCard
-              icon={<Truck size={19} />}
-              title="Fast & Reliable Delivery"
-              text="Get your order packed securely and delivered through a reliable shopping flow."
-            />
-
-            <BenefitCard
-              icon={<RotateCcw size={19} />}
-              title="Easy Returns"
-              text="A simple return-friendly experience designed around convenient shopping."
-            />
-
-            <BenefitCard
-              icon={<CreditCard size={19} />}
-              title="Secure Payments"
-              text="Shop confidently with a protected and streamlined checkout experience."
-            />
-
-            <BenefitCard
-              icon={<BadgeCheck size={19} />}
-              title="PrimeCart Promise"
-              text="A premium shopping experience with quality-focused product discovery."
-            />
-          </div>
-        </section>
+          className="pc-section mx-auto max-w-[1500px] px-4 py-2 sm:px-6 lg:px-8"
+        />
 
         <section
           id="details"
