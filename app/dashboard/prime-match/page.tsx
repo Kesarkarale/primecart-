@@ -1863,16 +1863,11 @@ const [matchStage, setMatchStage] =
       setLoading(true);
       setError("");
 
-      const {
-        data: { user },
-      } =
-        await supabase.auth.getUser();
+      
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 
-      if (!user) {
-        window.location.href =
-          "/auth/login";
-        return;
-      }
 
       const [
         productResult,
