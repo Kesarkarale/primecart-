@@ -24,7 +24,6 @@ import {
   X,
   Zap,
   Clock3,
-  Eye,
   Plus,
   Minus,
 } from "lucide-react";
@@ -98,12 +97,18 @@ function getImageCandidates(imageUrl: string | null) {
     return [value];
   }
 
-  const clean = value.replace(/^\/+/, "");
+  // Supabase may store either a filename or a public path.
+  // Normalize common values so the browser tries the likely public locations.
+  const clean = value
+    .replace(/^\/+/, "")
+    .replace(/^public\//i, "");
+  const filename = clean.replace(/^(products|product-images)\//i, "");
 
   return Array.from(
     new Set([
       `/${clean}`,
-      `/products/${clean}`,
+      `/products/${filename}`,
+      `/product-images/${filename}`,
     ])
   );
 }
@@ -1259,47 +1264,6 @@ export default function CategoryProductsPage() {
         </section>
 
         {/* =====================================================
-            RELATED CATEGORIES
-        ===================================================== */}
-
-        {relatedCategories.length > 0 && (
-          <section className="mb-7">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-black sm:text-lg">
-                  Explore More
-                </h2>
-
-                <p className="text-xs text-gray-500">
-                  Browse other collections
-                </p>
-              </div>
-
-              <Link
-                href="/dashboard/categories"
-                className="text-xs font-bold text-[#a17c00] hover:text-[#806200]"
-              >
-                All Categories
-              </Link>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {relatedCategories.map(
-                (item) => (
-                  <Link
-                    key={item.id}
-                    href={`/dashboard/categories/${item.slug}`}
-                    className="shrink-0 rounded-full border border-black/[0.07] bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:border-[#c9a227]/40 hover:bg-[#fff9e8] hover:text-[#927000]"
-                  >
-                    {item.name}
-                  </Link>
-                )
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* =====================================================
             TOOLBAR
         ===================================================== */}
 
@@ -1635,14 +1599,6 @@ export default function CategoryProductsPage() {
                             product
                           )
                         }
-                        onQuickView={() => {
-                          saveRecentlyViewed(
-                            product
-                          );
-                          setQuickViewProduct(
-                            product
-                          );
-                        }}
                       />
                     )
                   )}
@@ -1787,24 +1743,6 @@ export default function CategoryProductsPage() {
         </div>
       )}
 
-      {/* =====================================================
-          QUICK VIEW
-      ===================================================== */}
-
-      {quickViewProduct && (
-        <QuickViewModal
-          product={quickViewProduct}
-          onClose={() =>
-            setQuickViewProduct(null)
-          }
-          onCart={() =>
-            addToCart(
-              quickViewProduct
-            )
-          }
-        />
-      )}
-
       {/* ============================================================
           MOBILE BOTTOM NAVIGATION
           Exact same floating PrimeCart mobile style as Dashboard.
@@ -1944,13 +1882,11 @@ function ProductCard({
   wishlisted,
   onWishlist,
   onCart,
-  onQuickView,
 }: {
   product: Product;
   wishlisted: boolean;
   onWishlist: () => void;
   onCart: () => void;
-  onQuickView: () => void;
 }) {
   const [imageIndex, setImageIndex] =
     useState(0);
@@ -1984,12 +1920,12 @@ function ProductCard({
     >
       {/* IMAGE */}
 
-      <div className="relative aspect-square overflow-hidden bg-[#f8f7f3]">
+      <div className="relative aspect-square overflow-hidden bg-white sm:bg-[#f8f7f3]">
         {image ? (
           <img
             src={image}
             alt={product.name}
-            className="h-full w-full object-contain p-2 sm:p-6 transition duration-500 group-hover:scale-[1.045]"
+            className="h-full w-full object-contain p-0 sm:p-6 transition duration-500 group-hover:scale-[1.045]"
             onError={() =>
               setImageIndex(
                 (current) =>
@@ -2009,22 +1945,22 @@ function ProductCard({
 
         {/* BADGES */}
 
-        <div className="absolute left-2 top-2 flex flex-col gap-1 sm:left-4 sm:top-4 sm:gap-2">
+        <div className="absolute left-1.5 top-1.5 flex flex-col items-start gap-1 sm:left-4 sm:top-4 sm:gap-2">
           {product.is_flash_sale && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#8d6d00]">
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff1c2] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-normal text-[#8d6d00] sm:gap-1 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider">
               <Zap size={11} />
               Flash Sale
             </span>
           )}
 
           {discount > 0 && (
-            <span className="rounded-full bg-[#c9a227] px-3 py-1.5 text-[10px] font-black text-white">
+            <span className="rounded-full bg-[#c9a227] px-1.5 py-0.5 text-[8px] font-black text-white sm:px-3 sm:py-1.5 sm:text-[10px]">
               {discount}% OFF
             </span>
           )}
 
           {product.is_featured && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#927000] backdrop-blur">
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#927000] backdrop-blur">
               <Sparkles size={10} />
               Featured
             </span>
@@ -2041,7 +1977,7 @@ function ProductCard({
             onWishlist();
           }}
           aria-label="Wishlist"
-          className={`absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition ${
+          className={`absolute right-2 top-2 hidden h-8 w-8 items-center justify-center rounded-full border backdrop-blur-md transition sm:right-4 sm:top-4 sm:flex sm:h-10 sm:w-10 ${
             wishlisted
               ? "border-red-100 bg-red-50 text-red-500"
               : "border-white/70 bg-white/90 text-gray-600 hover:bg-red-50 hover:text-red-500"
@@ -2057,21 +1993,6 @@ function ProductCard({
           />
         </button>
 
-        {/* QUICK VIEW */}
-
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onQuickView();
-          }}
-          className="absolute bottom-4 left-4 flex translate-y-0 items-center gap-1 rounded-lg sm:translate-y-3 sm:gap-1.5 sm:rounded-xl border border-white/80 bg-white/95 px-2 py-1.5 text-[10px] font-bold text-gray-700 opacity-100 shadow-lg transition duration-300 sm:px-3 sm:py-2 sm:text-xs sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-[#fff8df] hover:text-[#8d6d00]"
-        >
-          <Eye size={13} />
-          Quick View
-        </button>
-
         {/* CART */}
 
         <button
@@ -2085,7 +2006,7 @@ function ProductCard({
             }
           }}
           disabled={stock <= 0}
-          className={`absolute bottom-4 right-2 flex h-8 w-8 translate-y-0 items-center justify-center rounded-full text-white opacity-100 shadow-lg transition duration-300 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-3 sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 ${
+          className={`absolute bottom-4 right-2 hidden h-8 w-8 items-center justify-center rounded-full text-white shadow-lg transition duration-300 sm:flex sm:right-4 sm:h-10 sm:w-10 sm:translate-y-3 sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 ${
             stock > 0
               ? "bg-[#c9a227] hover:bg-[#b18b16]"
               : "cursor-not-allowed bg-gray-400"
