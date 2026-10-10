@@ -8101,6 +8101,36 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
           }
         }
 
+        /* Mobile refinements requested: full Add to Cart label and hide the trust benefits strip. */
+        @media (max-width: 680px) {
+          .products-grid .add-cart-btn,
+          .products-grid.five-columns .add-cart-btn {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 36px !important;
+            padding: 8px 5px !important;
+            gap: 6px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+            white-space: nowrap !important;
+          }
+          .products-grid .add-cart-btn .add-cart-label,
+          .products-grid.five-columns .add-cart-btn .add-cart-label {
+            display: inline !important;
+            font-size: 11px !important;
+            visibility: visible !important;
+          }
+          .products-grid .add-cart-btn svg,
+          .products-grid.five-columns .add-cart-btn svg {
+            display: none !important;
+          }
+          .trust-section {
+            display: none !important;
+          }
+        }
+
         /* Keep the existing dark-mode toggle working. */
         html.dark .store-shell {
           background: #15130f !important;
