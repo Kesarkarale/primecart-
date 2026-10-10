@@ -1,4 +1,4 @@
- 
+
 "use client";
 
 import Link from "next/link";
@@ -855,27 +855,28 @@ export default function BudgetBuilderPage() {
         const qb = qualityScore(b);
         const priceBandA = Number(a.price) / Math.max(1, budget);
         const priceBandB = Number(b.price) / Math.max(1, budget);
+        // Quality is the priority; higher budget usage breaks close quality ties.
         return (
-          (priceBandB - priceBandA) * 45 +
-          (qb - qa) +
-          randomTie(a, b, 41) * 8
+          (qb - qa) * 1.25 +
+          (priceBandB - priceBandA) * 32 +
+          randomTie(a, b, 41) * 5
         );
       });
 
-      // Rotate through the strongest premium candidates instead of always taking #1.
-      const topCount = Math.min(8, candidates.length);
+      // Rotate within the best premium candidates; keep the selected budget and ratings relevant.
+      const topCount = Math.min(6, candidates.length);
       const top = candidates.slice(0, topCount);
       if (top.length) {
-        const anchor = top[(buildSeed + top.length) % top.length];
+        const anchor = top[buildSeed % top.length];
         pushIfFits(anchor);
       }
 
-      const companions = [...candidates].sort(
-        (a, b) =>
-          Math.abs(Number(a.price) - remaining * 0.65) -
-          Math.abs(Number(b.price) - remaining * 0.65) ||
-          randomTie(a, b, 47)
-      );
+      const companions = [...candidates].sort((a, b) => {
+        const target = remaining * 0.65;
+        const scoreA = qualityScore(a) - Math.abs(Number(a.price) - target) / Math.max(1, remaining) * 22;
+        const scoreB = qualityScore(b) - Math.abs(Number(b.price) - target) / Math.max(1, remaining) * 22;
+        return scoreB - scoreA || randomTie(a, b, 47);
+      });
 
       for (const product of companions) {
         if (result.length >= 3) break;
@@ -918,18 +919,43 @@ export default function BudgetBuilderPage() {
       return result;
     }
 
-    /* QUALITY FIRST: use the former Maximum Value algorithm, selecting the highest-priced matching product within budget. */
+    /*
+     * QUALITY FIRST:
+     * Rank by actual quality (rating, review confidence, featured status) AND how
+     * sensibly the product uses this budget. This makes ₹5K and ₹10K plans respond
+     * to their own price range instead of repeatedly choosing the same cheap item.
+     * Rotate only among near-best quality candidates so each Build can vary without
+     * sacrificing quality. Two products are enough when the remaining budget allows.
+     */
     if (goal === "quality") {
-      const candidates = [...pool].sort((a, b) => {
-        const priceDiff = Number(b.price) - Number(a.price);
-        if (priceDiff !== 0) return priceDiff;
-        const qualityDiff = qualityScore(b) - qualityScore(a);
-        return qualityDiff || randomTie(a, b, 51);
-      });
+      const qualityRank = (product: Product) => {
+        const price = Number(product.price);
+        const usage = budget > 0 ? price / budget : 0;
+        // Prefer well-rated products using roughly 45%-95% of the selected budget.
+        const budgetFit = usage >= 0.45 && usage <= 0.95
+          ? 28 - Math.abs(0.72 - usage) * 32
+          : Math.max(0, 12 - Math.abs(0.72 - usage) * 20);
+        return qualityScore(product) * 0.78 + budgetFit;
+      };
 
-      // One clear maximum-value pick: the most expensive eligible item under budget.
-      for (const product of candidates) {
-        if (pushIfFits(product)) break;
+      const candidates = [...pool].sort((a, b) =>
+        qualityRank(b) - qualityRank(a) || randomTie(a, b, 51)
+      );
+      const bestRank = candidates.length ? qualityRank(candidates[0]) : 0;
+      const strongCandidates = candidates.filter(
+        (product) => qualityRank(product) >= bestRank - 12
+      );
+      const rotation = strongCandidates.length
+        ? buildSeed % strongCandidates.length
+        : 0;
+      const rotated = strongCandidates.length
+        ? strongCandidates.slice(rotation).concat(strongCandidates.slice(0, rotation))
+        : candidates;
+
+      // First item is quality-focused; add a second only if it also fits the remaining budget.
+      for (const product of rotated) {
+        if (result.length >= 2) break;
+        pushIfFits(product);
       }
       return result;
     }
@@ -2394,8 +2420,8 @@ export default function BudgetBuilderPage() {
             </div>
 
             {/* GOAL */}
-            <div className="mt-10">
-              <div className="mb-4">
+            <div className="mt-6 sm:mt-10">
+              <div className="mb-3 sm:mb-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
                   Shopping style
                 </p>
@@ -2405,7 +2431,8 @@ export default function BudgetBuilderPage() {
                 </h4>
               </div>
 
-              <div className="-mx-1 grid grid-cols-1 gap-3 px-1 sm:grid-cols-2 lg:grid-cols-4">
+              {/* GOAL CARD STYLES: compact horizontal scroll on phones; 2/4-column grid on larger screens. */}
+              <div className="-mx-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
                 {shoppingGoals.map((item) => {
                   const Icon = item.icon;
                   const active = goal === item.id;
@@ -2418,14 +2445,12 @@ export default function BudgetBuilderPage() {
                         setGoal(item.id);
                         setPlanReady(false);
                       }}
-                      className={`group relative overflow-hidden rounded-[22px] border p-4 text-left transition duration-200 sm:p-5 ${
+                      className={`group relative min-w-[154px] max-w-[190px] shrink-0 snap-start overflow-hidden rounded-2xl border p-3 text-left transition duration-200 sm:min-w-0 sm:max-w-none sm:rounded-[22px] sm:p-5 ${
                         active
                           ? "border-[#c9a24d] bg-[#fffaf0] shadow-[0_10px_30px_rgba(160,120,40,0.10)]"
                           : "border-[#e9e2d5] bg-white hover:-translate-y-0.5 hover:border-[#d5b76c] hover:shadow-md"
                       }`}
                     >
-                      <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-[#f8edcf]/60 blur-2xl" />
-
                       <div className="relative flex items-start justify-between gap-3">
                         <span
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
@@ -2448,14 +2473,14 @@ export default function BudgetBuilderPage() {
                         )}
                       </div>
 
-                      <p className="relative mt-5 text-[14px] font-black text-gray-900">
+                      <p className="relative mt-3 text-[12px] font-black leading-4 text-gray-900 sm:mt-5 sm:text-[14px]">
                         {item.title}
                       </p>
-                      <p className="relative mt-1.5 min-h-[32px] text-[10px] leading-4 text-gray-400">
+                      <p className="relative mt-1 min-h-[32px] text-[9px] leading-4 text-gray-500 sm:mt-1.5 sm:text-[10px]">
                         {item.description}
                       </p>
 
-                      <div className={`relative mt-4 inline-flex items-center gap-1.5 text-[9px] font-black ${
+                      <div className={`relative mt-3 inline-flex items-center gap-1 text-[8px] font-black sm:mt-4 sm:gap-1.5 sm:text-[9px] ${
                         active ? "text-[#956f27]" : "text-gray-400"
                       }`}>
                         {active ? "Selected for your plan" : "Use this preference"}
@@ -2468,8 +2493,8 @@ export default function BudgetBuilderPage() {
             </div>
 
             {/* CATEGORY + SUBCATEGORY */}
-            <div className="mt-10">
-              <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div className="mt-7 sm:mt-10">
+              <div className="mb-4 sm:mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
                     Shopping focus
