@@ -460,10 +460,24 @@ export default function SettingsPage() {
     }
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+ async function logout() {
+  setError("");
+  setMessage("");
+
+  try {
+    const { error: signOutError } =
+      await supabase.auth.signOut();
+
+    if (signOutError) {
+      throw signOutError;
+    }
+
+    window.location.replace("/auth/login");
+  } catch (err) {
+    console.error("Logout failed:", err);
+    setError("Unable to sign out. Please try again.");
   }
+}
 
   function updateNotification(
     key: keyof NotificationSettings
@@ -934,15 +948,13 @@ export default function SettingsPage() {
             </div>
 
             <h3 className="mt-5 text-xl font-black">
-              Delete account?
-            </h3>
+  Sign out of PrimeCart?
+</h3>
 
-            <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-              Account deletion requires secure
-              server-side handling. This button is
-              intentionally not connected to a destructive
-              action yet.
-            </p>
+<p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+  Are you sure you want to sign out?
+  You will be redirected to the login page.
+</p>
 
             <div className="mt-6 flex gap-3">
               <button
@@ -954,14 +966,12 @@ export default function SettingsPage() {
                 Cancel
               </button>
 
-              <button
-                onClick={() =>
-                  setDeleteModal(false)
-                }
-                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
-              >
-                Close
-              </button>
+             <button
+  onClick={logout}
+  className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
+>
+  Sign Out
+</button>
             </div>
 
           </div>
@@ -1876,11 +1886,14 @@ function PrivacyTab({
             </p>
 
             <button
-              onClick={onDelete}
-              className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-[#181612] dark:hover:bg-red-950/30"
-            >
-              Delete Account
-            </button>
+  onClick={onDelete}
+  className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-[#181612] dark:hover:bg-red-950/30"
+>
+  <span className="inline-flex items-center gap-2">
+    <LogOut className="h-4 w-4" />
+    Sign Out
+  </span>
+</button>
 
           </div>
         </div>
