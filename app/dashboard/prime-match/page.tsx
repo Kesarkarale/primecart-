@@ -1863,12 +1863,13 @@ const [matchStage, setMatchStage] =
       setLoading(true);
       setError("");
 
-      
-const {
-  data: { user },
-} = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } =
+        await supabase.auth.getUser();
 
-
+      // PrimeMatch is public: guests can browse and generate matches.
+      // Authentication is required only when they try to add to cart.
       const [
         productResult,
         categoryResult,
@@ -1928,13 +1929,12 @@ const {
             ascending: true,
           }),
 
-        supabase
-          .from("wishlist_items")
-          .select("product_id")
-          .eq(
-            "user_id",
-            user.id
-          ),
+        user
+          ? supabase
+              .from("wishlist_items")
+              .select("product_id")
+              .eq("user_id", user.id)
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       if (productResult.error) {
@@ -2352,16 +2352,20 @@ const {
       } =
         await supabase.auth.getUser();
 
+      const exists = wishlist.includes(product.id);
+
+      // Guests can use Wishlist for this visit. Their wishlist is kept in page
+      // state only; signed-in users continue to save it in Supabase.
       if (!user) {
-        window.location.href =
-          "/auth/login";
+        if (exists) {
+          setWishlist((previous) => previous.filter((id) => id !== product.id));
+          setToast("Removed from wishlist");
+        } else {
+          setWishlist((previous) => [...previous, product.id]);
+          setToast("Added to wishlist");
+        }
         return;
       }
-
-      const exists =
-        wishlist.includes(
-          product.id
-        );
 
       if (exists) {
         const { error: deleteError } =
