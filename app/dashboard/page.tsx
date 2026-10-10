@@ -446,14 +446,33 @@ export default function DashboardPage() {
           { data: categoryData, error: categoryError },
         ] = await Promise.all([
           supabase.auth.getUser(),
-          supabase
-            .from("products")
-            .select(
-              "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
-            )
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(500),
+          /* Load all active products in pages; a single 500-row limit can
+             leave categories and products missing from the dashboard. */
+          (async () => {
+            const pageSize = 1000;
+            let from = 0;
+            const allProducts: Product[] = [];
+
+            while (true) {
+              const { data, error } = await supabase
+                .from("products")
+                .select(
+                  "id,category_id,name,slug,short_description,description,price,original_price,stock,image_url,brand,rating,reviews_count,is_featured,is_flash_sale,is_active,created_at"
+                )
+                .eq("is_active", true)
+                .order("created_at", { ascending: false })
+                .range(from, from + pageSize - 1);
+
+              if (error) return { data: null, error };
+
+              const page = (data || []) as Product[];
+              allProducts.push(...page);
+              if (page.length < pageSize) break;
+              from += pageSize;
+            }
+
+            return { data: allProducts, error: null };
+          })(),
           supabase
             .from("categories")
             .select("id,name")
@@ -7899,8 +7918,208 @@ html.dark .suggestion-image{background:#292319!important;border-color:#4b402d!im
             font-size: 8px !important;
           }
         }
+        /* ================================================================
+           FINAL DASHBOARD FIXES
+           Change these variables to update the main dashboard colours.
+           ================================================================ */
+        :root {
+          --dashboard-accent: #b8872d;
+          --dashboard-accent-dark: #8b641d;
+          --dashboard-accent-soft: #fff6df;
+          --dashboard-page: #fcfaf5;
+          --dashboard-card: #ffffff;
+          --dashboard-text: #282219;
+          --dashboard-border: #e8dfce;
+        }
+
+        /* Central colour controls. These rules come last so older CSS
+           cannot unexpectedly overwrite the selected colours. */
+        .store-shell {
+          background: var(--dashboard-page) !important;
+          color: var(--dashboard-text) !important;
+        }
+        .top-strip {
+          background: var(--dashboard-accent-dark) !important;
+        }
+        .main-header, .nav-bar {
+          background: var(--dashboard-card) !important;
+          border-color: var(--dashboard-border) !important;
+        }
+        .brand-name, .brand-logo-fallback {
+          color: var(--dashboard-accent) !important;
+        }
+        .mobile-menu-button {
+          color: var(--dashboard-accent-dark) !important;
+          border-color: var(--dashboard-border) !important;
+          background: var(--dashboard-accent-soft) !important;
+        }
+        .section-title, .section-mini-head strong, .product-name,
+        .price-row strong {
+          color: var(--dashboard-text) !important;
+        }
+        .section-title > span, .category-icon, .smart-card-icon {
+          color: var(--dashboard-accent-dark) !important;
+          border-color: var(--dashboard-border) !important;
+          background: var(--dashboard-accent-soft) !important;
+        }
+        .section-head > a, .search-submit, .add-cart-btn, .all-category-btn {
+          background: var(--dashboard-accent) !important;
+          border-color: var(--dashboard-accent) !important;
+          color: #ffffff !important;
+        }
+        .product-card, .category-section, .smart-section, .trust-section {
+          border-color: var(--dashboard-border) !important;
+        }
+        .product-card { background: var(--dashboard-card) !important; }
+        .product-category, .product-name:hover {
+          color: var(--dashboard-accent-dark) !important;
+        }
+        .wish-btn.wished {
+          color: var(--dashboard-accent-dark) !important;
+          background: var(--dashboard-accent-soft) !important;
+          border-color: var(--dashboard-border) !important;
+        }
+
+        /* Mobile products: keep every product card visible in two columns.
+           Older responsive rules hid cards after the third/fourth product. */
+        @media (max-width: 680px) {
+          .products-grid.five-columns {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            align-items: stretch !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            gap: 10px !important;
+            overflow: visible !important;
+          }
+          .products-grid.five-columns > .product-card,
+          .products-grid.five-columns > .product-card:nth-child(n) {
+            display: flex !important;
+            flex-direction: column !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            margin: 0 !important;
+            transform: none !important;
+          }
+          .products-grid.five-columns .product-image-wrap {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            height: clamp(132px, 39vw, 175px) !important;
+            min-height: clamp(132px, 39vw, 175px) !important;
+            padding: 10px !important;
+            overflow: hidden !important;
+          }
+          .products-grid.five-columns .product-image {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+          }
+          .products-grid.five-columns .product-copy {
+            display: flex !important;
+            flex: 1 1 auto !important;
+            flex-direction: column !important;
+            min-width: 0 !important;
+            padding: 9px !important;
+          }
+          .products-grid.five-columns .product-name {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 2.7em !important;
+            font-size: 11px !important;
+            line-height: 1.35 !important;
+            overflow-wrap: anywhere !important;
+          }
+          .products-grid.five-columns .price-row {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: baseline !important;
+            gap: 4px 6px !important;
+            min-width: 0 !important;
+          }
+          .products-grid.five-columns .price-row strong {
+            font-size: 14px !important;
+          }
+          .products-grid.five-columns .add-cart-btn {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 5px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 34px !important;
+            margin-top: auto !important;
+            padding: 7px 4px !important;
+            font-size: 10px !important;
+          }
+          .products-grid.five-columns .add-cart-label {
+            display: inline !important;
+            font-size: 10px !important;
+          }
+          .products-grid.five-columns .wish-btn {
+            display: grid !important;
+            visibility: visible !important;
+            z-index: 6 !important;
+          }
+          .products-grid.five-columns .product-badges {
+            max-width: calc(100% - 48px) !important;
+          }
+          .page-content {
+            overflow-x: clip !important;
+            overflow-y: visible !important;
+          }
+        }
+        @media (max-width: 390px) {
+          .products-grid.five-columns { gap: 7px !important; }
+          .products-grid.five-columns .product-image-wrap {
+            height: 132px !important;
+            min-height: 132px !important;
+          }
+          .products-grid.five-columns .product-copy { padding: 8px !important; }
+          .products-grid.five-columns .product-name { font-size: 10px !important; }
+          .products-grid.five-columns .price-row strong { font-size: 13px !important; }
+        }
+
+        /* Tablet: use a responsive grid without hiding extra product cards. */
+        @media (min-width: 681px) and (max-width: 900px) {
+          .products-grid.five-columns {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+          .products-grid.five-columns > .product-card,
+          .products-grid.five-columns > .product-card:nth-child(n) {
+            display: flex !important;
+            flex-direction: column !important;
+          }
+        }
+
+        /* Keep the existing dark-mode toggle working. */
+        html.dark .store-shell {
+          background: #15130f !important;
+          color: #f8f0df !important;
+        }
+        html.dark .product-card, html.dark .category-section,
+        html.dark .smart-section, html.dark .trust-section {
+          background: #201c16 !important;
+          border-color: #3d3427 !important;
+        }
+        html.dark .section-title, html.dark .section-mini-head strong,
+        html.dark .product-name, html.dark .price-row strong {
+          color: #f8f0df !important;
+        }
+
+        
  `}
-      </style>
+      
+</style>
     </main>
   );
 }
