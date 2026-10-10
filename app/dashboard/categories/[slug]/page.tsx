@@ -477,7 +477,7 @@ export default function CategoryProductsPage() {
 
       const { data, error } =
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .select("product_id")
           .eq("user_id", user.id);
 
@@ -844,7 +844,7 @@ export default function CategoryProductsPage() {
     if (exists) {
       const { error } =
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .delete()
           .eq("user_id", user.id)
           .eq("product_id", product.id);
@@ -869,7 +869,7 @@ export default function CategoryProductsPage() {
     } else {
       const { error } =
         await supabase
-          .from("wishlist")
+          .from("wishlist_items")
           .insert({
             user_id: user.id,
             product_id: product.id,
@@ -1024,24 +1024,28 @@ export default function CategoryProductsPage() {
       ===================================================== */}
 
       <header className="sticky top-0 z-50 border-b border-[#c9a227]/10 bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-[1500px] items-center gap-3 px-4 sm:px-8 lg:px-10">
+        <div className="mx-auto flex h-[64px] max-w-[1500px] items-center gap-2 px-3 sm:h-[72px] sm:gap-3 sm:px-8 lg:px-10">
           <Link
             href="/dashboard"
             className="flex shrink-0 items-center gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#d8b84c] to-[#b58a16] font-black text-white shadow-sm">
-              P
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white sm:h-10 sm:w-10">
+              <img
+                src="/logo.png"
+                alt="PrimeCart logo"
+                className="h-full w-full object-contain"
+              />
             </div>
 
-            <div className="hidden sm:block">
-              <div className="text-xl font-black tracking-tight">
+            <div className="block min-w-0">
+              <div className="text-base font-black tracking-tight sm:text-xl">
                 Prime
                 <span className="text-[#b08a00]">
                   Cart
                 </span>
               </div>
 
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+              <div className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 sm:block">
                 Shop Smarter
               </div>
             </div>
@@ -1165,27 +1169,27 @@ export default function CategoryProductsPage() {
           <div className="absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-[#f5e8bd]/30 blur-3xl" />
 
           <div className="relative p-6 sm:p-8 lg:p-10">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#c9a227]/15 bg-[#fff9e8] px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#987500]">
+            <div className="flex flex-row items-start gap-3 sm:gap-8 lg:items-center lg:justify-between">
+              <div className="min-w-0 flex-1 max-w-3xl">
+                <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#c9a227]/15 bg-[#fff9e8] px-2 py-1 text-[9px] sm:mb-4 sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-xs font-bold uppercase tracking-[0.12em] text-[#987500]">
                   <Sparkles size={13} />
                   Premium Collection
                 </div>
 
-                <h1 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+                <h1 className="text-xl font-black tracking-tight sm:text-4xl lg:text-5xl">
                   {category?.name ??
                     categoryNames[slug] ??
                     "Category"}
                 </h1>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
+                <p className="mt-2 max-w-2xl text-xs leading-5 text-gray-500 sm:mt-3 sm:text-base sm:leading-6">
                   Discover carefully selected
                   products with trusted ratings,
                   great prices and exclusive
                   PrimeCart deals.
                 </p>
 
-                <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-7 sm:grid-cols-4 sm:gap-3">
                   <StatBox
                     icon={
                       <Package size={16} />
@@ -1229,24 +1233,23 @@ export default function CategoryProductsPage() {
                 </div>
               </div>
 
-              <div className="hidden lg:flex">
-                <div className="relative flex h-[220px] w-[270px] items-center justify-center overflow-hidden rounded-[28px] bg-gradient-to-br from-[#fff8dc] to-[#f7f1dc]">
-                  <div className="absolute h-40 w-40 rounded-full bg-[#d5b544]/20 blur-2xl" />
+              <div className="flex shrink-0">
+                <div className="relative flex h-[76px] w-[66px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#fff8dc] to-[#f7f1dc] sm:h-[220px] sm:w-[220px] sm:rounded-[28px] lg:w-[270px]">
+                  <div className="absolute h-10 w-10 rounded-full bg-[#d5b544]/20 blur-xl sm:h-40 sm:w-40 sm:blur-2xl" />
 
                   <Sparkles
-                    size={90}
+                    size={42}
                     strokeWidth={1}
-                    className="relative text-[#c9a227]/60"
+                    className="relative text-[#c9a227]/60 sm:h-[90px] sm:w-[90px]"
                   />
 
-                  <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-white/80 bg-white/75 px-4 py-3 text-center backdrop-blur-md">
-                    <p className="text-xs font-black uppercase tracking-widest text-[#a17c00]">
+                  <div className="absolute bottom-1 left-1 right-1 hidden rounded-lg border border-white/80 bg-white/75 px-2 py-2 text-center backdrop-blur-md sm:bottom-5 sm:left-5 sm:right-5 sm:block sm:rounded-xl sm:px-4 sm:py-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#a17c00] sm:text-xs">
                       PrimeCart Picks
                     </p>
 
                     <p className="mt-1 text-xs text-gray-500">
-                      Curated for smarter
-                      shopping
+                      Curated for smarter shopping
                     </p>
                   </div>
                 </div>
@@ -1263,7 +1266,7 @@ export default function CategoryProductsPage() {
           <section className="mb-7">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black">
+                <h2 className="text-base font-black sm:text-lg">
                   Explore More
                 </h2>
 
@@ -1537,7 +1540,7 @@ export default function CategoryProductsPage() {
             {/* LOADING */}
 
             {loading && (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                 {Array.from({
                   length: 9,
                 }).map((_, index) => (
@@ -1611,7 +1614,7 @@ export default function CategoryProductsPage() {
               !error &&
               filteredProducts.length >
                 0 && (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                   {filteredProducts.map(
                     (product) => (
                       <ProductCard
@@ -1977,7 +1980,7 @@ function ProductCard({
   return (
     <Link
       href={`/dashboard/products/${product.id}`}
-      className="group block overflow-hidden rounded-[26px] border border-black/[0.06] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1 hover:border-[#c9a227]/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.09)]"
+      className="group block overflow-hidden rounded-2xl sm:rounded-[26px] border border-black/[0.06] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1 hover:border-[#c9a227]/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.09)]"
     >
       {/* IMAGE */}
 
@@ -1986,7 +1989,7 @@ function ProductCard({
           <img
             src={image}
             alt={product.name}
-            className="h-full w-full object-contain p-6 transition duration-500 group-hover:scale-[1.045]"
+            className="h-full w-full object-contain p-2 sm:p-6 transition duration-500 group-hover:scale-[1.045]"
             onError={() =>
               setImageIndex(
                 (current) =>
@@ -2006,7 +2009,7 @@ function ProductCard({
 
         {/* BADGES */}
 
-        <div className="absolute left-4 top-4 flex flex-col gap-2">
+        <div className="absolute left-2 top-2 flex flex-col gap-1 sm:left-4 sm:top-4 sm:gap-2">
           {product.is_flash_sale && (
             <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#8d6d00]">
               <Zap size={11} />
@@ -2063,7 +2066,7 @@ function ProductCard({
             event.stopPropagation();
             onQuickView();
           }}
-          className="absolute bottom-4 left-4 flex translate-y-3 items-center gap-1.5 rounded-xl border border-white/80 bg-white/95 px-3 py-2 text-xs font-bold text-gray-700 opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-[#fff8df] hover:text-[#8d6d00]"
+          className="absolute bottom-4 left-4 flex translate-y-0 items-center gap-1 rounded-lg sm:translate-y-3 sm:gap-1.5 sm:rounded-xl border border-white/80 bg-white/95 px-2 py-1.5 text-[10px] font-bold text-gray-700 opacity-100 shadow-lg transition duration-300 sm:px-3 sm:py-2 sm:text-xs sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-[#fff8df] hover:text-[#8d6d00]"
         >
           <Eye size={13} />
           Quick View
@@ -2082,7 +2085,7 @@ function ProductCard({
             }
           }}
           disabled={stock <= 0}
-          className={`absolute bottom-4 right-4 flex h-10 w-10 translate-y-3 items-center justify-center rounded-full text-white opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 ${
+          className={`absolute bottom-4 right-2 flex h-8 w-8 translate-y-0 items-center justify-center rounded-full text-white opacity-100 shadow-lg transition duration-300 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-3 sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 ${
             stock > 0
               ? "bg-[#c9a227] hover:bg-[#b18b16]"
               : "cursor-not-allowed bg-gray-400"
@@ -2095,26 +2098,26 @@ function ProductCard({
 
       {/* INFO */}
 
-      <div className="p-5">
+      <div className="p-2.5 sm:p-5">
         {product.brand && (
-          <p className="mb-1 text-[10px] font-black uppercase tracking-[0.15em] text-[#a17c00]">
+          <p className="mb-1 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] text-[#a17c00]">
             {product.brand}
           </p>
         )}
 
-        <h2 className="line-clamp-2 text-[17px] font-extrabold leading-6 tracking-tight transition group-hover:text-[#a17c00]">
+        <h2 className="line-clamp-2 text-sm font-extrabold leading-5 tracking-tight transition group-hover:text-[#a17c00] sm:text-[17px] sm:leading-6">
           {product.name}
         </h2>
 
         {product.short_description && (
-          <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">
+          <p className="mt-1.5 line-clamp-2 text-[10px] leading-4 text-gray-500 sm:mt-2 sm:text-xs sm:leading-5">
             {product.short_description}
           </p>
         )}
 
         {/* RATING */}
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-1.5 sm:mt-3 sm:gap-2">
           <div className="flex items-center gap-1 rounded-md bg-[#fff7d9] px-2 py-1 text-xs font-bold text-[#856600]">
             <Star
               size={12}
@@ -2133,13 +2136,13 @@ function ProductCard({
 
         {/* PRICE */}
 
-        <div className="mt-4 flex flex-wrap items-end gap-2">
-          <span className="text-xl font-black">
+        <div className="mt-3 flex flex-wrap items-end gap-1.5 sm:mt-4 sm:gap-2">
+          <span className="text-base font-black sm:text-xl">
             {formatPrice(price)}
           </span>
 
           {originalPrice > price && (
-            <span className="pb-0.5 text-sm text-gray-400 line-through">
+            <span className="pb-0.5 text-[10px] text-gray-400 line-through sm:text-sm">
               {formatPrice(
                 originalPrice
               )}
@@ -2149,7 +2152,7 @@ function ProductCard({
 
         {/* STOCK */}
 
-        <div className="mt-3 flex items-center justify-between">
+        <div className="mt-2 flex items-center justify-between gap-1 sm:mt-3">
           {stock <= 0 ? (
             <span className="text-xs font-bold text-red-500">
               Out of stock
@@ -2165,7 +2168,7 @@ function ProductCard({
             </span>
           )}
 
-          <span className="text-xs font-semibold text-gray-400 group-hover:text-[#a17c00]">
+          <span className="hidden text-xs font-semibold text-gray-400 group-hover:text-[#a17c00] sm:inline">
             View details
             <ArrowRight
               size={13}
@@ -2534,8 +2537,8 @@ function StatBox({
   value: string | number;
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.05] bg-[#fcfbf7] p-3.5">
-      <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff4c9] text-[#a17c00]">
+    <div className="rounded-xl border border-black/[0.05] bg-[#fcfbf7] p-2 sm:rounded-2xl sm:p-3.5">
+      <div className="mb-1 flex h-6 w-6 items-center justify-center rounded-lg sm:mb-2 sm:h-8 sm:w-8 bg-[#fff4c9] text-[#a17c00]">
         {icon}
       </div>
 
@@ -2559,7 +2562,7 @@ function ProductSkeleton() {
     <div className="overflow-hidden rounded-[26px] border border-black/[0.06] bg-white">
       <div className="aspect-square animate-pulse bg-gray-100" />
 
-      <div className="space-y-3 p-5">
+      <div className="space-y-2 p-2.5 sm:space-y-3 sm:p-5">
         <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
         <div className="h-5 w-4/5 animate-pulse rounded bg-gray-100" />
         <div className="h-4 w-3/5 animate-pulse rounded bg-gray-100" />
