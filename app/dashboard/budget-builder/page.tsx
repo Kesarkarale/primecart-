@@ -1,4 +1,4 @@
-
+ 
 "use client";
 
 import Link from "next/link";
@@ -483,6 +483,50 @@ function ProductImage({
   );
 }
 
+const CATEGORY_ORDER = [
+  "mobile",
+  "electronics",
+  "home & kitchen",
+  "fashion",
+  "footwear",
+  "beauty",
+  "toy & baby",
+  "sports",
+  "appliance",
+  "automotive",
+  "eyewear",
+  "books",
+  "gaming",
+  "watch",
+  "bag",
+];
+
+function categorySortKey(category: Category) {
+  const value = normalizeText(`${category.slug || ""} ${category.name || ""}`);
+  const aliases: Array<[string, string[]]> = [
+    ["mobile", ["mobile", "mobiles", "mobile phones"]],
+    ["electronics", ["electronics", "electronic"]],
+    ["home & kitchen", ["home kitchen", "home and kitchen", "home-kitchen"]],
+    ["fashion", ["fashion"]],
+    ["footwear", ["footwear", "shoes"]],
+    ["beauty", ["beauty"]],
+    ["toy & baby", ["toy baby", "toys baby", "toys and baby"]],
+    ["sports", ["sports", "sports outdoor"]],
+    ["appliance", ["appliance", "appliances"]],
+    ["automotive", ["automotive", "auto", "car bike"]],
+    ["eyewear", ["eyewear", "eye wear"]],
+    ["books", ["books", "book"]],
+    ["gaming", ["gaming", "games"]],
+    ["watch", ["watch", "watches"]],
+    ["bag", ["bag", "bags"]],
+  ];
+
+  for (const [key, names] of aliases) {
+    if (names.some((name) => value.includes(normalizeText(name)))) return key;
+  }
+  return "";
+}
+
 export default function BudgetBuilderPage() {
   const supabase = createClient();
 
@@ -664,6 +708,18 @@ export default function BudgetBuilderPage() {
       setLoading(false);
     }
   }
+
+  const orderedCategories = useMemo<Category[]>(() => {
+    return [...categories].sort((a, b) => {
+      const aKey = categorySortKey(a);
+      const bKey = categorySortKey(b);
+      const aIndex = CATEGORY_ORDER.indexOf(aKey);
+      const bIndex = CATEGORY_ORDER.indexOf(bKey);
+      const safeA = aIndex < 0 ? Number.MAX_SAFE_INTEGER : aIndex;
+      const safeB = bIndex < 0 ? Number.MAX_SAFE_INTEGER : bIndex;
+      return safeA - safeB || a.name.localeCompare(b.name);
+    });
+  }, [categories]);
 
   const selectedCategory = categories.find(
     (category) => category.id === categoryId
@@ -1945,32 +2001,27 @@ export default function BudgetBuilderPage() {
                 0
             );
 
-          /* Budget Builder adds one unit per recommended product. */
+          // Add one unit for each plan product already present in the cart,
+          // while respecting the latest stock limit.
           const newQuantity = Math.min(
-            Math.max(1, currentQuantity),
+            Math.max(1, currentQuantity) + 1,
             product.stock
           );
 
-          if (
-            newQuantity !==
-            currentQuantity
-          ) {
-            await supabase
+          if (newQuantity !== currentQuantity) {
+            const { error: updateError } = await supabase
               .from("cart_items")
               .update({
-                quantity:
-                  newQuantity,
-                updated_at:
-                  new Date().toISOString(),
+                quantity: newQuantity,
+                updated_at: new Date().toISOString(),
               })
-              .eq(
-                "id",
-                existingItem.id
-              )
-              .eq(
-                "user_id",
-                user.id
-              );
+              .eq("id", existingItem.id)
+              .eq("user_id", user.id);
+
+            if (updateError) {
+              console.error("Plan cart update:", updateError);
+              continue;
+            }
           }
 
           setCartQuantities(
@@ -2044,11 +2095,9 @@ export default function BudgetBuilderPage() {
           HEADER
       ====================================================== */}
       <header className="sticky top-0 z-50 border-b border-[#e9dfcd] bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-[70px] max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex min-w-0 items-center gap-2.5"
-            >
+        <div className="mx-auto flex h-[64px] max-w-[1500px] items-center justify-between px-3 sm:h-[70px] sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/dashboard" aria-label="PrimeCart home" className="flex min-w-0 items-center gap-2.5">
               <img
                 src="/logo.png"
                 alt="PrimeCart"
@@ -2062,10 +2111,10 @@ export default function BudgetBuilderPage() {
                   Budget Builder
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <Link
               href="/dashboard/wishlist"
               aria-label="Wishlist"
@@ -2093,7 +2142,7 @@ export default function BudgetBuilderPage() {
         </div>
       )}
 
-      <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
         {/* ======================================================
             HERO
         ====================================================== */}
@@ -2102,27 +2151,27 @@ export default function BudgetBuilderPage() {
 
           <div className="absolute -bottom-48 left-1/3 h-[500px] w-[500px] rounded-full bg-[#fff7e5] blur-3xl" />
 
-          <div className="relative grid min-h-[235px] grid-cols-[1.12fr_0.88fr] items-center gap-3 px-3 py-4 sm:min-h-[320px] sm:gap-7 sm:px-8 sm:py-8 lg:min-h-[400px] lg:gap-10 lg:px-16 lg:py-14">
+          <div className="relative grid min-h-0 grid-cols-1 items-center gap-5 px-4 py-5 sm:min-h-[320px] sm:grid-cols-[1.12fr_0.88fr] sm:gap-7 sm:px-8 sm:py-8 lg:min-h-[400px] lg:gap-10 lg:px-16 lg:py-14">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#eadfc9] bg-[#fffaf0] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#a17b2f]">
                 <Sparkles size={13} />
                 PrimeCart Smart Shopping
               </div>
 
-              <h2 className="mt-3 max-w-3xl text-[24px] font-black leading-[1.03] tracking-[-0.04em] sm:mt-5 sm:text-4xl lg:text-[64px]">
+              <h2 className="mt-3 max-w-3xl text-[clamp(1.7rem,7vw,2.5rem)] font-black leading-[1.04] tracking-[-0.04em] sm:mt-5 sm:text-4xl lg:text-[64px]">
                 Build your perfect cart
                 <span className="block text-[#b58a32]">
                   without breaking your budget.
                 </span>
               </h2>
 
-              <p className="mt-3 max-w-2xl text-[9px] leading-4 text-gray-500 sm:mt-4 sm:text-sm sm:leading-6 lg:text-base lg:leading-7">
+              <p className="mt-3 max-w-2xl text-xs leading-5 text-gray-500 sm:mt-4 sm:text-sm sm:leading-6 lg:text-base lg:leading-7">
                 Tell PrimeCart how much you want to spend.
                 We&apos;ll help you discover products, balance
                 your cart and make every rupee count.
               </p>
 
-              <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-5 sm:gap-2.5">
+              <div className="mt-4 flex flex-wrap gap-2 sm:mt-5 sm:gap-2.5">
                 {[
                   "Live budget tracking",
                   "Smart recommendations",
@@ -2130,7 +2179,7 @@ export default function BudgetBuilderPage() {
                 ].map((text) => (
                   <span
                     key={text}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[#ebe3d5] bg-[#fffdf9] px-2 py-1.5 text-[8px] font-bold text-gray-600 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[10px]"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#ebe3d5] bg-[#fffdf9] px-2.5 py-2 text-[9px] font-bold text-gray-600 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-[10px]"
                   >
                     <Check
                       size={13}
@@ -2454,7 +2503,7 @@ export default function BudgetBuilderPage() {
                     className="h-[54px] w-full appearance-none rounded-2xl border border-[#e4dbca] bg-[#fffdf9] px-4 pr-11 text-sm font-bold text-gray-700 outline-none transition focus:border-[#c9a24d] focus:ring-4 focus:ring-[#c9a24d]/10"
                   >
                     <option value="all">Everything on PrimeCart</option>
-                    {categories.map((category) => (
+                    {orderedCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
