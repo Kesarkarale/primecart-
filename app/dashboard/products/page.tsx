@@ -2121,6 +2121,9 @@ export default function ProductsPage() {
               </span>
             </Link>
 
+            {/* MOBILE SPACER — keeps Wishlist and Cart at the far right */}
+            <div className="flex-1 md:hidden" aria-hidden="true" />
+
             {/* SEARCH */}
             <div className="relative hidden min-w-0 flex-1 md:block">
               <Search
